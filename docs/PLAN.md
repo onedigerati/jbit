@@ -1,7 +1,7 @@
 # JBIT plan
 
 ## Goal
-Let the user drive JBIT in plain words, released as 0.13.0. "Just build it, autopilot lean" starts autopilot on the approved plan with `Agents: lean`; saying "unattended" (and "outward") in the user's own message arms an unattended (and outward) run exactly as the typed `/jbit:autopilot unattended [outward]` does; and "just build it" releases a held risky stage like "build it" does. Arming and approval are still read only from the user's own prompt text, never from the Skill tool's args, a plugin's prompt, a file or an agent report, and a negated or questioning mention ("don't go unattended", "should we go unattended?") arms nothing. Done means the hook, skills, docs and evals match, the suite and validate are green, a headless run shows a plain-words request arming the run, and it's committed on main.
+Let the user drive JBIT in plain words, released as 0.13.0. A message opening with the name, in any case and with commas or spaces ("JBIT autopilot unattended", "JBit, autopilot, lean", "jbit plan"), works as the matching `/jbit:*` command with those words. "Just build it, autopilot lean" starts autopilot on the approved plan with `Agents: lean`; saying "unattended" (and "outward") in the user's own message arms an unattended (and outward) run exactly as the typed `/jbit:autopilot unattended [outward]` does; and "just build it" releases a held risky stage like "build it" does. Arming and approval are still read only from the user's own prompt text, never from the Skill tool's args, a plugin's prompt, a file or an agent report, and a negated or questioning mention ("don't go unattended", "should we go unattended?") arms nothing. Done means the hook, skills, docs and evals match, the suite and validate are green, a headless run shows a plain-words request arming the run, and it's committed on main.
 
 ## Baseline
 2026-11-14 · tests: 312 pass, 0 fail (`claude plugin test plugins/jbit`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
@@ -13,19 +13,21 @@ Risk: user input (prompt parsing that arms unattended and outward runs and relea
 Checks:
 - [ ] A user prompt that asks for autopilot in plain words with "unattended" ("just build it, autopilot unattended", "run it on autopilot, unattended and outward, lean") arms an unattended run, and with "outward" an outward one, the same as the typed command (proof: test)
 - [ ] A negated, questioning or quoted mention ("don't go unattended", "should we run unattended?", "what does unattended do?"), "unattended" with no autopilot request, or the same words from a plugin prompt, the Skill tool's args or a file, arms nothing (proof: test)
+- [ ] A message opening with the name works as the slash command: "JBIT autopilot unattended", "JBit, Autopilot, Unattended, Outward" and "jbit autopilot lean" arm as `/jbit:autopilot …` does, and "JBIT approve" releases a hold as `/jbit:approve` does; "jbitx autopilot unattended" and a mid-sentence "…ask JBIT autopilot unattended later" don't (proof: test)
 - [ ] "just build it" (alone, or followed by punctuation or a line break) releases a held stage; "just build it?" and "just build it after lunch" don't (proof: test)
 - [ ] The typed `/jbit:autopilot unattended [outward]` and `/jbit:approve` behave exactly as before, and the rule the hook gives Claude names the plain-words forms (proof: test)
 Open: none
 
 ## Stages
-- [ ] 1. Plain-words arming in the hook — unattended and outward from the user's own words, "just build it" as an approval, negation and question guards; tests
-- [ ] 2. Skills, docs and evals — "just build it" triggers autopilot, the Agents level taken from the same sentence, READMEs and field guide, trigger and arming evals, headless proof; 0.13.0
+- [ ] 1. Plain-words arming in the hook — "JBIT <command> …" as the slash command, unattended and outward from the user's own words, "just build it" as an approval, negation and question guards; tests
+- [ ] 2. Skills, docs and evals — "JBIT <command>" and "just build it" trigger the skills, the Agents level taken from the same sentence, READMEs and field guide, trigger and arming evals, headless proof; 0.13.0
 
 ## Decisions
 - 2026-11-14 · Plain words arm unattended and outward runs, not only the typed `/jbit:autopilot unattended [outward]` — the user's call, after weighing that pasted or tool-written text in a prompt could carry them. Replaces the 2026-11-13 typed-only rule in `docs/decisions.md`; what still holds is that only the user's own prompt counts, never the Skill tool's args.
 - 2026-11-14 · "just build it" releases a held risky stage, beside yes, go, approve, proceed and "build it" — the user's call. Replaces the 2026-11-09 approval rule in `docs/decisions.md`.
 - 2026-11-14 · (defaulted) A plain-words arm needs the request and the word together in one message: an autopilot request ("autopilot", "take it from here", "see it through", "just build it") plus the whole word `unattended`, and `outward` only with `unattended`. A negation before the word (not, don't, no, without, never) or a message that's a question arms nothing — fail closed, the cost of a miss is one retype.
 - 2026-11-14 · (defaulted) "just build it" with no held stage starts autopilot on the approved plan; while a stage is held it's the approval. The Agents level in the same sentence (`lean`, `balanced`, `wide`) is written to the plan's Agents line; `wide` still gets its stamp only from the user's words in the session, as before.
+- 2026-11-14 · "JBIT <command> [words]" at the start of the user's message, any case (JBIT, JBit, jbit), words split by spaces or commas, counts as `/jbit:<command> [words]` for every command — from the user ("JBit Autopilot Unattended", "JBIT, Autopilot, Lean"). (defaulted) The hook reads it for arming (`autopilot`) and approval (`approve`); the other commands (plan, stage, verify, …) are Claude's to route from the skill descriptions. The name must be the message's first word, so a mention later in a sentence isn't a command.
 - 2026-11-14 · (defaulted) Version 0.13.0: a visible change, so a minor bump under the 2026-11-10 rule.
 - 2026-11-14 · Agents: lean, carried from the last plan.
 - 2026-11-14 · Scale: two stages, one plan, no charter.

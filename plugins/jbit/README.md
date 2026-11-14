@@ -1,8 +1,8 @@
 # JBIT
 
-**Plans it. Proves it. Sees it through.**
+**JBIT** (*jay-bit*) · Just Build It · *Plans it. Proves it. Sees it through.*
 
-JBIT, pronounced jay-bit, stands for Just Build It. "Just build it" is what you say to Claude. The tagline is what JBIT does so that's a safe thing to say: it plans the work, proves each piece against the running product, and sees the plan through to done.
+You bring the goal and say "just build it." JBIT does the rest: it **plans it**, **proves it** and **sees it through**, stopping only for the decisions that are yours.
 
 It's a Claude Code plugin for long, multi-stage work, on new projects and existing ones. All project state lives in one plan file plus git. There's no separate codebase map to keep current: the plan surveys what it touches, and durable facts (how to run and test) go in `CLAUDE.md`.
 

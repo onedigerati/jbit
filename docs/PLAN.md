@@ -17,6 +17,7 @@ Open: none
 
 ## Fixes
 - 2026-11-13 · Field guide: a "One plan after another" section on archiving, carrying decisions forward and `## Shipped`, for projects that run across many plans
+- 2026-11-14 · README intro (root and plugin): a one-line name, pronunciation and tagline header, then "you bring the goal… JBIT does the rest" in place of the tagline explanation — checked by reading the rendered top of both files
 
 ## Decisions
 - 2026-11-13 · The name is JBIT, pronounced jay-bit, for "Just Build It"; written `JBIT` in prose and `jbit` in commands, paths and the plugin name — at least seven other Claude Code dev-framework repos are called keel on GitHub, and none of the `jbit` repos is in the AI space (from the user).

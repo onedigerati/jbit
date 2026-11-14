@@ -376,41 +376,156 @@ const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
 const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 
 /**
- * How unattended this session's autopilot runs: `off`; `on`, which lifts the risky-stage hold and lets Claude settle
- * judgment calls itself; or `outward`, which also lets outward-facing commands through. Only the user's own
- * `/jbit:autopilot unattended [outward]` prompt sets it (see `unattendedOf`), never the Skill tool's args, a plugin's
- * prompt or the Mode line, since Claude or a file could write those.
+ * Set once the session's first look found no plan, so the first plan it then reads is a new Goal; kept apart from
+ * `GOAL`, so no Goal text can pass for it.
+ */
+const NO_PLAN_SEEN = { plugin: 'jbit', key: 'noPlanSeen' } as const
+
+/**
+ * How unattended this session's autopilot runs: `off` (attended: risky stages held for the user's approval); `on`,
+ * which lifts the risky-stage hold and lets Claude settle judgment calls itself; or `outward`, which also lets
+ * outward-facing commands through. One rule sets it (decided 2026-11-14, the fifth review's simplification): only the
+ * user's own autopilot command (`autopilotAsk`) — the typed `/jbit:autopilot`, or a message opening with "JBIT" made of
+ * nothing but command words — and it is unattended by default. The level holds until the user's next command or a new
+ * plan Goal (see `sync`): talk, a "yes", the Mode line pausing, going or coming back, and Claude starting the skill
+ * leave it as it is. Plain words without the name, the Skill tool's args, a plugin's prompt, a file or the Mode line
+ * never set it, since Claude or a file could write those; autopilot started from them runs at the level that stands,
+ * `off` unless the user's command set one for this Goal.
  */
 export type Unattended = 'off' | 'on' | 'outward'
 
 const UNATTENDED_LEVELS: readonly Unattended[] = ['off', 'on', 'outward']
 
 /**
- * Whether the user's latest prompt in this load opened with `/jbit:autopilot`. Autopilot armed any other way (the user
- * saying "resume" and Claude starting the skill, or a Mode line turning to autopilot) is a new run the user didn't
- * arm unattended, so it ends an unattended level left from earlier in the session.
+ * Characters that hide inside a word (every format character: soft hyphen, zero-width space and joiners, direction
+ * marks, invisible operators, byte-order mark, …) and Unicode spaces, which `normalised` drops and turns into a plain
+ * space, so "at­tended" reads as `attended`.
  */
-let lastUserPromptAutopilot = false
+const INVISIBLE = /\p{Cf}/gu
+const ODD_SPACE = /[   -   　]/g
 
-/** Ends an unattended run when autopilot is armed again without the user's `/jbit:autopilot` in their latest prompt. */
-async function rearmed($: EngineInterface, session?: Session) {
-  if (lastUserPromptAutopilot) return
-  if (session) {
-    if (session.unattended === 'off') return
-    session.unattended = 'off'
-  }
-  await $.state.set(UNATTENDED, 'off')
+/** A prompt as the readers below see it: invisible characters dropped, Unicode spaces as plain spaces. */
+export const normalised = (text: string): string => text.replace(INVISIBLE, '').replace(ODD_SPACE, ' ')
+
+/**
+ * The only words an autopilot command's words may be. It has no negation, question word or verb like stop, off or
+ * explain, so a message that talks about autopilot, rather than asking for it, always has a word outside it.
+ */
+const COMMAND_VOCABULARY = new Set([
+  'please', 'ok', 'okay', 'go', 'and', 'then', 'just', 'build', 'it', 'run', 'put', 'this', 'the', 'plan', 'on', 'take',
+  'from', 'here', 'see', 'through', 'now', 'autopilot', 'lean', 'balanced', 'wide', 'unattended', 'attended', 'outward',
+])
+
+/** The most words an autopilot command may hold. */
+const COMMAND_MAX_WORDS = 16
+
+/**
+ * The words of `text` when it is one line of command words: only letters, spaces, tabs and `,` `;` `.` `!` (so no
+ * line break, question mark, digit, quote or dash), at most 16 words, all in `COMMAND_VOCABULARY` (lowercased).
+ * Undefined otherwise.
+ */
+function vocabularyWords(text: string): string[] | undefined {
+  if (text.length > 300 || !/^[a-z \t,;.!]*$/i.test(text)) return undefined
+  const words = text.toLowerCase().split(/[ \t,;.!]+/).filter(Boolean)
+  return words.length <= COMMAND_MAX_WORDS && words.every(w => COMMAND_VOCABULARY.has(w)) ? words : undefined
 }
 
 /**
- * The words after `/jbit:autopilot` in the user's prompt: `unattended` as the next whole word (any case) gives `on`,
- * and `outward` as the whole word right after it gives `outward`. Anything else, a plain `/jbit:autopilot` included,
- * gives `off`, so the user re-running autopilot without the word ends an unattended run. Read only from a prompt that
- * already opens with `/jbit:autopilot`.
+ * The level a command's words give: `attended` anywhere gives `off` and beats every other word, since it only adds
+ * stops; else `outward` gives `outward`; else `on`, the default. `unattended` and the Agents levels change nothing.
+ */
+const levelOf = (words: string[]): Unattended => (words.includes('attended') ? 'off' : words.includes('outward') ? 'outward' : 'on')
+
+/** The typed `/jbit:autopilot` opening a message, as a whole command name. */
+const SLASH_AUTOPILOT = /^\s*\/jbit:autopilot(?![\w:-])/i
+
+/**
+ * The level a typed `/jbit:autopilot …` sets: always a command, since it is typed. When everything after it, trailing
+ * whitespace aside, is one line of command words (`vocabularyWords`, possibly none), the level is theirs (`levelOf`);
+ * anything else — another line, a question, a word outside the vocabulary — runs attended (`off`), failing closed
+ * ("/jbit:autopilot outward is a bad idea", "/jbit:autopilot аttended" with a Cyrillic а). A message that doesn't
+ * open with the command gives `off`. `/jbit:autopilot unattended [outward]` reads as it always has.
  */
 export function unattendedOf(text: string): Unattended {
-  const m = text.match(/^\s*\/jbit:autopilot\s+unattended(?![\w:-])(\s+outward(?![\w:-]))?/i)
-  return !m ? 'off' : m[1] ? 'outward' : 'on'
+  const t = normalised(text)
+  const m = SLASH_AUTOPILOT.exec(t)
+  const words = m ? vocabularyWords(t.slice(m[0].length).trimEnd()) : undefined
+  return words ? levelOf(words) : 'off'
+}
+
+/**
+ * `JBIT autopilot` or `JBIT approve` opening a message (decided 2026-11-14): `jbit` in any case as the message's first
+ * word, then spaces, tabs or commas and an optional colon (at least one of them, all on the first line), then the
+ * command as a whole word — followed by the end, whitespace, a comma or `.` `!` `;` `:` `…`. `isApproval` reads
+ * `JBIT approve` from it; an autopilot command opening with the name is `namedAutopilot`'s. A message with a question
+ * mark anywhere (`?` `？` `¿` `؟` `‽` `﹖` `︖`) isn't one ("JBIT approve?" asks).
+ */
+const NAMED = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)(autopilot|approve)(?=$|[\s,.!;:…])/i
+
+/** Question marks, lookalikes included: one anywhere in a message makes it no named command. */
+const QUESTION_MARK = /[?？¿؟‽﹖︖]/
+
+/** `JBIT autopilot …` or `JBIT approve …` opening the message, with the text after the command; else undefined. */
+export function namedCommand(text: string): { command: 'autopilot' | 'approve'; rest: string } | undefined {
+  const t = normalised(text)
+  if (QUESTION_MARK.test(t)) return undefined
+  const m = NAMED.exec(t)
+  return m ? { command: m[1]!.toLowerCase() as 'autopilot' | 'approve', rest: t.slice(m[0].length) } : undefined
+}
+
+/**
+ * What may follow `JBIT approve` for it to approve, as for the other approval words: the end of the message, a line
+ * break (spaces or tabs before it allowed), or punctuation other than a question mark — not a dash or more words on
+ * the line ("JBIT approve the auth stage later", "JBIT approve — what does that do" stay held).
+ */
+const NAMED_APPROVE_END = /^(?:$|[.,!;:…。，！；]|[ \t]*[\r\n])/
+
+/** The name opening a message, then a separator, as `NAMED` reads it. */
+const NAME_PREFIX = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)(?=[a-z])/i
+
+/**
+ * JBIT's other commands: "JBIT plan, then autopilot" or "JBIT please plan it, then autopilot" asks for the plan command
+ * too, Claude's to route, so it is no autopilot command. Of these only `plan` is in `COMMAND_VOCABULARY`, and it names
+ * the plan, not the command, right after `the` or `this` ("JBIT run the plan on autopilot").
+ */
+const OTHER_COMMANDS = new Set(['plan', 'charter', 'stage', 'fix', 'verify', 'review', 'resume'])
+
+/** A word of the command that asks for another JBIT command (see `OTHER_COMMANDS`). */
+const otherCommand = (words: string[]) => words.some((w, i) => OTHER_COMMANDS.has(w) && !(w === 'plan' && (words[i - 1] === 'the' || words[i - 1] === 'this')))
+
+/**
+ * The level an autopilot command opening with the name sets (decided 2026-11-14, option B+), or undefined when the
+ * message isn't one. The whole message, leading whitespace and trailing whitespace set aside, must be nothing but the
+ * command:
+ * - the name (`NAME_PREFIX`: "JBIT", "JBit,", "jbit:"), and no word asking for another JBIT command (`otherCommand`);
+ * - then one line of command words (`vocabularyWords`): a second line, even of command words, a question mark or any
+ *   word outside the vocabulary means it isn't one ("JBIT autopilot outward" then "not now");
+ * - an autopilot request among them: the word `autopilot`, or "just build it", "take it from here" or "see it
+ *   through" as consecutive words.
+ * So "JBIT autopilot lean", "JBit, Autopilot", "JBIT, just build it. Autopilot, lean." and "JBIT take it from here"
+ * are commands. Its level is `levelOf`'s. Fail closed: anything else is talk, and costs the user one retype at most.
+ */
+function namedAutopilot(text: string): Unattended | undefined {
+  const t = normalised(text).trimEnd()
+  const name = NAME_PREFIX.exec(t)
+  if (!name) return undefined
+  const words = vocabularyWords(t.slice(name[0].length))
+  if (!words || otherCommand(words)) return undefined
+  const spaced = ` ${words.join(' ')} `
+  const request = words.includes('autopilot') || [' just build it ', ' take it from here ', ' see it through '].some(p => spaced.includes(p))
+  return request ? levelOf(words) : undefined
+}
+
+/**
+ * The unattended level a user's prompt sets as their autopilot command, or undefined when it isn't one (and so sets
+ * nothing). Two forms, read only from the user's own prompt in `prompt.submit`: the typed `/jbit:autopilot …`
+ * (`unattendedOf`), and a message opening with "JBIT" made of nothing but command words (`namedAutopilot`). Plain
+ * words without the name ("just build it, autopilot lean") are no command here: Claude may start the skill from them,
+ * which runs at the level that stands.
+ */
+export function autopilotAsk(text: string): Unattended | undefined {
+  const t = normalised(text)
+  return SLASH_AUTOPILOT.test(t) ? unattendedOf(t) : namedAutopilot(t)
 }
 
 /**
@@ -438,7 +553,7 @@ async function stickyRules($: EngineInterface): Promise<ProjectRules> {
 
 interface Session {
   armed: boolean
-  /** Set by the user's prompt alone; it lifts nothing unless autopilot is also armed. */
+  /** Set by the user's autopilot command alone, and held until their next one or a new Goal; it lifts nothing unless autopilot is also armed. */
   unattended: Unattended
   cleared: string[]
   openChecks: Record<string, string[]>
@@ -550,34 +665,37 @@ export function stampOf(ms: number): string {
  */
 async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session> {
   const mode = plan?.mode?.kind ?? 'none'
-  const [seen, seenGoal, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), readSession($)])
+  const [seen, seenGoal, noPlan, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), $.state.get(NO_PLAN_SEEN), readSession($)])
   // a new Goal is a new feature: its stages restart at 1, so the last feature's per-stage records go
   const goal = plan?.goal ?? ''
-  if (seenGoal.value !== goal) {
-    if (seenGoal.value !== undefined && plan) {
+  const noPlanSeen = noPlan.value === true
+  if (seenGoal.value !== goal || (noPlanSeen && plan)) {
+    if (noPlanSeen && plan) {
+      // the first plan the session reads after finding none is one it didn't see when the user gave their command (one
+      // Claude wrote, say), so it runs attended; the per-stage records are left, since nothing was kept for it
+      session.unattended = 'off'
+      await $.state.set(UNATTENDED, 'off')
+    } else if (seenGoal.value !== undefined && plan) {
       session.openChecks = {}
       session.cleared = []
       session.checkCounts = {}
-      // a new Goal is a plan the user didn't arm unattended (one Claude cut, say), so it runs with the hold and outward check
+      // a new Goal is a plan the user gave no command for (one Claude cut, say), so it runs attended until they do: the
+      // hold and outward check come back
       session.unattended = 'off'
       await $.state.set(UNATTENDED, 'off')
       await $.state.set(OPEN_CHECKS, {})
       await $.state.set(CLEARED, [])
       await $.state.set(CHECK_COUNTS, {})
     }
-    if (plan) await $.state.set(GOAL, goal)
+    if (plan) {
+      await $.state.set(GOAL, goal)
+      if (noPlanSeen) await $.state.set(NO_PLAN_SEEN, false)
+    } else if (seenGoal.value === undefined && !noPlanSeen) await $.state.set(NO_PLAN_SEEN, true)
   }
   if (seen.value !== mode) {
     if (seen.value !== undefined && mode === 'autopilot') session.armed = true
-    // a Mode line turning to autopilot from none is a new run; resuming from a pause is the same run, and keeps its level
-    if (seen.value === 'none' && mode === 'autopilot') await rearmed($, session)
+    // the Mode line pausing, going or coming back arms or disarms, and leaves the level as the user's command set it
     if (mode === 'none') session.armed = false
-    // the Mode line going away ends an unattended run with autopilot; the session's first look (nothing seen yet) isn't a
-    // removal, so it keeps what the user's `/jbit:autopilot unattended` prompt set just before that look
-    if (seen.value !== undefined && mode === 'none' && session.unattended !== 'off') {
-      session.unattended = 'off'
-      await $.state.set(UNATTENDED, 'off')
-    }
     await $.state.set(SEEN_MODE, mode)
     await $.state.set(ARMED, session.armed)
   }
@@ -604,24 +722,29 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
 
 /** The exact reply that releases a held stage, as every held message spells it out. */
 const APPROVAL_REPLY =
-  '"yes", "go", "approve" or "proceed", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve`'
+  '"yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve")'
 
 /** The short form the notifications give. */
 const APPROVAL_NOTE = 'Reply "approve" (or /jbit:approve) to build it.'
 
 /**
- * The approval rule (decided 2026-11-09): the trimmed message, in any case, opens with yes, yep, go, approve, approved,
- * proceed or build it, followed by the end of the message or punctuation — `.` `,` `!` `;` `:`, their full-width forms
+ * The approval rule (decided 2026-11-09, with "just build it" added 2026-11-14): the trimmed message, in any case,
+ * opens with yes, yep, go, approve, approved, proceed, build it or just build it, followed by the end of the message or punctuation — `.` `,` `!` `;` `:`, their full-width forms
  * `。` `，` `！` `；`, an ellipsis `…`, or a dash: `—` or `–`
  * with or without a space before it, or ` -` — or a line break, spaces or tabs before it allowed (`yes\nmore`); or
- * it opens with `/jbit:approve` as a whole word. A `?` is not punctuation here ("go?" asks), and a word followed by a
- * space or tab and more text on the same line is not an approval ("go ahead and tell me…", "go\tahead", and so
+ * it opens with `/jbit:approve` as a whole word, or with `JBIT approve` followed by what `NAMED_APPROVE_END` allows
+ * (and no question mark ending the message). A `?` is not punctuation here ("go?" and "just build it?" ask), and a word followed by a space or tab and more
+ * text on the same line is not an approval ("go ahead and tell me…", "go\tahead", "just build it after lunch", and so
  * "approve the auth stage" too): the hook can't read intent, so it keeps to a narrow, stated rule.
  */
-const APPROVAL = /^(?:(?:yes|yep|go|approved?|proceed|build\s+it)(?:$|[.,!;:…。，！；]|\s*[—–]|\s+-|[ \t]*[\r\n])|\/jbit:approve(?![\w:-]))/i
+const APPROVAL = /^(?:(?:yes|yep|go|approved?|proceed|(?:just\s+)?build\s+it)(?:$|[.,!;:…。，！；]|\s*[—–]|\s+-|[ \t]*[\r\n])|\/jbit:approve(?![\w:-]))/i
 
-/** Whether a message from the user approves the held stage (see `APPROVAL`). */
-export const isApproval = (text: string): boolean => APPROVAL.test(text.trim())
+/** Whether a message from the user approves the held stage (see `APPROVAL` and `NAMED_APPROVE_END`). */
+export function isApproval(text: string): boolean {
+  if (APPROVAL.test(normalised(text).trim())) return true
+  const named = namedCommand(text)
+  return named?.command === 'approve' && NAMED_APPROVE_END.test(named.rest.trimEnd())
+}
 
 const driving = (plan: Plan | undefined, s: Session) => plan?.mode?.kind === 'autopilot' && s.armed
 
@@ -701,14 +824,14 @@ function baseRules(plan: Plan, s: Session): string {
     'Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix\'s bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone;'
   const skills = 'The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.'
   if (plan.mode?.kind === 'autopilot' && !s.armed)
-    return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. ${skills}`
+    return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. Resumed that way it runs attended, risky stages held for their approval; their own autopilot command (the typed \`/jbit:autopilot\`, or a message opening with "JBIT" such as "JBIT autopilot lean") runs it unattended, the default. ${skills}`
   if (plan.mode?.kind === 'paused' && held(plan, s))
-    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${skills}`
+    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${ATTENDED_NOTE} ${skills}`
   if (held(plan, s))
-    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${skills}`
+    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
   if (plan.mode?.kind === 'autopilot' && unattended(s)) return `${base} commit per stage. ${unattendedRules(s)} ${skills}`
   if (plan.mode?.kind === 'autopilot')
-    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${skills}`
+    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${ATTENDED_NOTE} ${skills}`
   if (plan.mode?.kind === 'paused')
     return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. ${skills}`
   return `${base} commit per stage and stop for the user's review. ${skills}`
@@ -722,15 +845,22 @@ function unattendedRules(s: Session): string {
   const outward =
     s.unattended === 'outward'
       ? 'Outward-facing commands (push, publish, deploy, sending data out) are allowed this run: the user armed it with `outward`.'
-      : 'Outward-facing commands (push, publish, deploy, sending data out) are still blocked while it runs.'
+      : 'Outward-facing commands (push, publish, deploy, sending data out) are still blocked while it runs: only `outward` in the user\'s command lets them through.'
   return [
-    'Autopilot is on and unattended: the user armed it in this session with `/jbit:autopilot unattended`. You are the project manager under jbit:autopilot: go from stage to stage without stopping for review, and delegate the building.',
+    'Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") run attended. The level holds until their next command or a new plan Goal. You are the project manager under jbit:autopilot: go from stage to stage without stopping for review, and delegate the building.',
     "Don't pause for a risky stage or for a decision the plan doesn't settle: pick the option you'd recommend, log it in the plan as a dated decision marked `(unattended)` with the why, and carry on.",
     "Risky stages still get jbit:review's security pass.",
     "Still pause, setting the Mode line to `paused — <reason>`, after three failed fix rounds, when a builder's report and the evidence disagree and you can't settle it, and before building a plan the user hasn't seen.",
     outward,
   ].join(' ')
 }
+
+/**
+ * Why an armed run is attended, for the rules of one: unattended is the default only for the user's own command, and
+ * its level holds until their next command or a new Goal.
+ */
+const ATTENDED_NOTE =
+  'This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line run attended. The level holds until their next command or a new plan Goal.'
 
 /** Where standing decisions move once more than ten would carry forward (jbit:plan). */
 const DECISIONS_PATH = 'docs/decisions.md'
@@ -1139,22 +1269,29 @@ export const register: Register = on => {
     if (e.origin.kind !== 'plugin') stalledTurns = 0
     lastPromptFromUser = fromUser
     if (fromUser) {
-      lastUserPromptAutopilot = /^\s*\/jbit:autopilot\b/.test(e.text)
-      if (lastUserPromptAutopilot) {
-        // each /jbit:autopilot sets how unattended the run is, so a plain one ends an unattended run; the level is
-        // written first, so a failed second write can't leave an earlier level re-armed
-        await $.state.set(UNATTENDED, unattendedOf(e.text))
+      // the user's autopilot command, typed or opening with "JBIT" (`autopilotAsk`), comes first: it sets the level,
+      // even over a held stage (an unattended level lifts the hold; `attended` keeps it), and the level holds until
+      // their next command or a new Goal. The level is written first, so a failed later write can't leave an earlier
+      // level armed. Anything else sets no level
+      const level = autopilotAsk(e.text)
+      if (level !== undefined) {
+        // the command is for the plan as it stands now: bring the session's view up to date first, so a Goal that
+        // changed since the last look (edited by hand, checked out, or written in a turn that was then aborted) resets
+        // the old level here, not the user's command at the next look
+        await sync($, await loadPlan($).catch(() => undefined))
+        await $.state.set(UNATTENDED, level)
         await $.state.set(ARMED, true)
-      }
-      // the person approved a risky stage that was held or paused: only their own prompt opening with an approval
-      // (`isApproval`) clears it — never a question, a plugin's prompt, or a skill Claude can run itself
-      if (isApproval(e.text)) {
+      } else {
         const plan = await loadPlan($).catch(() => undefined)
         const s = await readSession($)
         const stage = plan?.stage
-        // armed or not: an unarmed session's /jbit:approve then arms autopilot through the skill, onto a cleared stage
-        if (stage?.risky.length && underAutopilot(plan) && !s.cleared.includes(stage.key))
-          await $.state.set(CLEARED, [...s.cleared, stage.key])
+        // the person approved a risky stage that was held or paused: only their own prompt opening with an approval
+        // (`isApproval`: an approval word, "just build it", `/jbit:approve` or `JBIT approve`) clears it — never a
+        // question, a plugin's prompt, or a skill Claude can run itself. Armed or not: an unarmed session's
+        // /jbit:approve then arms autopilot through the skill, onto a cleared stage. An approval is that and nothing
+        // more: "just build it, outward" in reply to a hold releases the stage and changes no level
+        const awaiting = !!stage?.risky.length && underAutopilot(plan) && !s.cleared.includes(stage.key)
+        if (awaiting && isApproval(e.text)) await $.state.set(CLEARED, [...s.cleared, stage!.key])
       }
     }
     return next(e)
@@ -1184,7 +1321,7 @@ export const register: Register = on => {
     if (held(plan, s)) {
       if (heldNoticeFor !== plan.stage?.key) {
         heldNoticeFor = plan.stage?.key
-        await $.ui.notify(`Autopilot is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'jbit' })
+        await $.ui.notify(`Autopilot (attended) is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'jbit' })
       }
       return result
     }
@@ -1211,10 +1348,8 @@ export const register: Register = on => {
 
   // starting jbit:autopilot from the person's own turn arms it, including over a Mode line an earlier session left
   on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
-    if (!e.agentId && lastPromptFromUser && /^(?:jbit:)?autopilot$/.test(e.skill)) {
-      await rearmed($)
-      await $.state.set(ARMED, true)
-    }
+    // it runs at the level that stands: its args never set one
+    if (!e.agentId && lastPromptFromUser && /^(?:jbit:)?autopilot$/.test(e.skill)) await $.state.set(ARMED, true)
     return next(e)
   }).catch(($, e, next) => next(e))
 

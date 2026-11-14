@@ -1,0 +1,62 @@
+# mutations, each run separately and restored from a backup (cmp checked after the last)
+## mutation 1: `attended` ignored
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 360 pass
+ 17 fail
+## mutation 2: Claude-armed or Mode-line autopilot keeps the user's earlier level (rearmed never resets)
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 376 pass
+ 1 fail
+## mutation 3: an approval reply also applies its command level
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 344 pass
+ 33 fail
+## mutation 4 (rule A): plain words read as a command during a run or a hold
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 366 pass
+ 11 fail
+## mutation 5 (rule B): a held-back command is never reset
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 375 pass
+ 2 fail
+## mutation 6 (hole 2): the first plan seen after none keeps the level
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 377 pass
+ 0 fail
+## mutation 7 (hole 4): a typed /jbit:autopilot with unknown words arms unattended
+changed lines: 1
+$ claude plugin test plugins/jbit
+ 375 pass
+ 2 fail
+# note on mutation 6: with that branch off, the general new-Goal branch below it still resets the level (NO_PLAN_GOAL is a defined Goal), so the path stays closed and no test fails; mutation 6b removes the marker the hole-2 fix depends on
+## mutation 6b (hole 2): no marker written when the session finds no plan
+changed lines: 1
+$ claude plugin test plugins/jbit
+(fail) hole 2: with no plan at the start, a plan Claude then writes and runs is attended [50.29ms]
+ 376 pass
+ 1 fail
+
+## Fourth review fixes (2026-11-14), each reverted alone with sed, full suite run, file restored and checked with cmp
+m8 (a paused run Claude armed is not in progress: runStarted only): 383 pass 1 fail
+m9 (plain words may raise a pending attended command): 382 pass 2 fail
+m10 (question mark rejected only at the end of a named command):  383 pass  1 fail 
+
+## Option B+ rebuild with sixth-review fixes (2026-11-14): each piece reverted alone with scratchpad mutate.py, full suite, file restored and checked with cmp
+second-line:  390 pass  6 fail 
+plain-sets-level:  364 pass  32 fail 
+reset-on-talk:  386 pass  10 fail 
+no-goal-reset:  394 pass  2 fail 
+approval-first:  385 pass  11 fail 
+reset-on-mode-going:  395 pass  1 fail 
+skill-resets:  356 pass  40 fail 
+skill-args-raise:  375 pass  21 fail 
+no-first-plan-reset:  394 pass  2 fail 
+no-sync-before-command:  393 pass  3 fail 
+goal-sentinel:  395 pass  1 fail 
+plan-first-word-only:  395 pass  1 fail 

@@ -3,7 +3,7 @@ declare module 'claude-code' {
     jbit: {
       /** Autopilot may drive this session: set when the user starts jbit:autopilot here, never read from the repo. */
       armed: boolean
-      /** How unattended this session's autopilot runs: set only by the user's own `/jbit:autopilot unattended [outward]` prompt, reset by a plain `/jbit:autopilot` or the Mode line going. */
+      /** How unattended this session's autopilot runs: set only by the user's own autopilot command (a typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words) — `on` by default, `outward` with that word, `off` (attended) with `attended` — and held until their next command or a new plan Goal, which sets it to `off`. Talk, an approval, plain words without the name, Claude starting the skill and the Mode line changing leave it as it is. */
       unattended: 'off' | 'on' | 'outward'
       /** The plan's mode at the last look this session (`none` without a Mode line), to see it change. */
       seenMode: 'autopilot' | 'paused' | 'none'
@@ -15,6 +15,8 @@ declare module 'claude-code' {
       checkCounts: Record<string, number>
       /** The plan's Goal at the last look; a change means a new feature, and resets the per-stage records. */
       goal: string
+      /** The session's first look found no plan: the first plan it then reads counts as a new Goal. */
+      noPlanSeen: boolean
       /** The plan's `Agents:` line as this session first read it (level and confirmation stamp); a `wide` already there is honoured only once restamped. */
       firstAgents: { level: 'lean' | 'balanced' | 'wide' | 'none' | 'unknown'; stamp?: string; at?: number }
       /** Every project rule (`JBIT risk:` / `JBIT outward:` in CLAUDE.md) seen this session, so a line removed mid-run still holds until a new session. */

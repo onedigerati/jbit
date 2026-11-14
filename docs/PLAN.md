@@ -17,6 +17,7 @@ Open: none
 
 ## Fixes
 - 2026-11-14 · README hero banner: both READMEs open with the field guide's option D hero (wordmark, "Just build it.", promise, terminal) as light and dark images, rendered by `docs/assets/render-hero.mjs`; docs check updated.
+- 2026-11-14 · Animated README hero: the banner plays the field guide's hero animation (the command typed, stages ticking off, the caret blinking) as light and dark animated WebP, rendered frame by frame on a fake clock by `docs/assets/render-hero-animated.mjs`; reduced motion gets the still PNGs. The field guide's in-progress stage no longer shows its "proven · committed" result before it ticks.
 
 ## Decisions
 - 2026-11-14 · Autopilot is unattended by default — from the user ("Autopilot together with Unattended is kind of redundant… Autopilot should really default to Unattended"; "let's fold it in now"), after weighing that a risky stage then runs without their approval unless they say `attended`. Replaces the 2026-11-13 design where unattended was an opt-in word; what unattended keeps (verification, commit gates, secret guard, security review of risky stages, pausing when stuck or before a plan the user hasn't seen) is unchanged.

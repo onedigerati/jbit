@@ -596,9 +596,10 @@ const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[
     await later(450); stl.innerHTML='<span>jbit · autopilot unattended</span> <span>· lean · 0/4 done</span> <span>· next: 1. Plot map</span>';
     for(let i=0;i<rows.length;i++){
       const tick=i>0&&i<rows.length-1;
-      if(tick){ticks[i].textContent='…';ticks[i].classList.add('dim')}
+      const done=rows[i].querySelector('.s');
+      if(tick){ticks[i].textContent='…';ticks[i].classList.add('dim');if(done)done.style.visibility='hidden'}
       rows[i].classList.remove('hid');
-      if(tick){await later(650);ticks[i].textContent=marks[i];ticks[i].classList.remove('dim');
+      if(tick){await later(650);ticks[i].textContent=marks[i];ticks[i].classList.remove('dim');if(done)done.style.visibility='';
         stl.innerHTML='<span>jbit · autopilot unattended</span> <span>· lean · '+i+'/4 done</span> <span>· next: '+(i+1)+'. '+['Booking','Member login','Season dates'][i-1]+'</span>'}
       else await later(380);
     }

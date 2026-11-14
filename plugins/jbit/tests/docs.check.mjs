@@ -145,15 +145,15 @@ test('the product is JBIT in prose, not jbit', () => {
 
 test('READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line', () => {
   const promise = 'Plans it. Proves it. Sees it through.'
-  // each README opens with the hero banner (light and dark images rendered from the field guide by
-  // docs/assets/render-hero.mjs), its alt text carrying the name, the brand line and the promise
+  // each README opens with the hero banner: animated light and dark WebP (docs/assets/render-hero-animated.mjs),
+  // still PNGs for reduced motion (docs/assets/render-hero.mjs), both rendered from the field guide, its alt text carrying the name, the brand line and the promise
   for (const [name, text] of Object.entries(readmes)) {
     assert.ok(text.startsWith('<h1 align="center">\n  <picture>'), `${name} README opens with the hero banner`)
     const head = text.slice(0, text.indexOf('</h1>'))
     assert.match(head, new RegExp(`alt="JBIT\\. Just build it\\. ${promise.replace(/\./g, '\\.')}`), `${name} README banner alt text`)
     const dir = name === 'root' ? repo : plugin
     const srcs = [...head.matchAll(/(?:src|srcset)="([^"]+)"/g)].map(m => m[1])
-    assert.deepEqual(srcs.map(s => s.replace(/^(\.\.\/)*/, '')), ['docs/assets/jbit-hero-dark.png', 'docs/assets/jbit-hero-light.png'], `${name} README banner images`)
+    assert.deepEqual(srcs.map(s => s.replace(/^(\.\.\/)*/, '')), ['docs/assets/jbit-hero-dark.png', 'docs/assets/jbit-hero-light.png', 'docs/assets/jbit-hero-dark.webp', 'docs/assets/jbit-hero-light.webp'], `${name} README banner images`)
     for (const src of srcs) assert.ok(existsSync(join(dir, src)), `${name} README banner image exists: ${src}`)
   }
   for (const desc of [manifest.description, marketplace.description, marketplace.plugins[0].description])

@@ -1,7 +1,9 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jbit-hero-dark.png">
-    <img src="docs/assets/jbit-hero-light.png" width="900" alt="JBIT. Just build it. Plans it. Proves it. Sees it through. A terminal where the user types “JBIT, just build it. Autopilot, lean.” and stages 1 to 3 tick off as proven and committed.">
+    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="docs/assets/jbit-hero-dark.png">
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/jbit-hero-light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jbit-hero-dark.webp">
+    <img src="docs/assets/jbit-hero-light.webp" width="900" alt="JBIT. Just build it. Plans it. Proves it. Sees it through. A terminal where the user types “JBIT, just build it. Autopilot, lean.” and stages 1 to 3 tick off as proven and committed.">
   </picture>
 </h1>
 

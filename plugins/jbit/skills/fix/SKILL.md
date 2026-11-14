@@ -1,11 +1,11 @@
 ---
 name: fix
-description: Make a small, low-risk change without a stage — a style or copy tweak, a display bug, a docs or comment edit — built in the main session, checked in proportion to its risk, logged as one line in the plan and committed on its own. Use when the request fits the quick-fix bar below, when jbit:plan or jbit:autopilot recommends it and the user agrees, or when the user asks for a quick fix. Anything that misses the bar goes to jbit:plan.
+description: Make a small, low-risk change without a stage — a style or copy tweak, a display bug, a docs or comment edit — built in the main session, checked in proportion to its risk, logged as one line in the plan and committed on its own. Use when the request fits the quick-fix bar below, when jbit:plan or jbit:autopilot recommends it and the user agrees, or when the user asks for a quick fix. Anything that misses the bar goes to jbit:plan. Also when a message opens with "JBIT fix" (any case, after a space, comma or colon, as in "JBit, fix"), which works as `/jbit:fix`.
 ---
 
 # JBIT: fix
 
-Most of jbit is for work that needs a plan. Some changes don't: moving a glow behind a number, fixing a typo, rewording a message. A stage would cost a plan rewrite, an archive, agents and an evidence folder to prove a twenty-line diff. A fix costs the change, a proportionate check and one line in the plan.
+Most of JBIT is for work that needs a plan. Some changes don't: moving a glow behind a number, fixing a typo, rewording a message. A stage would cost a plan rewrite, an archive, agents and an evidence folder to prove a twenty-line diff. A fix costs the change, a proportionate check and one line in the plan.
 
 ## 1. Does it fit the bar?
 
@@ -41,7 +41,7 @@ The plan's Agents line doesn't apply to a fix: there's nothing to fan out, so it
 ## 4. Log and commit
 
 - **One line in the plan.** Add it under `## Fixes` in `docs/PLAN.md`, creating the section after `## Stages` if it isn't there: `- <YYYY-MM-DD> · <what changed, in the user's terms> — <how it was checked>`. Leave the Goal, `## Now`, the stages and the Mode and Agents lines as they are. A fix doesn't start a new plan or archive the current one, even when the current plan's goal is met: `## Fixes` travels with the plan into its archive like `## Decisions`. A decision the fix made that should bind later work goes in `## Decisions` as usual. With no plan in the project, skip the line; the commit is the record.
-- **Commit it on its own**, files staged by name, with a subject starting `Fix:` and saying what changed. The jbit hook's secret guard applies as always.
+- **Commit it on its own**, files staged by name, with a subject starting `Fix:` and saying what changed. The JBIT hook's secret guard applies as always.
 - Push and deploy only when the user says so, as for any stage.
 
 ## 5. Report

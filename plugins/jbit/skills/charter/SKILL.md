@@ -1,11 +1,11 @@
 ---
 name: charter
-description: Chart a project too big for one plan — turn a PRD into docs/ROADMAP.md (milestones with dependencies, a requirement ledger, out of scope, open questions) and its locked decisions into CLAUDE.md, re-chart a changed PRD without losing history, and backfill coverage from shipped plans; then hand the first milestone to jbit:plan. Use when the user asks to chart a PRD or spec or to set up a roadmap or milestones, when they say yes to jbit:plan's question whether to chart, or when the PRD behind an existing roadmap has changed. A request to plan or build is jbit:plan's, even for a large PRD: it asks first.
+description: Chart a project too big for one plan — turn a PRD into docs/ROADMAP.md (milestones with dependencies, a requirement ledger, out of scope, open questions) and its locked decisions into CLAUDE.md, re-chart a changed PRD without losing history, and backfill coverage from shipped plans; then hand the first milestone to jbit:plan. Use when the user asks to chart a PRD or spec or to set up a roadmap or milestones, when they say yes to jbit:plan's question whether to chart, or when the PRD behind an existing roadmap has changed. A request to plan or build is jbit:plan's, even for a large PRD: it asks first. Also when a message opens with "JBIT charter" (any case, after a space, comma or colon, as in "JBit, charter"), which works as `/jbit:charter`.
 ---
 
 # JBIT: charter
 
-A plan holds one body of work. A PRD too big for one plan gets a roadmap: `docs/ROADMAP.md` says which milestones the project passes through and which requirement lands in which, and the plans are cut from it one at a time by `jbit:plan`. The charter assigns requirements to milestones and sets the milestones' order; it never cuts stages, since a plan written months ahead is guesswork. The jbit hook reads the roadmap into every request, so keep its layout exact.
+A plan holds one body of work. A PRD too big for one plan gets a roadmap: `docs/ROADMAP.md` says which milestones the project passes through and which requirement lands in which, and the plans are cut from it one at a time by `jbit:plan`. The charter assigns requirements to milestones and sets the milestones' order; it never cuts stages, since a plan written months ahead is guesswork. The JBIT hook reads the roadmap into every request, so keep its layout exact.
 
 Run only on the user's ask: to chart, set up a roadmap or re-chart, or a yes to `jbit:plan`'s scale question. Asked only to plan or build, go through `jbit:plan`, which asks once whether to chart.
 

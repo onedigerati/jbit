@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: trigger-jbit-resume
+description: '"JBit, resume" (mixed case, a comma after the name) loads jbit:resume, as /jbit:resume does.'
+tags: [trigger, jbit-command]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: JBit, resume
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+graders:
+  - type: tool_used
+    name: loads-resume
+    tool: Skill
+    input_match: "resume"
+    min: 1
+    arm: with-only

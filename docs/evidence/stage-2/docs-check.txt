@@ -1,0 +1,77 @@
+$ node --test plugins/jbit/tests/docs.check.mjs
+TAP version 13
+# Subtest: plugin.json is version 0.13.0
+ok 1 - plugin.json is version 0.13.0
+  ---
+  duration_ms: 0.600722
+  type: 'test'
+  ...
+# Subtest: no skill, README or hook text describes the old opt-in arming rule
+ok 2 - no skill, README or hook text describes the old opt-in arming rule
+  ---
+  duration_ms: 3.624158
+  type: 'test'
+  ...
+# Subtest: autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+ok 3 - autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+  ---
+  duration_ms: 0.369651
+  type: 'test'
+  ...
+# Subtest: every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+ok 4 - every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+  ---
+  duration_ms: 0.50475
+  type: 'test'
+  ...
+# Subtest: the approval reply the skills give is the hook's APPROVAL_REPLY
+ok 5 - the approval reply the skills give is the hook's APPROVAL_REPLY
+  ---
+  duration_ms: 0.154083
+  type: 'test'
+  ...
+# Subtest: the command words the docs list are the hook's COMMAND_VOCABULARY
+ok 6 - the command words the docs list are the hook's COMMAND_VOCABULARY
+  ---
+  duration_ms: 1.2257
+  type: 'test'
+  ...
+# Subtest: "JBIT approve" is described as releasing the hold, not as running the approve skill
+ok 7 - "JBIT approve" is described as releasing the hold, not as running the approve skill
+  ---
+  duration_ms: 0.138368
+  type: 'test'
+  ...
+# Subtest: no doc says plain words run attended without saying the level that stands
+ok 8 - no doc says plain words run attended without saying the level that stands
+  ---
+  duration_ms: 2.400568
+  type: 'test'
+  ...
+# Subtest: the product is JBIT in prose, not jbit
+ok 9 - the product is JBIT in prose, not jbit
+  ---
+  duration_ms: 1.229075
+  type: 'test'
+  ...
+# Subtest: READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+ok 10 - READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+  ---
+  duration_ms: 0.404559
+  type: 'test'
+  ...
+# Subtest: READMEs describe the arming rule
+ok 11 - READMEs describe the arming rule
+  ---
+  duration_ms: 0.1216
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 57.579444

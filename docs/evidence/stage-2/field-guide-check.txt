@@ -1,0 +1,24 @@
+$ node docs/evidence/stage-2/shoot.mjs && node docs/evidence/stage-2/sim.mjs   # Playwright 1.65 (npx cache) driving Chromium build 1248, file://<repo>/docs/field-guide.html, waits 8s for the hero animation (env: PLAYWRIGHT_MODULES = the npx playwright node_modules, CHROMIUM_PATH = the cached Chromium)
+# 2026-11-14, re-shot after the review fixes (plain-words wording, approval wording, `.arm-card.un .tag` contrast).
+desktop light: viewport 1280x800 scheme=light reducedMotion=no-preference
+  document.scrollWidth=1280 innerWidth=1280 -> no horizontal scroll
+  hero command="JBIT, just build it. Autopilot, lean." status="jbit · autopilot unattended · lean · 3/4 done · next: 4. Season dates" hidden rows=0 display font loaded=true
+  console errors/warnings: none
+desktop dark: viewport 1280x800 scheme=dark reducedMotion=no-preference
+  document.scrollWidth=1280 innerWidth=1280 -> no horizontal scroll
+  hero command="JBIT, just build it. Autopilot, lean." status="jbit · autopilot unattended · lean · 3/4 done · next: 4. Season dates" hidden rows=0 display font loaded=true
+  console errors/warnings: none
+phone light: viewport 390x844 scheme=light reducedMotion=no-preference
+  document.scrollWidth=390 innerWidth=390 -> no horizontal scroll
+  hero command="JBIT, just build it. Autopilot, lean." status="jbit · autopilot unattended · lean · 3/4 done · next: 4. Season dates" hidden rows=0 display font loaded=true
+  console errors/warnings: none
+phone dark reduced-motion: viewport 390x844 scheme=dark reducedMotion=reduce
+  document.scrollWidth=390 innerWidth=390 -> no horizontal scroll
+  hero command="JBIT, just build it. Autopilot, lean." status="jbit · autopilot unattended · lean · 3/4 done · next: 4. Season dates" hidden rows=0 display font loaded=true
+  console errors/warnings: none
+sim "plain": finished; stage 3 held=true; decisions=["- 2026-11-10 · Bookings indexed by plot_id (review finding)","- 2026-11-10 · Stage 3 (auth) approved by the user; security review still runs"]; errors=none
+sim "jbit": finished; stage 3 held=false; decisions=["- 2026-11-10 · Bookings indexed by plot_id (review finding)","- 2026-11-10 · (unattended) Stage 3 built without a hold: bcrypt with a per-account rate limit, as the plan suggests; security review still runs"]; errors=none
+
+$ node <scratch>/contrast.mjs   # computed colours of `.arm-card.un .tag` (the "unattended" tag) in each scheme, WCAG contrast
+.arm-card.un .tag light: color rgb(154, 74, 16) on rgb(247, 227, 210), 11.2px, contrast 5.02:1
+.arm-card.un .tag dark: color rgb(238, 148, 80) on rgb(58, 38, 23), 11.2px, contrast 6.12:1

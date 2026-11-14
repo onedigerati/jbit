@@ -1,6 +1,6 @@
 ---
 name: review
-description: Fresh-eyes review of recent work by an agent that didn't write it — correctness against the plan's intent, edge cases, tests, and a security pass when the stage touches user input, auth, money, personal data, secrets or external services. Findings are verified and triaged into fix, defer or reject. Use at the end of risky stages and milestones, or when asked to review.
+description: Fresh-eyes review of recent work by an agent that didn't write it — correctness against the plan's intent, edge cases, tests, and a security pass when the stage touches user input, auth, money, personal data, secrets or external services. Findings are verified and triaged into fix, defer or reject. Use at the end of risky stages and milestones, or when asked to review. Also when a message opens with "JBIT review" (any case, after a space, comma or colon, as in "JBit, review"), which works as `/jbit:review`.
 ---
 
 # JBIT: review

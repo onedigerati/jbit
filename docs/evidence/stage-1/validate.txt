@@ -1,10 +1,10 @@
 $ claude plugin validate plugins/jbit
-Validating plugin manifest: /home/jonah/repos/jbit/plugins/jbit/.claude-plugin/plugin.json
+Validating plugin manifest: ~/repos/jbit/plugins/jbit/.claude-plugin/plugin.json
 
   ❯ types ./types/index.d.ts declares on $: nothing (no EngineInterface member)
   ❯ types ./types/index.d.ts declares state: jbit.armed, jbit.unattended, jbit.seenMode, jbit.cleared, jbit.openChecks, jbit.checkCounts, jbit.goal, jbit.noPlanSeen, jbit.firstAgents, jbit.projectRules
 
-Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/hooks.json
+Validating hooks: ~/repos/jbit/plugins/jbit/hooks/hooks.json
 
   ❯ ./register.ts hooks: prompt.compose, session.compact, turn.start, prompt.submit, turn.complete, tool.call{tool=Skill}, tool.call, tool.call{tool=Agent}, tool.call{tool=Bash}
   ❯ ./register.ts gating hook with .catch: session.compact
@@ -17,13 +17,13 @@ Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/hooks.json
   ❯ ./register.ts state writes: jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.seenMode, jbit.unattended
   ❯ ./register.ts state reads: jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.seenMode, jbit.unattended
 
-Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/project.ts
+Validating hooks: ~/repos/jbit/plugins/jbit/hooks/project.ts
 
 ⚠ Found 1 warning:
 
   ❯ line 17, column 67: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
 
-Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/register.ts
+Validating hooks: ~/repos/jbit/plugins/jbit/hooks/register.ts
 
 ⚠ Found 3 warnings:
 
@@ -31,7 +31,7 @@ Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/register.ts
   ❯ line 3, column 43: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
   ❯ line 4, column 102: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
 
-Validating hooks: /home/jonah/repos/jbit/plugins/jbit/tests/jbit.test.ts
+Validating hooks: ~/repos/jbit/plugins/jbit/tests/jbit.test.ts
 
 ⚠ Found 55 warnings:
 
@@ -91,7 +91,7 @@ Validating hooks: /home/jonah/repos/jbit/plugins/jbit/tests/jbit.test.ts
   ❯ line 4223, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
   ❯ line 4237, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
 
-Plugin directory checks for /home/jonah/repos/jbit/plugins/jbit. The plugin directory is the catalog that plugins are submitted to; this is a subset of what it runs.
+Plugin directory checks for ~/repos/jbit/plugins/jbit. The plugin directory is the catalog that plugins are submitted to; this is a subset of what it runs.
 
 ⚠ Found 1 plugin directory warning:
 

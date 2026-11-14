@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Verify work against the running product and the project's own checks — type check, lint, tests, build, a dependency audit, then each acceptance check proven by driving the real app (screenshots, scripted clicks, requests, CLI runs), with a per-check report; when a plan stage is verified, the report and the output behind it are saved to docs/evidence/stage-<n>/. Use before calling any stage done (a `jbit:fix` change gets the lighter check in its own skill), when asked to verify, test or check something works, or when unsure whether a change actually works.
+description: Verify work against the running product and the project's own checks — type check, lint, tests, build, a dependency audit, then each acceptance check proven by driving the real app (screenshots, scripted clicks, requests, CLI runs), with a per-check report; when a plan stage is verified, the report and the output behind it are saved to docs/evidence/stage-<n>/. Use before calling any stage done (a `jbit:fix` change gets the lighter check in its own skill), when asked to verify, test or check something works, or when unsure whether a change actually works. Also when a message opens with "JBIT verify" (any case, after a space, comma or colon, as in "JBit, verify"), which works as `/jbit:verify`.
 ---
 
 # JBIT: verify
@@ -97,7 +97,7 @@ Then, if the stage verified is the one in `## Now`, tick each check there that p
 
 ## Closing a milestone
 
-When `jbit:plan` closes a roadmap milestone, it does so in the plan that follows the one that covered it, so verify writes the close to that plan's evidence folder: `docs/evidence/milestone-<ID>.md` (`milestone-M1.md`), beside any stage reports, archived with the plan. The jbit hook refuses a commit that ticks the milestone in `docs/ROADMAP.md` unless this file has a table row, its ID in the first cell, for every requirement of the milestone that isn't dropped. Verify proves three things, and the file records each:
+When `jbit:plan` closes a roadmap milestone, it does so in the plan that follows the one that covered it, so verify writes the close to that plan's evidence folder: `docs/evidence/milestone-<ID>.md` (`milestone-M1.md`), beside any stage reports, archived with the plan. The JBIT hook refuses a commit that ticks the milestone in `docs/ROADMAP.md` unless this file has a table row, its ID in the first cell, for every requirement of the milestone that isn't dropped. Verify proves three things, and the file records each:
 
 1. **The full suite**: steps 1 and 2, on the archived state. Any new failure keeps the milestone open.
 2. **Coverage**: a row per requirement of the milestone that isn't dropped, `| ID | Covered by | Evidence row | Result |`. A row passes when its `Covered by` link names an archived plan that exists (`docs/plans/<date>-<slug>.md`) and that plan's stage reports (`stage-*/report.md`, not a `milestone-*` file) hold a `pass` row tagged with the ID, with no later failing re-run of it. A requirement the charter backfilled, from a plan that predates tags, passes instead on the passing row the charter's backfill named for it (listed in the charter commit's message: `git log --grep Backfill -- docs/ROADMAP.md`), and goes into the fit sample. A blank cell, a link to a missing plan, or no such row is a gap: that row fails.

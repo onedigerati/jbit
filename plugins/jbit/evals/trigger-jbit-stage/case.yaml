@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: trigger-jbit-stage
+description: '"jbit: stage" (lowercase, a colon after the name) loads jbit:stage, as /jbit:stage does.'
+tags: [trigger, jbit-command]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  prompt: "jbit: stage"
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Skill]
+graders:
+  - type: tool_used
+    name: loads-stage
+    tool: Skill
+    input_match: "stage"
+    min: 1
+    arm: with-only

@@ -1,6 +1,6 @@
 ---
 name: stage
-description: Run the next stage of the project plan end to end — scope it, build it (fanning independent parts out to subagents), test, verify against the running product, review, update the plan, commit, and stop for the user's review. Use when the user says to start, continue or "go" on planned work, or names a stage to build.
+description: Run the next stage of the project plan end to end — scope it, build it (fanning independent parts out to subagents), test, verify against the running product, review, update the plan, commit, and stop for the user's review. Use when the user says to start, continue or "go" on planned work, or names a stage to build. Also when a message opens with "JBIT stage" (any case, after a space, comma or colon, as in "JBit, stage"), which works as `/jbit:stage`.
 ---
 
 # JBIT: stage
@@ -27,7 +27,7 @@ A stage is done when its checks pass against the running product, the suite is g
 
 ## 3. Verify it
 
-Run `jbit:verify` (under `wide`, a fresh agent runs it), and tick each check in `## Now` as it's proven, in its own edit before the stage closes. At the plan's last stage, verify also re-runs the earlier stages' hand-proven checks; one that fails is a regression, fixed like any failing check. Fix what fails and re-verify the affected checks. Never call the stage done on red: the jbit hook refuses a commit that ticks a stage whose checks it never saw ticked.
+Run `jbit:verify` (under `wide`, a fresh agent runs it), and tick each check in `## Now` as it's proven, in its own edit before the stage closes. At the plan's last stage, verify also re-runs the earlier stages' hand-proven checks; one that fails is a regression, fixed like any failing check. Fix what fails and re-verify the affected checks. Never call the stage done on red: the JBIT hook refuses a commit that ticks a stage whose checks it never saw ticked.
 
 ## 4. Review it
 
@@ -36,7 +36,7 @@ First check the risk line against what the diff actually touches. The line was a
 ## 5. Close it
 
 - Update the plan in the same change: tick the stage, record decisions made along the way (dated, with the why), set `## Now` to the next stage with a one-line scope (its full checks get written when it starts), keeping the Agents line.
-- Commit. One commit per stage, or a few if the stage has clearly separate parts. Stage files by name rather than `git add -A`, including the stage's evidence: the files in `docs/evidence/stage-<n>/` and `docs/evidence/.gitignore`. Files git ignores (screenshots, traces, videos by default) stay local; never force-add them. The message says what the stage delivers and anything a reviewer should know. The jbit hook blocks a commit that carries a secret; if it fires, fix the cause, never work around it.
+- Commit. One commit per stage, or a few if the stage has clearly separate parts. Stage files by name rather than `git add -A`, including the stage's evidence: the files in `docs/evidence/stage-<n>/` and `docs/evidence/.gitignore`. Files git ignores (screenshots, traces, videos by default) stay local; never force-add them. The message says what the stage delivers and anything a reviewer should know. The JBIT hook blocks a commit that carries a secret; if it fires, fix the cause, never work around it.
 
 ## 6. Stop and report
 

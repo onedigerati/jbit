@@ -1,6 +1,6 @@
 ---
 name: resume
-description: Pick a project back up after a break, a restart or a context summary — read the plan, the commits since the last stage, and uncommitted work, then say where things stand and what's next. Use at the start of a session on an existing project, after compaction, or when the user asks where we are.
+description: Pick a project back up after a break, a restart or a context summary — read the plan, the commits since the last stage, and uncommitted work, then say where things stand and what's next. Use at the start of a session on an existing project, after compaction, or when the user asks where we are. Also when a message opens with "JBIT resume" (any case, after a space, comma or colon, as in "JBit, resume"), which works as `/jbit:resume`.
 ---
 
 # JBIT: resume
@@ -28,4 +28,4 @@ In a few lines:
 - decisions waiting on the user;
 - the next step you'd take.
 
-Then wait for the user's go, unless they already gave it in the message that brought you here. If `## Now` says `Mode: autopilot` and jbit's context says autopilot is armed in this session, the go was given: say where things stand in a line and carry on under `jbit:autopilot`. If it says autopilot but isn't armed (the line is left from an earlier session), report where the run stands and ask whether to resume; on the user's yes, run `jbit:autopilot`. If it says `paused`, lead with what the pause is waiting on. If every stage is done, say the plan's goal is met, name the last entry in `## Shipped` if there is one, and offer `jbit:plan` to start the next plan.
+Then wait for the user's go, unless they already gave it in the message that brought you here. If `## Now` says `Mode: autopilot` and JBIT's context says autopilot is armed in this session, the go was given: say where things stand in a line and carry on under `jbit:autopilot`. If it says autopilot but isn't armed (the line is left from an earlier session), report where the run stands and ask whether to resume; on the user's yes, run `jbit:autopilot`. A plain yes resumes it attended, risky stages held for their approval; their own autopilot command ("JBIT autopilot", or a typed `/jbit:autopilot`) resumes it unattended. If it says `paused`, lead with what the pause is waiting on. If every stage is done, say the plan's goal is met, name the last entry in `## Shipped` if there is one, and offer `jbit:plan` to start the next plan.

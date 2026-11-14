@@ -1,8 +1,10 @@
 # JBIT
 
-**JBIT** (*jay-bit*) · Just Build It · *Plans it. Proves it. Sees it through.*
+**Just build it.**
 
-You bring the goal and say "just build it." JBIT does the rest: it **plans it**, **proves it** and **sees it through**, stopping only for the decisions that are yours.
+*Plans it. Proves it. Sees it through.*
+
+**JBIT** (*jay-bit*, for Just Build It). You bring the goal; JBIT **plans it**. Approve the plan and say `JBIT, just build it.` JBIT does the rest: it **proves it** and **sees it through**, logging the calls it makes for you and stopping before anything it can't take back.
 
 It's a Claude Code plugin for long, multi-stage work, on new projects and existing ones. All project state lives in one plan file plus git, with no tracker or codebase map to keep current.
 
@@ -16,16 +18,21 @@ For a visual walkthrough (interactive autopilot simulation, the stage loop, guar
 4. **Verify it, with evidence.** `/jbit:verify` runs the project's checks, then proves each acceptance check by a test or against the running product, and saves the report and output to `docs/evidence/stage-<n>/`.
 5. **Review it.** The risk line is checked against what the code actually touches. Anything beyond UI gets a fresh-eyes review by an agent that didn't write it, with a security pass where it matters.
 6. **Commit it.** One commit per stage, evidence included. Hooks refuse a commit that closes a stage without its evidence or carries a secret. Then it stops for your review.
-7. **Autopilot sees it through.** `/jbit:autopilot` runs every remaining stage as project manager, without stopping in between.
+7. **Autopilot sees it through.** `JBIT, just build it.` (or `/jbit:autopilot`) runs every remaining stage as project manager, without stopping in between.
 8. **Next plan.** When the goal is met, `/jbit:plan` archives the plan and its evidence and starts the next one fresh.
 
-Along the way, `/jbit:fix` takes a small, low-risk change without a stage, `/jbit:charter` turns a PRD too big for one plan into a roadmap of milestones, and `/jbit:resume` picks things up after a break.
+Any command also works by name at the start of a message, in any case: "JBIT plan a CSV tool", "JBit, resume", "jbit: verify". Along the way, `/jbit:fix` takes a small, low-risk change without a stage, `/jbit:charter` turns a PRD too big for one plan into a roadmap of milestones, and `/jbit:resume` picks things up after a break.
 
-## What it won't do
+## Who's in charge
 
-It doesn't promise a hands-free run. Autopilot still stops, enforced by hooks, for a risky stage (auth, money, personal data or your project's own risk words) until you approve it, for decisions only you can make, when it's stuck, and before outward steps such as a push, publish or deploy.
+Once you've seen the plan, your own command runs autopilot unattended: a typed `/jbit:autopilot`, or a message that opens with "JBIT" and holds nothing but command words ("JBIT autopilot lean", "JBIT, just build it. Autopilot, lean."). Claude builds risky stages and settles open decisions itself, logging each one for you. It lasts until your next command or a new plan goal.
 
-`/jbit:autopilot unattended`, typed by you, removes the waits: Claude builds risky stages and settles open decisions itself, logging each one for you. Add `outward` to let push, publish and deploy through. It removes waiting, not checks: verification, the commit gates, the secret guard and the security review stay, and migrating real data or spending money still pause.
+- Say `attended` in the command and it stops, enforced by hooks, before a risky stage (auth, money, personal data or your project's own risk words) until you approve it, and for decisions only you can make.
+- Say `outward` to let push, publish and deploy through; otherwise those stay blocked. Migrating or deleting real data and spending money still pause.
+- Plain words without the name ("just build it", "take it from here") never set the level: they run at the one that stands, attended unless your own command set one for this plan. Your own plain reply ("yes", "just build it") approves a stage it's holding.
+- Claude starting autopilot itself, a plugin's prompt or anything in a file never sets the level or approves a stage, and a Mode line left from an earlier session doesn't start a run.
+
+It removes waiting, not checks: verification, the commit gates, the secret guard and the security review of risky stages stay, and it still stops when it's stuck and before building a plan you haven't seen.
 
 ## Moving over from keel
 

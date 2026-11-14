@@ -822,7 +822,7 @@ function workingRules(plan: Plan, s: Session, now: string | undefined): string {
 function baseRules(plan: Plan, s: Session): string {
   const base =
     'Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix\'s bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone;'
-  const skills = 'The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.'
+  const skills = 'The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.'
   if (plan.mode?.kind === 'autopilot' && !s.armed)
     return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. Resumed that way it runs attended, risky stages held for their approval; their own autopilot command (the typed \`/jbit:autopilot\`, or a message opening with "JBIT" such as "JBIT autopilot lean") runs it unattended, the default. ${skills}`
   if (plan.mode?.kind === 'paused' && held(plan, s))
@@ -847,7 +847,7 @@ function unattendedRules(s: Session): string {
       ? 'Outward-facing commands (push, publish, deploy, sending data out) are allowed this run: the user armed it with `outward`.'
       : 'Outward-facing commands (push, publish, deploy, sending data out) are still blocked while it runs: only `outward` in the user\'s command lets them through.'
   return [
-    'Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") run attended. The level holds until their next command or a new plan Goal. You are the project manager under jbit:autopilot: go from stage to stage without stopping for review, and delegate the building.',
+    'Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") never set the level, and run at the one that stands. The level holds until their next command or a new plan Goal. You are the project manager under jbit:autopilot: go from stage to stage without stopping for review, and delegate the building.',
     "Don't pause for a risky stage or for a decision the plan doesn't settle: pick the option you'd recommend, log it in the plan as a dated decision marked `(unattended)` with the why, and carry on.",
     "Risky stages still get jbit:review's security pass.",
     "Still pause, setting the Mode line to `paused — <reason>`, after three failed fix rounds, when a builder's report and the evidence disagree and you can't settle it, and before building a plan the user hasn't seen.",
@@ -860,7 +860,7 @@ function unattendedRules(s: Session): string {
  * its level holds until their next command or a new Goal.
  */
 const ATTENDED_NOTE =
-  'This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line run attended. The level holds until their next command or a new plan Goal.'
+  'This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user\'s own command set one for this plan. The level holds until their next command or a new plan Goal.'
 
 /** Where standing decisions move once more than ten would carry forward (jbit:plan). */
 const DECISIONS_PATH = 'docs/decisions.md'
@@ -922,7 +922,7 @@ async function carryOn($: EngineInterface, plan: Plan, turn: number) {
     // a compaction that fails or is vetoed still lets the run go on; the engine's own threshold remains
     const result = await $.session.compact({ instructions: KEEP }).catch(() => undefined)
     compacted = result !== undefined && !('skip' in result)
-    if (!result) $.ui.toast('jbit: autopilot could not compact the context; carrying on')
+    if (!result) $.ui.toast('JBIT: autopilot could not compact the context; carrying on')
   }
   if (mainTurns !== turn) return
   const note = compacted ? ' The context was just compacted: reread the plan before acting.' : ''
@@ -1026,7 +1026,7 @@ function secretDenial(found: Finding[]): string {
     .join('\n')
   const more = found.length > 8 ? `\n  - …and ${found.length - 8} more` : ''
   const inEvidence = (f: Finding) => f.kind.endsWith(' header in evidence')
-  const lines = [`jbit blocked this commit: it would include what looks like a secret.`, list + more]
+  const lines = [`JBIT blocked this commit: it would include what looks like a secret.`, list + more]
   if (found.some(inEvidence))
     lines.push(
       `For a header in evidence, replace the value with \`[masked]\`, as jbit:verify masks evidence, and commit again. Only if the line is a false positive, add the comment \`jbit:allow-secret\` on it.`,
@@ -1041,7 +1041,7 @@ function secretDenial(found: Finding[]): string {
 
 function checksDenial(stage: string, open: string[]): string {
   return [
-    `jbit blocked this commit: it closes stage ${stage}, but these checks were never seen ticked in \`## Now\`:`,
+    `JBIT blocked this commit: it closes stage ${stage}, but these checks were never seen ticked in \`## Now\`:`,
     ...open.slice(0, 8).map(c => `  - ${c}`),
     `Prove them (jbit:verify). If they pass, put stage ${stage}'s checks back in \`## Now\` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from \`## Now\` first.`,
   ].join('\n')
@@ -1121,12 +1121,12 @@ async function evidenceDenial(
   const text = addedText(pending.diff, pending.files, path) ?? (await onDisk().catch(() => undefined))
   const backfill = `Run jbit:verify for stage ${stage}, which writes the report; for a stage verified before version 0.5.0, backfill the report in jbit:verify's format from the evidence at hand. Then close the stage again.`
   if (typeof text !== 'string')
-    return [`jbit blocked this commit: it closes stage ${stage}, but its evidence report \`${path}\` is neither in the commit nor in the working tree.`, backfill].join('\n')
+    return [`JBIT blocked this commit: it closes stage ${stage}, but its evidence report \`${path}\` is neither in the commit nor in the working tree.`, backfill].join('\n')
   const want = Math.max(checks ?? 0, 1)
   const rows = reportRows(text)
   if (rows >= want) return undefined
   return [
-    `jbit blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
+    `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
     `Give each check a row in the report's first table.`,
     backfill,
   ].join('\n')
@@ -1188,13 +1188,13 @@ async function milestoneDenial(
   const text = addedText(pending.diff, pending.files, path) ?? (await onDisk().catch(() => undefined))
   const how = `Close the milestone as jbit:plan's "With a roadmap" says: jbit:verify's "Closing a milestone" writes \`${path}\` with a row per requirement (full suite, coverage, a fresh agent's evidence-fit sample), then jbit:review's milestone review. Tick the box only once all pass.`
   if (typeof text !== 'string')
-    return [`jbit blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but its evidence \`${path}\` is neither in the commit nor in the working tree.`, how].join('\n')
+    return [`JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but its evidence \`${path}\` is neither in the commit nor in the working tree.`, how].join('\n')
   const have = evidenceIds(text)
   const missing = wanted.filter(r => !have.has(r.toUpperCase()))
   if (!missing.length) return undefined
   const list = missing.slice(0, 12).join(', ') + (missing.length > 12 ? `, and ${missing.length - 12} more` : '')
   return [
-    `jbit blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but \`${path}\` has no row for ${missing.length === 1 ? 'requirement' : 'requirements'} ${list}.`,
+    `JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but \`${path}\` has no row for ${missing.length === 1 ? 'requirement' : 'requirements'} ${list}.`,
     `Give each of ${id}'s requirements that isn't dropped a row, its ID in the first cell.`,
     how,
   ].join('\n')
@@ -1214,7 +1214,7 @@ async function committedChecks($: EngineInterface, planPath: string, stage: stri
 }
 
 const outwardDenial = (reason: string) =>
-  `jbit autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.`
+  `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.`
 
 /** Why a project rule holds one of these commands, naming the rule and its file, or undefined. `root` is the repo root, for path rules. */
 function projectReason(rules: ProjectRules, commands: Command[], root?: string): string | undefined {
@@ -1311,8 +1311,8 @@ export const register: Register = on => {
     if (!plan || mode !== 'autopilot') {
       if (was !== 'autopilot') return result
       if (plan?.mode?.kind === 'paused')
-        await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'jbit' })
-      else if (plan && !plan.current) await $.ui.notify(`All ${plan.total} stages done.`, { title: 'jbit' })
+        await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'JBIT' })
+      else if (plan && !plan.current) await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
       return result
     }
     // a Mode line left from an earlier session (or shipped in a repo) never drives this one
@@ -1321,7 +1321,7 @@ export const register: Register = on => {
     if (held(plan, s)) {
       if (heldNoticeFor !== plan.stage?.key) {
         heldNoticeFor = plan.stage?.key
-        await $.ui.notify(`Autopilot (attended) is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'jbit' })
+        await $.ui.notify(`Autopilot (attended) is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'JBIT' })
       }
       return result
     }
@@ -1333,15 +1333,15 @@ export const register: Register = on => {
     stalledTurns = progress === lastProgress ? stalledTurns + 1 : 0
     lastProgress = progress
     if (stalledTurns >= MAX_STALLED_TURNS) {
-      $.ui.toast(`jbit: autopilot stopped prompting; ${MAX_STALLED_TURNS} turns ended without the plan moving`)
+      $.ui.toast(`JBIT: autopilot stopped prompting; ${MAX_STALLED_TURNS} turns ended without the plan moving`)
       if (stalledTurns === MAX_STALLED_TURNS)
-        await $.ui.notify('Autopilot stalled: the plan has not moved in several turns. Say "go" to resume.', { title: 'jbit' })
+        await $.ui.notify('Autopilot stalled: the plan has not moved in several turns. Say "go" to resume.', { title: 'JBIT' })
       return result
     }
 
     const turn = mainTurns
     $.clock.after(SETTLE_MS, () => {
-      carryOn($, plan, turn).catch(() => $.ui.toast('jbit: autopilot could not prompt the next step; say "go" to resume'))
+      carryOn($, plan, turn).catch(() => $.ui.toast('JBIT: autopilot could not prompt the next step; say "go" to resume'))
     })
     return result
   }).catch(($, e, next) => next(e))
@@ -1366,7 +1366,7 @@ export const register: Register = on => {
     if (unheld(plan, s)) {
       if (unheldNoticeFor !== plan.stage?.key) {
         unheldNoticeFor = plan.stage?.key
-        await $.ui.notify(`Autopilot (unattended) is building ${plan.stage?.key} without a hold: it touches ${plan.stage?.risky.join(', ')}.`, { title: 'jbit' })
+        await $.ui.notify(`Autopilot (unattended) is building ${plan.stage?.key} without a hold: it touches ${plan.stage?.risky.join(', ')}.`, { title: 'JBIT' })
       }
       return next(e)
     }
@@ -1376,7 +1376,7 @@ export const register: Register = on => {
         ? 'The plan is paused: answer the user, and ask them for that reply.'
         : "Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply."
     return {
-      deny: `jbit autopilot is holding ${plan.stage?.key}: its risk line names ${plan.stage?.risky.join(', ')}, so it isn't built until the user approves it with ${APPROVAL_REPLY}. ${then}`,
+      deny: `JBIT autopilot is holding ${plan.stage?.key}: its risk line names ${plan.stage?.risky.join(', ')}, so it isn't built until the user approves it with ${APPROVAL_REPLY}. ${then}`,
     }
   }).catch(($, e, next) => next(e))
 
@@ -1386,7 +1386,7 @@ export const register: Register = on => {
       const plan = await readPlan($)
       if (effectiveAgents(plan, undefined) !== 'lean') return next(e)
       // a subagent starting a child would make two running agents
-      return { deny: "jbit: the plan's Agents line is lean, which allows one agent at a time, and you are that agent: do this work yourself rather than starting another." }
+      return { deny: "JBIT: the plan's Agents line is lean, which allows one agent at a time, and you are that agent: do this work yourself rather than starting another." }
     }
     // counted before the first await: parallel calls in one message all find the agent list empty, so the count
     // of calls already in flight is what tells the second one that the first is starting
@@ -1407,7 +1407,7 @@ export const register: Register = on => {
       if (effectiveAgents(plan, undefined) !== 'lean') return await next(e)
       if (before === 0 && !(await backgroundBusy($))) return await next(e)
       return {
-        deny: "jbit: the plan's Agents line is lean, which allows one agent at a time, and one is still running. Wait for it to finish (a background agent's report starts the next turn), or ask the user to change the Agents line.",
+        deny: "JBIT: the plan's Agents line is lean, which allows one agent at a time, and one is still running. Wait for it to finish (a background agent's report starts the next turn), or ask the user to change the Agents line.",
       }
     } finally {
       release()
@@ -1475,7 +1475,7 @@ export const register: Register = on => {
   }).catch(($, e, next) => {
     if (next.called) return next(e)
     // a guard that cannot read the repository steps aside rather than block every commit
-    $.ui.toast('jbit: the commit check could not run on this command')
+    $.ui.toast('JBIT: the commit check could not run on this command')
     return next(e)
   })
 }

@@ -765,8 +765,8 @@ async function heldAuthStage($: Engine, on: On, mode = 'Mode: autopilot') {
   const say = (text: string, kind: 'composer' | 'bridge' | 'sdk' | 'plugin' = 'composer') =>
     $.prompt.submit({ text, origin: kind === 'plugin' ? { kind, name: 'other' } : { kind } } as never)
   const expectHeld = async () => {
-    expect(await edit()).toContain('jbit autopilot is holding')
-    expect(await agent()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
+    expect(await agent()).toContain('JBIT autopilot is holding')
     expect((await compose()).band).toBe('jbit · autopilot held · 1/3 done · next: 2. Share mode')
   }
   const expectBuilding = async () => {
@@ -843,8 +843,8 @@ test('a paused risky stage stays held while autopilot is armed: no edits outside
   await $.turn.complete(ended('t2'))
   expect(sent.notes.at(-1)).toBe('Autopilot paused: stage 2 touches auth. Reply "approve" (or /jbit:approve) to build it.')
   const expectPausedHeld = async () => {
-    expect(await edit()).toContain('jbit autopilot is holding Stage 2 of 3 · Share mode q')
-    expect(await agent()).toContain('jbit autopilot is holding Stage 2 of 3 · Share mode q')
+    expect(await edit()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode q')
+    expect(await agent()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode q')
     expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/docs/PLAN.md' })).deny).toBeUndefined()
     expect((await compose()).band).toBe('jbit · paused · held · 1/3 done · next: 2. Share mode')
   }
@@ -1395,7 +1395,7 @@ test('with no Agents line the working rules say nothing new', async ($, on) => {
   const compose = composeJBIT($, on)
   const { text } = await compose()
   expect(text).not.toContain('Agents')
-  expect(text.endsWith("commit per stage and stop for the user's review. The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.")).toBe(true)
+  expect(text.endsWith("commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.")).toBe(true)
 })
 
 /** The plan section for `planWith('Open: none')` as jbit built it before it knew of `docs/decisions.md`. */
@@ -1406,7 +1406,7 @@ const SECTION_WITHOUT_DECISIONS = [
   'Current position (from the plan):',
   'Stage 2 of 3 · Share mode\nOpen: none',
   '',
-  "Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.",
+  "Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.",
 ].join('\n')
 
 test('without docs/decisions.md the plan section and status line are unchanged', async ($, on) => {
@@ -1551,7 +1551,7 @@ test('an unknown Agents value adds nothing to the working rules or the band', as
   const r = await readAs($, on, 'Agents: turbo')
   expect(r.band).toBe(BAND)
   expect(r.text.slice(r.text.indexOf('Working rules:'))).not.toContain('Agents')
-  expect(r.text.endsWith("commit per stage and stop for the user's review. The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.")).toBe(true)
+  expect(r.text.endsWith("commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.")).toBe(true)
 })
 
 test('the ask to confirm wide carries the current time as the stamp', async ($, on) => {
@@ -1856,7 +1856,7 @@ const PLAN_SECTION_070 = [
   'Stage 2 of 3 · Share mode',
   'Open: none',
   '',
-  "Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The jbit skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.",
+  "Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.",
 ].join('\n')
 const BAND_070 = 'jbit · 1/3 done · next: 2. Share mode'
 
@@ -2317,7 +2317,7 @@ async function expectHeldLikeAuth($: Engine, on: On, word: string, risk: string,
   expect(sent.notes).toEqual([`Autopilot (attended) is holding before Stage 2 of 3 · Share mode h: it touches ${word}. Reply "approve" (or /jbit:approve) to build it.`])
   const edit = { tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/card.ts' } as const
   expect((await $.tool.call(edit)).deny).toBe(
-    `jbit autopilot is holding Stage 2 of 3 · Share mode h: its risk line names ${word}, so it isn't built until the user approves it with ${RELEASE}. Commit what's finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply.`,
+    `JBIT autopilot is holding Stage 2 of 3 · Share mode h: its risk line names ${word}, so it isn't built until the user approves it with ${RELEASE}. Commit what's finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply.`,
   )
   expect((await $.tool.call({ ...edit, file_path: '/repo/docs/PLAN.md' })).deny).toBeUndefined()
   const held = await compose()
@@ -2392,7 +2392,7 @@ async function drivingBash($: Engine, on: On, files: Record<string, string> | un
 test('a JBIT outward line holds matching commands under autopilot, naming the project rule', async ($, on) => {
   const { bash } = await drivingBash($, on, { 'CLAUDE.md': RULES })
   const rule =
-    "jbit autopilot holds outward-facing steps for the user (make release, a `JBIT outward:` rule in CLAUDE.md). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user."
+    "JBIT autopilot holds outward-facing steps for the user (make release, a `JBIT outward:` rule in CLAUDE.md). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user."
   expect(await bash('make release')).toBe(rule)
   expect(await bash('make release VERSION=2')).toBe(rule)
   // the same prefix stripping as the built-in check
@@ -3217,8 +3217,8 @@ test("unattended isn't armed by a plugin's prompt, the Skill tool's args, or a M
   // the Mode line says unattended, and the user's own prompt is /jbit:autopilot attended
   const { say, sent, compose, edit, agent } = await armedBy($, on, '/jbit:autopilot attended', { tag: ' u4', risk: 'auth, user input' })
   const expectHeld = async () => {
-    expect(await edit()).toContain('jbit autopilot is holding')
-    expect(await agent()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
+    expect(await agent()).toContain('JBIT autopilot is holding')
     expect((await compose()).band).toBe('jbit · autopilot held · 1/3 done · next: 2. Share mode')
   }
   await expectHeld()
@@ -3252,7 +3252,7 @@ test('/jbit:autopilot attended ends an unattended run; the Mode line going and c
   const { plan, now, say, compose, edit } = await armedBy($, on, '/jbit:autopilot', { tag: ' u6', risk: 'auth' })
   expect((await compose()).band).toBe(UNATTENDED_BAND)
   await say('/jbit:autopilot attended')
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe('jbit · autopilot held · 1/3 done · next: 2. Share mode')
 
   await say('/jbit:autopilot unattended')
@@ -3271,7 +3271,7 @@ test('/jbit:autopilot attended ends an unattended run; the Mode line going and c
   await $.turn.complete(ended('t4'))
   plan.text = now('Mode: autopilot')
   await $.turn.complete(ended('t5'))
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
 })
 
 test('while unattended, outward-facing commands are still denied, built-in and project rules both', async ($, on) => {
@@ -3331,7 +3331,7 @@ test('while unattended, a commit carrying a secret is refused as before', async 
 test('the working rules tell Claude it is unattended, what it may decide itself, and what still pauses', async ($, on) => {
   const { compose } = await armedBy($, on, '/jbit:autopilot unattended', { tag: ' u9', risk: 'auth' })
   const { text } = await compose()
-  expect(text).toContain('Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") run attended. The level holds until their next command or a new plan Goal.')
+  expect(text).toContain('Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") never set the level, and run at the one that stands. The level holds until their next command or a new plan Goal.')
   expect(text).toContain("Don't pause for a risky stage or for a decision the plan doesn't settle: pick the option you'd recommend, log it in the plan as a dated decision marked `(unattended)` with the why, and carry on.")
   expect(text).toContain("Risky stages still get jbit:review's security pass.")
   expect(text).toContain("Still pause, setting the Mode line to `paused — <reason>`, after three failed fix rounds, when a builder's report and the evidence disagree and you can't settle it, and before building a plan the user hasn't seen.")
@@ -3353,7 +3353,7 @@ test('attended autopilot keeps the old working rules and band, and says why it i
   const { text, band } = await compose()
   expect(band).toBe('jbit · autopilot · 1/3 done · next: 2. Share mode')
   expect(text).toContain('Autopilot is on: you are the project manager under jbit:autopilot.')
-  expect(text).toContain('This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line run attended. The level holds until their next command or a new plan Goal.')
+  expect(text).toContain('This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user\'s own command set one for this plan. The level holds until their next command or a new plan Goal.')
   expect(text).not.toContain('Autopilot is on and unattended')
 })
 
@@ -3363,7 +3363,7 @@ test('a new Goal ends an unattended run: a plan cut after the user armed it is h
   // Claude cuts the next plan, its first stage touching auth, and keeps the Mode line
   plan.text = ['## Goal', 'Accounts.', planWith('Mode: autopilot\nRisk: auth', ' u12')].join('\n')
   await $.turn.complete(ended('t2'))
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect(await bash('git push origin main')).toContain('holds outward-facing steps for the user (git push)')
   expect((await compose()).band).toBe('jbit · autopilot held · 1/3 done · next: 2. Share mode')
 })
@@ -3499,7 +3499,7 @@ test('/jbit:autopilot unattended and unattended outward arm a run; the old /keel
 
 test('the old /keel:autopilot unattended outward prompt leaves a risky stage held and pushes denied', async ($, on) => {
   const { edit, bash, compose, sent } = await armedBy($, on, '/keel:autopilot unattended outward', { tag: ' r2', risk: 'auth, user input' })
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect(await bash('git push origin main')).toContain('holds outward-facing steps for the user (git push)')
   expect((await compose()).band).toBe('jbit · autopilot held · 1/3 done · next: 2. Share mode')
   expect(sent.notes.some(n => n.includes('unattended'))).toBe(false)
@@ -3632,8 +3632,8 @@ for (const [words, band] of [
 for (const words of ['JBIT autopilot attended', '/jbit:autopilot attended', 'JBIT, just build it, autopilot, attended', 'JBIT autopilot attended outward', '/jbit:autopilot outward attended', 'JBIT, just build it, autopilot, outward, attended'])
   test(`the user's "${words}" arms the old attended run: the risky stage held, push blocked`, async ($, on) => {
     const { edit, agent, bash, compose, sent } = await armedBy($, on, words, { tag: ' p2', risk: 'auth, user input' })
-    expect(await edit()).toContain('jbit autopilot is holding')
-    expect(await agent()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
+    expect(await agent()).toContain('JBIT autopilot is holding')
     expect(await bash('git push origin main')).toContain('(git push)')
     expect((await compose()).band).toBe(HELD_BAND)
     expect(sent.notes.some(n => n.includes('unattended'))).toBe(false)
@@ -3643,8 +3643,8 @@ for (const words of ['JBIT autopilot attended', '/jbit:autopilot attended', 'JBI
 for (const words of ['just build it, autopilot lean', 'take it from here', 'just build it', 'just build it, autopilot, outward', 'autopilot outward', 'run it on autopilot, unattended and outward, lean'])
   test(`the user's plain "${words}" in a fresh session starts an attended run: the risky stage held, push denied`, async ($, on) => {
     const { edit, agent, bash, compose, sent } = await armedBy($, on, words, { tag: ' p2b', risk: 'auth, user input' })
-    expect(await edit()).toContain('jbit autopilot is holding')
-    expect(await agent()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
+    expect(await agent()).toContain('JBIT autopilot is holding')
     expect(await bash('git push origin main')).toContain('(git push)')
     expect((await compose()).band).toBe(HELD_BAND)
     expect(sent.notes.some(n => n.includes('unattended'))).toBe(false)
@@ -3653,7 +3653,7 @@ for (const words of ['just build it, autopilot lean', 'take it from here', 'just
 for (const text of ['JBIT autopilot outward\nnot now', 'JBIT autopilot outward\nwhat does that do?', 'JBIT, just build it. Autopilot, lean.\n\nThe terminal types this and the stages tick off, one by one.'])
   test(`the user's "${text.split('\n')[0]}" with more after it ("${text.split('\n').at(-1)}") arms nothing: Claude starting the run gets an attended one`, async ($, on) => {
     const { edit, bash, compose } = await armedBy($, on, text, { tag: ' p2c', risk: 'auth' })
-    expect(await edit()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
     expect(await bash('git push origin main')).toContain('(git push)')
     expect((await compose()).band).toBe(HELD_BAND)
   })
@@ -3675,7 +3675,7 @@ test('Claude starting autopilot after a prompt that is not a command arms an att
   plan.text = planWith('Mode: autopilot\nRisk: auth', ' p4')
   await $.turn.complete(ended('t1'))
   expect((await compose()).band).toBe(HELD_BAND)
-  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('jbit autopilot is holding')
+  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('JBIT autopilot is holding')
   expect((await $.tool.call({ tool: 'Bash', command: 'git push origin main' })).deny).toContain('(git push)')
   const { text } = await compose()
   expect(text).toContain('This run is attended')
@@ -3709,7 +3709,7 @@ test('an attended command ends an unattended run, and the user\'s own command ar
   const { say, edit, compose } = await armedBy($, on, 'JBIT autopilot', { tag: ' p7', risk: 'auth' })
   expect((await compose()).band).toBe(UNATTENDED_BAND)
   await say('jbit autopilot attended')
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe(HELD_BAND)
   await say('JBit, Autopilot, Lean')
   expect(await edit()).toBeUndefined()
@@ -3730,14 +3730,14 @@ test('talk, plain words and a skill start change nothing in an unattended run: o
   expect(await bash('git push origin main')).toBeUndefined()
   expect((await compose()).band).toBe(OUTWARD_BAND)
   await say('JBIT autopilot attended')
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe(HELD_BAND)
 })
 
 test("commands arm nothing from a plugin's prompt, a notification, the Skill tool's args or the plan, nor as talk about a run", async ($, on) => {
   const { plan, now, say, sent, compose, edit, bash } = await armedBy($, on, '/jbit:autopilot attended', { tag: ' p9', risk: 'auth, user input' })
   const expectHeld = async () => {
-    expect(await edit()).toContain('jbit autopilot is holding')
+    expect(await edit()).toContain('JBIT autopilot is holding')
     expect(await bash('git push origin main')).toContain('(git push)')
     expect((await compose()).band).toBe(HELD_BAND)
   }
@@ -3813,7 +3813,7 @@ for (const text of ['just build it', 'Just build it.', 'just build it\nkeep it s
 
 test('after "JBIT autopilot attended", a "just build it" approval releases one stage: the run stays attended and the next risky stage is held', async ($, on) => {
   const { plan, now, say, edit, compose, bash } = await armedBy($, on, 'JBIT autopilot attended', { tag: ' q1', risk: 'auth' })
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   await say('Just build it. Outward.')
   expect(await edit()).toBeUndefined()
   expect((await compose()).band).toBe(ATTENDED_BAND)
@@ -3825,12 +3825,12 @@ test('after "JBIT autopilot attended", a "just build it" approval releases one s
   plan.text = now('Mode: autopilot').replace('Stage 2 of 3 · Share mode q1', 'Stage 3 of 3 · Billing q1').replace(/Risk: .*/, 'Risk: billing')
   plan.text = plan.text.includes('Risk:') ? plan.text : plan.text.replace('Mode: autopilot', 'Mode: autopilot\nRisk: billing')
   await $.turn.complete(ended('t2'))
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
 })
 
 test('with nothing held, plain "just build it" starts an attended run, and "JBIT just build it" then makes it unattended', async ($, on) => {
   const { say, edit, compose } = await armedBy($, on, 'just build it', { tag: ' q2', risk: 'auth' })
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe(HELD_BAND)
   await say('JBIT just build it')
   expect(await edit()).toBeUndefined()
@@ -3919,16 +3919,16 @@ for (const text of ['ok, just build it', 'just build it please', 'please just bu
 
 test('after "JBIT autopilot attended", "ok, just build it" leaves the run attended, and "just build it" then approves one stage only', async ($, on) => {
   const { plan, now, say, edit, compose, bash } = await armedBy($, on, 'JBIT autopilot attended', { tag: ' z1', risk: 'auth' })
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   await say('ok, just build it')
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   await say('just build it')
   expect(await edit()).toBeUndefined()
   expect((await compose()).band).toBe(ATTENDED_BAND)
   expect(await bash('git push origin main')).toContain('(git push)')
   plan.text = now('Mode: autopilot').replace('Stage 2 of 3 · Share mode z1', 'Stage 3 of 3 · Billing z1').replace(/Risk: .*/, 'Risk: billing')
   await $.turn.complete(ended('t2'))
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
 })
 
 test('in an unattended run, plain words grant no outward; the typed or JBIT form changes the level', async ($, on) => {
@@ -3965,7 +3965,7 @@ test('hole 2: with no plan at the start, a plan Claude then writes and runs is a
   plan.text = '## Goal\nClaude-written goal\n' + planWith('Mode: autopilot\nRisk: auth, payments', ' z2')
   await $.turn.complete(ended('t1'))
   expect((await compose()).band).toBe(HELD_BAND)
-  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('jbit autopilot is holding')
+  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('JBIT autopilot is holding')
   expect((await $.tool.call({ tool: 'Bash', command: 'git push origin main' })).deny).toContain('(git push)')
   // the user's command for the plan they have now seen arms it unattended
   await $.prompt.submit({ text: '/jbit:autopilot outward', origin: { kind: 'composer' } })
@@ -4059,7 +4059,7 @@ test('a run Claude armed that paused before it drove stays attended: "ok, see it
   await $.turn.complete(ended('t2'))
   plan.text = planWith('Mode: autopilot\nRisk: auth', ' r1').replace('Stage 2 of 3 · Share mode r1', 'Stage 3 of 3 · Billing r1')
   await $.turn.complete(ended('t3'))
-  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('jbit autopilot is holding')
+  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('JBIT autopilot is holding')
   expect((await compose()).band).not.toContain('unattended')
 })
 
@@ -4075,7 +4075,7 @@ test('over a paused Mode line an earlier session left, the user\'s plain "just b
   await $.tool.call({ tool: 'Skill', skill: 'jbit:autopilot', args: 'lean' } as never)
   plan.text = planWith('Mode: autopilot\nRisk: auth', ' r2')
   await $.turn.complete(ended('t1'))
-  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('jbit autopilot is holding')
+  expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe(HELD_BAND)
 })
 
@@ -4134,7 +4134,7 @@ for (const command of ['/jbit:autopilot attended', 'JBIT autopilot attended'])
     plan.text = planWith('Mode: autopilot\nRisk: auth', ' r3')
     await $.turn.complete(ended('t3'))
     expect((await compose()).band).toBe(HELD_BAND)
-    expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('jbit autopilot is holding')
+    expect((await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path: '/repo/src/login.ts' })).deny).toContain('JBIT autopilot is holding')
   })
 
 test('"/jbit:autopilot attended" before its run starts can be raised by the typed or JBIT form, not by "just build it, autopilot lean"', async ($, on) => {
@@ -4157,7 +4157,7 @@ test('"/jbit:autopilot attended" before its run starts can be raised by the type
 
 test('after an attended command\'s run finishes (Mode line removed), a plain "just build it, autopilot lean" for the next run stays attended', async ($, on) => {
   const { plan, now, compose, edit, say } = await armedBy($, on, '/jbit:autopilot attended', { tag: ' r5', risk: 'auth' })
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   plan.text = now('Open: none')
   await $.turn.complete(ended('t2'))
   await compose()
@@ -4166,7 +4166,7 @@ test('after an attended command\'s run finishes (Mode line removed), a plain "ju
   await $.tool.call({ tool: 'Skill', skill: 'jbit:autopilot', args: 'lean' } as never)
   plan.text = now('Mode: autopilot')
   await $.turn.complete(ended('t3'))
-  expect(await edit()).toContain('jbit autopilot is holding')
+  expect(await edit()).toContain('JBIT autopilot is holding')
   expect((await compose()).band).toBe(HELD_BAND)
 })
 

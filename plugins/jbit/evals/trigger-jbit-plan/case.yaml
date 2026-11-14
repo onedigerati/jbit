@@ -1,0 +1,17 @@
+schema_version: "1.0"
+name: trigger-jbit-plan
+description: 'A message opening with "JBIT plan" loads jbit:plan, as /jbit:plan does.'
+tags: [trigger, jbit-command]
+execution:
+  prompt: >-
+    JBIT plan a small command-line tool that converts CSV files to JSON, with options for picking and renaming
+    columns. Assume sensible defaults rather than asking me questions.
+  max_turns: 6
+  allowed_tools: [Read, Glob, Grep, Write, Skill]
+graders:
+  - type: tool_used
+    name: loads-plan
+    tool: Skill
+    input_match: "plan"
+    min: 1
+    arm: with-only

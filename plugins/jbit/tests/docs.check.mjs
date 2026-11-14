@@ -3,7 +3,7 @@
 // here, against the files themselves, with Node's own test runner.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -145,9 +145,16 @@ test('the product is JBIT in prose, not jbit', () => {
 
 test('READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line', () => {
   const promise = 'Plans it. Proves it. Sees it through.'
+  // each README opens with the hero banner (light and dark images rendered from the field guide by
+  // docs/assets/render-hero.mjs), its alt text carrying the name, the brand line and the promise
   for (const [name, text] of Object.entries(readmes)) {
-    const top = text.split('\n').filter(Boolean).slice(0, 3).join('\n')
-    assert.match(top, /^# JBIT\n\*\*Just build it\.\*\*\n\*Plans it\. Proves it\. Sees it through\.\*$/, `${name} README top`)
+    assert.ok(text.startsWith('<h1 align="center">\n  <picture>'), `${name} README opens with the hero banner`)
+    const head = text.slice(0, text.indexOf('</h1>'))
+    assert.match(head, new RegExp(`alt="JBIT\\. Just build it\\. ${promise.replace(/\./g, '\\.')}`), `${name} README banner alt text`)
+    const dir = name === 'root' ? repo : plugin
+    const srcs = [...head.matchAll(/(?:src|srcset)="([^"]+)"/g)].map(m => m[1])
+    assert.deepEqual(srcs.map(s => s.replace(/^(\.\.\/)*/, '')), ['docs/assets/jbit-hero-dark.png', 'docs/assets/jbit-hero-light.png'], `${name} README banner images`)
+    for (const src of srcs) assert.ok(existsSync(join(dir, src)), `${name} README banner image exists: ${src}`)
   }
   for (const desc of [manifest.description, marketplace.description, marketplace.plugins[0].description])
     assert.ok(desc.startsWith(`Just build it. ${promise}`), `description leads with: ${desc.slice(0, 60)}`)

@@ -15,6 +15,9 @@ Open: none
 - [x] 1. Autopilot unattended by default, JBIT commands — the user's typed or JBIT command runs unattended until their next command or a new Goal, `attended` and `outward` words, plain words run attended, "just build it" approves; tests
 - [x] 2. Skills, docs and evals — the field guide hero becomes option D (JBIT, "Just build it.", a terminal running the plain-words command); "JBIT <command>" and "just build it" trigger the skills, the Agents level taken from the same sentence, READMEs and field guide, trigger and arming evals, headless proof; 0.13.0
 
+## Fixes
+- 2026-11-14 · README hero banner: both READMEs open with the field guide's option D hero (wordmark, "Just build it.", promise, terminal) as light and dark images, rendered by `docs/assets/render-hero.mjs`; docs check updated.
+
 ## Decisions
 - 2026-11-14 · Autopilot is unattended by default — from the user ("Autopilot together with Unattended is kind of redundant… Autopilot should really default to Unattended"; "let's fold it in now"), after weighing that a risky stage then runs without their approval unless they say `attended`. Replaces the 2026-11-13 design where unattended was an opt-in word; what unattended keeps (verification, commit gates, secret guard, security review of risky stages, pausing when stuck or before a plan the user hasn't seen) is unchanged.
 - 2026-11-14 · (unattended) The word that brings back the old stops is `attended` — the user didn't pick one; it names the old mode plainly. `outward` stays its own word, since push, publish and deploy can't be undone; `attended` wins over `outward` in the same command.

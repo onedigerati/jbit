@@ -1,8 +1,9 @@
-# JBIT
-
-**Just build it.**
-
-*Plans it. Proves it. Sees it through.*
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../../docs/assets/jbit-hero-dark.png">
+    <img src="../../docs/assets/jbit-hero-light.png" width="900" alt="JBIT. Just build it. Plans it. Proves it. Sees it through. A terminal where the user types “JBIT, just build it. Autopilot, lean.” and stages 1 to 3 tick off as proven and committed.">
+  </picture>
+</h1>
 
 **JBIT** (*jay-bit*, for Just Build It). You bring the goal; JBIT **plans it**. Approve the plan and say `JBIT, just build it.` JBIT does the rest: it **proves it** and **sees it through**, logging the calls it makes for you and stopping before anything it can't take back.
 

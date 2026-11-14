@@ -14,7 +14,9 @@ for (const scheme of ['light', 'dark']) {
   // the banner is the brand and the terminal: the lede and the note stay as README text
   await p.addStyleTag({ content: '.hero .lede, .hero .hero-note { display: none !important } .hero { padding: 40px 48px !important; margin: 0 !important; max-width: none !important; border: 0 !important }' })
   await p.waitForTimeout(500)
-  await p.locator('.hero').screenshot({ path: `${out}jbit-hero-${scheme}.png`, animations: 'disabled' })
+  // trim the top edge, which can catch the rule above the hero (as render-hero-animated.mjs does)
+  const box = await p.locator('.hero').boundingBox()
+  await p.screenshot({ path: `${out}jbit-hero-${scheme}.png`, animations: 'disabled', clip: { x: box.x, y: box.y + 3, width: box.width, height: box.height - 3 } })
   await ctx.close()
 }
 await browser.close()

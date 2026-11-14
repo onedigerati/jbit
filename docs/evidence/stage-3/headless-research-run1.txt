@@ -1,0 +1,27 @@
+$ claude -p "JBIT plan: our club's signup list stores people's email addresses, … keeping each email only as long as we're allowed to. Assume sensible defaults rather than asking me questions." --plugin-dir plugins/jbit --model sonnet --max-turns 40 --max-budget-usd 3 --allowedTools Read Glob Grep Write Edit Skill Agent WebSearch WebFetch --output-format stream-json --verbose
+# 2026-11-14, first run (failed the check), in <scratch>/hl-research made by plugins/jbit/evals/research-domain/scaffold.sh. Summary of the stream: jbit:plan loaded; tools used: Skill 1, Bash 3; no WebSearch, WebFetch or Agent; 6 turns, $0.19.
+# docs/research/email-retention.md written by the main session, marked "Status: unverified (written from general knowledge … no web sources read)". Decisions 26–27 link it, tagged (unverified).
+
+--- docs/research/email-retention.md ---
+# Email retention under GDPR
+
+**Status: unverified** (written from general knowledge on 2026-11-14, no web sources read). Confirm before relying on it.
+
+## Question
+How long may a club keep an email address from an unconfirmed signup, and from someone who has left?
+
+## Answer
+- GDPR sets no fixed number of days. Art. 5(1)(e) (storage limitation) says keep personal data no longer than needed for the purpose. Art. 17 gives a person the right to erasure, and Art. 12(3) requires acting on a request within one month.
+- Unconfirmed signup: the purpose (mailing a member) never started and there is no consent or membership yet. Keep only as long as the confirmation link can plausibly be used. Common practice is a link valid 1–7 days. Default here: purge 7 days after signup.
+- Leaver: the purpose ends at leaving. Keep only a short grace (for example to process a mistaken leave), never "just in case". Default here: purge 30 days after leaving, which fits inside the one-month erasure window. An erasure request overrides the grace period.
+- Written consent evidence or legal duties (e.g. accounting) could justify longer retention, but this list has neither.
+
+## Confidence
+Medium on the principles, low on the exact day counts (they are judgment calls, not legal limits).
+
+## What it changes in the plan
+The two periods become named, configurable constants, logged as decisions the club's organiser can change. The plan also covers copies (git history, backups), because deleting from the live file is not erasure if copies persist.
+
+--- plan lines linking it ---
+26:- 2026-11-14 · Unconfirmed signups are purged 7 days after `signedUpAt` — GDPR sets no number; 7 days outlasts any sensible confirmation link, and the email has no purpose before confirmation. [research](research/email-retention.md) (unverified)
+27:- 2026-11-14 · Leavers are purged 30 days after `leftAt` — purpose ends at leaving; the short grace covers mistaken leaves and sits inside the one-month erasure window. [research](research/email-retention.md) (unverified)

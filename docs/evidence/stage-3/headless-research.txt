@@ -1,0 +1,59 @@
+$ claude -p "JBIT plan: our club's signup list stores people's email addresses, … keeping each email only as long as we're allowed to. Assume sensible defaults rather than asking me questions." --plugin-dir plugins/jbit --model sonnet --max-turns 40 --max-budget-usd 3 --allowedTools Read Glob Grep Write Edit Skill Agent WebSearch WebFetch --output-format stream-json --verbose
+# 2026-11-14, second run, after the fix round, in <scratch>/hl-research2 made by plugins/jbit/evals/research-domain/scaffold.sh.
+# skill: jbit:plan
+# agent started: Research GDPR email retention
+# search query: GDPR storage limitation double opt-in unconfirmed subscription how long keep email data protection authority
+# search query: CNIL associations durée de conservation données adhérents après départ
+# search query: EDPB Guidelines 01/2025 pseudonymisation hashing email not anonymous
+# fetched: https://www.cnil.fr/fr/fichiers-dadherents-un-syndicat-quelles-sont-les-bonnes-pratiques
+# fetched: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/data-protection-principles/a-guide-to-the-data-protection-principles/the-principles/storage-limitation/
+# fetched: https://www.edpb.europa.eu/our-work-tools/documents/public-consultations/2025/guidelines-012025-pseudonymisation_en
+# search query: ICO right to erasure suppression list keep minimal details marketing opt-out after erasure request
+# search query: hashed email address still personal data regulator guidance hashing is pseudonymisation not anonymisation
+# tool calls: {'main: Skill': 1, 'main: Bash': 3, 'main: Agent': 1, 'research agent: ToolSearch': 1, 'research agent: WebSearch': 5, 'research agent: WebFetch': 3, 'research agent: Bash': 1, 'research agent: SubagentHandback': 1, 'main: Read': 1}
+# result: success · $ 0.45
+
+--- docs/research/gdpr-email-retention.md ---
+# GDPR email retention for a small club mailing list
+
+Status: web reached (not `unverified`), but several sources are secondary. Not legal advice.
+
+## Question
+Small volunteer club, members mostly EU, list stores email addresses. (1) Is there a fixed maximum retention under GDPR Art. 5(1)(e) / Art. 17, and what do regulators say for (a) unconfirmed double opt-in signups, (b) a member's email after leaving? (2) Can any trace of a departed person be kept (suppression record, legal retention)? Is hashing an email anonymisation? (3) Recommended defaults.
+
+## Answer
+1. **No fixed maximum period.** Art. 5(1)(e) is purpose-based: identifiable data kept no longer than necessary; the controller must set and document the period. Art. 17 adds erasure on request/when no longer necessary. A Finnish DPA case (Verkkokauppa) faulted a controller for not defining retention periods and deleting only on request.
+   - (a) Unconfirmed signups: I found no regulator naming a number of days. The purpose (obtaining confirmation) is exhausted quickly, so a short, documented window is expected. The Italian Garante treats double opt-in as a minimum safeguard (decision 330/2025, per secondary source).
+   - (b) Departed members: CNIL says that once someone is no longer a member, keeping their data must be justified by purposes other than managing membership (disputes proof, tax, statistics), with defined periods, automatic purge and restricted-access intermediate archive (primary, read). Secondary French sources quote "3 years after end of membership" and "1-2 years" for contact data; not confirmed as CNIL figures. Gironde FAQ: association fixes the duration itself by usefulness.
+2. **Traces.** Yes, narrowly. The ICO (UK, not EU, but the clearest text) says to put people who object to marketing on a suppression/"do not contact" list rather than delete entirely, used only to honour the objection (secondary summary of ICO pages; ICO storage-limitation URL returned 404, so not read directly). Legal basis is Art. 6(1)(c)/(f) for honouring the objection/erasure; keep it minimal and say so in the privacy notice. Accounting/tax records (e.g. donation/dues receipts) follow national law (secondary French guide: accounting 10 yrs; I did not verify; German/Dutch rules not researched). Do not keep the full member profile "just in case".
+   - **Hashing is not anonymisation.** An unkeyed hash of an email is deterministic and matchable against candidate address lists, so it is pseudonymised and still personal data (Recital 26; ICO; FTC 2024 per secondary sources; EDPB Guidelines 01/2025 on Pseudonymisation, which I could only confirm as a consultation draft from 17 Jan-14 Mar 2025; its final status and its hashing text were not read; AEPD/EDPS joint hashing guidance exists, not read). Practical consequence: a hash-only suppression entry is still personal data, but is a legitimate data-minimised form of suppression. A keyed hash (HMAC with secret key held separately) is stronger; still not anonymous.
+3. **Defaults** (my recommendation, not regulator-mandated):
+
+| Case | Default | Confidence |
+|---|---|---|
+| Unconfirmed double opt-in | Delete after 7 days (max 30); no reminder loop beyond one | Medium (no regulator figure; reasoning from purpose) |
+| Departed member email/profile | Delete within 30-90 days of leaving/request; immediate on Art. 17 request unless a documented legal obligation applies | Medium |
+| Longer retention of ex-member | Only if a documented purpose (dues/accounting records, dispute) and then in restricted archive, min. fields, fixed period (e.g. up to 3 yrs for disputes; statutory period for accounts) | Low-medium (period is national law/judgment call) |
+| Suppression record (opted out / erased) | Keep keyed-hash (HMAC) of email only, no name; reviewed periodically (e.g. 3-5 yrs), disclosed in privacy notice | Medium (principle well supported; duration is judgment) |
+| Hash = anonymous? | No | High |
+| No fixed legal maximum | True | High |
+
+## Sources (all read 2026-11-14)
+- CNIL, "Fichiers d'adhérents à un syndicat" https://www.cnil.fr/fr/fichiers-dadherents-un-syndicat-quelles-sont-les-bonnes-pratiques (fetched, primary)
+- EDPB Guidelines 01/2025 consultation page https://www.edpb.europa.eu/our-work-tools/documents/public-consultations/2025/guidelines-012025-pseudonymisation_en (fetched; draft status only)
+- Web search summaries (secondary, not fetched): Finnish DPA case https://bdkadvokati.com/?p=18628 ; Garante/double opt-in https://www.iubenda.com/en/blog/noicompriamoauto-garante-fine/ ; Gironde association FAQ https://www.gironde.fr/sites/default/files/2019-05/FAQ-Associations-et-RGPD.pdf ; ICO suppression via https://www.melearning.co.uk/how/articles/privacy-please-law-opt-suppression-lists/ and https://ico.org.uk/for-organisations/direct-marketing-and-privacy-and-electronic-communications/direct-marketing-guidance/respect-peoples-preferences ; hashing: https://www.pinsentmasons.com/out-law/analysis/guidance-for-businesses-on-hashing-data , https://www.insideprivacy.com/data-privacy/spanish-supervisory-authority-and-edps-release-guidance-on-hashing-for-data-pseudonymization-and-anonymization-purposes/ , https://ico.org.uk/for-organisations/guide-to-the-general-data-protection-regulation-gdpr/what-is-personal-data/what-is-personal-data
+- Not found: Dutch AP and German DPA specifics; EDPB final text.
+
+## Confidence
+High: no fixed maximum; hashed email is not anonymous. Medium: suppression record is allowed if minimal; short deletion windows. Low: exact day/year numbers; national association/accounting retention law.
+
+## What it changes in a plan
+- Add a purge job: unconfirmed signups deleted after 7 days.
+- On leave/unsubscribe/erasure: delete profile; write only an HMAC(email) suppression row (secret key kept outside the DB); document it in the privacy notice and a retention table.
+- Do not describe hashed data as "anonymised" in code, docs or UI.
+- Open item: confirm national accounting/association record rules for the club's country and check the EDPB final guidelines.
+
+--- plan lines linking it, and the open question research could not settle ---
+25:- 2026-11-14 · Unconfirmed signups are deleted 7 days after `signedUpAt` — GDPR sets no fixed period; the only purpose is getting a confirmation, so a short window is expected ([research](research/gdpr-email-retention.md), medium confidence)
+26:- 2026-11-14 · A member who left is deleted 30 days after `leftAt` — no regulator figure exists; 30 days leaves time to fix a mistaken leave. Immediate erasure on request stays possible via the same command ([research](research/gdpr-email-retention.md), medium confidence)
+35:- Which country is the club in? National rules on association or accounting records (e.g. dues receipts) may require keeping some data longer; the research didn't cover that. Default: the list holds no such records, so none apply.

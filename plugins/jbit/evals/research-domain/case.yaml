@@ -1,0 +1,67 @@
+schema_version: "1.0"
+name: research-domain
+description: >-
+  A goal that turns on an outside rule (how long an app may keep EU users' email addresses under the GDPR) gets a
+  research step: a note in docs/research/ with the question, the answer, dated sources and a confidence (or marked
+  unverified without web tools), and the plan decision resting on it links the note.
+tags: [research, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # No Bash, so the case runs where the eval sandbox can't start; planning needs none.
+  prompt: >-
+    Our club's signup list stores people's email addresses, and most members live in the EU. I want unconfirmed
+    signups and people who leave the club cleaned out of the list, keeping each email only as long as we're allowed
+    to. Plan it out before we write anything; assume sensible defaults rather than asking me questions.
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Skill, Agent, WebSearch, WebFetch]
+graders:
+  - type: tool_used
+    name: loads-plan
+    tool: Skill
+    input_match: "plan"
+    min: 1
+    arm: with-only
+  - type: file_exists
+    name: writes-plan-file
+    path: docs/PLAN.md
+    arm: with-only
+  - type: file_exists
+    name: writes-research-note
+    path: "docs/research/*.md"
+    arm: with-only
+  - type: llm
+    name: research-agent-reads-sources
+    focus: trace
+    arm: with-only
+    criteria: >-
+      The planner hands the research questions to a research agent rather than writing the note itself from memory,
+      and the research reads sources (web searches or fetched pages) before the note is written. With WebSearch and
+      WebFetch available, a note marked `unverified` fails unless the trace shows the agent tried and couldn't reach
+      the web. Fails if the main session writes the note with no research agent, or no source was read.
+  - type: llm
+    name: note-is-sourced
+    focus: files
+    arm: with-only
+    criteria: >-
+      A note under docs/research/ (not CLAUDE.md) answers a question about keeping EU users' email addresses, such as
+      how long they may be kept or when they must be erased under the GDPR. It states the question, the answer, its
+      sources each with the date they were read, a confidence (high, medium or low), and what the answer changes in
+      the plan. A note marked `unverified` (written without web tools) passes if it has the question, the answer,
+      the confidence and what it changes, even with no dated sources. Fails if there is no such note, or it lacks
+      the question, the answer or a confidence.
+  - type: llm
+    name: decision-links-note
+    focus: { source: file, path: docs/PLAN.md }
+    arm: with-only
+    criteria: >-
+      A dated decision in the plan about how long emails are kept or when they're deleted links the research note
+      (a markdown link to `research/<topic>.md` or `docs/research/<topic>.md`). When the note is marked `unverified`,
+      the retention choice must instead be an open question linking the note, naming the default the agent would
+      pick, for the user to confirm, and not also logged as a decision. Fails if no decision or open question links
+      a docs/research note, or a decision rests on an `unverified` note.
+  - type: regex
+    name: no-source-changes
+    target: files
+    pattern: "src/"
+    match: not_contains

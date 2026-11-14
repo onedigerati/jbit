@@ -2,6 +2,7 @@ import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 import { findSecrets } from '../hooks/secrets.ts'
 import {
+  PROGRESS_NOTE,
   autopilotAsk,
   closedStages,
   effectiveAgents,
@@ -4427,3 +4428,13 @@ test('a JBIT message asking to plan anywhere in it is no autopilot command; "the
   expect(none.map(t => [t, autopilotAsk(t)]).filter(([, l]) => l !== undefined)).toEqual([])
   expect(['JBIT put this plan on autopilot', 'JBIT run the plan on autopilot', 'JBIT the plan then autopilot outward', 'JBIT put this plan on autopilot, outward'].map(t => autopilotAsk(t))).toEqual(['on', 'on', 'outward', 'outward'])
 })
+
+for (const [level, tag] of [['unattended', ' pn1'], ['attended', ' pn2']])
+  test(`the ${level} autopilot working rules carry the progress note and concern line`, async ($, on) => {
+    expect(PROGRESS_NOTE).toContain("After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`")
+    expect(PROGRESS_NOTE).toContain("`Concern: <what> — <what you're doing about it>`, without pausing.")
+    const { compose } = await armedBy($, on, `/jbit:autopilot ${level}`, { tag })
+    const { text } = await compose()
+    expect(text).toContain(level === 'attended' ? 'Autopilot is on: you are the project manager' : 'Autopilot is on and unattended')
+    expect(text).toContain(PROGRESS_NOTE)
+  })

@@ -1,0 +1,43 @@
+schema_version: "1.0"
+name: progress-note
+description: >-
+  Under unattended autopilot (the user's typed `/jbit:autopilot lean`), closing a small stage
+  brings a progress note in the chat: concerns first or "No concerns.", what the stage delivered and how it was
+  proven with its evidence report, and what's left, and the run goes on to the next stage without waiting.
+tags: [progress, autopilot, jbit-command, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # Needs Bash to test and commit; where the eval sandbox can't start or makes .git read-only, run it headless and
+  # grade the transcript by hand.
+  # A typed slash command: under headless runs the hook composes its working rules before it sees the prompt, so the
+  # "JBIT, just build it" wording arms the session but its rules never reach the model (0.14.0 stage 3 evidence: headless-diagnostic.txt).
+  prompt: /jbit:autopilot lean
+  max_turns: 60
+  allowed_tools: [Read, Glob, Grep, Bash, Write, Edit, Skill, Agent]
+graders:
+  - type: tool_used
+    name: loads-autopilot
+    tool: Skill
+    input_match: "autopilot"
+    min: 1
+    arm: with-only
+  - type: file_exists
+    name: stage-1-evidence
+    path: docs/evidence/stage-1/report.md
+    arm: with-only
+  - type: llm
+    name: progress-note-after-stage
+    focus: trace
+    arm: with-only
+    criteria: >-
+      After the commit that closes stage 1 (it ticks stage 1 in docs/PLAN.md), the agent writes a short progress note
+      in the chat before or as it starts stage 2. The note opens with its concerns, or says "No concerns."; says what
+      stage 1 delivered and how it was proven, linking or naming docs/evidence/stage-1/report.md; and says what's
+      left (stage 2, the row count). Fails if no such note follows the stage 1 commit, if it lacks the concerns line,
+      the evidence report or what's left, or if the agent stops to ask whether to carry on to stage 2.
+  - type: regex
+    name: no-push
+    target: trace
+    pattern: "git push"
+    match: not_contains

@@ -1,0 +1,28 @@
+$ claude -p "/jbit:autopilot lean" --plugin-dir plugins/jbit --model sonnet --max-turns 60 --max-budget-usd 4 --allowedTools Read Glob Grep Bash Edit Write Skill Agent --output-format stream-json --verbose
+# 2026-11-14, fourth run (passed), in <scratch>/hl-progress4 made by plugins/jbit/evals/progress-note/scaffold.sh: a two-stage plan, stage 1 ready. The typed slash command loads jbit:autopilot itself (see headless-diagnostic.txt for why the "JBIT, just build it" wording cannot reach a headless session's rules).
+# Commits: 6d73c71 Stage 1: Total label, 9cfa0b4 Stage 2: Row count. One builder at a time (lean), verify in the main session. Graded by hand against the progress-note case: the note after the stage 1 commit opens with "No concerns.", says what was delivered and how it was proven, names docs/evidence/stage-1/report.md, and says stage 2 is next; the run went on without asking. No git push.
+# Main-session text and commits, in order:
+--- Agent Build stage 1 total label
+TEXT: Builder's report is a claim. I'll verify it myself (lean).
+--- Skill jbit:verify
+TEXT: Fix the audit line (no lockfile, no deps), then close stage 1 and commit; review is skipped (UI only).
+--- COMMIT
+TEXT: No concerns. Stage 1 is committed (6d73c71): the CLI prints `Total: 1.39` and the suite passes 2/2. Evidence is in `docs/evidence/stage-1/report.md`. Stage 2 (Row count) is next.
+--- Agent Build stage 2 row count
+TEXT: Verify myself, write evidence, close, and finish.
+--- COMMIT
+TEXT: Both stages are built, verified and committed, and `node src/cli.js sample.csv` now prints `Total: 1.39` then `Rows: 2`. Tests pass 2/2. No concerns came up.
+
+**Decisions taken for you:** the only call I made was setting `Agents: lean` from your `/jbit:autopilot lean`, logged in the plan. No `(unattended)` judgment calls were needed.
+
+**Stages**
+- **Stage 1, Total label** (6d73c71): the CLI prints `Total: ` before the amount. A new test runs the CLI on `sample.csv`. Evidence: `docs/evidence/stage-1/report.md`.
+- **Stage 2, Row count** (9cfa0b4): the CLI prints `Rows: <n>` after the total, with the header excluded. The same test now checks both lines. Evidence: `docs/evidence/stage-2/report.md`, which also re-runs the stage 1 check.
+
+Both stages were marked UI only, so I skipped `jbit:review`. The plan now reads "All stages done" and the `Mode:` line is removed.
+
+**Worth checking before you ship**
+- A missing CSV file crashes with a raw Node stack trace instead of a friendly error.
+- The CSV parsing is a naive split on commas, so quoted fields with commas would break it.
+- `npm audit` couldn't run because there is no lockfile; the project has no dependencies, so there is nothing to 
+RESULT success 14 $ 0.41

@@ -61,8 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json is version 0.13.0', () => {
-  assert.equal(manifest.version, '0.13.0')
+test('plugin.json and the field guide are version 0.14.0', () => {
+  assert.equal(manifest.version, '0.14.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.14.0</span>'), 'field guide header lacks JBIT 0.14.0')
+  assert.ok(guide.includes('<footer>JBIT 0.14.0 ·'), 'field guide footer lacks JBIT 0.14.0')
+  assert.doesNotMatch(guide, /JBIT 0\.1[0-3]\.\d/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -269,4 +272,108 @@ test('autopilot tells a concern in one line when it happens and carries on', () 
     'A risk line that grows and a fix-now finding are concerns',
   ])
     assert.ok(text.includes(words), `autopilot SKILL.md lacks: ${words}`)
+})
+
+test('READMEs and the field guide describe research, spikes and progress updates', () => {
+  const phrases = {
+    root: [
+      'one research agent answers the questions that would change the plan',
+      'with dated sources, to `docs/research/<topic>.md`',
+      'decisions resting on a finding link the note',
+      'becomes a `Spike:` stage, answered by a throwaway prototype',
+      'A goal with no such question skips research in one line.',
+      'After each stage you get a notification and a short progress note',
+      'A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens.',
+    ],
+    plugin: [
+      'With none, it says so in one line ("No research: nothing outside the repo changes this plan.")',
+      'each answer goes to `docs/research/<topic>.md`: the question, the answer, its sources each with the date it read them',
+      'A decision that rests on a finding links its note.',
+      'becomes a stage named `Spike: <question>`',
+      'the prototype isn\'t shipped',
+      'A domain fact that turns up mid-build',
+      'The reviewer gets the `docs/research/` notes the stage relies on',
+      'Each commit that closes a stage sends a notification',
+      'its concerns first, or `No concerns.`',
+      '`Concern: <what> — <what Claude is doing about it>`',
+    ],
+    'field-guide.html': [
+      '<h3>Research before the stages, spikes when paper can\'t settle it</h3>',
+      'has one research agent answer them. Each answer goes to <code>docs/research/&lt;topic&gt;.md</code>',
+      'A goal with no such question skips research in one line.',
+      'becomes a stage named <code>Spike: &lt;question&gt;</code>',
+      'Each commit that closes a stage sends a notification',
+      'the manager gives a short progress note before going on: concerns first, or "No concerns."',
+      'is told in one line when it happens',
+    ],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+})
+
+test('the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches', () => {
+  const holds = {
+    root: ['A held stage gets no file edits outside the plan and its `docs/research/` notes.'],
+    plugin: [
+      'The hook holds it, with no file edits outside the plan and its `docs/research/` notes and no builder agents',
+      'gets no file edits outside the plan and its `docs/research/` notes (one level deep, a plain name, never `CLAUDE.md`) and no builder agents',
+    ],
+    'field-guide.html': [
+      'gets no file edits outside the plan and its <code>docs/research/</code> notes, and no builders',
+      'The hook blocks file edits outside the plan and its <code>docs/research/</code> notes, and builder agents',
+    ],
+  }
+  const outward = {
+    root: ['The outward check covers shell commands, not web searches'],
+    plugin: ['The outward check reads shell commands only: web searches and fetches aren\'t covered', 'The hook blocks outward shell commands while autopilot is armed; it doesn\'t see web searches or fetches'],
+    'field-guide.html': ['It covers shell commands, not web searches'],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const set of [holds, outward])
+    for (const [name, list] of Object.entries(set))
+      for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+  // no hold description left without the exception
+  for (const [name, text] of Object.entries(texts))
+    assert.doesNotMatch(text, /no file edits(?! outside the plan and its)/, `${name} describes the hold without the research-note exception`)
+  assert.doesNotMatch(readmes.plugin, /no file edits or builder agents/, 'plugin README hold line lacks the exception')
+})
+
+test('the research and progress eval cases exist with a case.yaml, scaffold and graders, and the README lists them', () => {
+  for (const name of ['research-domain', 'research-none', 'research-spike', 'progress-note']) {
+    const dir = join(plugin, 'evals', name)
+    assert.ok(existsSync(join(dir, 'case.yaml')), `evals/${name}/case.yaml is missing`)
+    assert.ok(existsSync(join(dir, 'scaffold.sh')), `evals/${name}/scaffold.sh is missing`)
+    const text = read(join(dir, 'case.yaml'))
+    assert.ok(text.includes(`name: ${name}\n`), `evals/${name}/case.yaml names itself`)
+    assert.match(text, /\ngraders:\n  - type: /, `evals/${name}/case.yaml has graders`)
+    assert.ok(read(join(dir, 'scaffold.sh')).includes('git config user.email eval@example.com'), `evals/${name}/scaffold.sh sets a repo-local git author`)
+    assert.ok(readmes.plugin.includes(`(\`${name}\``), `plugin README lacks the eval case ${name}`)
+  }
+  const domain = read(join(plugin, 'evals', 'research-domain', 'case.yaml'))
+  assert.ok(domain.includes('path: "docs/research/*.md"'), 'research-domain checks for a note under docs/research/')
+  assert.ok(read(join(plugin, 'evals', 'research-none', 'case.yaml')).includes('path: docs/research\n    exists: false'), 'research-none checks no note is written')
+  assert.ok(read(join(plugin, 'evals', 'research-spike', 'case.yaml')).includes('Spike: '), 'research-spike checks for a Spike stage')
+  assert.ok(read(join(plugin, 'evals', 'progress-note', 'case.yaml')).includes('prompt: /jbit:autopilot lean'), 'progress-note runs under the typed command, which loads autopilot headless')
+})
+
+test('research means reading sources: the agent searches and cites, the planner never writes the note from memory, unverified waits in open questions', () => {
+  const text = skill('plan')
+  for (const words of [
+    'under `lean` it\'s the one agent running',
+    'Don\'t write the note yourself from what you know: research means reading sources.',
+    'it searches and reads (WebSearch, WebFetch, or the docs the question names) before it answers, and every answer cites what it read',
+    'That\'s only for a session with no web tools: when they\'re there, memory isn\'t a shortcut.',
+    'If it reports it couldn\'t reach the web, the note is `unverified`.',
+    'it isn\'t logged as a decision, not even one marked unverified, and the open question names the default you\'d pick',
+  ])
+    assert.ok(text.includes(words), `plan SKILL.md lacks: ${words}`)
+  const domain = read(join(plugin, 'evals', 'research-domain', 'case.yaml'))
+  assert.match(domain, /name: research-agent-reads-sources\n    focus: trace/, 'research-domain checks, from the trace, that sources were read')
+})
+
+test('the hook\'s armed-autopilot rules carry the progress note, in both the unattended and attended texts', () => {
+  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
+  assert.ok(hook.includes('are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE}'), 'attended autopilot rules lack PROGRESS_NOTE')
+  assert.ok(hook.includes('    outward,\n    PROGRESS_NOTE,\n  ].join'), 'unattended rules lack PROGRESS_NOTE')
 })

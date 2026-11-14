@@ -1,0 +1,4 @@
+$ claude -p "JBIT, just build it. Autopilot, lean." --plugin-dir plugins/jbit --model sonnet --max-turns 60 --max-budget-usd 4 --allowedTools Read Glob Grep Bash Edit Write Skill Agent --output-format stream-json --verbose
+# 2026-11-14, first run (failed the check), in <scratch>/hl-progress-note made by plugins/jbit/evals/progress-note/scaffold.sh: a two-stage plan, stage 1 ready.
+# tool calls: {'main:Read': 1, 'main:Bash': 4} · result: success · $ 0.13
+# Commits: e938c75 Stage 1: Total label, 2c1b8c5 Stage 2: Row count. jbit:autopilot was never loaded; between the stage 1 commit and stage 2 the only text was "Stage 2: row count." — no progress note.

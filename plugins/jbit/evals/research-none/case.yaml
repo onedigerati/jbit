@@ -1,0 +1,49 @@
+schema_version: "1.0"
+name: research-none
+description: >-
+  A plain goal that turns on nothing outside the repo (a minimum-amount filter on a CSV totals CLI) skips the
+  research step in one line: no docs/research note is written and no research agent runs.
+tags: [research, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # No Bash, so the case runs where the eval sandbox can't start; planning needs none.
+  prompt: >-
+    Next I want a `--min <amount>` option, so the CLI only totals rows whose amount is at least that much. Plan it
+    out before we write anything; assume sensible defaults rather than asking me questions.
+  max_turns: 20
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Skill, Agent, WebSearch, WebFetch]
+graders:
+  - type: tool_used
+    name: loads-plan
+    tool: Skill
+    input_match: "plan"
+    min: 1
+    arm: with-only
+  - type: file_exists
+    name: writes-plan-file
+    path: docs/PLAN.md
+    arm: with-only
+  - type: file_exists
+    name: no-research-note
+    path: docs/research
+    exists: false
+  - type: tool_used
+    name: no-web-search
+    tool: WebSearch
+    min: 0
+    max: 0
+  - type: llm
+    name: skips-research-in-one-line
+    focus: trace
+    arm: with-only
+    criteria: >-
+      The agent says in about one line that the plan needs no research because nothing outside the repo changes it
+      (for example "No research: nothing outside the repo changes this plan."), and goes on to write the plan. It
+      spawns no research agent, runs no web search or fetch, and writes no note under docs/research/. Fails if it
+      researches anything, or never says research was skipped.
+  - type: regex
+    name: no-source-changes
+    target: files
+    pattern: "src/"
+    match: not_contains

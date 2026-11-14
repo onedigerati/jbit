@@ -838,7 +838,7 @@ function baseRules(plan: Plan, s: Session): string {
     return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
   if (plan.mode?.kind === 'autopilot' && unattended(s)) return `${base} commit per stage. ${unattendedRules(s)} ${skills}`
   if (plan.mode?.kind === 'autopilot')
-    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${ATTENDED_NOTE} ${skills}`
+    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE} ${skills}`
   if (plan.mode?.kind === 'paused')
     return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. ${skills}`
   return `${base} commit per stage and stop for the user's review. ${skills}`
@@ -859,8 +859,13 @@ function unattendedRules(s: Session): string {
     "Risky stages still get jbit:review's security pass.",
     "Still pause, setting the Mode line to `paused — <reason>`, after three failed fix rounds, when a builder's report and the evidence disagree and you can't settle it, and before building a plan the user hasn't seen.",
     outward,
+    PROGRESS_NOTE,
   ].join(' ')
 }
+
+/** What an armed autopilot tells the user as it goes (jbit:autopilot step 5 and its concerns), for when the skill isn't loaded. */
+export const PROGRESS_NOTE =
+  "After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`, what it delivered and how it was proven (its evidence report), its `(unattended)` decisions, and what's left. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
 
 /**
  * Why an armed run is attended, for the rules of one: unattended is the default only for the user's own command, and

@@ -1,0 +1,41 @@
+$ claude -p "JBIT plan: Next I want a `--min <amount>` option, so the CLI only totals rows whose amount is at least that much. Plan it out before we write anything; assume sensible defaults rather than asking me questions." --plugin-dir plugins/jbit --model sonnet --max-turns 40 --max-budget-usd 3 --allowedTools Read Glob Grep Write Edit Skill Agent WebSearch WebFetch --output-format stream-json --verbose
+# 2026-11-14, in <scratch>/hl-research-none made by plugins/jbit/evals/research-none/scaffold.sh. The eval's prompt with "JBIT plan: " in front: run once without it first, Sonnet answered with a plan in chat and never loaded jbit:plan (plain run: tool calls: {'main:Bash': 2} · result: success · $ 0.11).
+# skill: jbit:plan
+# tool calls: {'main:Skill': 1, 'main:Bash': 3} · result: success · $ 0.16
+
+--- docs/PLAN.md ---
+# tally plan
+
+## Goal
+Add a `--min <amount>` option to the tally CLI so it totals only rows whose amount is at least that much (inclusive). Done when `node src/cli.js file.csv --min 5` prints the total of rows >= 5.00, omitting the flag behaves exactly as today, and a bad value fails clearly.
+
+## Baseline
+2026-11-14 · tests: 1 pass, 0 fail · lint: none configured · build: none
+
+## Now
+Stage 1 of 2 · Filter in core
+Risk: money arithmetic
+Checks:
+- [ ] `total(rows, { min })` counts only rows with amount >= min, inclusive at the boundary (proof: test, money logic)
+- [ ] The comparison is done in cents, so `0.29`/`1.1`-style float values at the boundary behave (proof: test, money logic)
+- [ ] `total(rows)` with no `min` returns what it did before (proof: test, existing test stays green)
+Open: none
+
+## Stages
+- [ ] 1. Filter in core — `total` accepts `{ min }` and filters in integer cents; unit tests
+- [ ] 2. CLI flag — parse `--min <amount>` / `--min=<amount>` in `src/cli.js`, validate, pass to `total`; README usage line
+
+## Decisions
+- 2026-11-14 · Threshold is inclusive (amount >= min) — "at least that much" as asked.
+- 2026-11-14 · `--min` is in the same units as the CSV amount column (e.g. dollars), compared after rounding both sides to cents — matches how `total` already treats money and avoids float edge cases.
+- 2026-11-14 · Filtering lives in `total()` (as an options arg), not the CLI — keeps the logic unit-testable.
+- 2026-11-14 · Without `--min`, behaviour is unchanged; negative thresholds are allowed (rows can be refunds).
+- 2026-11-14 · A missing, non-numeric or non-finite `--min` value prints an error to stderr and exits with code 2, without printing a total — silent fallback to "no filter" would give a wrong total.
+- 2026-11-14 · Flag may appear before or after the file path; both `--min 5` and `--min=5` accepted. No arg-parsing library: one flag doesn't justify a dependency.
+- 2026-11-14 · Single plan, no roadmap, no research: the work is small and nothing outside the repo changes it.
+
+## Open questions
+- None. Say so if you want `--min` to be exclusive, or want a matching `--max`.
+
+--- docs/research/ ---
+(none)

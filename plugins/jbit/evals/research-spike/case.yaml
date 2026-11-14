@@ -1,0 +1,46 @@
+schema_version: "1.0"
+name: research-spike
+description: >-
+  A question no document settles (does the vendored rowstream library keep memory under 200 MB on a 2 GB export
+  with multi-line quoted fields) becomes a `Spike:` stage in the plan, checked by a research note answering it from
+  a throwaway prototype, ahead of the stages that depend on the answer.
+tags: [research, spike, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # No Bash: the agent can't try the library while planning, so the question has to become a stage.
+  prompt: >-
+    Our bank exports can be 2 GB, with multi-line memos inside quoted fields. I'd like to switch the CLI's parsing to
+    the vendored rowstream library in vendor/rowstream, but only if it really keeps memory under 200 MB on a file
+    that size and gets the quoted newlines right. Its README doesn't say and nobody here has tried it. Plan it out
+    before we write anything; assume sensible defaults rather than asking me questions.
+  max_turns: 25
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Skill, Agent, WebSearch, WebFetch]
+graders:
+  - type: tool_used
+    name: loads-plan
+    tool: Skill
+    input_match: "plan"
+    min: 1
+    arm: with-only
+  - type: regex
+    name: spike-stage
+    target: files
+    pattern: "\\d+\\. Spike: "
+    match: contains
+    arm: with-only
+  - type: llm
+    name: spike-shape
+    focus: { source: file, path: docs/PLAN.md }
+    arm: with-only
+    criteria: >-
+      The plan's stage list has a stage named "Spike: <question>" about whether rowstream keeps memory under 200 MB
+      on a large export and/or handles multi-line quoted fields. It comes before the stage that switches the CLI to
+      rowstream, its check is a note in docs/research/ answering the question from what a throwaway prototype
+      showed, and the plan says the prototype isn't shipped in the product. Fails if the question is settled by
+      assumption, left only as an open question, or the switch is planned with no spike ahead of it.
+  - type: regex
+    name: no-source-changes
+    target: files
+    pattern: "src/"
+    match: not_contains

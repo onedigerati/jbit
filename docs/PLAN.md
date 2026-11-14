@@ -7,16 +7,8 @@ Give JBIT a research step for work that turns on facts outside the repo, and pro
 2026-11-14 · tests: 396 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 11 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
 
 ## Now
-Stage 3 of 3 · Docs, evals, 0.14.0
-Mode: autopilot
-Risk: the hook's working rules (text Claude follows every turn: the progress note), docs, eval cases, the version number — corrected from UI only after the fix rounds added hook rule text
-Checks:
-- [x] Both READMEs and the field guide describe the research step, spike stages and progress updates; the hold descriptions name the `docs/research/` note exception, and the outward check is described as covering shell commands, not web searches (proof: test, docs check)
-- [x] Eval cases `research-domain` (a goal that turns on an outside rule gets a sourced note and a decision linking it), `research-none` (a plain goal skips research in one line), `research-spike` (a question paper can't settle becomes a `Spike:` stage) and `progress-note` (a closed stage under autopilot gets a note with its proof and what's left) exist with graders (proof: an eval run, or a headless run graded by hand where the sandbox can't reach the web or commit)
-- [x] A headless `JBIT plan …` run on a domain-heavy goal in a scratch repo writes a `docs/research/` note with dated sources and a plan decision linking it (proof: headless run, a test can't judge a live agent's planning)
-- [x] Version 0.14.0 in the manifest and field guide; tests, docs check and validate green (proof: test)
+All stages done
 Agents: lean
-Open: none
 
 ## Stages
 - [x] 1. Research pass — the research step in `jbit:plan`, spike stages, research before deciding in `jbit:stage` and `jbit:autopilot`, notes in `jbit:review`, the hold letting `docs/research/` writes through; tests and docs checks

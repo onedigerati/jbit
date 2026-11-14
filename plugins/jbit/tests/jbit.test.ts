@@ -15,6 +15,7 @@ import {
   parsePlan,
   parseRoadmap,
   reportRows,
+  researchNote,
   samePath,
   stampOf,
   tickedMilestones,
@@ -776,6 +777,61 @@ async function heldAuthStage($: Engine, on: On, mode = 'Mode: autopilot') {
   }
   return { plan, sent, say, edit, agent, compose, expectHeld, expectBuilding }
 }
+
+test('a held stage lets a research note through, as it does the plan; other files, escapes and agents stay held', async ($, on) => {
+  const { agent, expectHeld } = await heldAuthStage($, on)
+  const write = async (file_path: string) => (await $.tool.call({ tool: 'Write', content: '# Q', file_path } as never)).deny
+  const edit = async (file_path: string) => (await $.tool.call({ tool: 'Edit', old_string: 'a', new_string: 'b', file_path })).deny
+  expect(await write('/repo/docs/research/gdpr-retention.md')).toBeUndefined()
+  expect(await edit('/repo/docs/research/gdpr-retention.md')).toBeUndefined()
+  expect(await write('docs/research/stripe-webhooks.md')).toBeUndefined()
+  for (const path of [
+    '/repo/docs/research/../../src/x.ts',
+    'docs/research/../src/x.ts',
+    '/repo/docs/research/../PLAN-notes.md',
+    '/repo/docs/research/notes.txt',
+    '/repo/docs/research/x.md.ts',
+    '/repo/docs/research/sub/x.md',
+    '/repo/docs/research/.md',
+    '/repo/docs/research.md',
+    '/other/docs/research/x.md',
+    '/repo/src/docs/research/x.md',
+    '/repo/src/login.ts',
+    '/repo/docs/research/CLAUDE.md',
+    '/repo/docs/research/Claude.Local.md',
+    'docs/research/claude.md',
+    'docs/research/..\\..\\CLAUDE.md',
+    'C:\\repo\\docs\\research\\a.md',
+    'docs/research/ x.md',
+  ]) {
+    expect(await write(path)).toContain('JBIT autopilot is holding')
+    expect(await edit(path)).toContain('JBIT autopilot is holding')
+  }
+  // NotebookEdit is for notebooks: a note is written with Write or Edit
+  const notebook = await $.tool.call({ tool: 'NotebookEdit', notebook_path: '/repo/docs/research/gdpr-retention.md', new_source: 'x' } as never)
+  expect(notebook.deny).toContain('JBIT autopilot is holding')
+  expect(await agent()).toContain('JBIT autopilot is holding')
+  await expectHeld()
+})
+
+test('a research note is docs/research/<topic>.md under the repo root, resolved before it is matched', () => {
+  expect(researchNote('/repo/docs/research/a.md', '/repo')).toBe(true)
+  expect(researchNote('docs/research/a.md', '/repo')).toBe(true)
+  expect(researchNote('./docs/./research/A.MD', '/repo')).toBe(true)
+  expect(researchNote('/repo/docs/research/../research/a.md', '/repo')).toBe(true)
+  expect(researchNote('/repo/docs/research/../../src/x.ts', '/repo')).toBe(false)
+  expect(researchNote('/repo/docs/research/../a.md', '/repo')).toBe(false)
+  expect(researchNote('/repo/docs/research/sub/a.md', '/repo')).toBe(false)
+  expect(researchNote('/repo/docs/research/a.mdx', '/repo')).toBe(false)
+  expect(researchNote('/repo/docs/research/', '/repo')).toBe(false)
+  expect(researchNote('/repo2/docs/research/a.md', '/repo')).toBe(false)
+  expect(researchNote('/repo/docs/research/a.md', undefined)).toBe(false)
+  for (const name of ['CLAUDE.md', 'claude.md', 'Claude.Local.md', 'CLAUDE.LOCAL.MD', ' x.md', '-x.md', '.x.md', 'a b.md'])
+    expect(researchNote(`docs/research/${name}`, '/repo')).toBe(false)
+  expect(researchNote('docs/research/..\\..\\CLAUDE.md', '/repo')).toBe(false)
+  expect(researchNote('C:\\repo\\docs\\research\\a.md', 'C:\\repo')).toBe(false)
+  expect(researchNote('docs/research/eu-ai-act_2026.v2.md', '/repo')).toBe(true)
+})
 
 test('a status question leaves a held stage held', async ($, on) => {
   const { say, expectHeld, expectBuilding } = await heldAuthStage($, on)

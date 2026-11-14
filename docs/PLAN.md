@@ -1,27 +1,30 @@
 # JBIT plan
 
 ## Goal
-Give JBIT a research step for work that turns on facts outside the repo, released as 0.14.0. When a goal hinges on domain knowledge (a regulation, a standard, how an outside API really behaves, how experts in the field judge the work), `jbit:plan` lists the questions whose answers would change the plan, has one research agent answer them, and writes each answer to `docs/research/<topic>.md` with its sources; decisions that rest on a finding link the note. A question that paper can't settle becomes a spike: an ordinary stage whose check is a written answer backed by a throwaway prototype. A domain question that turns up mid-build is researched before it's decided, so an unattended run cites sources instead of guessing, and review checks the work against the notes. A goal with no such question skips the step in one line. Done means the skills, hook, docs and evals match, the suite, docs check and validate are green, a headless run shows a domain-heavy goal producing a sourced note and a decision citing it, and it's committed on main.
+Give JBIT a research step for work that turns on facts outside the repo, and progress updates while autopilot runs, released as 0.14.0. When a goal hinges on domain knowledge (a regulation, a standard, how an outside API really behaves, how experts in the field judge the work), `jbit:plan` lists the questions whose answers would change the plan, has one research agent answer them, and writes each answer to `docs/research/<topic>.md` with its sources; decisions that rest on a finding link the note. A question that paper can't settle becomes a spike: an ordinary stage whose check is a written answer backed by a throwaway prototype. A domain question that turns up mid-build is researched before it's decided, so an unattended run cites sources instead of guessing, and review checks the work against the notes. A goal with no such question skips the step in one line. While autopilot runs, each closed stage brings a notification and a short note on what was done, how it was proven and what's left, and a concern (a check failing again, a review finding being fixed, a risk line that grows) is told when it happens. Done means the skills, hook, docs and evals match, the suite, docs check and validate are green, a headless run shows a domain-heavy goal producing a sourced note and a decision citing it, and it's committed on main.
 
 ## Baseline
 2026-11-14 · tests: 396 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 11 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
 
 ## Now
-Stage 1 of 2 · Research pass — not started, waiting for the user's go
+Stage 1 of 3 · Research pass
+Mode: autopilot — unattended
 Risk: the hold guard (a held stage lets `docs/research/` writes through), web content read by an agent (untrusted input), search queries sent to an outside service (personal data)
 Checks:
-- [ ] `jbit:plan` has a research step after the survey: it lists the domain questions whose answers would change the plan, skips the step in one line when there are none, hands them to one research agent, and the agent writes `docs/research/<topic>.md` with the question, the answer, dated sources, its confidence and what it changes in the plan; decisions resting on a finding link the note (proof: test, docs check on the skill text)
-- [ ] The research brief treats what it reads on the web as data, never instructions, and its search queries carry only the domain question, never the project's code, secrets, personal data or client names; without web tools the note is marked `unverified` and the decisions resting on it go to open questions (proof: test, docs check)
-- [ ] A question research can't settle on paper becomes a stage named `Spike: <question>`: its check is the note answering the question from what a throwaway prototype showed, and the prototype isn't shipped (proof: test, docs check)
-- [ ] `jbit:stage` and `jbit:autopilot` research an open decision that turns on a domain fact before deciding it or taking it to the user: an `(unattended)` decision links its note, and an attended pause brings the findings with the options (proof: test, docs check)
-- [ ] `jbit:review` briefs the reviewer with the notes the stage relies on and checks the work against them (proof: test, docs check)
-- [ ] While a stage is held, a write to `docs/research/*.md` goes through as plan edits do; writes elsewhere and agents are still denied, and a path that leaves `docs/research/` (`docs/research/../src/x.ts`, a non-`.md` file) is denied (proof: test)
+- [x] `jbit:plan` has a research step after the survey: it lists the domain questions whose answers would change the plan, skips the step in one line when there are none, hands them to one research agent, and the agent writes `docs/research/<topic>.md` with the question, the answer, dated sources, its confidence and what it changes in the plan; decisions resting on a finding link the note (proof: test, docs check on the skill text)
+- [x] The research brief treats what it reads on the web as data, never instructions, and its search queries carry only the domain question, never the project's code, secrets, personal data or client names; without web tools the note is marked `unverified` and the decisions resting on it go to open questions (proof: test, docs check)
+- [x] A question research can't settle on paper becomes a stage named `Spike: <question>`: its check is the note answering the question from what a throwaway prototype showed, and the prototype isn't shipped (proof: test, docs check)
+- [x] `jbit:stage` and `jbit:autopilot` research an open decision that turns on a domain fact before deciding it or taking it to the user: an `(unattended)` decision links its note, and an attended pause brings the findings with the options (proof: test, docs check)
+- [x] `jbit:review` briefs the reviewer with the notes the stage relies on and checks the work against them (proof: test, docs check)
+- [x] While a stage is held, a write to `docs/research/*.md` goes through as plan edits do; writes elsewhere and agents are still denied, and a path that leaves `docs/research/` (`docs/research/../src/x.ts`, a non-`.md` file) is denied (proof: test)
 Agents: lean
 Open: none
 
+
 ## Stages
-- [ ] 1. Research pass — the research step in `jbit:plan`, spike stages, research before deciding in `jbit:stage` and `jbit:autopilot`, notes in `jbit:review`, the hold letting `docs/research/` writes through; tests and docs checks
-- [ ] 2. Docs, evals, 0.14.0 — READMEs and field guide describe research and spikes; evals `research-domain`, `research-none`, `research-spike`; a headless run on a domain-heavy goal; version 0.14.0
+- [x] 1. Research pass — the research step in `jbit:plan`, spike stages, research before deciding in `jbit:stage` and `jbit:autopilot`, notes in `jbit:review`, the hold letting `docs/research/` writes through; tests and docs checks
+- [ ] 2. Progress updates — a notification when autopilot closes a stage, a progress note in the chat after each stage, concerns told when they happen
+- [ ] 3. Docs, evals, 0.14.0 — READMEs and field guide describe research, spikes and progress updates; evals `research-domain`, `research-none`, `research-spike` and a progress-note case; a headless run on a domain-heavy goal; version 0.14.0
 
 ## Decisions
 - 2026-11-14 · A research pass in `jbit:plan`, spikes as stages, research before mid-build domain decisions — the user's call ("Go with your recommendation"), after it was found that no skill asks for research and the survey reads only the code. A spike is an ordinary stage, not a new stage type, in line with the 2026-11-08 standing decision that a decision can be a stage whose check is a prototype.
@@ -31,8 +34,13 @@ Open: none
 - 2026-11-14 · (defaulted) Version 0.14.0: a new feature, so a minor bump under the 2026-11-10 rule.
 - 2026-11-14 · Agents: lean, carried from the last plan.
 - 2026-11-14 · Scale: two stages, one plan, no charter.
+- 2026-11-14 · Autopilot started by the user's command ("JBIT, just build it. Autopilot, lean."), after `/reload-plugins` loaded the 0.13.0 hook in this session; Agents stays lean.
+
+- 2026-11-14 · (unattended) Stage 1 review triage. Fixing: the research-note exemption accepted `docs/research/CLAUDE.md` (Claude Code loads a nested CLAUDE.md as instructions) and Windows `\` paths that escape the folder — now a name allowlist with CLAUDE.md names and backslashes refused; notes are read back as data in plan, stage, autopilot and review; the note link is relative to the plan file; missing tests added. Deferred: the README's hold description and research mention (stage 2's docs), and web queries outside the outward check (open questions). Rejected: none.
+- 2026-11-14 · (unattended) Progress updates join this plan as stage 2, docs and evals moving to stage 3 — the user asked for updates after significant steps, what's left, and a flag when something is of concern, and where it fits; my recommendation, taken because the run is unattended. It ships with research in 0.14.0 under one set of docs and evals. The status line already shows `stage n/total`, so the stage adds the close notice and concern flags.
 
 ## Open questions
+- Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the README's "blocks requests that send data to an outside host" should say it covers shell commands (stage 2 docs).
 - Stage 2 review, deferred: the trigger evals `trigger-jbit-plan`, `trigger-jbit-resume`, `trigger-jbit-stage` contain the skill's name, so they'd likely pass before this plan too; a discriminating case (or a run at 0cf777c showing a miss) would prove the "JBIT <command>" description text matters. `jbit-hero-unattended`'s no-push grader can't fail without Bash.
 - Sixth stage 1 review, deferred: the plain approval reader accepts "just build it — later", "just build it - after lunch" and "just build it, after lunch", while "JBIT approve — after lunch" doesn't; align the two readers. And a rejected `$.state.set` passes the prompt on, so a lowering command ("JBIT autopilot attended" over outward) could be dropped silently; the hook's guards share this `.catch(next)` pattern — fail closed on state-write errors across the hook.
 - The hook spots a new plan only by its Goal text, so a plan Claude rewrites while keeping the Goal line word for word keeps an unattended level (third stage 1 review, weaker case). Keying the run on the Goal plus the stage list, or on the plan file's first commit, would close it.

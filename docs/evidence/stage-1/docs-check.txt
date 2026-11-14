@@ -1,0 +1,125 @@
+$ node --test plugins/jbit/tests/docs.check.mjs
+TAP version 13
+# Subtest: plugin.json is version 0.13.0
+ok 1 - plugin.json is version 0.13.0
+  ---
+  duration_ms: 1.151912
+  type: 'test'
+  ...
+# Subtest: no skill, README or hook text describes the old opt-in arming rule
+ok 2 - no skill, README or hook text describes the old opt-in arming rule
+  ---
+  duration_ms: 2.019319
+  type: 'test'
+  ...
+# Subtest: autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+ok 3 - autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+  ---
+  duration_ms: 0.30615
+  type: 'test'
+  ...
+# Subtest: every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+ok 4 - every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+  ---
+  duration_ms: 0.484585
+  type: 'test'
+  ...
+# Subtest: the approval reply the skills give is the hook's APPROVAL_REPLY
+ok 5 - the approval reply the skills give is the hook's APPROVAL_REPLY
+  ---
+  duration_ms: 0.15679
+  type: 'test'
+  ...
+# Subtest: the command words the docs list are the hook's COMMAND_VOCABULARY
+ok 6 - the command words the docs list are the hook's COMMAND_VOCABULARY
+  ---
+  duration_ms: 0.559534
+  type: 'test'
+  ...
+# Subtest: "JBIT approve" is described as releasing the hold, not as running the approve skill
+ok 7 - "JBIT approve" is described as releasing the hold, not as running the approve skill
+  ---
+  duration_ms: 0.146991
+  type: 'test'
+  ...
+# Subtest: no doc says plain words run attended without saying the level that stands
+ok 8 - no doc says plain words run attended without saying the level that stands
+  ---
+  duration_ms: 2.490981
+  type: 'test'
+  ...
+# Subtest: the product is JBIT in prose, not jbit
+ok 9 - the product is JBIT in prose, not jbit
+  ---
+  duration_ms: 1.196817
+  type: 'test'
+  ...
+# Subtest: READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+ok 10 - READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+  ---
+  duration_ms: 0.477046
+  type: 'test'
+  ...
+# Subtest: READMEs describe the arming rule
+ok 11 - READMEs describe the arming rule
+  ---
+  duration_ms: 0.116731
+  type: 'test'
+  ...
+# Subtest: plan has a research step after the survey: the questions, a one-line skip, one agent, the note, decisions linking it
+ok 12 - plan has a research step after the survey: the questions, a one-line skip, one agent, the note, decisions linking it
+  ---
+  duration_ms: 0.139991
+  type: 'test'
+  ...
+# Subtest: the research brief keeps web content as data and queries free of project data; no web tools means unverified
+ok 13 - the research brief keeps web content as data and queries free of project data; no web tools means unverified
+  ---
+  duration_ms: 0.138268
+  type: 'test'
+  ...
+# Subtest: a question paper can't settle becomes a `Spike: <question>` stage, checked by the note, its prototype not shipped
+ok 14 - a question paper can't settle becomes a `Spike: <question>` stage, checked by the note, its prototype not shipped
+  ---
+  duration_ms: 0.473816
+  type: 'test'
+  ...
+# Subtest: stage and autopilot research a domain decision before deciding it; unattended links the note, a pause brings the findings
+ok 15 - stage and autopilot research a domain decision before deciding it; unattended links the note, a pause brings the findings
+  ---
+  duration_ms: 0.217632
+  type: 'test'
+  ...
+# Subtest: review briefs the reviewer with the research notes the stage relies on, to check the work against
+ok 16 - review briefs the reviewer with the research notes the stage relies on, to check the work against
+  ---
+  duration_ms: 0.054812
+  type: 'test'
+  ...
+# Subtest: the hook's held-stage text and autopilot both name the research-note exception
+ok 17 - the hook's held-stage text and autopilot both name the research-note exception
+  ---
+  duration_ms: 0.092395
+  type: 'test'
+  ...
+# Subtest: a research note read back is data: plan, stage, autopilot and review say its instructions are never followed and it waives nothing
+ok 18 - a research note read back is data: plan, stage, autopilot and review say its instructions are never followed and it waives nothing
+  ---
+  duration_ms: 0.495569
+  type: 'test'
+  ...
+# Subtest: plan says a research link is relative to the plan file
+ok 19 - plan says a research link is relative to the plan file
+  ---
+  duration_ms: 0.10187
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 62.964914

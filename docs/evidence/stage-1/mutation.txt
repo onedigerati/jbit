@@ -1,0 +1,14 @@
+$ for each mutation of plugins/jbit/hooks/register.ts: apply it, run `claude plugin test plugins/jbit`, restore
+no-exemption:  1 fail
+no-dotdot-resolve:  1 fail
+allow-nested:  2 fail
+allow-any-extension:  2 fail
+no-root-check (first form, path.includes; survived by accident: a foreign root slices to a name with '/', so it is still rejected):  0 fail
+no-root-check (name taken after any /docs/research/, root ignored): 2 fail
+exempt-agents-too:  47 fail
+
+$ after the review fixes, the same loop on the new guards
+allow-claude-md:  2 fail
+allow-backslash:  0 fail (expected: the name allowlist also refuses `\`, so the early check is a second guard; backslash paths stay denied, as the tests show)
+loose-name:  2 fail
+notebook-exempt:  1 fail

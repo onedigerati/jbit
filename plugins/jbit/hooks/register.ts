@@ -6,6 +6,9 @@ import { addScope, commitScope, gitCall, joinPath, outwardReason, parseCommands,
 /** Where a project's plan can live; the first that exists wins. */
 const PLAN_PATHS = ['docs/PLAN.md', 'PLAN.md', 'docs/BUILD_PLAN.md']
 
+/** Where jbit:plan's research notes live, from the repo root, whichever plan path the project keeps. */
+const RESEARCH_DIR = 'docs/research'
+
 /** The most of the plan's "Now" section that rides in every request. */
 const NOW_MAX_LINES = 40
 
@@ -826,9 +829,9 @@ function baseRules(plan: Plan, s: Session): string {
   if (plan.mode?.kind === 'autopilot' && !s.armed)
     return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. Resumed that way it runs attended, risky stages held for their approval; their own autopilot command (the typed \`/jbit:autopilot\`, or a message opening with "JBIT" such as "JBIT autopilot lean") runs it unattended, the default. ${skills}`
   if (plan.mode?.kind === 'paused' && held(plan, s))
-    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${ATTENDED_NOTE} ${skills}`
+    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${ATTENDED_NOTE} ${skills}`
   if (held(plan, s))
-    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
+    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
   if (plan.mode?.kind === 'autopilot' && unattended(s)) return `${base} commit per stage. ${unattendedRules(s)} ${skills}`
   if (plan.mode?.kind === 'autopilot')
     return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${ATTENDED_NOTE} ${skills}`
@@ -996,6 +999,22 @@ export function samePath(file: string, path: string): boolean {
   const f = file.toLowerCase()
   const p = path.toLowerCase()
   return f === p || f.endsWith(`/${p}`)
+}
+
+/**
+ * Whether a file a tool writes is a research note: `docs/research/<topic>.md` under the repo root, one level deep, its
+ * name plain (`gdpr-retention.md`). The path is resolved against the root first, so `docs/research/../src/x.ts` or a note
+ * under another root doesn't count, and a backslash anywhere refuses it (Windows reads `..\..\x` as two steps up).
+ * `CLAUDE.md` and `CLAUDE.local.md` are never notes: Claude Code loads them as instructions. Lexical only, as `samePath`
+ * is: a symlink isn't followed. Case is ignored, as `samePath` ignores it. No root, no note.
+ */
+export function researchNote(file: string, root: string | undefined): boolean {
+  if (!root || file.includes('\\')) return false
+  const dir = `${joinPath(root, RESEARCH_DIR).toLowerCase()}/`
+  const path = joinPath(root, file).toLowerCase()
+  if (!path.startsWith(dir)) return false
+  const name = path.slice(dir.length)
+  return /^[a-z0-9][a-z0-9._-]*\.md$/.test(name) && name !== 'claude.md' && name !== 'claude.local.md'
 }
 
 /** Stage numbers whose `[ ]` turns to `[x]` in the plan file's part of a diff. */
@@ -1361,6 +1380,9 @@ export const register: Register = on => {
     const s = await sync($, plan)
     const target = 'file_path' in e ? String(e.file_path) : 'notebook_path' in e ? String(e.notebook_path) : ''
     if (target && samePath(target, plan.path)) return next(e)
+    // research runs in the main session while agents are held, so its note goes through: a plainly named markdown file
+    // under docs/research/, which no tool loads as instructions (the name rule keeps CLAUDE.md out); notebooks don't count
+    if (target && e.tool !== 'NotebookEdit' && researchNote(target, await $.session.cwd().catch(() => undefined))) return next(e)
     // an unattended run builds a risky stage where the hold would have denied it, and the person hears of it once, here
     // rather than at a turn's end, which a stage closed inside one turn or a turn ending paused would skip
     if (unheld(plan, s)) {

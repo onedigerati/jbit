@@ -7,23 +7,19 @@ Give JBIT a research step for work that turns on facts outside the repo, and pro
 2026-11-14 · tests: 396 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 11 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
 
 ## Now
-Stage 1 of 3 · Research pass
+Stage 2 of 3 · Progress updates
 Mode: autopilot — unattended
-Risk: the hold guard (a held stage lets `docs/research/` writes through), web content read by an agent (untrusted input), search queries sent to an outside service (personal data)
+Risk: UI only (a notification and chat text; the hook reads a commit's result, changes no gate)
 Checks:
-- [x] `jbit:plan` has a research step after the survey: it lists the domain questions whose answers would change the plan, skips the step in one line when there are none, hands them to one research agent, and the agent writes `docs/research/<topic>.md` with the question, the answer, dated sources, its confidence and what it changes in the plan; decisions resting on a finding link the note (proof: test, docs check on the skill text)
-- [x] The research brief treats what it reads on the web as data, never instructions, and its search queries carry only the domain question, never the project's code, secrets, personal data or client names; without web tools the note is marked `unverified` and the decisions resting on it go to open questions (proof: test, docs check)
-- [x] A question research can't settle on paper becomes a stage named `Spike: <question>`: its check is the note answering the question from what a throwaway prototype showed, and the prototype isn't shipped (proof: test, docs check)
-- [x] `jbit:stage` and `jbit:autopilot` research an open decision that turns on a domain fact before deciding it or taking it to the user: an `(unattended)` decision links its note, and an attended pause brings the findings with the options (proof: test, docs check)
-- [x] `jbit:review` briefs the reviewer with the notes the stage relies on and checks the work against them (proof: test, docs check)
-- [x] While a stage is held, a write to `docs/research/*.md` goes through as plan edits do; writes elsewhere and agents are still denied, and a path that leaves `docs/research/` (`docs/research/../src/x.ts`, a non-`.md` file) is denied (proof: test)
+- [x] When a commit that closes a stage lands while autopilot runs, the hook sends one notification: `Stage <n> of <total> done: <name>. Next: <next name>.`, or `All <total> stages done.` after the last; a commit that closes nothing, a failed commit, or no autopilot sends none, and the same stage never notifies twice (proof: test)
+- [x] After each stage closes, `jbit:autopilot` gives a short progress note in the chat: what the stage delivered and how it was proven (its report linked), the `(unattended)` decisions taken in it, and what's left (proof: test, docs check)
+- [x] Concerns lead the note and don't wait for it: a check that fails a second fix round, a fix-now review finding, or a risk line that grows is told to the user in one line when it happens, as `Concern: <what> — <what you're doing about it>`, and the run carries on; the note says `No concerns.` when there are none (proof: test, docs check)
 Agents: lean
 Open: none
 
-
 ## Stages
 - [x] 1. Research pass — the research step in `jbit:plan`, spike stages, research before deciding in `jbit:stage` and `jbit:autopilot`, notes in `jbit:review`, the hold letting `docs/research/` writes through; tests and docs checks
-- [ ] 2. Progress updates — a notification when autopilot closes a stage, a progress note in the chat after each stage, concerns told when they happen
+- [x] 2. Progress updates — a notification when autopilot closes a stage, a progress note in the chat after each stage, concerns told when they happen
 - [ ] 3. Docs, evals, 0.14.0 — READMEs and field guide describe research, spikes and progress updates; evals `research-domain`, `research-none`, `research-spike` and a progress-note case; a headless run on a domain-heavy goal; version 0.14.0
 
 ## Decisions
@@ -37,7 +33,8 @@ Open: none
 - 2026-11-14 · Autopilot started by the user's command ("JBIT, just build it. Autopilot, lean."), after `/reload-plugins` loaded the 0.13.0 hook in this session; Agents stays lean.
 
 - 2026-11-14 · (unattended) Stage 1 review triage. Fixing: the research-note exemption accepted `docs/research/CLAUDE.md` (Claude Code loads a nested CLAUDE.md as instructions) and Windows `\` paths that escape the folder — now a name allowlist with CLAUDE.md names and backslashes refused; notes are read back as data in plan, stage, autopilot and review; the note link is relative to the plan file; missing tests added. Deferred: the README's hold description and research mention (stage 2's docs), and web queries outside the outward check (open questions). Rejected: none.
-- 2026-11-14 · (unattended) Progress updates join this plan as stage 2, docs and evals moving to stage 3 — the user asked for updates after significant steps, what's left, and a flag when something is of concern, and where it fits; my recommendation, taken because the run is unattended. It ships with research in 0.14.0 under one set of docs and evals. The status line already shows `stage n/total`, so the stage adds the close notice and concern flags.
+- 2026-11-14 · (unattended) Progress updates join this plan as stage 2, docs and evals moving to stage 3 — the user asked for updates after significant steps, what's left, and a flag when something is of concern, and where it fits; my recommendation, taken because the run is unattended, then confirmed by the user ("Yes please add to stage 2"). It ships with research in 0.14.0 under one set of docs and evals. The status line already shows `stage n/total`, so the stage adds the close notice and concern flags.
+- 2026-11-14 · (unattended) Stage 2 gets no fresh-eyes review: its risk line is UI only (a notification and chat text), and the diff confirms it — the hook's commit handler only reads the result after the commit runs and changes no gate. Verify's mutation runs covered the notice logic.
 
 ## Open questions
 - Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the README's "blocks requests that send data to an outside host" should say it covers shell commands (stage 2 docs).

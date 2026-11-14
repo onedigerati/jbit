@@ -1,0 +1,10 @@
+$ for each mutation of plugins/jbit/hooks/register.ts: apply it, run `claude plugin test plugins/jbit`, restore
+no-notice:  2 fail
+notify-when-denied:  0 fail (equivalent: a refused commit never runs, so the stage is still open at HEAD and the HEAD check tells nothing)
+ignore-HEAD-state:  1 fail
+no-dedupe:  2 fail
+no-autopilot-check:  1 fail
+armed-after-only:  1 fail
+end-of-turn-twice:  1 fail
+no-goal-reset (first run, no test):  0 fail
+no-goal-reset (after the Goal-reset test): 1 fail

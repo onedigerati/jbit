@@ -242,3 +242,31 @@ test('plan says a research link is relative to the plan file', () => {
   for (const words of ['relative to the plan file', '`research/<topic>.md` from `docs/PLAN.md`', '`docs/research/<topic>.md` from a root `PLAN.md`'])
     assert.ok(text.includes(words), `plan SKILL.md lacks: ${words}`)
 })
+
+test('autopilot gives a progress note after each stage: concerns first, delivered and proven with the report, unattended decisions, what is left', () => {
+  const text = skill('autopilot')
+  const close = text.slice(text.indexOf('5. **Close.**'), text.indexOf('## 3. When to stop'))
+  for (const words of [
+    'give a short progress note in the chat',
+    'without waiting for a reply',
+    'its concerns first, or `No concerns.`',
+    'what the stage delivered and how it was proven, linking its `docs/evidence/stage-<n>/report.md`',
+    'the `(unattended)` decisions taken in it',
+    "and what's left",
+  ])
+    assert.ok(close.includes(words), `autopilot step 5 lacks: ${words}`)
+})
+
+test('autopilot tells a concern in one line when it happens and carries on', () => {
+  const text = skill('autopilot')
+  for (const words of [
+    '**Concerns don\'t wait for the note.**',
+    'A check that still fails after the second fix round, a fix-now review finding, or a risk line that grows',
+    '`Concern: <what> — <what you\'re doing about it>`',
+    'It isn\'t a pause; section 3 says when one is.',
+    'and carry on',
+    'a check still failing after the second fix round is a concern',
+    'A risk line that grows and a fix-now finding are concerns',
+  ])
+    assert.ok(text.includes(words), `autopilot SKILL.md lacks: ${words}`)
+})

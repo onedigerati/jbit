@@ -1,0 +1,10 @@
+$ for each: remove the phrase from autopilot SKILL.md, run `node --test plugins/jbit/tests/docs.check.mjs`, restore
+2 note: # fail 1
+2 report link: # fail 1
+2 unattended decisions: # fail 1
+2 what's left: # fail 1
+3 no concerns: # fail 1
+3 concern line: # fail 1
+3 not a pause (first run, no assertion): # fail 0
+3 not a pause (assertion added): # fail 1
+3 second fix round: # fail 1

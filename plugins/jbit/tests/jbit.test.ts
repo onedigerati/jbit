@@ -17,6 +17,7 @@ import {
   reportRows,
   researchNote,
   samePath,
+  stageList,
   stampOf,
   tickedMilestones,
   unattendedOf,
@@ -1347,6 +1348,128 @@ test('when HEAD has no plan or its Now is another stage, one row is enough', asy
   expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toBeUndefined()
   plan.files = { [REPORT]: reportWith(0) }
   expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toContain('has 0 check rows')
+})
+
+// ---- progress notices: a stage-closing commit that lands under autopilot tells the user once ----
+
+/** Stage `n` of 3 under autopilot, its one check ticked, with the plan HEAD holds before (`- [ ] n.`) and after the commit lands. */
+function closingStage(n: 2 | 3, mode = 'Mode: autopilot') {
+  const names = ['Foundation — engine', 'Share mode — viewer controls', 'Polish — copy and layout']
+  const list = (closed: number) => names.map((name, i) => `- [${i < closed ? 'x' : ' '}] ${i + 1}. ${name}`)
+  const plan = (closed: number) => ['## Now', mode, `Stage ${n} of 3 · ${names[n - 1]!.split(' — ')[0]}`, 'Checks:', '- [x] it works', '## Stages', ...list(closed)].join('\n')
+  return {
+    before: plan(n - 1),
+    after: plan(n),
+    diff: diffOf('docs/PLAN.md', `-- [ ] ${n}. ${names[n - 1]}`, `+- [x] ${n}. ${names[n - 1]}`),
+    report: { [`docs/evidence/stage-${n}/report.md`]: reportWith(1) },
+  }
+}
+
+/** Git for a closing commit: `git diff --cached` answers `staged()`, and `git show HEAD:docs/PLAN.md` the plan as it stands once `landed` is set or not. */
+function closingGit(on: On, staged: () => string, head: () => string) {
+  on('process.run', (_, e) => {
+    const stdout = e.argv[1] === 'show' ? head() : e.argv.includes('--cached') ? staged() : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('tool.call', () => ({ result: { text: 'ran' } }))
+}
+
+test('a stage-closing commit that lands under autopilot sends one notice naming the stage and the next, once', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report }
+  const sent = engine(on, plan)
+  let landed = false
+  closingGit(on, () => stage.diff, () => (landed ? stage.after : stage.before))
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  // the commit fails: HEAD still has the stage open
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toBeUndefined()
+  expect(sent.notes).toEqual([])
+  landed = true
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+  // a retry or an amend closes it again: no second notice
+  await $.tool.call({ tool: 'Bash', command: 'git commit --amend -m "Stage 2: share mode"' })
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('a commit that closes nothing, one the gate refuses, and one without autopilot send no notice', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  let staged = ''
+  closingGit(on, () => staged, () => stage.after)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "wip"' })
+  expect(sent.notes).toEqual([])
+  // refused for a missing report: nothing ran, nothing to tell
+  staged = stage.diff
+  plan.files = {}
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toContain('report')
+  expect(sent.notes).toEqual([])
+})
+
+test('a stage closed by the user stepping through, with no autopilot, sends no notice', async ($, on) => {
+  const stage = closingStage(2, 'Open: none')
+  const sent = engine(on, { text: stage.before, files: stage.report })
+  closingGit(on, () => stage.diff, () => stage.after)
+  await $.turn.complete(ended('t1'))
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toBeUndefined()
+  expect(sent.notes).toEqual([])
+})
+
+test('the last stage closing sends "All 3 stages done." once, even with the Mode line gone and the turn ending after', async ($, on) => {
+  const stage = closingStage(3)
+  const plan = { text: stage.before, files: stage.report }
+  const sent = engine(on, plan)
+  closingGit(on, () => stage.diff, () => stage.after)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  // autopilot finishes: the commit removes the Mode line and ticks the last stage
+  plan.text = stage.before.replace('Mode: autopilot\n', '')
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 3"' })
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+  plan.text = stage.after.replace('Mode: autopilot\n', '')
+  await $.turn.complete(ended('t2'))
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+})
+
+test('the end of the turn still says all stages are done when no commit told it', async ($, on) => {
+  const stage = closingStage(3)
+  const plan = { text: stage.after }
+  const sent = engine(on, plan)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  plan.text = stage.after.replace('Mode: autopilot\n', '')
+  await $.turn.complete(ended('t2'))
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+})
+
+test('a new Goal tells its stages afresh: stage 1 of the next plan notifies after stage 1 of the last one did', async ($, on) => {
+  const planFor = (goal: string, closed: boolean) =>
+    ['## Goal', goal, '## Now', 'Mode: autopilot', 'Stage 1 of 2 · Start', 'Checks:', '- [x] it works', '## Stages', `- [${closed ? 'x' : ' '}] 1. Start — begin`, '- [ ] 2. Finish — end'].join('\n')
+  const plan = { text: planFor('Feature one.', false), files: { 'docs/evidence/stage-1/report.md': reportWith(1) } }
+  const sent = engine(on, plan)
+  let goal = 'Feature one.'
+  closingGit(on, () => diffOf('docs/PLAN.md', '-- [ ] 1. Start — begin', '+- [x] 1. Start — begin'), () => planFor(goal, true))
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 1"' })
+  expect(sent.notes).toEqual(['Stage 1 of 2 done: Start. Next: Finish.'])
+  goal = 'Feature two.'
+  plan.text = planFor(goal, false)
+  await $.turn.complete(ended('t2'))
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 1"' })
+  expect(sent.notes).toEqual(['Stage 1 of 2 done: Start. Next: Finish.', 'Stage 1 of 2 done: Start. Next: Finish.'])
+})
+
+test('reads the stage list: number, the name before the dash, and whether it is ticked', () => {
+  expect(stageList(['## Now', '- [ ] 9. not this', '## Stages', '- [x] 1. Foundation — engine', '- [ ] **2. Share mode** – viewer', '- [ ] Stage 3: Polish', '## Later', '- [ ] 4. Not a stage'].join('\n'))).toEqual([
+    { number: '1', name: 'Foundation', done: true },
+    { number: '2', name: 'Share mode', done: false },
+    { number: '3', name: 'Polish', done: false },
+  ])
 })
 
 // ---- the Agents line: how widely work fans out ----

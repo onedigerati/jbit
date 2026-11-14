@@ -9,6 +9,8 @@ declare module 'claude-code' {
       seenMode: 'autopilot' | 'paused' | 'none'
       /** Risky stages (by their `## Now` heading line) the user has approved (`isApproval`) under autopilot, driving or paused. */
       cleared: string[]
+      /** What this Goal's progress notices have told the user: stage numbers, and `all` once every stage is done; reset with a new Goal. */
+      announced: string[]
       /** For each stage number, the checks last seen unticked in `## Now` while that stage was current. */
       openChecks: Record<string, string[]>
       /** For each stage number, how many checks `## Now` listed when last seen while that stage was current; the evidence gate wants a report row per check. */

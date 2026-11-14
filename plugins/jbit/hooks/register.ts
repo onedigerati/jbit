@@ -378,6 +378,9 @@ const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
 const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
 const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 
+/** What this Goal's progress notices have told the user: stage numbers, and `all` once every stage is done. */
+const ANNOUNCED = { plugin: 'jbit', key: 'announced' } as const
+
 /**
  * Set once the session's first look found no plan, so the first plan it then reads is a new Goal; kept apart from
  * `GOAL`, so no Goal text can pass for it.
@@ -689,6 +692,7 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
       await $.state.set(OPEN_CHECKS, {})
       await $.state.set(CLEARED, [])
       await $.state.set(CHECK_COUNTS, {})
+      await $.state.set(ANNOUNCED, [])
     }
     if (plan) {
       await $.state.set(GOAL, goal)
@@ -1232,6 +1236,55 @@ async function committedChecks($: EngineInterface, planPath: string, stage: stri
   return { count: now.checks.length, open: now.checks.filter(c => !c.done).map(c => c.text) }
 }
 
+/** The `## Stages` checklist: each line's number, its name (the part before ` — `) and whether it's ticked. */
+export function stageList(text: string): { number: string; name: string; done: boolean }[] {
+  const list: { number: string; name: string; done: boolean }[] = []
+  let heading = ''
+  for (const line of text.split('\n')) {
+    const h = headingText(line)
+    if (h !== undefined) {
+      // the first heading naming stages is the checklist, as `parsePlan` reads it
+      if (heading.includes('stage')) break
+      heading = h.toLowerCase()
+      continue
+    }
+    if (!heading.includes('stage')) continue
+    const m = line.match(/^[-*]\s+\[([ xX])\]\s+(?:\*\*)?(?:stage\s+)?(\d+)[.:]?\s*(.*)$/i)
+    if (!m) continue
+    const name = (m[3] ?? '').replace(/\*\*/g, '').split(/\s+[—–-]\s+/)[0]?.trim() ?? ''
+    list.push({ number: m[2] ?? '', name, done: m[1] !== ' ' })
+  }
+  return list
+}
+
+/** Marks these notices told for this Goal; true when one of them wasn't yet, so the caller tells it. */
+async function announce($: EngineInterface, keys: string[]): Promise<boolean> {
+  const told = (await $.state.get(ANNOUNCED)).value ?? []
+  const fresh = keys.filter(k => !told.includes(k))
+  if (!fresh.length) return false
+  await $.state.set(ANNOUNCED, [...told, ...fresh])
+  return true
+}
+
+/**
+ * After a commit that closed stages under autopilot: one notice per stage the commit really landed, read from the plan
+ * at HEAD, so a commit that failed (the stage still open there) tells nothing. A stage, and the all-done notice the
+ * turn's end also sends, is told once per Goal, however many times a retry or an amend closes it again.
+ */
+async function announceClosed($: EngineInterface, planPath: string, closing: { n: string; dir: string }[]) {
+  for (const { n, dir } of closing) {
+    const text = await git($, ['show', `HEAD:${planPath}`], dir).catch(() => undefined)
+    if (typeof text !== 'string') continue
+    const list = stageList(text)
+    const stage = list.find(s => s.number === n)
+    if (!stage?.done) continue
+    const next = list.find(s => !s.done)
+    if (next) {
+      if (await announce($, [n])) await $.ui.notify(`Stage ${n} of ${list.length} done: ${oneLine(stage.name)}. Next: ${oneLine(next.name)}.`, { title: 'JBIT' })
+    } else if (await announce($, [n, 'all'])) await $.ui.notify(`All ${list.length} stages done.`, { title: 'JBIT' })
+  }
+}
+
 const outwardDenial = (reason: string) =>
   `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.`
 
@@ -1331,7 +1384,7 @@ export const register: Register = on => {
       if (was !== 'autopilot') return result
       if (plan?.mode?.kind === 'paused')
         await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'JBIT' })
-      else if (plan && !plan.current) await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
+      else if (plan && !plan.current && (await announce($, ['all']))) await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
       return result
     }
     // a Mode line left from an earlier session (or shipped in a repo) never drives this one
@@ -1442,6 +1495,8 @@ export const register: Register = on => {
     const plan = await readPlan($).catch(() => undefined)
     if (!prefiltered && plan?.mode?.kind !== 'autopilot') return next(e)
     const commands = parseCommands(e.command)
+    // read before the sync: the last stage's close removes the Mode line, which disarms the session as this commit lands
+    const armedBefore = (await $.state.get(ARMED)).value === true
     const s = await sync($, plan)
 
     // while autopilot drives, outward-facing steps wait for the person: JBIT's own check first, over every command the
@@ -1472,9 +1527,11 @@ export const register: Register = on => {
       if (found.length) return { deny: secretDenial(found) }
       pendings.push(pending)
     }
+    const closing: { n: string; dir: string }[] = []
     if (plan)
       for (const pending of pendings)
         for (const n of closedStages(pending.diff, plan.path)) {
+          closing.push({ n, dir: pending.dir })
           // a session that never saw stage n in `## Now` asks the committed plan for its checks
           const known = s.checkCounts[n] !== undefined || s.openChecks[n] !== undefined
           const committed = known ? undefined : await committedChecks($, plan.path, n, pending.dir).catch(() => undefined)
@@ -1493,7 +1550,11 @@ export const register: Register = on => {
         if (missing) return { deny: missing }
       }
     }
-    return next(e)
+    const result = await next(e)
+    // progress for the user, under autopilot only; a notice that can't be sent never touches the commit's result
+    if (plan && closing.length && !result.deny && (armedBefore || s.armed))
+      await announceClosed($, plan.path, closing).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
+    return result
   }).catch(($, e, next) => {
     if (next.called) return next(e)
     // a guard that cannot read the repository steps aside rather than block every commit

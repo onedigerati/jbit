@@ -87,6 +87,7 @@ Open: none
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).
 
 ## Shipped
+- 2026-11-14 · 0.13.0, JBIT commands: the user's typed or JBIT command runs autopilot unattended until their next command or a new Goal (`attended`, `outward`), plain words run at the level that stands, "just build it" approves; skills, READMEs with the animated hero banner, field guide option D hero, evals. Pushed to main (c60ca2f).
 - 2026-11-07 · Verification evidence: verify saves a per-check report and its output to `docs/evidence/stage-<n>/`, stage and autopilot link it, archiving carries it along, and the commit guard refuses to close a stage without it (keel 0.5.0–0.5.2) — [plan](plans/2026-11-07-verification-evidence.md) · [evidence](plans/2026-11-07-verification-evidence/evidence/)
 - 2026-11-07 · Regression and security proof: plans prefer tests as proof, verify re-runs hand-proven checks at the end of a plan, stages recheck their risk line against the diff, and evals show a regression and a planted injection caught (keel 0.6.0) — [plan](plans/2026-11-07-regression-security-proof.md) · [evidence](plans/2026-11-07-regression-security-proof/evidence/)
 - 2026-11-08 · Agents level: an `Agents: lean | balanced | wide` line in `## Now` that the skills follow, shown in the status line, `lean` capped at one running agent by the hook, and `wide` honoured only once the user confirms it in-session (keel 0.7.0) — [plan](plans/2026-11-08-agents-level.md) · [evidence](plans/2026-11-08-agents-level/evidence/)

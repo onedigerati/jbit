@@ -1,0 +1,24 @@
+$ (break 1: the pre-run refusal) sed: "if (writer) return" -> "if (false && writer) return"; claude plugin test plugins/jbit
+(fail) under autopilot, a line that writes the plan and commits is refused before it runs, naming the plan [59.18ms]
+ 438 pass
+ 1 fail
+
+$ (break 2: the post-run gates) sed: "const failed = await landedFailure(...)" -> "const failed = undefined"; claude plugin test plugins/jbit
+(fail) a close found after the run whose commit lacks the evidence report is not told, gets no reminder, and is flagged to reopen [63.49ms]
+(fail) a close found after the run whose report is short of rows for its checks is flagged to reopen [48.86ms]
+(fail) a close found after the run with checks unticked in its commit is not told and is flagged to reopen; a later good close still is told [40.55ms]
+(fail) a subagent's close found after the run with unticked checks is flagged to reopen too, with no notice [60.23ms]
+(fail) an amend that adds the missing report to a flagged close is checked again: passing, it is told and reminded [49.39ms]
+(fail) a real close shape found after the run, with stage 2 check the session saw open, is flagged to reopen [42.67ms]
+(fail) a failing close of the last stage that drops the Mode line is never told "All 3 stages done.", and says to put the Mode line back [47.68ms]
+ 432 pass
+ 7 fail
+
+$ (break 3: all-done skip while a stage is flagged) sed: drop the REOPEN condition at the all-done notice; claude plugin test plugins/jbit
+0
+(fail) a failing close of the last stage that drops the Mode line is never told "All 3 stages done.", and says to put the Mode line back [44.17ms]
+ 438 pass
+ 1 fail
+
+$ restored: cmp with the saved copy
+identical

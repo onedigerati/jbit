@@ -382,6 +382,12 @@ const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 const ANNOUNCED = { plugin: 'jbit', key: 'announced' } as const
 
 /**
+ * Stages this Goal whose close a commit landed without passing the stage gates (found after the line ran): told to
+ * reopen, never announced, and checked again at each later commit until one closes them passing or unticks them.
+ */
+const REOPEN = { plugin: 'jbit', key: 'reopen' } as const
+
+/**
  * Set once the session's first look found no plan, so the first plan it then reads is a new Goal; kept apart from
  * `GOAL`, so no Goal text can pass for it.
  */
@@ -693,6 +699,7 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
       await $.state.set(CLEARED, [])
       await $.state.set(CHECK_COUNTS, {})
       await $.state.set(ANNOUNCED, [])
+      await $.state.set(REOPEN, [])
     }
     if (plan) {
       await $.state.set(GOAL, goal)
@@ -1269,8 +1276,8 @@ async function milestoneDenial(
  * (a fresh session after `## Now` moved on): only when HEAD's plan still has stage n in `## Now`.
  * Undefined when HEAD has no plan, its Now is another stage, or git can't say.
  */
-async function committedChecks($: EngineInterface, planPath: string, stage: string, dir: string) {
-  const text = await git($, ['show', `HEAD:${planPath}`], dir).catch(() => undefined)
+async function committedChecks($: EngineInterface, planPath: string, stage: string, dir: string, ref = 'HEAD') {
+  const text = await git($, ['show', `${ref}:${planPath}`], dir).catch(() => undefined)
   if (typeof text !== 'string') return undefined
   const now = parsePlan(planPath, text).stage
   if (now?.number !== stage || !now.checks.length) return undefined
@@ -1355,7 +1362,7 @@ async function headOf($: EngineInterface, dir: string): Promise<string | undefin
  * didn't move, had none before, or lacked the plan then adds nothing.
  */
 async function landedClosings($: EngineInterface, planPath: string, heads: Map<string, string | undefined>) {
-  const closed: { n: string; dir: string }[] = []
+  const closed: Landed[] = []
   for (const [dir, before] of heads) {
     if (!before) continue
     const after = await headOf($, dir)
@@ -1364,9 +1371,144 @@ async function landedClosings($: EngineInterface, planPath: string, heads: Map<s
     const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
     if (typeof then !== 'string' || typeof now !== 'string') continue
     const open = new Set(stageList(then).filter(st => !st.done).map(st => st.number))
-    for (const st of stageList(now)) if (st.done && open.has(st.number) && !closed.some(c => c.n === st.number)) closed.push({ n: st.number, dir })
+    for (const st of stageList(now)) if (st.done && open.has(st.number) && !closed.some(c => c.n === st.number)) closed.push({ n: st.number, dir, before, after, plan: now })
   }
   return closed
+}
+
+/** A stage close found after the line ran: the repo, the commit it landed in, and the plan as that commit holds it. */
+type Landed = { n: string; dir: string; before: string; after: string; plan: string }
+
+/**
+ * Stages flagged to reopen, as each repo's new HEAD holds them once a line moved it: still ticked there (an amend that
+ * added the evidence, say), to check again, or unticked (reopened), to clear.
+ */
+async function flaggedAt($: EngineInterface, planPath: string, heads: Map<string, string | undefined>, flagged: readonly string[]) {
+  const ticked: Landed[] = []
+  const unticked: string[] = []
+  for (const [dir, before] of heads) {
+    if (!before) continue
+    const after = await headOf($, dir)
+    if (!after || after === before) continue
+    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+    if (typeof now !== 'string') continue
+    for (const st of stageList(now)) {
+      if (!flagged.includes(st.number) || ticked.some(c => c.n === st.number) || unticked.includes(st.number)) continue
+      if (st.done) ticked.push({ n: st.number, dir, before, after, plan: now })
+      else unticked.push(st.number)
+    }
+  }
+  return { ticked, unticked }
+}
+
+/**
+ * Why a close found only after the line ran doesn't pass the gates the pre-run check applies, read from the commit it
+ * landed in. Checks: that commit's `## Now` when it still holds the stage, else what this session last saw open there,
+ * else `## Now` at the commit before. Evidence: the report in that commit, with a row per check, as `evidenceDenial`
+ * asks. Undefined when it passes both.
+ */
+async function landedFailure($: EngineInterface, planPath: string, c: Landed, s: Session): Promise<string[] | undefined> {
+  const failed: string[] = []
+  const now = parsePlan(planPath, c.plan).stage
+  let open: string[] | undefined
+  let count: number | undefined
+  if (now?.number === c.n && now.checks.length) {
+    open = now.checks.filter(k => !k.done).map(k => k.text)
+    count = now.checks.length
+  } else if (s.checkCounts[c.n] !== undefined || s.openChecks[c.n] !== undefined) {
+    open = s.openChecks[c.n]
+    count = s.checkCounts[c.n]
+  } else {
+    const committed = await committedChecks($, planPath, c.n, c.dir, c.before).catch(() => undefined)
+    open = committed?.open
+    count = committed?.count
+  }
+  if (open?.length) failed.push(`its checks in \`## Now\` aren't all ticked:\n${open.slice(0, 8).map(k => `  - ${oneLine(k)}`).join('\n')}`)
+  const report = evidencePath(planPath, c.n)
+  // a report git can't find in the commit, or a git that fails, counts as missing
+  const text = await git($, ['show', `${c.after}:${report}`], c.dir).catch(() => undefined)
+  if (typeof text !== 'string') failed.push(`its evidence report \`${report}\` isn't in the commit`)
+  else {
+    const rows = reportRows(text)
+    if (rows < Math.max(count ?? 0, 1))
+      failed.push(
+        `its evidence report \`${report}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${count ? `${count} check${count === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}`,
+      )
+  }
+  return failed.length ? failed : undefined
+}
+
+/**
+ * What Claude reads on the result of a command whose commit closed stage n without passing the gates. A commit that
+ * also dropped the Mode line (closing the last stage does) disarmed the run, so the notice says to put it back.
+ */
+function reopenNotice(planPath: string, c: Landed, failed: string[]): string {
+  const modeGone = parsePlan(planPath, c.plan).mode === undefined
+  return [
+    `JBIT: this command's commit ticks stage ${c.n} done in \`${planPath}\`, but the commit doesn't pass the stage gates, so stage ${c.n} is not closed:`,
+    ...failed.map(f => `- ${f}`),
+    ...(modeGone ? [`The commit also removed the plan's \`Mode: autopilot\` line, which stops the run: put it back in \`## Now\` first.`] : []),
+    `Reopen it: untick stage ${c.n} in \`${planPath}\` and commit that, prove its checks with jbit:verify (which writes \`${evidencePath(planPath, c.n)}\`), tick them in \`## Now\`, then close the stage again — the plan edited with the Edit tool, and \`git commit\` on its own line.`,
+  ].join('\n')
+}
+
+/** Commands that only read the files they name, or (`echo`, `printf`) write only where they're redirected: their arguments write nothing. */
+const READERS = new Set(['cat', 'head', 'tail', 'less', 'more', 'grep', 'egrep', 'fgrep', 'rg', 'wc', 'diff', 'ls', 'stat', 'file', 'test', '[', 'echo', 'printf'])
+
+/**
+ * How a command treats files it's given: `all` when no argument writes (a reader), `operands` when a file it's given
+ * is only read but its script may write elsewhere (`sed` without `-i`, `awk` without `-i inplace`, `prettier --check`),
+ * else undefined.
+ */
+function readsOnly(name: string, args: string[]): 'all' | 'operands' | undefined {
+  if (READERS.has(name)) return 'all'
+  if (name === 'sed') return args.some(a => /^-[A-Za-z]*i/.test(a) || a.startsWith('--in-place')) ? undefined : 'operands'
+  if (/^[gmn]?awk$/.test(name)) {
+    const inPlace = args.some((a, k) => ((a === '-i' || a === '--include') && /^inplace/.test(args[k + 1] ?? '')) || /^(?:-i|--include=)inplace/.test(a))
+    return inPlace ? undefined : 'operands'
+  }
+  if ((name === 'npx' || name === 'bunx') && args[0] === 'prettier') return readsOnly('prettier', args.slice(1))
+  if (name === 'prettier') return args.some(a => /^(?:-c|--check|-l|--list-different)$/.test(a)) && !args.some(a => /^(?:-w|--write)$/.test(a)) ? 'all' : undefined
+  return undefined
+}
+
+/**
+ * Whether a command that isn't git names the plan file: as an argument, an output redirection's target or in the text
+ * its heredoc feeds it; by its path relative to where the command runs (`docs/PLAN.md`, `./docs/PLAN.md`, `PLAN.md`
+ * after `cd docs`, relative to the repo when the directory is unknown), absolute under the session's directory, or
+ * inside a longer word (`--file=docs/PLAN.md`, a script string). Case is ignored, as `samePath` ignores it. A
+ * guardrail on the line as written: a script that writes the plan without naming it is caught after the run.
+ */
+export function namesPlan(cmd: Command, planPath: string, root?: string): boolean {
+  const head = cmd.words[0] ?? ''
+  if (head === 'git' || head.endsWith('/git')) return false
+  const plan = joinPath('.', planPath).toLowerCase()
+  const absolute = root ? joinPath(root, plan).toLowerCase() : undefined
+  const escape = (p: string) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const paths = [plan, ...(absolute ? [absolute] : [])].map(escape).join('|')
+  const inside = new RegExp(`(?:^|[^\\w./-])(?:${paths})(?:$|[^\\w.-])`)
+  const dir = cmd.dir === null ? '.' : cmd.dir.toLowerCase()
+  /** The word is the plan's path, from where the command runs (or the repo, when that's unknown). */
+  const exact = (word: string) => {
+    const at = joinPath(dir, word.toLowerCase())
+    return at === plan || at === absolute
+  }
+  // `./docs/PLAN.md` inside a longer word reads as `docs/PLAN.md`
+  const embedded = (text: string) => inside.test(text.toLowerCase().replace(/(?<![\w.])\.\//g, ''))
+  const hit = (word: string) => exact(word) || embedded(word)
+  const name = head.slice(head.lastIndexOf('/') + 1)
+  const args = cmd.words.slice(1)
+  const reads = readsOnly(name, args)
+  const named = reads === 'all' ? false : reads === 'operands' ? args.some(a => !exact(a) && embedded(a)) : args.some(hit)
+  return named || (cmd.targets ?? []).some(hit) || (reads !== 'all' && cmd.input !== undefined && embedded(cmd.input))
+}
+
+function planWriteDenial(planPath: string, cmd: Command): string {
+  const shown = cutAt(oneLine(cmd.words.join(' ')), 80)
+  return [
+    `JBIT blocked this command: it names the plan file \`${planPath}\` (\`${shown}\`) and commits on the same line, and the commit gates read what a commit closes before the line runs, when the plan isn't written yet.`,
+    `Edit \`${planPath}\` with the Edit tool (or a separate command) first, then run the commit on its own line.`,
+  ].join('\n')
 }
 
 const outwardDenial = (reason: string) =>
@@ -1474,7 +1616,9 @@ export const register: Register = on => {
       if (was !== 'autopilot') return result
       if (plan?.mode?.kind === 'paused')
         await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'JBIT' })
-      else if (plan && !plan.current && (await announce($, ['all']))) await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
+      // a stage whose close failed the gates after the run isn't done, whatever the plan's ticks say
+      else if (plan && !plan.current && !((await $.state.get(REOPEN)).value ?? []).length && (await announce($, ['all'])))
+        await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
       return result
     }
     // a Mode line left from an earlier session (or shipped in a repo) never drives this one
@@ -1609,6 +1753,11 @@ export const register: Register = on => {
     if (!commits.length) return next(e)
 
     const root = await $.session.cwd().catch(() => '.')
+    // under autopilot, a line that writes the plan and commits would close a stage the gates below never see ticked
+    if (plan && driving(plan, s)) {
+      const writer = commands.slice(0, commits[commits.length - 1]).find(c => namesPlan(c, plan.path, root))
+      if (writer) return { deny: planWriteDenial(plan.path, writer) }
+    }
     // every commit on the line is scanned for secrets before any stage gate runs, so nothing a gate does can skip a scan
     const pendings = []
     for (const at of commits) {
@@ -1640,31 +1789,59 @@ export const register: Register = on => {
         if (missing) return { deny: missing }
       }
     }
-    // HEAD in each commit's repo before the line runs, so a stage ticked and committed by the same line is still seen
-    const watch = plan && (armedBefore || s.armed)
+    // HEAD in each commit's repo before the line runs, so a stage ticked and committed by the same line is still seen; a
+    // stage flagged to reopen is watched even once its close dropped the Mode line and disarmed the session
+    const flagged = plan ? ((await $.state.get(REOPEN)).value ?? []) : []
+    const watch = plan && (armedBefore || s.armed || flagged.length > 0)
     const heads = new Map<string, string | undefined>()
     if (watch) for (const { dir } of pendings) if (!heads.has(dir)) heads.set(dir, await headOf($, dir))
     const result = await next(e)
+    // a close the pre-run diff couldn't see is checked against the commit it landed in, and so is a stage flagged to reopen
+    // that the new HEAD still has ticked (an amend, say): one that fails the gates isn't told (nor marked told, so its real
+    // close later still is), stays flagged, and whoever ran the line, main session or subagent, is told to reopen it
+    const reopen: string[] = []
+    // a close the pre-run gates passed clears its flag
+    const still = new Set(result.deny ? flagged : flagged.filter(n => !closing.some(c => c.n === n)))
+    const passed = new Set<string>()
     if (plan && watch && !result.deny)
       try {
-        for (const c of await landedClosings($, plan.path, heads)) if (!closing.some(k => k.n === c.n)) closing.push(c)
+        const check = async (c: Landed) => {
+          const failed = await landedFailure($, plan.path, c, s)
+          if (failed) {
+            reopen.push(reopenNotice(plan.path, c, failed))
+            still.add(c.n)
+          } else {
+            closing.push(c)
+            passed.add(c.n)
+            still.delete(c.n)
+          }
+        }
+        for (const c of await landedClosings($, plan.path, heads)) if (!closing.some(k => k.n === c.n)) await check(c)
+        if (flagged.length) {
+          const at = await flaggedAt($, plan.path, heads, flagged)
+          for (const n of at.unticked) still.delete(n)
+          for (const c of at.ticked) if (!closing.some(k => k.n === c.n)) await check(c)
+        }
       } catch {
         // a repo the hook can't read after the run adds nothing
       }
-    // progress for the user, under autopilot only; a notice that can't be sent never touches the commit's result
-    if (plan && closing.length && !result.deny && (armedBefore || s.armed)) {
-      const told: Told[] = []
-      await announceClosed($, plan.path, closing, told).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
+    if (plan && (still.size !== flagged.length || flagged.some(n => !still.has(n)))) await $.state.set(REOPEN, [...still]).catch(() => undefined)
+    const notes: string[] = [...reopen]
+    // progress for the user, under autopilot only (a flagged stage's passing close was under it too); a notice that can't be sent never touches the commit's result
+    const told = armedBefore || s.armed ? closing : closing.filter(c => passed.has(c.n) && flagged.includes(c.n))
+    if (plan && told.length && !result.deny) {
+      const fresh: Told[] = []
+      await announceClosed($, plan.path, told, fresh).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
       // the main session, which writes the user's progress note, reads it due as the commit's result comes back
       if (!e.agentId)
         try {
-          const reminder = progressReminder(told)
-          if (reminder) return { ...result, context: [...(result.context ?? []), reminder] }
+          const reminder = progressReminder(fresh)
+          if (reminder) notes.push(reminder)
         } catch {
-          return result
+          // a reminder that can't be built leaves the result as it was
         }
     }
-    return result
+    return notes.length ? { ...result, context: [...(result.context ?? []), ...notes] } : result
   }).catch(($, e, next) => {
     if (next.called) return next(e)
     // a guard that cannot read the repository steps aside rather than block every commit

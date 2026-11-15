@@ -22,6 +22,10 @@ export interface Command {
   why?: string
   dynamic?: true
   mentions?: string[]
+  /** The files its output redirections name (`> out.txt`, `>> docs/PLAN.md`, `&> log`, `<> f`), as written; `< in` is a read and isn't one. */
+  targets?: string[]
+  /** The text a heredoc or here-string feeds it, when it is the command the redirection was written on. */
+  input?: string
 }
 
 /** How deep `bash -c`, `eval`, `watch` and `$(…)` strings are followed; past it a command is `opaque`. */
@@ -87,6 +91,9 @@ function parseRecords(recs: Rec[], start: string | null, depth: number): Command
     }
     for (const sub of rec.subs) commands.push(...nestedRecs(sub, rec.words, dir, depth))
     for (const cmd of expand(rec.words, dir, depth, rec)) {
+      if (rec.targets) cmd.targets = rec.targets
+      // a heredoc's text belongs to the command it was written on, not to the commands a shell reading it runs
+      if (rec.stdin !== undefined && cmd.words.every(w => rec.words.includes(w))) cmd.input = rec.stdin
       const w = cmd.words
       if (!cmd.opaque && !cmd.dynamic && (w[0] === 'cd' || w[0] === 'pushd')) {
         const target = w.slice(1).find(a => !a.startsWith('-'))
@@ -485,6 +492,8 @@ interface Rec {
   words: string[]
   subs: Rec[][]
   stdin?: string
+  /** The targets of its redirections. */
+  targets?: string[]
   dyn: Set<string>
   opaque?: true
   /** A heredoc of this command's body is still to be read. */
@@ -609,6 +618,8 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
   let dynWord = false
   // the next word is a redirection's target, or a here-string's text
   let drop = false
+  // the redirection being read writes (`>`, `>>`, `&>`, `<>`), so its target is kept
+  let writes = false
   let here = false
   let parens = 0
   const heredocs: { tag: string; strip: boolean; quoted: boolean; rec: Rec }[] = []
@@ -623,8 +634,10 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
       if (here) {
         rec.stdin = word
         here = false
-      } else if (drop) drop = false
-      else {
+      } else if (drop) {
+        if (writes) rec.targets = [...(rec.targets ?? []), word]
+        drop = false
+      } else {
         const top = cases.length - 1
         if (word === 'case' && atStart()) cases.push('subject')
         else if (word === 'esac' && cases[top] !== 'subject' && atStart()) cases.pop()
@@ -729,6 +742,15 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
       i = take(substitution(s, i + 2, level, scan), i)
       continue
     }
+    if (c === '&' && s[i + 1] === '>') {
+      // `&>` and `&>>`: standard output and error to a file
+      endWord()
+      i += 2
+      if (s[i] === '>') i++
+      drop = true
+      writes = true
+      continue
+    }
     if (c === ';' || c === '&' || c === '|' || c === '(' || c === ')') {
       if (c === '(') parens++
       if (c === ')') {
@@ -779,8 +801,10 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
         word = ''
         inWord = false
       } else endWord()
+      const from = i
       i++
       while (s[i] === '>' || s[i] === '<' || s[i] === '|') i++
+      writes = s.slice(from, i).includes('>')
       if (s[i] === '&') {
         i++
         while (/\d|-/.test(s[i] ?? '')) i++

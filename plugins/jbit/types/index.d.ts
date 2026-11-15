@@ -11,6 +11,8 @@ declare module 'claude-code' {
       cleared: string[]
       /** What this Goal's progress notices have told the user: stage numbers, and `all` once every stage is done; reset with a new Goal. */
       announced: string[]
+      /** Stages whose close a commit landed without passing the stage gates (found after the line ran), checked again at each later commit until one closes them passing or unticks them; reset with a new Goal. */
+      reopen: string[]
       /** For each stage number, the checks last seen unticked in `## Now` while that stage was current. */
       openChecks: Record<string, string[]>
       /** For each stage number, how many checks `## Now` listed when last seen while that stage was current; the evidence gate wants a report row per check. */

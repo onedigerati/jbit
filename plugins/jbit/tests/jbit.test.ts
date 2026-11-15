@@ -14,6 +14,7 @@ import {
   milestoneEvidencePath,
   milestoneRequirements,
   namedCommand,
+  namesPlan,
   parsePlan,
   parseRoadmap,
   reportRows,
@@ -1567,35 +1568,65 @@ test('a denied stage-closing commit gets no reminder, and the one that lands lat
 })
 
 /**
- * Git for a line that ticks the plan and commits in one go: `git rev-parse HEAD` answers `a1` until the core Bash stub runs
- * the line (`b2` after, unless `moves` says the commit failed), and `git show <ref>:docs/PLAN.md` answers the plan at that
- * ref. `staged()` answers the pre-run diff, empty when the tick isn't on disk yet.
+ * A repo's history for lines that commit: HEAD starts at `a1` and each run of the core Bash stub moves it along `next`.
+ * `git rev-parse` answers HEAD; `git show <ref>:<path>` answers `plans[ref]` for `docs/PLAN.md` and `reports[ref]` for
+ * `report` (default stage 2's), and fails (exit 128) for any other ref or path, so a check reading the wrong commit or
+ * file finds nothing. `staged()` answers the pre-run diff.
  */
-function tickAndCommitGit(on: On, stage: ReturnType<typeof closingStage>, opts: { staged?: () => string; moves?: boolean } = {}) {
+function historyGit(
+  on: On,
+  h: { plans: Record<string, string>; reports?: Record<string, string>; report?: string; next?: Record<string, string>; staged?: () => string },
+) {
   let head = 'a1'
+  const report = h.report ?? 'docs/evidence/stage-2/report.md'
+  const fail = { value: { exitCode: 128, stdout: '', stderr: 'fatal: invalid object name', isStdoutTruncated: false, isStderrTruncated: false } }
+  const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+  const shown: string[] = []
   on('process.run', (_, e) => {
-    const ref = e.argv[1] === 'show' ? String(e.argv[2]).split(':')[0] : ''
-    const stdout =
-      e.argv[1] === 'rev-parse'
-        ? `${head}\n`
-        : e.argv[1] === 'show'
-          ? (ref === 'HEAD' ? head : ref) === 'a1'
-            ? stage.before
-            : stage.after
-          : e.argv.includes('--cached')
-            ? (opts.staged?.() ?? '')
-            : ''
-    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    if (e.argv[1] === 'rev-parse') return ok(`${head}\n`)
+    if (e.argv[1] === 'show') {
+      const spec = String(e.argv[2])
+      shown.push(spec)
+      const at = spec.indexOf(':')
+      const ref = spec.slice(0, at) === 'HEAD' ? head : spec.slice(0, at)
+      const path = spec.slice(at + 1)
+      const text = path === 'docs/PLAN.md' ? h.plans[ref] : path === report ? h.reports?.[ref] : undefined
+      return text === undefined ? fail : ok(text)
+    }
+    if (e.argv.includes('--cached')) return ok(h.staged?.() ?? '')
+    return ok('')
   })
   on('tool.call', () => {
-    if (opts.moves ?? true) head = 'b2'
+    head = h.next?.[head] ?? head
     return { result: { text: 'ran' } }
+  })
+  return { shown, head: () => head }
+}
+
+/**
+ * Git for a line that ticks the plan and commits in one go: HEAD `a1` holds the plan before, and the line moves it to
+ * `b2` (unless `moves` is false), which holds the closed plan (`after` when given) and the stage's report (`report`
+ * when given, none when `missing`).
+ */
+function tickAndCommitGit(
+  on: On,
+  stage: ReturnType<typeof closingStage>,
+  opts: { staged?: () => string; moves?: boolean; after?: string; missing?: boolean; report?: string } = {},
+) {
+  const [path, text] = Object.entries(stage.report)[0]!
+  return historyGit(on, {
+    plans: { a1: stage.before, b2: opts.after ?? stage.after },
+    reports: opts.missing ? {} : { b2: opts.report ?? text },
+    report: path,
+    next: (opts.moves ?? true) ? { a1: 'b2' } : {},
+    staged: opts.staged,
   })
 }
 
-const TICK_AND_COMMIT = `sed -i 's/- \\[ \\] 2\\./- [x] 2./' docs/PLAN.md && git add -A && git commit -qm "Stage 2" && echo ok`
+/** A line whose script ticks the plan without naming it, then commits: the pre-run refusal can't see it, the post-run check can. */
+const TICK_AND_COMMIT = `./scripts/close-stage.sh 2 && git add -A && git commit -qm "Stage 2" && echo ok`
 
-test('a line that ticks the plan and commits, invisible to the pre-run diff, still gets the reminder and the notice', async ($, on) => {
+test('a line that ticks the plan and commits, invisible to the pre-run diff, passing the gates at its commit, still gets the reminder and the notice', async ($, on) => {
   const stage = closingStage(2)
   const plan = { text: stage.before, files: stage.report as Record<string, string> }
   const sent = engine(on, plan)
@@ -1670,6 +1701,305 @@ test('a repo with no HEAD before the line, a plan missing at the old HEAD, or gi
     expect(r.context).toBeUndefined()
   }
   expect(sent.notes).toEqual([])
+})
+
+// ---- the commit gates on a line that writes the plan: refused before it runs, or checked against its commit after ----
+
+const SED_AND_COMMIT = `sed -i 's/- \\[ \\] 2\\./- [x] 2./' docs/PLAN.md && git add -A && git commit -qm "Stage 2"`
+
+const PLAN_WRITE_DENIAL = [
+  "JBIT blocked this command: it names the plan file `docs/PLAN.md` (`sed -i s/- \\[ \\] 2\\./- [x] 2./ docs/PLAN.md`) and commits on the same line, and the commit gates read what a commit closes before the line runs, when the plan isn't written yet.",
+  'Edit `docs/PLAN.md` with the Edit tool (or a separate command) first, then run the commit on its own line.',
+].join('\n')
+
+test('names the plan outside git: as an argument, a redirection, a path from elsewhere, or inside a word; readers and git do not count', () => {
+  const names = (line: string) => parseCommands(line).some(c => namesPlan(c, 'docs/PLAN.md', '/repo'))
+  for (const line of [
+    "sed -i 's/x/y/' docs/PLAN.md",
+    'echo x >> docs/PLAN.md',
+    'printf x > ./docs/PLAN.md',
+    "perl -pi -e 's/a/b/' /repo/docs/PLAN.md",
+    "cd docs && sed -i 's/a/b/' PLAN.md",
+    'cat notes.md | tee docs/plan.md',
+    "python3 -c \"open('docs/PLAN.md','a').write('x')\"",
+    'cat docs/PLAN.md > docs/PLAN.md.new && mv docs/PLAN.md.new docs/PLAN.md',
+  ])
+    expect([line, names(line)]).toEqual([line, true])
+  // the review's ways past it
+  for (const line of [
+    `python3 -c "open('./docs/PLAN.md','w').write('x')"`,
+    `node -e "require('fs').appendFileSync('./docs/PLAN.md', 'x')"`,
+    'cd "$(git rev-parse --show-toplevel)" && sed -i x ./docs/PLAN.md',
+    'cd /repo/docs && sed -i x PLAN.md',
+    'cd /REPO/Docs && sed -i x plan.md',
+    'echo x &>docs/PLAN.md',
+    'echo x &>> docs/PLAN.md',
+    'echo x>>docs/PLAN.md',
+    'echo x 1>docs/PLAN.md',
+    'echo x >|docs/PLAN.md',
+    "python3 - <<'EOF'\nopen('docs/PLAN.md', 'a').write('x')\nEOF",
+    "sed -i.bak 's/a/b/' docs/PLAN.md",
+    "sed -Ei 's/a/b/' docs/PLAN.md",
+    "sed --in-place 's/a/b/' docs/PLAN.md",
+    "awk -i inplace '{print}' docs/PLAN.md",
+    "sed -n 's/a/b/w docs/PLAN.md' notes.md",
+    'npx prettier --write docs/PLAN.md',
+    'sed -i x Docs/Plan.md',
+  ])
+    expect([line, names(line)]).toEqual([line, true])
+  for (const line of [
+    'git add docs/PLAN.md',
+    'git -C . diff -- docs/PLAN.md',
+    'cat docs/PLAN.md',
+    "grep -c '\\[ \\]' docs/PLAN.md",
+    'echo docs/PLAN.md.bak',
+    'echo src/docs/PLAN.md',
+    "sed -i 's/a/b/' README.md",
+    './scripts/close-stage.sh 2',
+    // readers, and words that only print the path
+    "sed -n '1,20p' docs/PLAN.md",
+    "awk '/Now/' docs/PLAN.md",
+    'wc -l < docs/PLAN.md',
+    'npx prettier --check docs/PLAN.md',
+    "echo 'updated docs/PLAN.md'",
+    "printf '%s\\n' docs/PLAN.md",
+    'echo x > /repo/docs/PLAN.md.bak',
+    "cat <<'EOF'\ndocs/PLAN.md\nEOF",
+  ])
+    expect([line, names(line)]).toEqual([line, false])
+})
+
+test('under autopilot, a line that writes the plan and commits is refused before it runs, naming the plan', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  let ran = 0
+  on('process.run', () => ({ value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  on('tool.call', () => {
+    ran++
+    return { result: { text: 'ran' } }
+  })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: SED_AND_COMMIT })
+  expect(r.deny).toBe(PLAN_WRITE_DENIAL)
+  for (const command of [
+    'echo "- [x] it works" >> docs/PLAN.md; git commit -am "Stage 2"',
+    "cd docs && sed -i 's/- \\[ \\] 2/- [x] 2/' PLAN.md && cd .. && git commit -am 'Stage 2'",
+    "perl -pi -e 's/a/b/' /repo/docs/PLAN.md && git commit -qam x",
+    `python3 -c "open('./docs/PLAN.md','a').write('- [x] 2. Share mode')" && git commit -qam x`,
+    'cd "$(git rev-parse --show-toplevel)" && sed -i x ./docs/PLAN.md && git commit -am x',
+    'echo x &>docs/PLAN.md && git commit -am x',
+    "python3 - <<'EOF'\nopen('docs/PLAN.md', 'a').write('x')\nEOF\ngit commit -am x",
+  ]) {
+    const denied = await $.tool.call({ tool: 'Bash', command })
+    expect([command, denied.deny?.split('\n')[1]]).toEqual([command, 'Edit `docs/PLAN.md` with the Edit tool (or a separate command) first, then run the commit on its own line.'])
+  }
+  // a long command is shown cut to 80 characters
+  const long = await $.tool.call({ tool: 'Bash', command: `python3 -c "${'x = 1; '.repeat(20)}open('docs/PLAN.md','a')" && git commit -qam x` })
+  expect(long.deny).toContain(`(\`python3 -c ${'x = 1; '.repeat(20)}`.slice(0, 82) + '`)')
+  // a subagent's line is refused too
+  expect((await $.tool.call({ tool: 'Bash', command: SED_AND_COMMIT, agentId: 'a0' } as never)).deny).toBe(PLAN_WRITE_DENIAL)
+  expect(ran).toBe(0)
+  expect(sent.notes).toEqual([])
+})
+
+test('under autopilot, a line that only commits, only edits the plan, stages it with git, or edits it after the commit still runs', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  engine(on, plan)
+  closingGit(on, () => '', () => stage.before)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  for (const command of [
+    'git commit -m "wip"',
+    "sed -i 's/- \\[ \\] 2/- [x] 2/' docs/PLAN.md",
+    'echo x >> docs/PLAN.md',
+    'git add docs/PLAN.md && git commit -m "Plan: stage 2"',
+    'cat docs/PLAN.md && git commit -m "wip"',
+    'git commit -m "wip" && echo x >> docs/PLAN.md',
+    "sed -n '1,20p' docs/PLAN.md && git commit -m wip",
+    "awk '/Now/' docs/PLAN.md && git commit -m wip",
+    'wc -l < docs/PLAN.md && git commit -m wip',
+    'npx prettier --check docs/PLAN.md && git commit -m wip',
+    "echo 'updated docs/PLAN.md' && git commit -m wip",
+    "printf 'updated %s\\n' docs/PLAN.md && git commit -m wip",
+    'echo "Plan: tick docs/PLAN.md" | git commit -F -',
+  ]) {
+    const r = await $.tool.call({ tool: 'Bash', command })
+    expect([command, r.deny, r.result]).toEqual([command, undefined, { text: 'ran' }])
+  }
+})
+
+test('without autopilot driving, a line that writes the plan and commits runs', async ($, on) => {
+  const stage = closingStage(2, 'Open: none')
+  engine(on, { text: stage.before, files: stage.report })
+  closingGit(on, () => '', () => stage.before)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: SED_AND_COMMIT })
+  expect(r.deny).toBeUndefined()
+  expect(r.result).toEqual({ text: 'ran' })
+})
+
+const REOPEN_STAGE_2 =
+  'Reopen it: untick stage 2 in `docs/PLAN.md` and commit that, prove its checks with jbit:verify (which writes `docs/evidence/stage-2/report.md`), tick them in `## Now`, then close the stage again — the plan edited with the Edit tool, and `git commit` on its own line.'
+
+const reopenFor = (failed: string, n = '2') =>
+  [
+    `JBIT: this command's commit ticks stage ${n} done in \`docs/PLAN.md\`, but the commit doesn't pass the stage gates, so stage ${n} is not closed:`,
+    failed,
+    REOPEN_STAGE_2.replaceAll('stage 2', `stage ${n}`).replace('stage-2', `stage-${n}`),
+  ].join('\n')
+
+const NO_REPORT = "- its evidence report `docs/evidence/stage-2/report.md` isn't in the commit"
+
+test('a close found after the run whose commit lacks the evidence report is not told, gets no reminder, and is flagged to reopen', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  const git = tickAndCommitGit(on, stage, { missing: true })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.deny).toBeUndefined()
+  expect(r.result).toEqual({ text: 'ran' })
+  expect(r.context).toEqual([reopenFor(NO_REPORT)])
+  expect(sent.notes).toEqual([])
+  // the report was looked for at the new commit, by its path
+  expect(git.shown).toContain('b2:docs/evidence/stage-2/report.md')
+})
+
+test('a close found after the run whose report is short of rows for its checks is flagged to reopen', async ($, on) => {
+  const stage = closingStage(2)
+  const after = stage.after.replace('- [x] it works', '- [x] it works\n- [x] it ships')
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { after })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.context).toEqual([reopenFor('- its evidence report `docs/evidence/stage-2/report.md` has 1 check row in its table and the stage has 2 checks in `## Now`')])
+  expect(sent.notes).toEqual([])
+})
+
+test('a close found after the run with checks unticked in its commit is not told and is flagged to reopen; a later good close still is told', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  const bad = stage.after.replace('- [x] it works', '- [ ] it works\n- [ ] it ships')
+  // the first line lands the bad close at b2; the reopen lands at c3 (open again); the good close lands at d4
+  historyGit(on, {
+    plans: { a1: stage.before, b2: bad, c3: stage.before, d4: stage.after },
+    reports: { d4: reportWith(1) },
+    next: { a1: 'b2', b2: 'c3', c3: 'd4' },
+  })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.context).toEqual([reopenFor(["- its checks in `## Now` aren't all ticked:", '  - it works', '  - it ships', NO_REPORT].join('\n'))])
+  expect(sent.notes).toEqual([])
+  // the reopen commit unticks it, clearing the flag; the close that follows passes and is told, its notice never used up
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -qam "Reopen stage 2"' })).context).toBeUndefined()
+  const good = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(good.context).toEqual([STAGE_2_REMINDER])
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test("a subagent's close found after the run with unticked checks is flagged to reopen too, with no notice", async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { after: stage.after.replace('- [x] it works', '- [ ] it works') })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT, agentId: 'a0' } as never)
+  expect(r.context).toEqual([reopenFor("- its checks in `## Now` aren't all ticked:\n  - it works")])
+  expect(sent.notes).toEqual([])
+})
+
+test('an amend that adds the missing report to a flagged close is checked again: passing, it is told and reminded', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  // b2 closes without the report; the amend b3 still lacks it; the amend c3 adds it
+  historyGit(on, {
+    plans: { a1: stage.before, b2: stage.after, b3: stage.after, c3: stage.after },
+    reports: { c3: reportWith(1) },
+    next: { a1: 'b2', b2: 'b3', b3: 'c3' },
+  })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  expect((await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })).context).toEqual([reopenFor(NO_REPORT)])
+  plan.text = stage.after
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit --amend --no-edit' })).context).toEqual([reopenFor(NO_REPORT)])
+  expect(sent.notes).toEqual([])
+  const r = await $.tool.call({ tool: 'Bash', command: 'git add docs/evidence/stage-2 && git commit --amend --no-edit' })
+  expect(r.context).toEqual([STAGE_2_REMINDER])
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+  // the flag is cleared: a later commit checks nothing again
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -qam wip' })).context).toBeUndefined()
+})
+
+test('a real close shape found after the run, its commit moving `## Now` to the next stage, is checked against what the session saw', async ($, on) => {
+  const stage = closingStage(2)
+  const nowAt3 = (text: string) => text.replace(/Stage 2 of 3 · Share mode\nChecks:\n- \[x\] it works/, 'Stage 3 of 3 · Polish\nChecks:\n- [ ] copy reads well')
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { after: nowAt3(stage.after) })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  // the session saw stage 2's one check ticked: the close passes, though the commit's Now holds stage 3's open check
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.context).toEqual([STAGE_2_REMINDER])
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('a real close shape found after the run, with stage 2 check the session saw open, is flagged to reopen', async ($, on) => {
+  const stage = closingStage(2)
+  const open = (text: string) => text.replace('- [x] it works', '- [ ] it works')
+  const nowAt3 = (text: string) => text.replace(/Stage 2 of 3 · Share mode\nChecks:\n- \[x\] it works/, 'Stage 3 of 3 · Polish\nChecks:\n- [ ] copy reads well')
+  const plan = { text: open(stage.before), files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, { ...stage, before: open(stage.before) }, { after: nowAt3(stage.after) })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.context).toEqual([reopenFor("- its checks in `## Now` aren't all ticked:\n  - it works")])
+  expect(sent.notes).toEqual([])
+})
+
+test('a failing close of the last stage that drops the Mode line is never told "All 3 stages done.", and says to put the Mode line back', async ($, on) => {
+  const stage = closingStage(3)
+  const after = stage.after.replace('Mode: autopilot\n', '')
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  // b2 closes stage 3 without its report and drops the Mode line; the amend c3 adds the report
+  historyGit(on, {
+    plans: { a1: stage.before, b2: after, c3: after },
+    reports: { c3: reportWith(1) },
+    report: 'docs/evidence/stage-3/report.md',
+    next: { a1: 'b2', b2: 'c3' },
+  })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT.replace('2', '3') })
+  expect(r.context).toEqual([
+    [
+      "JBIT: this command's commit ticks stage 3 done in `docs/PLAN.md`, but the commit doesn't pass the stage gates, so stage 3 is not closed:",
+      "- its evidence report `docs/evidence/stage-3/report.md` isn't in the commit",
+      "The commit also removed the plan's `Mode: autopilot` line, which stops the run: put it back in `## Now` first.",
+      REOPEN_STAGE_2.replaceAll('stage 2', 'stage 3').replace('stage-2', 'stage-3'),
+    ].join('\n'),
+  ])
+  plan.text = after
+  await $.turn.complete(ended('t2'))
+  expect(sent.notes).toEqual([])
+  // the flag outlives the disarm: an amend that adds the report closes it, and only then is it all done
+  const fixed = await $.tool.call({ tool: 'Bash', command: 'git add docs/evidence/stage-3 && git commit --amend --no-edit' })
+  expect(fixed.context).toBeUndefined()
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+  await $.turn.complete(ended('t3'))
+  expect(sent.notes).toEqual(['All 3 stages done.'])
 })
 
 test('reads the stage list: number, the name before the dash, and whether it is ticked', () => {

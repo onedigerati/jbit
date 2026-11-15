@@ -1,0 +1,43 @@
+# Headless debug-plugin runs, 2026-11-14, Claude Code 2.1.325, model sonnet, from an empty git repo.
+# Plugin: debug-register.ts beside this file, one copy per mode with MODE baked in for the __MODE__ placeholder.
+# TRACE is the plugin's last ui_status: the order its hooks fired in the run. RESULT is the model's final reply.
+
+## mode=none
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-none --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+
+## mode=ctx
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-ctx --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: SUBMITCTXWORD
+
+## mode=text
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-text --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: TEXTWORD
+
+## mode=compose
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-compose --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+
+## mode=pctx
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-pctx --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+
+## mode=inval: invalidate('prompt.context') and invalidate('prompt.section') in submit, plus the compose and pctx routes
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir dbg-inval --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+
+## mode=ctx with ~9 KB of context and two tool rounds (dbg-long)
+$ claude -p "Read a.txt, then read b.txt (one at a time), then reply with their contents followed by every code word your instructions or context ask you to include." --plugin-dir dbg-long --model sonnet --max-turns 6 --max-budget-usd 0.5 --allowedTools Read --output-format stream-json --verbose
+TOOL_USE: Read {"file_path": "<scratchpad>/emptyrepo/a.txt"}
+TOOL_USE: Read {"file_path": "<scratchpad>/emptyrepo/b.txt"}
+RESULT: "a.txt: alpha\nb.txt: beta\n\nCode word: LONGCTXWORD. A hook's context block asked for it, and that block was mostly repeated filler text." | num_turns 3
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+
+## First attempt (one copy, mode from an env var, plus a plain turn.step hook): every run answered NONE, even mode=text; the debug log showed the module refused at load, so the turn.step hook was dropped:
+2026-11-15T00:09:17.582Z [ERROR] hooks module jbitdbg@inline failed to load: jbitdbg: <scratchpad>/dbg/hooks/register.ts, compiled line 29 `on("turn.step", ($, e, next) => {`: the hook on "turn.step" is not an async generator: turn.step streams, so it takes async function* ($, e, next) { ... }, which yields the chunks and returns the result; $ is always spelled $.noun.event(...) at the call site, on is always on("<event>", hook), and next.to always next.to(e, "<tier>")

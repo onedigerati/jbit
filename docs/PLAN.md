@@ -7,15 +7,13 @@ Make the user's "JBIT, just build it…" command work in a headless run (`claude
 2026-11-14 · tests: 407 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 26 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
 
 ## Now
-Stage 1 of 3 · Spike: rules at submit
-Risk: UI only (a written answer and a throwaway debug copy of the plugin in the scratchpad; nothing shipped)
-Checks:
-- [ ] `docs/research/hook-rules-at-submit.md` answers: when a hook first learns the prompt (`prompt.submit`), can it put text in front of the model for that same turn, and how — a submit handler changing or adding to the prompt, the system prompt composed again, a `turn.start` or first-tool hook, or none; with each option tried, its result, the engine docs or types read (dated), a confidence and what it changes in stages 2–3 (proof: the note, backed by debug-plugin headless runs saved beside it, a test can't show what the engine sends the model)
+Stage 2 of 3 · Rules after the command — the hook uses `prompt.submit`'s `context` so the user's own JBIT or typed command brings its working rules into that turn
 Agents: lean
+Mode: autopilot
 Open: none
 
 ## Stages
-- [ ] 1. Spike: rules at submit — how a hook can reach the model once the prompt is known, tried in a debug copy under `claude -p`
+- [x] 1. Spike: rules at submit — how a hook can reach the model once the prompt is known, tried in a debug copy under `claude -p`
 - [ ] 2. Rules after the command — the hook uses what the spike found so the user's own JBIT or typed command brings its working rules (start jbit:autopilot, the level, the progress note) into that turn; only for a plan that existed at the command, cleared when the user moves on; tests
 - [ ] 3. Proof, docs, 0.15.0 — headless `JBIT, just build it. Autopilot, lean.` runs autopilot with a progress note; `progress-note` back on the JBIT wording; READMEs and field guide; version 0.15.0
 
@@ -26,6 +24,8 @@ Open: none
 - 2026-11-14 · (defaulted) Version 0.15.0: new behaviour, a minor bump under the 2026-11-10 rule.
 - 2026-11-14 · Agents: lean, carried from the last plan.
 - 2026-11-14 · Scale: three stages, one plan, no charter.
+- 2026-11-14 · Stage 2 attaches the working rules as a `prompt.submit` `context` entry: in a headless run the system prompt and first-message context blocks are built once, before `prompt.submit`, and never again in the run, while a submit `context` entry reaches the model for the whole turn and isn't shown to the user; a text rewrite also works but changes the user's message on screen — [research](research/hook-rules-at-submit.md). The fallback (document the limit) isn't needed.
+- 2026-11-14 · Agents: lean, named by the user in their autopilot command ("JBIT, just build it. Autopilot, lean.").
 
 ## Open questions
 - Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the docs now say it covers shell commands.

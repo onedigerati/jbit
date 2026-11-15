@@ -1,0 +1,13 @@
+# Verify rerun, 2026-11-14: the control, the submit-context route and the recompose route, from the debug copies the note describes (Claude Code 2.1.325).
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir <scratchpad>/dbg-none --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir <scratchpad>/dbg-ctx --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: SUBMITCTXWORD
+
+$ claude -p "Reply with every code word your instructions or context ask you to include, comma-separated, or NONE if there are none. Use no tools." --plugin-dir <scratchpad>/dbg-compose --model sonnet --max-turns 2 --max-budget-usd 0.3 --output-format stream-json --verbose
+TRACE: DBG context(prompt=none)>compose(prompt=none)>submit(sdk)>turn.start
+RESULT: NONE
+

@@ -266,7 +266,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 0.15.0</span>
+  <span class="brand">JBIT 0.16.0</span>
   <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
@@ -371,7 +371,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </div>
   <div class="col stack" style="margin-top:20px">
     <p>Words in your command change the level: <code>attended</code> brings back every stop and wins over everything else; <code>outward</code> also lets push, publish and deploy through; <code>unattended</code> changes nothing, since it's the default. The level lasts until your next command or a new plan goal, through pauses, stops and resumes.</p>
-    <p>You hear from the run as it goes. Each commit that closes a stage sends a notification (<code>Stage 2 of 4 done: … Next: …</code>), and the manager gives a short progress note before going on: concerns first, or "No concerns."; what the stage delivered and how it was proven, linking its evidence report; the calls it made unattended; and what's left. A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens, and the run carries on.</p>
+    <p>You hear from the run as it goes. Each commit that closes a stage sends a notification (<code>Stage 2 of 4 done: … Next: …</code>), and, when someone reads along, the manager gives a short progress note before going on: concerns first, or "No concerns."; what the stage delivered and how it was proven, linking its evidence report; the calls it made unattended; and what's left. A headless run leaves the note to the final report. A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens, and the run carries on.</p>
     <p>The simulation below runs a sample four-stage plan for a garden-plot booking app. Stage 3 touches auth. Pick what you say: in plain words, with no command of yours for this plan yet, the run is attended and stage 3 is held until you approve it; with the name it's built without a hold.</p>
   </div>
 
@@ -475,7 +475,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <p>The skills tell Claude what to do. The hook (<code>hooks/register.ts</code>) refuses certain commits and commands, so a few rules hold even if Claude forgets them.</p>
   </div>
   <div class="guards">
-    <div class="guard"><h3>Evidence gate</h3><p>A commit that ticks stage <i>n</i> is refused unless <code>docs/evidence/stage-&lt;n&gt;/report.md</code> has a row for each of the stage's checks.</p><div class="eg">refused: stage 2 has 3 checks, report has 2 rows</div></div>
+    <div class="guard"><h3>Evidence gate</h3><p>A commit that ticks stage <i>n</i> is refused unless <code>docs/evidence/stage-&lt;n&gt;/report.md</code> has a row for each of the stage's checks. Under autopilot, a line that writes the plan and commits is refused before it runs. A close found only after a line ran is checked against its commit and, if it fails, flagged to reopen.</p><div class="eg">refused: stage 2 has 3 checks, report has 2 rows</div></div>
     <div class="guard"><h3>Ticked-checks gate</h3><p>A stage can't be closed if its <code>## Now</code> checks were never seen ticked.</p><div class="eg">refused: stage 3 checks never ticked</div></div>
     <div class="guard"><h3>Risky-stage hold</h3><p>While autopilot is armed, a stage that names auth, money or personal data gets no file edits outside the plan and its <code>docs/research/</code> notes, and no builders, until you type the approval yourself ("yes", "go", "just build it" or <code>/jbit:approve</code>). Claude can't approve its own stage. Your own JBIT or <code>/jbit:autopilot</code> command runs unattended and lifts the hold, unless it says <code>attended</code>.</p><div class="eg">held: "go?" is a question, not an approval</div></div>
     <div class="guard"><h3>Outward block</h3><p>While autopilot is armed, <code>git push</code>, publishes, deploys and <code>gh</code> writes are blocked, along with your own <code>JBIT outward:</code> commands. It sees through <code>sudo</code>, <code>sh -c</code>, <code>eval</code> and similar wrappers. Only your own autopilot command with <code>outward</code> in it lifts it. It covers shell commands, not web searches: research queries go out at any level, briefed to carry only the domain question.</p><div class="eg">blocked: git push (outward-facing)</div></div>
@@ -571,7 +571,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
       <tr><td><code>/jbit:plan</code></td><td>Planner</td><td>Writes <code>docs/PLAN.md</code>: goal, stages with checks and a risk line, decisions. Surveys existing code and records a test baseline. Researches what the goal turns on outside the repo into sourced notes in <code>docs/research/</code>, and turns a question paper can't settle into a spike stage. Archives a finished plan and starts the next one.</td></tr>
       <tr><td><code>/jbit:charter</code></td><td>Cartographer</td><td>Turns a large PRD into <code>docs/ROADMAP.md</code> with milestones and a requirement ledger, and proposes locked decisions for <code>CLAUDE.md</code>.</td></tr>
       <tr><td><code>/jbit:stage</code></td><td>Builder loop</td><td>Runs the next stage end to end (scope, build, verify, review, commit), then stops for you.</td></tr>
-      <tr><td><code>/jbit:autopilot</code></td><td>Project manager</td><td>Runs every remaining stage by delegating the work. Your own command (<code>/jbit:autopilot</code> or <code>JBIT, just build it.</code>) runs it unattended, logging the calls it makes; <code>attended</code> keeps the stops for risky stages and your decisions, and <code>outward</code> lets push, publish and deploy through. Plain "just build it" never sets the level: it runs at the one that stands, attended unless your command set one for this plan. After each stage it gives a progress note: concerns, proof, what's left.</td></tr>
+      <tr><td><code>/jbit:autopilot</code></td><td>Project manager</td><td>Runs every remaining stage by delegating the work. Your own command (<code>/jbit:autopilot</code> or <code>JBIT, just build it.</code>) runs it unattended, logging the calls it makes; <code>attended</code> keeps the stops for risky stages and your decisions, and <code>outward</code> lets push, publish and deploy through. Plain "just build it" never sets the level: it runs at the one that stands, attended unless your command set one for this plan. After each stage it gives a progress note when someone reads along (concerns, proof, what's left); a headless run leaves it to the final report.</td></tr>
       <tr><td><code>/jbit:approve</code></td><td>You</td><td>Releases a held risky stage. Only you can type it; a reply of "yes", "go" or "just build it" does the same.</td></tr>
       <tr><td><code>/jbit:verify</code></td><td>Inspector</td><td>Runs type check, lint, tests, build and a dependency audit, then proves each check against the running product and saves the evidence.</td></tr>
       <tr><td><code>/jbit:review</code></td><td>Second pair of eyes</td><td>An agent that didn't write the code reviews it, with a security pass for risky stages, and checks it against the research notes the stage relies on. Findings are sorted into fix, defer or reject.</td></tr>
@@ -581,7 +581,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </table></div>
 </section>
 
-<footer>JBIT 0.15.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 0.16.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>

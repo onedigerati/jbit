@@ -1,0 +1,2 @@
+$ (re-run of stage 1) grep -rn "headless run too\|final report doesn.t replace" plugins/jbit/hooks plugins/jbit/skills README.md plugins/jbit/README.md docs/field-guide.html
+exit: 1 (1 = no match)

@@ -61,11 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json and the field guide are version 0.15.0', () => {
-  assert.equal(manifest.version, '0.15.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 0.15.0</span>'), 'field guide header lacks JBIT 0.15.0')
-  assert.ok(guide.includes('<footer>JBIT 0.15.0 ·'), 'field guide footer lacks JBIT 0.15.0')
-  assert.doesNotMatch(guide, /JBIT 0\.1[0-4]\.\d/, 'field guide still names an older version')
+test('plugin.json and the field guide are version 0.16.0', () => {
+  assert.equal(manifest.version, '0.16.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.16.0</span>'), 'field guide header lacks JBIT 0.16.0')
+  assert.ok(guide.includes('<footer>JBIT 0.16.0 ·'), 'field guide footer lacks JBIT 0.16.0')
+  assert.doesNotMatch(guide, /JBIT 0\.1[0-5]\.\d/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -300,7 +300,7 @@ test('READMEs and the field guide describe research, spikes and progress updates
       'decisions resting on a finding link the note',
       'becomes a `Spike:` stage, answered by a throwaway prototype',
       'A goal with no such question skips research in one line.',
-      'After each stage you get a notification and a short progress note',
+      'After each stage you get a notification and, when someone reads along, a short progress note',
       'A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens.',
     ],
     plugin: [
@@ -328,6 +328,57 @@ test('READMEs and the field guide describe research, spikes and progress updates
   const texts = { ...readmes, 'field-guide.html': guide }
   for (const [name, list] of Object.entries(phrases))
     for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+})
+
+test('READMEs and the field guide say the progress note is for when someone reads along, and a headless run leaves it to the final report', () => {
+  const phrases = {
+    root: [
+      'After each stage you get a notification and, when someone reads along, a short progress note',
+      'A headless run leaves the note to the final report.',
+      'A headless run leaves the progress note between stages to the final report, which covers each stage.',
+    ],
+    plugin: [
+      'when someone reads along, Claude gives a short progress note in the chat before going on (a headless run leaves it to the final report)',
+      'After each stage it gives a short progress note when someone reads along',
+      'a headless run leaves it to the final report. It tells a concern in one line when it happens.',
+      'A headless run leaves the progress note between stages to the final report',
+    ],
+    'field-guide.html': [
+      'when someone reads along, the manager gives a short progress note before going on',
+      'A headless run leaves the note to the final report.',
+      'After each stage it gives a progress note when someone reads along (concerns, proof, what\'s left); a headless run leaves it to the final report.',
+    ],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+  for (const [name, t] of Object.entries(texts))
+    for (const old of ['you get a notification and a short progress note', 'and Claude gives a short progress note in the chat', 'and the manager gives a short progress note', 'After each stage it gives a short progress note (', 'After each stage it gives a progress note:'])
+      assert.ok(!t.includes(old), `${name} still gives the progress note without the headless qualifier: ${old}`)
+})
+
+test('READMEs and the field guide describe the commit gate: a line that writes the plan and commits is refused under autopilot, a close found after the run is checked against its commit and flagged to reopen', () => {
+  const phrases = {
+    root: [
+      'Under autopilot, a command line that writes the plan and commits is refused',
+      'a close found only after a line ran is checked against its commit and flagged to reopen if it fails.',
+    ],
+    plugin: [
+      'under autopilot a line that names the plan file and commits is refused before it runs (edit the plan, then commit on its own line)',
+      'is told only if that commit passes the same gates',
+      'Claude is told on the command\'s result to reopen the stage',
+      'Under autopilot such a line is refused before it runs: a line that writes the plan and commits',
+      'A close the hook only finds after a line ran is checked against the commit it landed in, and one that fails either gate isn\'t announced and is flagged to reopen',
+    ],
+    'field-guide.html': [
+      'Under autopilot, a line that writes the plan and commits is refused before it runs.',
+      'A close found only after a line ran is checked against its commit and, if it fails, flagged to reopen.',
+    ],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+  assert.ok(!readmes.plugin.includes("(`sed -i … && git commit`) isn't seen. The same goes"), 'plugin README still says a same-line plan edit is simply not seen')
 })
 
 test('the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches', () => {

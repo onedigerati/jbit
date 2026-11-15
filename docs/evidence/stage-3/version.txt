@@ -1,0 +1,6 @@
+$ grep -rn "\"version\"\|JBIT 0\.1[0-9]" plugins/jbit/.claude-plugin/plugin.json docs/field-guide.html; grep -rln "0\.15\.0" README.md plugins/jbit --include=*.md --include=*.json --include=*.ts --include=*.html
+docs/field-guide.html:269:  <span class="brand">JBIT 0.16.0</span>
+docs/field-guide.html:584:<footer>JBIT 0.16.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+plugins/jbit/.claude-plugin/plugin.json:3:  "version": "0.16.0",
+# files still naming 0.15.0:
+exit 1

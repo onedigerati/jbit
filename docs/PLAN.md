@@ -7,21 +7,13 @@ Make the headless run honest about progress and close the commit-gate gap it exp
 2026-11-14 · tests: 427 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 26 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`) — from the 0.15.0 close ([evidence](plans/2026-11-14-headless-rules/evidence/stage-3/report.md)); nothing but the plan has changed since
 
 ## Now
-Stage 3 of 3 · Proof, docs, 0.16.0
-Risk: docs, version and a headless proof run; no hook logic
-Checks:
-- [ ] A headless run (`claude -p "JBIT, just build it. Autopilot, lean."`) of the `progress-note` scaffold closes both stages through the commit gates with no refusal loop (a refused close is fixed in one more call), and its final report covers each stage (proof: headless run, graded by hand)
-- [ ] READMEs and the field guide say the progress note between stages is for when someone reads along and a headless run leaves it to the final report, and describe the commit gate (a line that writes the plan and commits is refused under autopilot; a close found after the run is checked against its commit and flagged to reopen) (proof: docs check)
-- [ ] Version 0.16.0 in the plugin manifest and wherever the version is shown (proof: validate and grep)
-- [ ] Suite, docs check and validate green; stage 1's hand-proven check re-run (proof: command)
+All stages done
 Agents: lean
-Mode: autopilot — unattended
-Open: none
 
 ## Stages
 - [x] 1. Headless progress — the note between stages only when someone reads along; headless leaves it to the final report; reminder and `progress-note` eval to match
 - [x] 2. Gate on the commit — under autopilot, a Bash line that writes the plan and commits is refused before it runs; a close found only after the run is checked against its commit, and one failing its checks or evidence isn't announced and is flagged to reopen; tests
-- [ ] 3. Proof, docs, 0.16.0 — a headless run of the scaffold closes both stages through the gates with no refusal loop; READMEs and field guide; version 0.16.0
+- [x] 3. Proof, docs, 0.16.0 — a headless run of the scaffold closes both stages through the gates with no refusal loop; READMEs and field guide; version 0.16.0
 
 ## Decisions
 - 2026-11-14 · Goal from the 0.15.0 findings, the user's picks: drop the progress-note requirement for headless runs ("let's go ahead and drop the requirement for the progress notes", after Sonnet 8/8 and Opus 5.5 2/2 headless runs skipped it), and close the commit-gate gap in the same release ("Both, one release").
@@ -34,10 +26,12 @@ Open: none
 - 2026-11-14 · Agents: lean, named in the user's command ("Jbit autopilot lean").
 - 2026-11-14 · Scale: three stages, one plan, no charter.
 - 2026-11-14 · Stage 2's risk line first said "no auth, money or personal data"; the hold read the negated list as naming them (the deferred negation bug below) and held the stage. Reworded to what the stage touches, which is none of them.
+- 2026-11-14 · (unattended) The proof run's first close slipped past the pre-run refusal (the Mode line was written in the same line) and was caught by the post-run check, as the guardrail decision intends; left for a later plan rather than adding hook logic to stage 3, whose risk line excludes it. In open questions.
 - 2026-11-14 · Stage 2 review: 2 fix-now problems (a failing close of the last stage still told all done; an amend after a flagged close never re-checked) plus weaker post-run gates, refusal misses and false positives, all fixed with tests; the rest deferred to open questions.
 - 2026-11-14 · Stage 1: no jbit:review — rules text, a reminder string, an eval case and docs, no hook logic; stage 2's gate logic gets one.
 
 ## Open questions
+- Stage 3 proof run (0.16.0), deferred: the pre-run refusal applies only once the plan says `Mode: autopilot`, so a run's first close made in the same line that writes the Mode line (headless Sonnet did: a python heredoc that ticked stage 1, wrote the Mode line and committed) passes it; the post-run check caught it, flagged it to reopen, and an amend closed it (docs/evidence/stage-3/headless-run.txt). Keying the refusal on the armed session rather than the Mode line as written would close it. The same run ended asking whether to set `## Now` to "All stages done" rather than doing it.
 - Stage 2 review (0.16.0), deferred: the pre-run refusal of a line that writes the plan and commits misses a path held in a variable (`PLAN=docs/PLAN.md; sed -i x "$PLAN"`), `exec 3>docs/PLAN.md`, `"$PWD/docs/PLAN.md"`, and commands after the line's last commit (a loop that commits then edits); and when `session.cwd` fails the absolute path falls back to a relative one that can match a longer path. All are left to the post-run check against the commit, as the guardrail decision says.
 - Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the docs now say it covers shell commands.
 - Stage 2 review, deferred: the trigger evals `trigger-jbit-plan`, `trigger-jbit-resume`, `trigger-jbit-stage` contain the skill's name, so they'd likely pass before this plan too; a discriminating case (or a run at 0cf777c showing a miss) would prove the "JBIT <command>" description text matters. `jbit-hero-unattended`'s no-push grader can't fail without Bash.

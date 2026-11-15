@@ -21,7 +21,7 @@ For a visual walkthrough (interactive autopilot simulation, the stage loop, guar
 4. **Verify it, with evidence.** `/jbit:verify` runs the project's checks, then proves each acceptance check by a test or against the running product, and saves the report and output to `docs/evidence/stage-<n>/`.
 5. **Review it.** The risk line is checked against what the code actually touches. Anything beyond UI gets a fresh-eyes review by an agent that didn't write it, with a security pass where it matters.
 6. **Commit it.** One commit per stage, evidence included. Hooks refuse a commit that closes a stage without its evidence or carries a secret. Then it stops for your review.
-7. **Autopilot sees it through.** `JBIT, just build it.` (or `/jbit:autopilot`) runs every remaining stage as project manager, without stopping in between. After each stage you get a notification and a short progress note: concerns first, what was delivered and how it was proven, and what's left. A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens.
+7. **Autopilot sees it through.** `JBIT, just build it.` (or `/jbit:autopilot`) runs every remaining stage as project manager, without stopping in between. After each stage you get a notification and, when someone reads along, a short progress note: concerns first, what was delivered and how it was proven, and what's left. A headless run leaves the note to the final report. A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens.
 8. **Next plan.** When the goal is met, `/jbit:plan` archives the plan and its evidence and starts the next one fresh.
 
 Any command also works by name at the start of a message, in any case: "JBIT plan a CSV tool", "JBit, resume", "jbit: verify". Along the way, `/jbit:fix` takes a small, low-risk change without a stage, `/jbit:charter` turns a PRD too big for one plan into a roadmap of milestones, and `/jbit:resume` picks things up after a break.
@@ -53,7 +53,7 @@ Use the path to your local clone in place of `onedigerati/jbit` if you install f
 ## In short
 
 - **State.** One plan file plus git. With a PRD too big for one plan, `docs/ROADMAP.md` adds milestones and a requirement ledger, and a milestone closes only on evidence that its requirements are covered.
-- **Evidence.** Each verified stage leaves a per-check report and its output in `docs/evidence/`, committed with the stage. A stage can't be closed without its report.
+- **Evidence.** Each verified stage leaves a per-check report and its output in `docs/evidence/`, committed with the stage. A stage can't be closed without its report. Under autopilot, a command line that writes the plan and commits is refused, and a close found only after a line ran is checked against its commit and flagged to reopen if it fails.
 - **Agents level.** An `Agents: lean | wide` line in the plan sets how widely work fans out to subagents, trading tokens for wall-clock time; no line is balanced. `lean` is held to one running agent by a hook, and `wide` is honoured only once you confirm it in the session.
 - **Project risk rules.** `JBIT risk:` and `JBIT outward:` lines in `CLAUDE.md` add your project's own hold words and outward commands. They only add to the built-ins, never loosen them.
 - **Secret guard.** A commit that would carry a secret is blocked, and credential headers in evidence must be masked.

@@ -1,7 +1,7 @@
 schema_version: "1.0"
 name: progress-note
 description: >-
-  Under unattended autopilot (the user's typed `/jbit:autopilot lean`), closing a small stage
+  Under unattended autopilot (the user's command `JBIT, just build it. Autopilot, lean.`), closing a small stage
   brings a progress note in the chat: concerns first or "No concerns.", what the stage delivered and how it was
   proven with its evidence report, and what's left, and the run goes on to the next stage without waiting.
 tags: [progress, autopilot, jbit-command, outcome]
@@ -10,9 +10,9 @@ context:
 execution:
   # Needs Bash to test and commit; where the eval sandbox can't start or makes .git read-only, run it headless and
   # grade the transcript by hand.
-  # A typed slash command: under headless runs the hook composes its working rules before it sees the prompt, so the
-  # "JBIT, just build it" wording arms the session but its rules never reach the model (0.14.0 stage 3 evidence: headless-diagnostic.txt).
-  prompt: /jbit:autopilot lean
+  # 0.15.0 headless Sonnet runs gave no note between stages; see docs/evidence/stage-3/report.md (archived with the plan).
+  # The JBIT wording: since 0.15.0 the hook attaches the run's working rules beside that prompt, so it works headless too.
+  prompt: "JBIT, just build it. Autopilot, lean."
   max_turns: 60
   allowed_tools: [Read, Glob, Grep, Bash, Write, Edit, Skill, Agent]
 graders:

@@ -1379,13 +1379,16 @@ function closingStage(n: 2 | 3, mode = 'Mode: autopilot') {
   }
 }
 
-/** Git for a closing commit: `git diff --cached` answers `staged()`, and `git show HEAD:docs/PLAN.md` the plan as it stands once `landed` is set or not. */
-function closingGit(on: On, staged: () => string, head: () => string) {
+/**
+ * Git for a closing commit: `git diff --cached` answers `staged()`, and `git show HEAD:docs/PLAN.md` the plan as it stands
+ * once `landed` is set or not. The core Bash stub answers `ran`, with `context` when given one.
+ */
+function closingGit(on: On, staged: () => string, head: () => string, context?: string[]) {
   on('process.run', (_, e) => {
     const stdout = e.argv[1] === 'show' ? head() : e.argv.includes('--cached') ? staged() : ''
     return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
-  on('tool.call', () => ({ result: { text: 'ran' } }))
+  on('tool.call', () => ({ result: { text: 'ran' }, ...(context ? { context } : {}) }))
 }
 
 test('a stage-closing commit that lands under autopilot sends one notice naming the stage and the next, once', async ($, on) => {
@@ -1476,6 +1479,192 @@ test('a new Goal tells its stages afresh: stage 1 of the next plan notifies afte
   await $.turn.complete(ended('t2'))
   await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 1"' })
   expect(sent.notes).toEqual(['Stage 1 of 2 done: Start. Next: Finish.', 'Stage 1 of 2 done: Start. Next: Finish.'])
+})
+
+// ---- the progress note's reminder: the main session reads it with the result of the commit that closed a stage ----
+
+const STAGE_2_REMINDER =
+  'JBIT: stage 2 of 3 (Share mode) closed with this commit; stage 3 (Polish) is next. Before any tool call for stage 3, write the user its progress note in the chat, then go on without waiting. ' +
+  PROGRESS_NOTE.replace('stage-<n>', 'stage-2')
+
+/** Stage 2 closing under autopilot, armed, its commit landing at HEAD; the core Bash stub answers with `context` when given one. */
+async function closingRun($: Engine, on: On, opts: { landed?: () => boolean; context?: string[] } = {}) {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  closingGit(on, () => stage.diff, () => ((opts.landed?.() ?? true) ? stage.after : stage.before), opts.context)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  return { sent, plan, stage }
+}
+
+test('a main-session commit that closes a stage with one left carries the progress-note reminder, once', async ($, on) => {
+  let landed = false
+  const { sent } = await closingRun($, on, { landed: () => landed })
+  // the commit failed: the stage is still open at HEAD
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).context).toBeUndefined()
+  landed = true
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(r.result).toEqual({ text: 'ran' })
+  expect(r.context).toEqual([STAGE_2_REMINDER])
+  expect(STAGE_2_REMINDER).toContain('docs/evidence/stage-2/report.md')
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+  // a retry or an amend closes it again: no second reminder, no second notice
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit --amend -m "Stage 2: share mode"' })).context).toBeUndefined()
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('the reminder keeps the result and the context the tool already had', async ($, on) => {
+  await closingRun($, on, { context: ['from an earlier hook'] })
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(r.result).toEqual({ text: 'ran' })
+  expect(r.context).toEqual(['from an earlier hook', STAGE_2_REMINDER])
+})
+
+test('the last stage closing carries no reminder: the final report covers it', async ($, on) => {
+  const stage = closingStage(3)
+  const plan = { text: stage.before, files: stage.report }
+  const sent = engine(on, plan)
+  closingGit(on, () => stage.diff, () => stage.after)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 3"' })
+  expect(r.context).toBeUndefined()
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+})
+
+test("a subagent's stage-closing commit gets the notice but no reminder", async ($, on) => {
+  const { sent } = await closingRun($, on)
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"', agentId: 'a0' } as never)
+  expect(r.deny).toBeUndefined()
+  expect(r.context).toBeUndefined()
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('an unarmed session closing a stage gets no reminder', async ($, on) => {
+  const stage = closingStage(2, 'Open: none')
+  engine(on, { text: stage.before, files: stage.report })
+  closingGit(on, () => stage.diff, () => stage.after)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(r.deny).toBeUndefined()
+  expect(r.context).toBeUndefined()
+})
+
+test('a denied stage-closing commit gets no reminder, and the one that lands later still does', async ($, on) => {
+  const { plan, stage } = await closingRun($, on)
+  plan.files = {}
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(r.deny).toContain('report')
+  expect(r.context).toBeUndefined()
+  plan.files = stage.report
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).context).toEqual([STAGE_2_REMINDER])
+})
+
+/**
+ * Git for a line that ticks the plan and commits in one go: `git rev-parse HEAD` answers `a1` until the core Bash stub runs
+ * the line (`b2` after, unless `moves` says the commit failed), and `git show <ref>:docs/PLAN.md` answers the plan at that
+ * ref. `staged()` answers the pre-run diff, empty when the tick isn't on disk yet.
+ */
+function tickAndCommitGit(on: On, stage: ReturnType<typeof closingStage>, opts: { staged?: () => string; moves?: boolean } = {}) {
+  let head = 'a1'
+  on('process.run', (_, e) => {
+    const ref = e.argv[1] === 'show' ? String(e.argv[2]).split(':')[0] : ''
+    const stdout =
+      e.argv[1] === 'rev-parse'
+        ? `${head}\n`
+        : e.argv[1] === 'show'
+          ? (ref === 'HEAD' ? head : ref) === 'a1'
+            ? stage.before
+            : stage.after
+          : e.argv.includes('--cached')
+            ? (opts.staged?.() ?? '')
+            : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('tool.call', () => {
+    if (opts.moves ?? true) head = 'b2'
+    return { result: { text: 'ran' } }
+  })
+}
+
+const TICK_AND_COMMIT = `sed -i 's/- \\[ \\] 2\\./- [x] 2./' docs/PLAN.md && git add -A && git commit -qm "Stage 2" && echo ok`
+
+test('a line that ticks the plan and commits, invisible to the pre-run diff, still gets the reminder and the notice', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage)
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.deny).toBeUndefined()
+  expect(r.result).toEqual({ text: 'ran' })
+  expect(r.context).toEqual([STAGE_2_REMINDER])
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('a tick-and-commit line whose commit failed, HEAD unchanged, adds nothing', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { moves: false })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+  expect(r.result).toEqual({ text: 'ran' })
+  expect(r.context).toBeUndefined()
+  expect(sent.notes).toEqual([])
+})
+
+test('a stage closed both before and after the run is told once, with one reminder', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { staged: () => stage.diff })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(r.context).toEqual([STAGE_2_REMINDER])
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+
+test('a repo with no HEAD before the line, a plan missing at the old HEAD, or git failing after adds nothing', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  let mode: 'unborn' | 'no-plan' | 'fails' = 'unborn'
+  let ran = false
+  on('process.run', (_, e) => {
+    const fail = { value: { exitCode: 128, stdout: '', stderr: 'fatal', isStdoutTruncated: false, isStderrTruncated: false } }
+    const ok = (stdout: string) => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (e.argv[1] === 'rev-parse') {
+      if (mode === 'unborn' && !ran) return fail
+      if (mode === 'fails' && ran) return fail
+      return ok(ran ? 'b2\n' : 'a1\n')
+    }
+    if (e.argv[1] === 'show') {
+      if (mode === 'fails' && ran) return fail
+      const ref = String(e.argv[2]).split(':')[0]
+      if (ref === 'a1' && mode === 'no-plan') return fail
+      return ok(ref === 'a1' ? stage.before : stage.after)
+    }
+    return ok('')
+  })
+  on('tool.call', () => {
+    ran = true
+    return { result: { text: 'ran' } }
+  })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  for (const m of ['unborn', 'no-plan', 'fails'] as const) {
+    mode = m
+    ran = false
+    const r = await $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT })
+    expect(r.result).toEqual({ text: 'ran' })
+    expect(r.context).toBeUndefined()
+  }
+  expect(sent.notes).toEqual([])
 })
 
 test('reads the stage list: number, the name before the dash, and whether it is ticked', () => {
@@ -4444,7 +4633,8 @@ test('a JBIT message asking to plan anywhere in it is no autopilot command; "the
 
 for (const [level, tag] of [['unattended', ' pn1'], ['attended', ' pn2']])
   test(`the ${level} autopilot working rules carry the progress note and concern line`, async ($, on) => {
-    expect(PROGRESS_NOTE).toContain("After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`")
+    expect(PROGRESS_NOTE).toContain("Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`")
+    expect(PROGRESS_NOTE).toContain("Write it in a headless run too, where the chat is all the user sees; the final report doesn't replace it.")
     expect(PROGRESS_NOTE).toContain("`Concern: <what> — <what you're doing about it>`, without pausing.")
     const { compose } = await armedBy($, on, `/jbit:autopilot ${level}`, { tag })
     const { text } = await compose()

@@ -1,0 +1,42 @@
+$ claude -p "JBIT, just build it. Autopilot, lean." --model sonnet --max-turns 60 --max-budget-usd 6 --allowedTools Read Glob Grep Bash Write Edit Skill Agent --output-format stream-json --verbose
+# Proof run 5 (after fix round 3: closes noticed after the command runs). Run from a fresh copy of plugins/jbit/evals/progress-note/scaffold.sh, Claude Code 2.1.325, jbit loaded from the working tree. Main-session text in full, each tool call's first line; then git log and the plan's ## Now at each commit.
+TOOL: Skill jbit:autopilot
+TOOL: Read <scaffold>/docs/PLAN.md
+TOOL: Bash ls -R . | grep -v .git | head -30; cat src/cli.js sample.csv package.json; ls test* 2>/dev/null; cat test/* 2>/dev/null | head -40
+TOOL: Bash sed -i 's|console.log((total(rows) / 100).toFixed(2))|console.log(`Total: ${(total(rows) / 100).toFixed(2)}`)|' src/cli.js
+TOOL: Bash cat > docs/evidence/stage-1/report.md <<'E'
+TOOL: Read <scaffold>/docs/PLAN.md
+TOOL: Bash python3 - <<'E'
+TOOL: Bash cat > docs/evidence/stage-2/report.md <<'E'
+TEXT: Both stages are built and committed, and the goal is met. `node src/cli.js sample.csv` now prints `Total: 1.39` then `Rows: 2`.
+
+- **Decisions:** no `(unattended)` decisions were needed.
+- **Stage 1, Total label** (commit `cc13a70`): the output is prefixed with `Total:`. A new test runs the CLI on `sample.csv` and checks the output. Evidence is in `docs/evidence/stage-1/report.md`.
+- **Stage 2, Row count** (commit `030be68`): the CLI also prints `Rows: <n>`, and the same test now expects both lines. Evidence is in `docs/evidence/stage-2/report.md`.
+- **Testing:** `npm test` passes after each stage (2 pass, 0 fail).
+- **Shortcuts:** both stages were UI-only and tiny, so I built them in the main session without builder agents. I also didn't run `jbit:review`.
+- **Other changes:** I removed the `Mode:` line and set `## Now` to "All stages done" in the plan.
+- **Open questions:** none.
+- **Not covered:** the CSV parsing is naive. It splits on commas and doesn't handle blank lines, quoted fields or a header-only file. That's outside this plan, so I left it alone.
+
+If you have more work beyond this plan's goal, `jbit:plan` will archive this plan and start a new one.
+RESULT: success turns 10 cost 0.1958044
+
+$ git log --oneline
+030be68 Stage 2: Row count
+cc13a70 Stage 1: Total label
+fae99e1 Plan: tally labels
+
+$ git show cc13a70:docs/PLAN.md  # ## Now
+## Now
+Mode: autopilot — unattended
+Stage 1 of 2 · Total label
+Risk: UI only
+Checks:
+- [x] `node src/cli.js sample.csv` prints `Total: 1.39` (proof: test that runs the CLI on sample.csv)
+Open: none
+
+$ git show 030be68:docs/PLAN.md  # ## Now
+## Now
+All stages done
+

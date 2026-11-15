@@ -1,0 +1,54 @@
+$ claude -p "JBIT, just build it. Autopilot, lean." --model sonnet --max-turns 60 --max-budget-usd 6 --allowedTools Read Glob Grep Bash Write Edit Skill Agent --output-format stream-json --verbose
+# Proof run 3 (after fix round 1: the note's wording). Run from a fresh copy of plugins/jbit/evals/progress-note/scaffold.sh, Claude Code 2.1.325, jbit loaded from the working tree. Main-session text in full, each tool call's first line; then git log and the plan's ## Now at each commit.
+TOOL: Skill jbit:autopilot
+TOOL: Read <scaffold>/docs/PLAN.md
+TOOL: Bash ls -R . | grep -v .git | head -30; cat src/*.js sample.csv package.json; ls test* 2>/dev/null
+TOOL: Bash cat test/tally.test.js && git log --oneline
+TOOL: Agent Build stage 1 label
+TEXT: Builder for stage 1 is running; I'll verify once it reports.
+TEXT: Verify independently.
+TOOL: Bash git diff; cat test/cli.test.js; mkdir -p docs/evidence/stage-1 && { npm test 2>&1; echo ---; node src/cli.js sample.csv; } | tee docs/evidence/stage-1/output.txt | tail -20
+TEXT: Verified. Write the report, tick, and update the plan.
+TOOL: Bash cat > docs/evidence/stage-1/report.md <<'E'
+TOOL: Agent Build stage 2 row count
+TEXT: Stage 2 builder is running; I'll verify when it reports.
+TOOL: Bash git diff --stat && mkdir -p docs/evidence/stage-2 && { npm test 2>&1 | grep -E '^# (pass|fail)'; echo ---; node src/cli.js sample.csv; } | tee docs/evidence/stage-2/output.txt
+TOOL: Bash cat > docs/evidence/stage-2/report.md <<'E'
+TEXT: Both stages are built and committed. `node src/cli.js sample.csv` now prints `Total: 1.39` and `Rows: 2`, which meets the plan's goal.
+
+**`(unattended)` decisions:** none. The only logged decision is `Agents: lean`, from your command.
+
+**Concerns:** none.
+
+- **Stage 1, Total label:** The CLI prints `Total: ` before the amount. A new test, `test/cli.test.js`, runs the CLI on `sample.csv` and checks the output. I also ran the CLI directly, and `npm test` passed (2 tests, 0 failures). Evidence: `docs/evidence/stage-1/report.md`.
+- **Stage 2, Row count:** The CLI prints `Rows: <n>` after the total, and I updated the same test to expect both lines. `npm test` passed again (2 tests, 0 failures). Evidence: `docs/evidence/stage-2/report.md`.
+
+Both stages were UI only, so I ran no security review. The plan now reads "All stages done", with the `Mode:` line removed.
+
+The CLI counts rows by splitting on commas and newlines, so quoted fields containing commas or a missing amount column would give wrong totals. That is outside this plan's scope. Nothing was pushed.
+
+If you have more work beyond this goal, `jbit:plan` will archive this plan and start a fresh one.
+RESULT: success turns 7 cost 0.3557447000000001
+RESULT: success turns 4 cost 0.3557447000000001
+RESULT: success turns 3 cost 0.3557447000000001
+
+$ git log --oneline
+15123b6 Stage 2: Row count
+e22b11d Stage 1: Total label
+2971b34 Plan: tally labels
+
+$ git show e22b11d:docs/PLAN.md  # ## Now
+## Now
+Mode: autopilot — unattended
+Agents: lean
+Stage 2 of 2 · Row count
+Risk: UI only
+Checks:
+- [ ] `node src/cli.js sample.csv` prints `Total: 1.39` then `Rows: 2` (proof: test that runs the CLI on sample.csv)
+Open: none
+
+$ git show 15123b6:docs/PLAN.md  # ## Now
+## Now
+All stages done
+Agents: lean
+

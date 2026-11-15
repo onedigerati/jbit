@@ -266,7 +266,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 0.14.0</span>
+  <span class="brand">JBIT 0.15.0</span>
   <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
@@ -351,7 +351,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">The project manager</span>
     <h2>Autopilot: you approve the plan, Claude runs it</h2>
-    <p>Approve the plan and say <code>JBIT, just build it.</code> (or type <code>/jbit:autopilot</code>), and the main session becomes the project manager. It doesn't write the code. Builder subagents write it, a fresh agent verifies it, another reviews it, and the manager commits and keeps the plan current. The JBIT hook keeps the run going between turns and enforces the stops. An Agents level in the same sentence (<code>JBIT, just build it. Autopilot, lean.</code>) is written to the plan's Agents line.</p>
+    <p>Approve the plan and say <code>JBIT, just build it.</code> (or type <code>/jbit:autopilot</code>), and the main session becomes the project manager. It doesn't write the code. Builder subagents write it, a fresh agent verifies it, another reviews it, and the manager commits and keeps the plan current. The JBIT hook keeps the run going between turns and enforces the stops. Your command works in a headless run (<code>claude -p</code>) and on a session's first turn too: the hook attaches the run's working rules beside that prompt. In a headless run Claude is reminded to write the progress note after each stage, but Sonnet has so far left it to the final report. An Agents level in the same sentence (<code>JBIT, just build it. Autopilot, lean.</code>) is written to the plan's Agents line.</p>
   </div>
   <div class="arm">
     <div class="arm-card un">
@@ -581,7 +581,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </table></div>
 </section>
 
-<footer>JBIT 0.14.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 0.15.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>

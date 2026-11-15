@@ -1,0 +1,42 @@
+$ claude -p "JBIT, just build it. Autopilot, lean." --model sonnet --max-turns 60 --max-budget-usd 6 --allowedTools Read Glob Grep Bash Write Edit Skill Agent --output-format stream-json --verbose
+# Proof run 1 (before fix round 1). Run from a fresh copy of plugins/jbit/evals/progress-note/scaffold.sh, Claude Code 2.1.325, jbit loaded from the working tree. Main-session text in full, each tool call's first line; then git log and the plan's ## Now at each commit.
+TOOL: Skill jbit:autopilot
+TOOL: Read <scaffold>/docs/PLAN.md
+TOOL: Bash ls -a . src test* 2>/dev/null; cat src/cli.js sample.csv package.json; ls test* tests 2>/dev/null | head; git log --oneline | head
+TOOL: Bash cat src/tally.js test/tally.test.js; node src/cli.js sample.csv
+TOOL: Bash sed -i 's|console.log((total(rows) / 100).toFixed(2))|console.log(`Total: ${(total(rows) / 100).toFixed(2)}`)|' src/cli.js
+TOOL: Bash cat > docs/evidence/stage-1/report.md <<'E'
+TOOL: Bash python3 - <<'E'
+TOOL: Bash cat > docs/evidence/stage-2/report.md <<'E'
+TEXT: Both stages are built and committed, and the plan is marked done.
+
+**No `(unattended)` decisions.** The plan left nothing open, so I logged none.
+
+- **Delivers:** `node src/cli.js sample.csv` now prints `Total: 1.39` and `Rows: 2`, which meets the plan's goal.
+- **Stage 1, total label** (6a33259): the CLI prints `Total: ` before the amount. A new test runs the CLI on `sample.csv` and checks the output. Evidence is in `docs/evidence/stage-1/report.md`.
+- **Stage 2, row count** (aab1968): the CLI prints `Rows: <n>` after the total. I extended the same test to check both lines. Evidence is in `docs/evidence/stage-2/report.md`.
+- **Checks:** the suite is 2 pass, 0 fail after each stage.
+
+Under lean I built and verified both stages myself rather than spawning agents, since each was a one-line change. I skipped `jbit:review` because both stages are UI only, with no money, auth or personal-data logic changed. The Mode line is removed.
+
+Before shipping, note that the CLI parser is naive. It splits on commas and doesn't skip blank lines or handle quoted fields. Say if you want a plan for that.
+RESULT: success turns 10 cost 0.1893974
+
+$ git log --oneline
+aab1968 Stage 2: Row count
+6a33259 Stage 1: Total label
+e5d12be Plan: tally labels
+
+$ git show 6a33259:docs/PLAN.md  # ## Now
+## Now
+Mode: autopilot — unattended
+Stage 2 of 2 · Row count
+Risk: UI only
+Checks:
+- [ ] `node src/cli.js sample.csv` prints `Rows: 2` after the total (proof: test that runs the CLI on sample.csv)
+Open: none
+
+$ git show aab1968:docs/PLAN.md  # ## Now
+## Now
+All stages done
+

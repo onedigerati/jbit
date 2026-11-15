@@ -1,0 +1,111 @@
+$ claude plugin validate plugins/jbit
+Validating plugin manifest: /home/jonah/repos/jbit/plugins/jbit/.claude-plugin/plugin.json
+
+  ❯ types ./types/index.d.ts declares on $: nothing (no EngineInterface member)
+  ❯ types ./types/index.d.ts declares state: jbit.armed, jbit.unattended, jbit.seenMode, jbit.cleared, jbit.announced, jbit.openChecks, jbit.checkCounts, jbit.goal, jbit.noPlanSeen, jbit.firstAgents, jbit.projectRules
+
+Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/hooks.json
+
+  ❯ ./register.ts hooks: prompt.compose, session.compact, turn.start, prompt.submit, turn.complete, tool.call{tool=Skill}, tool.call, tool.call{tool=Agent}, tool.call{tool=Bash}
+  ❯ ./register.ts gating hook with .catch: session.compact
+  ❯ ./register.ts gating hook with .catch: prompt.submit
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Skill}
+  ❯ ./register.ts gating hook with .catch: tool.call
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Agent}
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Bash}
+  ❯ ./register.ts calls: $.agent.list (via backgroundBusy), $.clock.after, $.clock.now (via clockNow), $.fs.exists, $.fs.read (via evidenceDenial, loadProjectRules, milestoneDenial, pendingChanges, readPlan, roadmapText), $.fs.stat (via loadProjectRules, roadmapText), $.process.run (via git), $.prompt.submit (via carryOn), $.session.compact (via carryOn), $.session.cwd, $.session.usage (via carryOn), $.state.get, $.state.set, $.ui.notify, $.ui.status, $.ui.toast
+  ❯ ./register.ts state writes: jbit.announced, jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.seenMode, jbit.unattended
+  ❯ ./register.ts state reads: jbit.announced, jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.seenMode, jbit.unattended
+
+Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/project.ts
+
+⚠ Found 1 warning:
+
+  ❯ line 17, column 67: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+
+Validating hooks: /home/jonah/repos/jbit/plugins/jbit/hooks/register.ts
+
+⚠ Found 4 warnings:
+
+  ❯ line 2, column 116: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 3, column 43: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 4, column 102: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 1582, column 37: error TS2345: Argument of type '($: import("claude-code").EngineInterface, e: { readonly tool: "Bash"; readonly tool_use_id: string; readonly command: string; readonly timeout?: number | undefined; readonly description?: string | undefined; readonly run_in_background?: boolean | undefined; readonly dangerouslyDisableSandbox?: boolean | undefined; ...' is not assignable to parameter of type '($: import("claude-code").EngineInterface, e: { readonly tool: "Bash"; readonly tool_use_id: string; readonly command: string; readonly timeout?: number | undefined; readonly description?: string | undefined; readonly run_in_background?: boolean | undefined; readonly dangerouslyDisableSandbox?: boolean | undefined; ...'. Type 'Promise<{ deny: string; result?: undefined; context?: undefined; ref?: undefined; text?: undefined; isError?: undefined; isReadOnly?: undefined; } | { isError: true; result: unknown; text?: string | undefined; ref?: number | undefined; context?: readonly string[] | undefined… [+1881 chars]
+
+Validating hooks: /home/jonah/repos/jbit/plugins/jbit/tests/jbit.test.ts
+
+⚠ Found 56 warnings:
+
+  ❯ line 3, column 29: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 26, column 8: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 27, column 78: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 28, column 65: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 29, column 34: error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+  ❯ line 696, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 747, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 749, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 970, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 983, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 2431, column 3: error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+  ❯ line 2710, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 2713, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3026, column 3: error TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+  ❯ line 3429, column 26: error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.
+  ❯ line 3544, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3629, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3684, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3774, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3791, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3793, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3796, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3809, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3811, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3823, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3825, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 3880, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4056, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4073, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4075, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4167, column 27: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4229, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4233, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4247, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4249, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4265, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4274, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4286, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4345, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4355, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4364, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4434, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4440, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4457, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4473, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4506, column 27: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4512, column 27: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4515, column 27: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4529, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4531, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4533, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4586, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4600, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4605, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4619, column 25: error TS2345: Argument of type '{ text: string; origin: { kind: "composer"; }; }' is not assignable to parameter of type 'PromptSubmitInput'. Property 'wait' is missing in type '{ text: string; origin: { kind: "composer"; }; }' but required in type 'PromptSubmitInput'.
+  ❯ line 4641, column 76: error TS2322: Type 'string | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
+
+Plugin directory checks for /home/jonah/repos/jbit/plugins/jbit. The plugin directory is the catalog that plugins are submitted to; this is a subset of what it runs.
+
+⚠ Found 1 plugin directory warning:
+
+  ❯ .claude-plugin/plugin.json icon: No icon (ICON_MISSING). No icon found in the plugin. The validator looked for `icon` in plugin.json and for a file at .claude-plugin/icon.png or .svg, assets/icon.png or .svg, or a similar path.
+    Fix: Add a square PNG to the plugin folder at .claude-plugin/icon.png, or set `icon` in plugin.json to the path of a square PNG or JPEG in the plugin: 512 to 2048 px on each side, under 2 MB. SVG and WebP are not accepted. That file may become the listing icon only once: the first time the plugin is saved or submitted in the developer portal. Adding or changing it later does not change the icon.
+
+About these checks:
+
+  ❯ hooks/hooks.json names a hooks module (a code file listed under `modules`). The plugin directory has rules of its own for such code, and these checks apply none of them, so passing here does not mean the directory accepts the plugin. The developer portal's own validation applies those rules.
+
+These plugin directory checks do not change the result below.
+
+The directory also runs a safety scan and a policy review that this command does not.
+
+✔ Validation passed with warnings

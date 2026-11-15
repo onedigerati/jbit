@@ -61,11 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json and the field guide are version 0.14.0', () => {
-  assert.equal(manifest.version, '0.14.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 0.14.0</span>'), 'field guide header lacks JBIT 0.14.0')
-  assert.ok(guide.includes('<footer>JBIT 0.14.0 ·'), 'field guide footer lacks JBIT 0.14.0')
-  assert.doesNotMatch(guide, /JBIT 0\.1[0-3]\.\d/, 'field guide still names an older version')
+test('plugin.json and the field guide are version 0.15.0', () => {
+  assert.equal(manifest.version, '0.15.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.15.0</span>'), 'field guide header lacks JBIT 0.15.0')
+  assert.ok(guide.includes('<footer>JBIT 0.15.0 ·'), 'field guide footer lacks JBIT 0.15.0')
+  assert.doesNotMatch(guide, /JBIT 0\.1[0-4]\.\d/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -250,8 +250,9 @@ test('autopilot gives a progress note after each stage: concerns first, delivere
   const text = skill('autopilot')
   const close = text.slice(text.indexOf('5. **Close.**'), text.indexOf('## 3. When to stop'))
   for (const words of [
-    'give a short progress note in the chat',
+    'right after the commit and before any tool call for the next stage, write a short progress note in the chat',
     'without waiting for a reply',
+    'Write it in a headless run too, where the chat is all the user sees; the final report doesn\'t replace it.',
     'its concerns first, or `No concerns.`',
     'what the stage delivered and how it was proven, linking its `docs/evidence/stage-<n>/report.md`',
     'the `(unattended)` decisions taken in it',
@@ -354,7 +355,7 @@ test('the research and progress eval cases exist with a case.yaml, scaffold and 
   assert.ok(domain.includes('path: "docs/research/*.md"'), 'research-domain checks for a note under docs/research/')
   assert.ok(read(join(plugin, 'evals', 'research-none', 'case.yaml')).includes('path: docs/research\n    exists: false'), 'research-none checks no note is written')
   assert.ok(read(join(plugin, 'evals', 'research-spike', 'case.yaml')).includes('Spike: '), 'research-spike checks for a Spike stage')
-  assert.ok(read(join(plugin, 'evals', 'progress-note', 'case.yaml')).includes('prompt: /jbit:autopilot lean'), 'progress-note runs under the typed command, which loads autopilot headless')
+  assert.ok(read(join(plugin, 'evals', 'progress-note', 'case.yaml')).includes('prompt: "JBIT, just build it. Autopilot, lean."'), 'progress-note runs under the JBIT command, whose rules ride beside the prompt headless')
 })
 
 test('research means reading sources: the agent searches and cites, the planner never writes the note from memory, unverified waits in open questions', () => {
@@ -373,7 +374,7 @@ test('research means reading sources: the agent searches and cites, the planner 
 })
 
 test('the hook\'s armed-autopilot rules carry the progress note, in both the unattended and attended texts', () => {
-  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
+  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
   assert.ok(hook.includes('are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE}'), 'attended autopilot rules lack PROGRESS_NOTE')
   assert.ok(hook.includes('    outward,\n    PROGRESS_NOTE,\n  ].join'), 'unattended rules lack PROGRESS_NOTE')
 })

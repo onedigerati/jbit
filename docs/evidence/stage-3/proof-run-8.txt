@@ -1,0 +1,51 @@
+$ claude -p "JBIT, just build it. Autopilot, lean." --model sonnet --max-turns 60 --max-budget-usd 6 --allowedTools Read Glob Grep Bash Write Edit Skill Agent --output-format stream-json --verbose
+# Proof run 8 (final code: rounds 1-3, round 4 reverted). Graded for the narrowed check. Run from a fresh copy of plugins/jbit/evals/progress-note/scaffold.sh, Claude Code 2.1.325, jbit loaded from the working tree. Main-session text in full, each tool call's first line; then git log and the plan's ## Now at each commit.
+TOOL: Skill jbit:autopilot
+TOOL: Read <scaffold>/docs/PLAN.md
+TOOL: Bash ls -R . -I .git | head -30; cat src/cli.js sample.csv; ls test* 2>/dev/null; cat package.json; node src/cli.js sample.csv
+TOOL: Bash cat src/tally.js test/tally.test.js
+TOOL: Bash sed -i 's|console.log((total(rows) / 100).toFixed(2))|console.log(`Total: ${(total(rows) / 100).toFixed(2)}`)|' src/cli.js
+TEXT: Now report, plan update, commit.
+TOOL: Bash cat > docs/evidence/stage-1/report.md <<'E'
+TOOL: Bash python3 - <<'E'
+TEXT: Both stages are built and committed, and the plan's goal is met. `node src/cli.js sample.csv` now prints `Total: 1.39` and `Rows: 2`, and the suite passes (2 pass, 0 fail).
+
+**Unattended decisions:** none. I did log your `lean` agent setting as a dated decision.
+
+**Stage 2 progress: No concerns.**
+- **Delivered:** the CLI prints `Rows: <n>` after the total. The CLI test was extended to check both lines against sample.csv. Evidence is in `docs/evidence/stage-2/report.md`.
+- **Left:** nothing.
+
+**Stages**
+- **Stage 1, Total label:** proven by the CLI test and a CLI run, in `docs/evidence/stage-1/report.md`.
+- **Stage 2, Row count:** proven the same way, in `docs/evidence/stage-2/report.md`.
+
+Both stages were UI-only, so I skipped the security review and built them directly in the main session instead of spawning builder agents.
+
+The test only covers sample.csv. `src/cli.js` doesn't handle blank lines or missing files, so check that before using it on real data. If you have more work beyond this plan's goal, `jbit:plan` archives this plan and starts a fresh one.
+RESULT: success turns 9 cost 0.1854071
+
+$ git log --oneline
+faab123 Stage 2: Row count
+481eb5b Stage 1: Total label
+dfce3ee Plan: tally labels
+
+$ git show 481eb5b:docs/PLAN.md  # ## Now
+## Now
+Mode: autopilot — unattended
+Agents: lean
+Stage 2 of 2 · Row count
+Risk: UI only
+Checks:
+- [ ] `node src/cli.js sample.csv` prints `Rows: 2` after the total (proof: test that runs the CLI on sample.csv)
+Open: none
+
+$ git show faab123:docs/PLAN.md  # ## Now
+## Now
+All stages done
+Agents: lean
+
+
+# From the session transcript (~/.claude/projects/<scaffold>/<session>.jsonl): the context entries the model was sent
+JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, unattended. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for `docs/P
+JBIT: stage 1 of 2 (Total label) closed with this commit; stage 2 (Row count) is next. Before any tool call for stage 2, write the user its progress note in the chat, then go on without waiting. Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat:

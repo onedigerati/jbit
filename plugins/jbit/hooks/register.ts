@@ -865,7 +865,7 @@ function unattendedRules(s: Session): string {
 
 /** What an armed autopilot tells the user as it goes (jbit:autopilot step 5 and its concerns), for when the skill isn't loaded. */
 export const PROGRESS_NOTE =
-  "After each stage's commit, before going on, give the user a short progress note: its concerns first or `No concerns.`, what it delivered and how it was proven (its evidence report), its `(unattended)` decisions, and what's left. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
+  "Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. Write it in a headless run too, where the chat is all the user sees; the final report doesn't replace it. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
 
 /**
  * Why an armed run is attended, for the rules of one: unattended is the default only for the user's own command, and
@@ -1298,6 +1298,20 @@ export function stageList(text: string): { number: string; name: string; done: b
   return list
 }
 
+/** A stage close told for the first time this Goal, with a stage still left. */
+type Told = { n: string; total: number; name: string; next: { number: string; name: string } }
+
+/**
+ * The reminder the main session reads after the commit that closed a stage with one left: the progress note is due
+ * now, before the next stage's first tool call. Undefined when nothing was newly told.
+ */
+function progressReminder(told: readonly Told[]): string | undefined {
+  const last = told[told.length - 1]
+  if (!last) return undefined
+  const note = PROGRESS_NOTE.replace('stage-<n>', `stage-${last.n}`)
+  return `JBIT: stage ${last.n} of ${last.total} (${oneLine(last.name)}) closed with this commit; stage ${last.next.number} (${oneLine(last.next.name)}) is next. Before any tool call for stage ${last.next.number}, write the user its progress note in the chat, then go on without waiting. ${note}`
+}
+
 /** Marks these notices told for this Goal; true when one of them wasn't yet, so the caller tells it. */
 async function announce($: EngineInterface, keys: string[]): Promise<boolean> {
   const told = (await $.state.get(ANNOUNCED)).value ?? []
@@ -1312,7 +1326,7 @@ async function announce($: EngineInterface, keys: string[]): Promise<boolean> {
  * at HEAD, so a commit that failed (the stage still open there) tells nothing. A stage, and the all-done notice the
  * turn's end also sends, is told once per Goal, however many times a retry or an amend closes it again.
  */
-async function announceClosed($: EngineInterface, planPath: string, closing: { n: string; dir: string }[]) {
+async function announceClosed($: EngineInterface, planPath: string, closing: { n: string; dir: string }[], told: Told[] = []) {
   for (const { n, dir } of closing) {
     const text = await git($, ['show', `HEAD:${planPath}`], dir).catch(() => undefined)
     if (typeof text !== 'string') continue
@@ -1321,9 +1335,38 @@ async function announceClosed($: EngineInterface, planPath: string, closing: { n
     if (!stage?.done) continue
     const next = list.find(s => !s.done)
     if (next) {
-      if (await announce($, [n])) await $.ui.notify(`Stage ${n} of ${list.length} done: ${oneLine(stage.name)}. Next: ${oneLine(next.name)}.`, { title: 'JBIT' })
+      if (!(await announce($, [n]))) continue
+      // recorded before the notice goes out, so a notice that fails still leaves the main session its reminder
+      told.push({ n, total: list.length, name: stage.name, next })
+      await $.ui.notify(`Stage ${n} of ${list.length} done: ${oneLine(stage.name)}. Next: ${oneLine(next.name)}.`, { title: 'JBIT' })
     } else if (await announce($, [n, 'all'])) await $.ui.notify(`All ${list.length} stages done.`, { title: 'JBIT' })
   }
+}
+
+/** HEAD's commit in `dir`, or undefined in a repo with no commit yet or when git fails. */
+async function headOf($: EngineInterface, dir: string): Promise<string | undefined> {
+  const head = (await git($, ['rev-parse', '--verify', '-q', 'HEAD'], dir).catch(() => '')).trim()
+  return head || undefined
+}
+
+/**
+ * The stages a line's commits closed as it ran, which the pre-run diff can't see when the same line ticks the plan
+ * before committing: open in the plan at each repo's HEAD before the line, done at the HEAD after it. A repo whose HEAD
+ * didn't move, had none before, or lacked the plan then adds nothing.
+ */
+async function landedClosings($: EngineInterface, planPath: string, heads: Map<string, string | undefined>) {
+  const closed: { n: string; dir: string }[] = []
+  for (const [dir, before] of heads) {
+    if (!before) continue
+    const after = await headOf($, dir)
+    if (!after || after === before) continue
+    const then = await git($, ['show', `${before}:${planPath}`], dir).catch(() => undefined)
+    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+    if (typeof then !== 'string' || typeof now !== 'string') continue
+    const open = new Set(stageList(then).filter(st => !st.done).map(st => st.number))
+    for (const st of stageList(now)) if (st.done && open.has(st.number) && !closed.some(c => c.n === st.number)) closed.push({ n: st.number, dir })
+  }
+  return closed
 }
 
 const outwardDenial = (reason: string) =>
@@ -1597,10 +1640,30 @@ export const register: Register = on => {
         if (missing) return { deny: missing }
       }
     }
+    // HEAD in each commit's repo before the line runs, so a stage ticked and committed by the same line is still seen
+    const watch = plan && (armedBefore || s.armed)
+    const heads = new Map<string, string | undefined>()
+    if (watch) for (const { dir } of pendings) if (!heads.has(dir)) heads.set(dir, await headOf($, dir))
     const result = await next(e)
+    if (plan && watch && !result.deny)
+      try {
+        for (const c of await landedClosings($, plan.path, heads)) if (!closing.some(k => k.n === c.n)) closing.push(c)
+      } catch {
+        // a repo the hook can't read after the run adds nothing
+      }
     // progress for the user, under autopilot only; a notice that can't be sent never touches the commit's result
-    if (plan && closing.length && !result.deny && (armedBefore || s.armed))
-      await announceClosed($, plan.path, closing).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
+    if (plan && closing.length && !result.deny && (armedBefore || s.armed)) {
+      const told: Told[] = []
+      await announceClosed($, plan.path, closing, told).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
+      // the main session, which writes the user's progress note, reads it due as the commit's result comes back
+      if (!e.agentId)
+        try {
+          const reminder = progressReminder(told)
+          if (reminder) return { ...result, context: [...(result.context ?? []), reminder] }
+        } catch {
+          return result
+        }
+    }
     return result
   }).catch(($, e, next) => {
     if (next.called) return next(e)

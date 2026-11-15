@@ -1,0 +1,16 @@
+# Stage 2 · Rules after the command — evidence
+Verified 2026-11-14 on 7780be7, plus uncommitted changes (`plugins/jbit/hooks/register.ts`, `plugins/jbit/tests/jbit.test.ts`, the plan)
+
+| Check | Result | Evidence |
+|---|---|---|
+| The user's own command (a "JBIT …" command or a typed `/jbit:autopilot`, user origin) over an existing plan passes `next` a `context` entry that says the user just gave their autopilot command and to run jbit:autopilot now, carries the rules for the level it set (unattended, `attended` or `outward`), the progress note, the Agents rule and the plan's current position, and says it supersedes the JBIT section of the system prompt composed before the command; existing `e.context` entries are kept | pass | [tests.txt](tests.txt): `the user's "JBIT, just build it. Autopilot, lean." / "/jbit:autopilot outward" / "JBIT autopilot attended" over a plan brings the run's rules beside the prompt, existing context kept`, `an attended command over a risky stage keeps the held wording in the entry, with the progress note`, `a project hold word counts in the entry even before the plan has a Mode line` (`claude plugin test plugins/jbit`); all fail with the entry removed: [mutation.txt](mutation.txt) (run before the review fixes, on 416 tests) |
+| No entry is added for plain words, an approval, a question, a plugin or other non-user origin, or a command when no plan exists at the command; an unarmed session's composed section is unchanged | pass | [tests.txt](tests.txt): `plain words, an approval, a question, a non-user origin or a command with no plan add no entry` |
+| The entry stays under the engine's 100,000-character cap with a long `## Now`, and a failure building it passes the prompt on with the level still set | pass | [tests.txt](tests.txt): `the entry stays under the engine's 100,000-character cap with a long Now, the rules and the command kept`, `a failing decisions check drops only the decisions hint; an entry that cannot be attached leaves the prompt as typed, the level still set`, `a cut never splits a surrogate pair, at the Now or at the cap` |
+| The compaction instructions (`KEEP`) also keep that the user's own autopilot command armed this run and its level | pass | [tests.txt](tests.txt): `a compaction keeps that the user's own autopilot command armed the run, and its level`; fails with the sentence removed: [mutation.txt](mutation.txt) |
+| Suite, docs check and validate green | pass | [tests.txt](tests.txt) 417/417 · [docs-check.txt](docs-check.txt) 26/26 · [validate.txt](validate.txt) passed with warnings, as in the baseline |
+
+Project checks: tests 417/417 ([tests.txt](tests.txt)) · docs check 26/26 ([docs-check.txt](docs-check.txt)) · validate passed with warnings ([validate.txt](validate.txt)) · no type check, lint or build step (the engine compiles the hook)
+Audit: no dependencies (no `package.json`); none applies
+
+## Review
+- 2026-11-14 · Fresh review: 3 fixed, 1 deferred, 0 rejected. Fixed: a throwing `docs/decisions.md` check dropped the whole entry (now drops only the hint); a cut could split a surrogate pair (`cutAt`); the opening now says not to load jbit:autopilot twice after a typed `/jbit:autopilot`. Deferred to the plan's open questions: an `sdk` prompt from untrusted text now starts autopilot in the same turn. Re-verified: all rows above, 417/417.

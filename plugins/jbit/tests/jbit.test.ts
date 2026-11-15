@@ -4,6 +4,7 @@ import { findSecrets } from '../hooks/secrets.ts'
 import {
   PROGRESS_NOTE,
   autopilotAsk,
+  cutAt,
   closedStages,
   effectiveAgents,
   evidenceIds,
@@ -377,7 +378,15 @@ function engine(
   percent = 20,
   agents: { status: string; parentId?: string }[] = [],
 ) {
-  const sent = { prompts: [] as string[], compactions: [] as (string | undefined)[], notes: [] as string[], reads: [] as string[], looks: [] as string[] }
+  const sent = {
+    prompts: [] as string[],
+    compactions: [] as (string | undefined)[],
+    notes: [] as string[],
+    reads: [] as string[],
+    looks: [] as string[],
+    /** Every prompt as it reached the engine past the hooks: its text and the context entries beside it. */
+    submitted: [] as { text: string; context: readonly string[] | undefined }[],
+  }
   on('agent.list', () => ({ value: agents.map((a, i) => ({ id: `a${i}`, description: 'build', type: 'general-purpose', ...a })) as never }))
   on('session.cwd', () => ({ value: '/repo' }))
   // `untracked` files are read only as a `git add` lists them, never seen by an exists check
@@ -413,7 +422,11 @@ function engine(
     sent.compactions.push(e.instructions)
     return percent > 90 ? { skip: 'busy' } : { messages: [{ role: 'user' as const, text: 'summary', toolUses: [] }] }
   })
-  on('prompt.submit', (_, e) => (e.text.startsWith('jbit autopilot:') && sent.prompts.push(e.text), { text: e.text }))
+  on('prompt.submit', (_, e) => {
+    sent.submitted.push({ text: e.text, context: e.context })
+    if (e.text.startsWith('jbit autopilot:')) sent.prompts.push(e.text)
+    return { text: e.text }
+  })
   on('ui.notify', (_, e) => (sent.notes.push(e.text), { value: { isSent: true, channel: 'terminal_bell' } as never }))
   on('ui.toast', () => ({ value: undefined }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
@@ -4438,3 +4451,156 @@ for (const [level, tag] of [['unattended', ' pn1'], ['attended', ' pn2']])
     expect(text).toContain(level === 'attended' ? 'Autopilot is on: you are the project manager' : 'Autopilot is on and unattended')
     expect(text).toContain(PROGRESS_NOTE)
   })
+
+// ---- the user's own command brings its rules into that turn (a `prompt.submit` context entry) ----
+
+/** What the entry beside the user's autopilot command always says, whatever the level. */
+const ARMED_OPENING = 'JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn'
+const SUPERSEDES = 'This entry supersedes the JBIT section of the system prompt, which was composed before the command.'
+const RUN_NOW = 'Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for `docs/PLAN.md`, and follow its rules and the working rules below.'
+const LEAN_RULE = 'Agents: lean — build and verify in the main session and run at most one agent at a time'
+
+/** The context entries the user's prompt reached the engine with, past the hook. */
+async function submitWith($: Engine, sent: ReturnType<typeof engine>, text: string, kind = 'composer', context?: string[]) {
+  await $.prompt.submit({ text, origin: kind === 'plugin' ? { kind, name: 'other' } : { kind }, ...(context ? { context } : {}) } as never)
+  return sent.submitted.at(-1)!
+}
+
+for (const [command, level, rule] of [
+  ['JBIT, just build it. Autopilot, lean.', 'unattended', 'Autopilot is on and unattended, the default for the user\'s own autopilot command'],
+  ['/jbit:autopilot outward', 'unattended, with `outward`', 'Outward-facing commands (push, publish, deploy, sending data out) are allowed this run'],
+  ['JBIT autopilot attended', '`attended`', 'Autopilot is on: you are the project manager under jbit:autopilot.'],
+] as const)
+  test(`the user's "${command}" over a plan brings the run's rules beside the prompt, existing context kept`, async ($, on) => {
+    const plan = { text: '## Goal\nShare mode\n' + planWith('Agents: lean\n- [ ] viewer can share', ' ctx1') }
+    const sent = engine(on, plan)
+    const compose = composeJBIT($, on)
+    const before = (await compose()).text
+    expect(before).toContain("commit per stage and stop for the user's review")
+    const { text, context } = await submitWith($, sent, command, 'composer', ['an entry another hook added'])
+    expect(text).toBe(command)
+    expect(context).toHaveLength(2)
+    expect(context![0]).toBe('an entry another hook added')
+    const entry = context![1]!
+    expect(entry.startsWith(`${ARMED_OPENING}, ${level}. ${SUPERSEDES} ${RUN_NOW}`)).toBe(true)
+    expect(entry).toContain(rule)
+    expect(entry).toContain(PROGRESS_NOTE)
+    expect(entry).toContain(LEAN_RULE)
+    expect(entry).toContain('Current position (from the plan):\nStage 2 of 3 · Share mode ctx1\nAgents: lean\n- [ ] viewer can share')
+    expect(entry).not.toContain('stop for the user\'s review')
+    if (level === '`attended`') expect(entry).toContain('This run is attended')
+    else expect(entry).not.toContain('This run is attended')
+    // the run's rules are the ones compose renders once the plan says autopilot
+    plan.text = plan.text.replace('Agents: lean', 'Mode: autopilot\nAgents: lean')
+    expect(entry.endsWith((await compose()).text.split('\n').at(-1)!)).toBe(true)
+  })
+
+test('an attended command over a risky stage keeps the held wording in the entry, with the progress note', async ($, on) => {
+  const plan = { text: planWith('Agents: lean\nRisk: auth, user input', ' ctx2') }
+  const sent = engine(on, plan)
+  const { context } = await submitWith($, sent, '/jbit:autopilot attended')
+  const entry = context!.at(-1)!
+  expect(entry).toContain(`${ARMED_OPENING}, \`attended\`.`)
+  expect(entry).toContain('Autopilot is on, and the current stage is held: its risk line names auth')
+  expect(entry).toContain(PROGRESS_NOTE)
+  expect(entry).toContain(LEAN_RULE)
+  // unattended, the same stage is built without a hold
+  const unheld = (await submitWith($, sent, 'JBIT autopilot lean')).context!.at(-1)!
+  expect(unheld).not.toContain('the current stage is held')
+  expect(unheld).toContain('Autopilot is on and unattended')
+})
+
+test('a project hold word counts in the entry even before the plan has a Mode line', async ($, on) => {
+  const plan = { text: planWith('Risk: touches the ledger', ' ctx3'), files: { 'CLAUDE.md': 'JBIT risk: ledger\n' } }
+  const sent = engine(on, plan)
+  const entry = (await submitWith($, sent, '/jbit:autopilot attended')).context!.at(-1)!
+  expect(entry).toContain('the current stage is held: its risk line names ledger')
+})
+
+test('plain words, an approval, a question, a non-user origin or a command with no plan add no entry', async ($, on) => {
+  const plan = { text: planWith('Agents: lean\nRisk: auth', ' ctx4'), broken: [] as string[] }
+  const sent = engine(on, plan)
+  const compose = composeJBIT($, on)
+  const before = await compose()
+  for (const [text, kind] of [
+    ['just build it, autopilot lean', 'composer'],
+    ['yes', 'composer'],
+    ['approve', 'composer'],
+    ['what does autopilot do?', 'composer'],
+    ['JBIT autopilot lean?', 'composer'],
+    ['JBIT, just build it. Autopilot, lean.', 'plugin'],
+    ['/jbit:autopilot outward', 'task-notification'],
+  ] as const) {
+    const r = await submitWith($, sent, text, kind, ['kept'])
+    expect([text, r.context]).toEqual([text, ['kept']])
+    expect([text, (await submitWith($, sent, text, kind)).context]).toEqual([text, undefined])
+  }
+  // nothing armed: the composed section is as it was
+  expect(await compose()).toEqual(before)
+  // with no plan at the command, the command arms but nothing rides with it
+  plan.broken = ['docs/PLAN.md']
+  expect((await submitWith($, sent, 'JBIT, just build it. Autopilot, lean.', 'composer', ['kept'])).context).toEqual(['kept'])
+  expect((await submitWith($, sent, '/jbit:autopilot', 'sdk')).context).toBeUndefined()
+})
+
+test('the entry stays under the engine\'s 100,000-character cap with a long Now, the rules and the command kept', async ($, on) => {
+  const long = Array.from({ length: 39 }, (_, i) => `- [ ] check ${i} ${'x'.repeat(5_000)}`).join('\n')
+  const plan = { text: planWith(`Agents: lean\n${long}`, ' ctx5') }
+  const sent = engine(on, plan)
+  const entry = (await submitWith($, sent, 'JBIT, just build it. Autopilot, lean.')).context!.at(-1)!
+  expect(plan.text.length).toBeGreaterThan(150_000)
+  expect(entry.length).toBeLessThanOrEqual(100_000)
+  expect(entry.length).toBeGreaterThan(90_000)
+  expect(entry.startsWith(ARMED_OPENING)).toBe(true)
+  expect(entry).toContain(SUPERSEDES)
+  expect(entry).toContain('Stage 2 of 3 · Share mode ctx5')
+  expect(entry).toContain('…')
+  expect(entry).toContain(PROGRESS_NOTE)
+  expect(entry).toContain(LEAN_RULE)
+})
+
+test('a failing decisions check drops only the decisions hint; an entry that cannot be attached leaves the prompt as typed, the level still set', async ($, on) => {
+  const plan = { text: planWith('Agents: lean', ' ctx6'), files: { 'docs/decisions.md': '# Decisions\n' }, unsure: [] as string[] }
+  const sent = engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'ok' } }))
+  const compose = composeJBIT($, on)
+  await compose()
+  const hint = '(standing decisions in `docs/decisions.md`)'
+  expect((await submitWith($, sent, 'JBIT autopilot lean')).context!.at(-1)).toContain(hint)
+  plan.unsure = ['docs/decisions.md']
+  const entry = (await submitWith($, sent, 'JBIT autopilot lean')).context!.at(-1)!
+  expect(entry.startsWith(ARMED_OPENING)).toBe(true)
+  expect(entry).toContain(PROGRESS_NOTE)
+  expect(entry).not.toContain(hint)
+  // context the entry can't be added beside (not a list): the prompt passes on as it came, and the level is set
+  await $.prompt.submit({ text: '/jbit:autopilot outward', origin: { kind: 'composer' }, context: 7 } as never)
+  expect(sent.submitted.at(-1)).toEqual({ text: '/jbit:autopilot outward', context: 7 as never })
+  plan.text = planWith('Mode: autopilot\nAgents: lean', ' ctx6')
+  expect((await compose()).band).toBe('jbit · autopilot unattended outward · lean · 1/3 done · next: 2. Share mode')
+  expect((await $.tool.call({ tool: 'Bash', command: 'git push origin main' })).deny).toBeUndefined()
+})
+
+test('a cut never splits a surrogate pair, at the Now or at the cap', async ($, on) => {
+  const face = '\u{1F600}'
+  expect(cutAt(`ab${face}c`, 3)).toBe('ab')
+  expect(cutAt(`ab${face}c`, 4)).toBe(`ab${face}`)
+  expect(cutAt('abc', 2)).toBe('ab')
+  // a Now of astral characters only: wherever the cut lands, no lone surrogate is left in the entry
+  const plan = { text: planWith(`Agents: lean\n${Array.from({ length: 30 }, () => face.repeat(2_000)).join('\n')}`, ' ctx8') }
+  const sent = engine(on, plan)
+  for (const command of ['JBIT autopilot lean', '/jbit:autopilot outward', 'JBIT autopilot attended']) {
+    const entry = (await submitWith($, sent, command)).context!.at(-1)!
+    expect(entry.length).toBeLessThanOrEqual(100_000)
+    expect(entry).toContain('…')
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(entry)).toBe(false)
+  }
+})
+
+test('a compaction keeps that the user\'s own autopilot command armed the run, and its level', async ($, on) => {
+  const sent = engine(on, { text: planWith('Agents: lean', ' ctx7') })
+  await $.session.compact({ trigger: 'manual', instructions: 'Summarize briefly.', messages: [{ role: 'user', text: 'build stage 2', toolUses: [] }] } as never)
+  const kept = sent.compactions.at(-1)!
+  expect(kept).toContain('Summarize briefly.')
+  expect(kept).toContain('Keep the project-plan state exactly')
+  expect(kept).toContain("If the user's own autopilot command (a \"JBIT …\" command or a typed `/jbit:autopilot`) armed this run, keep that and its level: unattended, `attended` or `outward`.")
+})

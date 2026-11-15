@@ -7,14 +7,14 @@ Make the user's "JBIT, just build it…" command work in a headless run (`claude
 2026-11-14 · tests: 407 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 26 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`)
 
 ## Now
-Stage 2 of 3 · Rules after the command — the hook uses `prompt.submit`'s `context` so the user's own JBIT or typed command brings its working rules into that turn
+Stage 3 of 3 · Proof, docs, 0.15.0 — headless `JBIT, just build it. Autopilot, lean.` runs autopilot with a progress note; `progress-note` back on the JBIT wording; READMEs and field guide; version 0.15.0
 Agents: lean
 Mode: autopilot
 Open: none
 
 ## Stages
 - [x] 1. Spike: rules at submit — how a hook can reach the model once the prompt is known, tried in a debug copy under `claude -p`
-- [ ] 2. Rules after the command — the hook uses what the spike found so the user's own JBIT or typed command brings its working rules (start jbit:autopilot, the level, the progress note) into that turn; only for a plan that existed at the command, cleared when the user moves on; tests
+- [x] 2. Rules after the command — the hook uses what the spike found so the user's own JBIT or typed command brings its working rules (start jbit:autopilot, the level, the progress note) into that turn; only for a plan that existed at the command, cleared when the user moves on; tests
 - [ ] 3. Proof, docs, 0.15.0 — headless `JBIT, just build it. Autopilot, lean.` runs autopilot with a progress note; `progress-note` back on the JBIT wording; READMEs and field guide; version 0.15.0
 
 ## Decisions
@@ -25,6 +25,7 @@ Open: none
 - 2026-11-14 · Agents: lean, carried from the last plan.
 - 2026-11-14 · Scale: three stages, one plan, no charter.
 - 2026-11-14 · Stage 2 attaches the working rules as a `prompt.submit` `context` entry: in a headless run the system prompt and first-message context blocks are built once, before `prompt.submit`, and never again in the run, while a submit `context` entry reaches the model for the whole turn and isn't shown to the user; a text rewrite also works but changes the user's message on screen — [research](research/hook-rules-at-submit.md). The fallback (document the limit) isn't needed.
+- 2026-11-14 · Stage 2: the entry carries `planSection` rendered as if Mode autopilot (no new rule prose beyond a short opening), so the armed rules stay in one place; with no Agents line it carries no Agents rule, since jbit:autopilot writes the level named in the command first. A plan with every stage done still gets the entry (a plan exists at the command).
 - 2026-11-14 · Agents: lean, named by the user in their autopilot command ("JBIT, just build it. Autopilot, lean.").
 
 ## Open questions
@@ -32,6 +33,7 @@ Open: none
 - Stage 2 review, deferred: the trigger evals `trigger-jbit-plan`, `trigger-jbit-resume`, `trigger-jbit-stage` contain the skill's name, so they'd likely pass before this plan too; a discriminating case (or a run at 0cf777c showing a miss) would prove the "JBIT <command>" description text matters. `jbit-hero-unattended`'s no-push grader can't fail without Bash.
 - Sixth stage 1 review, deferred: the plain approval reader accepts "just build it — later", "just build it - after lunch" and "just build it, after lunch", while "JBIT approve — after lunch" doesn't; align the two readers. And a rejected `$.state.set` passes the prompt on, so a lowering command ("JBIT autopilot attended" over outward) could be dropped silently; the hook's guards share this `.catch(next)` pattern — fail closed on state-write errors across the hook.
 - The hook spots a new plan only by its Goal text, so a plan Claude rewrites while keeping the Goal line word for word keeps an unattended level (third stage 1 review, weaker case). Keying the run on the Goal plus the stage list, or on the plan file's first commit, would close it.
+- Stage 2 review (0.15.0), deferred: the CI-host risk below grows again — with the submit `context` entry, an `sdk` prompt such as `claude -p "$ISSUE_TITLE"` titled "JBIT autopilot outward" now starts jbit:autopilot in that same turn with outward commands allowed, where before it only armed the session. Same remedy as below; for the user.
 - The CI-host risk grows with this plan: in a host that turns issue text into prompts (`sdk` origin), plain words like "autopilot unattended outward" in an issue would arm a run that lifts every hold and allows push — previously it needed the slash command at the start. Requiring a `composer`/`bridge` origin for plain-words arming (keeping the typed command for headless runs) would close it; for the user.
 - Skill and hook text still says `jbit` in lowercase in some prose ("Most of jbit is for work…", "the jbit hook"), where the naming decision says `JBIT`; the stage 1 rename kept the original's case. A wording pass over `plugins/jbit/skills/` and the hook messages — keel:fix-sized, but it touches text Claude follows (stage 2 builder).
 - `claude plugin validate .` warns that the marketplace has no top-level `description` (pre-existing; stage 2 builder).

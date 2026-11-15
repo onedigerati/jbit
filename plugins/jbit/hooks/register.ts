@@ -899,7 +899,43 @@ function planSection(plan: Plan, s: Session, now: string | undefined, roadmap: R
 
 /** What the summarizer must keep, whoever asked for the compaction. */
 const KEEP =
-  'Keep the project-plan state exactly: the active stage, its acceptance checks and which have passed, decisions made since the plan file was last updated, and any uncommitted work in progress with its file paths.'
+  'Keep the project-plan state exactly: the active stage, its acceptance checks and which have passed, decisions made since the plan file was last updated, and any uncommitted work in progress with its file paths. If the user\'s own autopilot command (a "JBIT …" command or a typed `/jbit:autopilot`) armed this run, keep that and its level: unattended, `attended` or `outward`.'
+
+/** The engine's cap on one `prompt.submit` context entry, in characters. */
+const CONTEXT_MAX = 100_000
+
+/** How the user's command set the run, in the words the rules use. */
+const LEVEL_WORDS: Record<Unattended, string> = { on: 'unattended', outward: 'unattended, with `outward`', off: '`attended`' }
+
+/**
+ * What rides beside the user's own autopilot command, for this turn only: the system prompt's JBIT section was composed
+ * before the command (in a headless run it is never composed again), so this carries the section as the run now stands,
+ * the plan treated as Mode autopilot and the session as the command just armed it. `plan` is the one the command was
+ * read against; `rules` the hook call's own reader. Never longer than `CONTEXT_MAX`: a long `## Now` is cut first.
+ */
+async function armedContext($: EngineInterface, plan: Plan, s: Session, rules: () => Promise<ProjectRules>): Promise<string> {
+  const run = await withProjectRisk({ ...plan, mode: { kind: 'autopilot' } }, rules)
+  const now = unconfirmedWide(run, s) && s.now !== undefined ? stampOf(s.now) : undefined
+  const roadmap = await loadRoadmap($)
+  // an exists check that fails drops only the standing-decisions hint, as in the composed section
+  const decisionsFile = await $.fs.exists(DECISIONS_PATH).catch(() => false)
+  const head = `JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, ${LEVEL_WORDS[s.unattended]}. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for \`${plan.path}\`, and follow its rules and the working rules below.`
+  const build = (p: Plan) => {
+    const section = planSection(p, s, now, roadmap, decisionsFile)
+    // a held stage's rules don't name the progress note; the run still gives it
+    return `${head}\n\n${section.includes(PROGRESS_NOTE) ? section : `${section} ${PROGRESS_NOTE}`}`
+  }
+  let text = build(run)
+  if (text.length > CONTEXT_MAX && run.now) text = build({ ...run, now: `${cutAt(run.now, run.now.length - (text.length - CONTEXT_MAX) - 1)}…` })
+  return text.length > CONTEXT_MAX ? `${cutAt(text, CONTEXT_MAX - 1)}…` : text
+}
+
+/** `text` cut to at most `at` UTF-16 units, backing off one where the cut would split a surrogate pair. */
+export function cutAt(text: string, at: number): string {
+  const end = Math.max(0, at)
+  const high = text.charCodeAt(end - 1)
+  return text.slice(0, high >= 0xd800 && high <= 0xdbff ? end - 1 : end)
+}
 
 // ---- the autopilot loop ----
 
@@ -1355,9 +1391,15 @@ export const register: Register = on => {
         // the command is for the plan as it stands now: bring the session's view up to date first, so a Goal that
         // changed since the last look (edited by hand, checked out, or written in a turn that was then aborted) resets
         // the old level here, not the user's command at the next look
-        await sync($, await loadPlan($).catch(() => undefined))
+        const rules = sessionRules($)
+        const plan = await loadPlan($, rules).catch(() => undefined)
+        const s = await sync($, plan)
         await $.state.set(UNATTENDED, level)
         await $.state.set(ARMED, true)
+        // the system prompt was composed before this command: its rules for the run ride beside the prompt instead, only
+        // over a plan that exists now; an entry that can't be built leaves the prompt as typed, the level still set
+        const entry = plan && (await armedContext($, plan, { ...s, unattended: level, armed: true }, rules).catch(() => undefined))
+        if (entry) return next({ ...e, context: [...(e.context ?? []), entry] })
       } else {
         const plan = await loadPlan($).catch(() => undefined)
         const s = await readSession($)

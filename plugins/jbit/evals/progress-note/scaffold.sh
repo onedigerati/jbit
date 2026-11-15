@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# A tiny CSV totals CLI mid-plan: stage 1 (a "Total: " label) is small, UI only and ready to build, and stage 2 is
-# left after it, so closing stage 1 under autopilot should bring a progress note naming what's left.
+# A tiny CSV totals CLI mid-plan: stage 1 (a "Total: " label) is small, UI only and ready to build, and stage 2 (a row
+# count) is left after it, so a headless autopilot run builds both and its final report covers each stage.
 set -euo pipefail
 mkdir -p docs src test
 cat > package.json <<'JSON'

@@ -7,18 +7,19 @@ Make the headless run honest about progress and close the commit-gate gap it exp
 2026-11-14 · tests: 427 pass, 0 fail (`claude plugin test plugins/jbit`) · docs check: 26 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passed with warnings (`claude plugin validate plugins/jbit`) — from the 0.15.0 close ([evidence](plans/2026-11-14-headless-rules/evidence/stage-3/report.md)); nothing but the plan has changed since
 
 ## Now
-Stage 1 of 3 · Headless progress
-Risk: rules text Claude follows and the reminder's wording (no new hook logic)
+Stage 2 of 3 · Gate on the commit
+Risk: commit-gate logic in the hook (what a stage-closing commit is checked against); no auth, money or personal data
 Checks:
-- [ ] `PROGRESS_NOTE` and jbit:autopilot step 5 ask for the note between stages when someone reads along, and say a headless run (`claude -p`) leaves it to the final report, which then gives each stage's concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions; nothing in the rules or skills still says the note is required headless (proof: test and docs check)
-- [ ] The stage-closing reminder on the commit's result says the same (proof: test)
-- [ ] The `progress-note` eval grades the headless final report (each stage, its evidence report, concerns or `No concerns.`, what's left none) instead of a note between stages; its description and comments match (proof: the case file, and one headless run graded by hand against it, a test can't show what the model writes)
+- [ ] Under autopilot, a Bash line that writes the plan file (its path named outside a git command before the commit) and commits in the same command is refused before it runs, with a message to edit the plan, then commit on its own line; a line that only commits, or only edits, still runs (proof: test)
+- [ ] A stage close found only after the command ran (the plan ticked at the new HEAD) is checked against that commit: checks ticked in its `## Now` and `docs/evidence/stage-<n>/report.md` present in it; one failing either isn't announced, gets no progress reminder, and Claude is told on the command's result to reopen the stage (untick it, verify, commit again) (proof: test)
+- [ ] A close that passes both, found after the run, is announced and reminded as before (proof: test)
 - [ ] Suite, docs check and validate green (proof: command)
 Agents: lean
+Mode: autopilot — unattended
 Open: none
 
 ## Stages
-- [ ] 1. Headless progress — the note between stages only when someone reads along; headless leaves it to the final report; reminder and `progress-note` eval to match
+- [x] 1. Headless progress — the note between stages only when someone reads along; headless leaves it to the final report; reminder and `progress-note` eval to match
 - [ ] 2. Gate on the commit — under autopilot, a Bash line that writes the plan and commits is refused before it runs; a close found only after the run is checked against its commit, and one failing its checks or evidence isn't announced and is flagged to reopen; tests
 - [ ] 3. Proof, docs, 0.16.0 — a headless run of the scaffold closes both stages through the gates with no refusal loop; READMEs and field guide; version 0.16.0
 
@@ -30,7 +31,9 @@ Open: none
 - 2026-11-14 · (defaulted) Version 0.16.0: changed gate behaviour, a minor bump under the 2026-11-10 rule.
 - 2026-11-14 · No research: nothing outside the repo changes this plan (the engine behaviour it rests on is in [hook-rules-at-submit](research/hook-rules-at-submit.md) and the 0.15.0 runs).
 - 2026-11-14 · Agents: lean, carried from the last plan.
+- 2026-11-14 · Agents: lean, named in the user's command ("Jbit autopilot lean").
 - 2026-11-14 · Scale: three stages, one plan, no charter.
+- 2026-11-14 · Stage 1: no jbit:review — rules text, a reminder string, an eval case and docs, no hook logic; stage 2's gate logic gets one.
 
 ## Open questions
 - Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the docs now say it covers shell commands.

@@ -1,16 +1,19 @@
 schema_version: "1.0"
 name: progress-note
 description: >-
-  Under unattended autopilot (the user's command `JBIT, just build it. Autopilot, lean.`), closing a small stage
-  brings a progress note in the chat: concerns first or "No concerns.", what the stage delivered and how it was
-  proven with its evidence report, and what's left, and the run goes on to the next stage without waiting.
+  Under unattended autopilot run headless (the user's command `JBIT, just build it. Autopilot, lean.`), no one reads
+  along, so the progress note between stages is left to the final report: the run goes from stage 1 to stage 2
+  without stopping, and its final report covers each stage with its concerns or "No concerns.", what it delivered
+  and how it was proven with its evidence report, and says nothing is left.
 tags: [progress, autopilot, jbit-command, outcome]
 context:
   scaffold_script: scaffold.sh
 execution:
   # Needs Bash to test and commit; where the eval sandbox can't start or makes .git read-only, run it headless and
   # grade the transcript by hand.
-  # 0.15.0 headless Sonnet runs gave no note between stages; see docs/evidence/stage-3/report.md (archived with the plan).
+  # The eval runs headless, so the rules leave the note between stages to the final report (0.16.0): headless runs
+  # in 0.15.0 never wrote it, whatever the rules said; see docs/evidence/stage-3/report.md (archived with that plan).
+  # An interactive run still writes the note between stages; no case covers that yet.
   # The JBIT wording: since 0.15.0 the hook attaches the run's working rules beside that prompt, so it works headless too.
   prompt: "JBIT, just build it. Autopilot, lean."
   max_turns: 60
@@ -26,16 +29,22 @@ graders:
     name: stage-1-evidence
     path: docs/evidence/stage-1/report.md
     arm: with-only
+  - type: file_exists
+    name: stage-2-evidence
+    path: docs/evidence/stage-2/report.md
+    arm: with-only
   - type: llm
-    name: progress-note-after-stage
+    name: final-report-covers-each-stage
     focus: trace
     arm: with-only
     criteria: >-
-      After the commit that closes stage 1 (it ticks stage 1 in docs/PLAN.md), the agent writes a short progress note
-      in the chat before or as it starts stage 2. The note opens with its concerns, or says "No concerns."; says what
-      stage 1 delivered and how it was proven, linking or naming docs/evidence/stage-1/report.md; and says what's
-      left (stage 2, the row count). Fails if no such note follows the stage 1 commit, if it lacks the concerns line,
-      the evidence report or what's left, or if the agent stops to ask whether to carry on to stage 2.
+      The run builds both stages of docs/PLAN.md (1. Total label, 2. Row count) and ends with one final report.
+      The report covers each stage, 1 and 2: for each, its concerns or "No concerns."; what the stage delivered and
+      how it was proven, linking or naming its docs/evidence/stage-<n>/report.md (stage-1 for stage 1, stage-2 for
+      stage 2); and says that nothing is left (all stages done). Fails if the agent stops after stage 1 to ask
+      whether to carry on to stage 2, if the run ends before stage 2 is closed, or if the final report leaves out a
+      stage, a stage's evidence report, a stage's concerns line, or what's left. A progress note between the stages
+      is allowed but not required, and doesn't make up for anything missing from the final report.
   - type: regex
     name: no-push
     target: trace

@@ -246,19 +246,36 @@ test('plan says a research link is relative to the plan file', () => {
     assert.ok(text.includes(words), `plan SKILL.md lacks: ${words}`)
 })
 
-test('autopilot gives a progress note after each stage: concerns first, delivered and proven with the report, unattended decisions, what is left', () => {
+test('autopilot gives a progress note after each stage when someone reads along: concerns first, delivered and proven with the report, unattended decisions, what is left', () => {
   const text = skill('autopilot')
   const close = text.slice(text.indexOf('5. **Close.**'), text.indexOf('## 3. When to stop'))
   for (const words of [
-    'right after the commit and before any tool call for the next stage, write a short progress note in the chat',
+    'when someone reads along, right after the commit and before any tool call for the next stage, write a short progress note in the chat',
     'without waiting for a reply',
-    'Write it in a headless run too, where the chat is all the user sees; the final report doesn\'t replace it.',
+    'A headless run (`claude -p`) leaves it to the final report (section 5): go straight on.',
     'its concerns first, or `No concerns.`',
     'what the stage delivered and how it was proven, linking its `docs/evidence/stage-<n>/report.md`',
     'the `(unattended)` decisions taken in it',
     "and what's left",
   ])
     assert.ok(close.includes(words), `autopilot step 5 lacks: ${words}`)
+})
+
+test('a headless run leaves the progress note to the final report, which covers each stage; nothing says the note is required headless', () => {
+  const text = skill('autopilot')
+  const finish = text.slice(text.indexOf('## 5. Finish'))
+  for (const words of [
+    'give one report that says all stages are done, nothing left:',
+    'a line per stage: its concerns first, or `No concerns.`; what it delivers and how it was verified (linking its `docs/evidence/stage-<n>/report.md`); its `(unattended)` decisions; what review fixed.',
+    'In a headless run this is the stage\'s progress note, so leave none of it out;',
+  ])
+    assert.ok(finish.includes(words), `autopilot section 5 lacks: ${words}`)
+  assert.ok(hook.includes('A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`'), 'PROGRESS_NOTE lacks the headless final report')
+  assert.ok(hook.includes('write the user its progress note in the chat when someone reads along, then go on without waiting; a headless run (\\`claude -p\\`) leaves it to the final report.'), 'the stage-closing reminder lacks the headless rule')
+  for (const [name, t] of [['hooks/register.ts', hook], ...skills.map(n => [`skills/${n}/SKILL.md`, skill(n)])]) {
+    assert.ok(!t.includes('Write it in a headless run too'), `${name} still requires the note headless`)
+    assert.ok(!t.includes("the final report doesn't replace it"), `${name} still says the final report doesn't replace the note`)
+  }
 })
 
 test('autopilot tells a concern in one line when it happens and carries on', () => {
@@ -374,7 +391,7 @@ test('research means reading sources: the agent searches and cites, the planner 
 })
 
 test('the hook\'s armed-autopilot rules carry the progress note, in both the unattended and attended texts', () => {
-  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
+  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
   assert.ok(hook.includes('are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE}'), 'attended autopilot rules lack PROGRESS_NOTE')
   assert.ok(hook.includes('    outward,\n    PROGRESS_NOTE,\n  ].join'), 'unattended rules lack PROGRESS_NOTE')
 })

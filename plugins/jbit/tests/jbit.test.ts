@@ -1484,7 +1484,7 @@ test('a new Goal tells its stages afresh: stage 1 of the next plan notifies afte
 // ---- the progress note's reminder: the main session reads it with the result of the commit that closed a stage ----
 
 const STAGE_2_REMINDER =
-  'JBIT: stage 2 of 3 (Share mode) closed with this commit; stage 3 (Polish) is next. Before any tool call for stage 3, write the user its progress note in the chat, then go on without waiting. ' +
+  'JBIT: stage 2 of 3 (Share mode) closed with this commit; stage 3 (Polish) is next. Before any tool call for stage 3, write the user its progress note in the chat when someone reads along, then go on without waiting; a headless run (`claude -p`) leaves it to the final report. ' +
   PROGRESS_NOTE.replace('stage-<n>', 'stage-2')
 
 /** Stage 2 closing under autopilot, armed, its commit landing at HEAD; the core Bash stub answers with `context` when given one. */
@@ -1508,6 +1508,11 @@ test('a main-session commit that closes a stage with one left carries the progre
   expect(r.result).toEqual({ text: 'ran' })
   expect(r.context).toEqual([STAGE_2_REMINDER])
   expect(STAGE_2_REMINDER).toContain('docs/evidence/stage-2/report.md')
+  expect(STAGE_2_REMINDER).not.toContain('stage-<n>')
+  expect(STAGE_2_REMINDER).toContain('when someone reads along')
+  expect(STAGE_2_REMINDER).toContain('A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions.')
+  expect(STAGE_2_REMINDER).toContain('`Concern: <what> — <what you\'re doing about it>`')
+  expect(STAGE_2_REMINDER).not.toContain('Write it in a headless run too')
   expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
   // a retry or an amend closes it again: no second reminder, no second notice
   expect((await $.tool.call({ tool: 'Bash', command: 'git commit --amend -m "Stage 2: share mode"' })).context).toBeUndefined()
@@ -4633,8 +4638,11 @@ test('a JBIT message asking to plan anywhere in it is no autopilot command; "the
 
 for (const [level, tag] of [['unattended', ' pn1'], ['attended', ' pn2']])
   test(`the ${level} autopilot working rules carry the progress note and concern line`, async ($, on) => {
-    expect(PROGRESS_NOTE).toContain("Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`")
-    expect(PROGRESS_NOTE).toContain("Write it in a headless run too, where the chat is all the user sees; the final report doesn't replace it.")
+    expect(PROGRESS_NOTE).toContain("When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`")
+    expect(PROGRESS_NOTE).toContain('A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions.')
+    expect(PROGRESS_NOTE).not.toContain('Write it in a headless run too')
+    expect(PROGRESS_NOTE).not.toContain("the final report doesn't replace it")
+    expect(PROGRESS_NOTE.split('stage-<n>').length).toBe(2)
     expect(PROGRESS_NOTE).toContain("`Concern: <what> — <what you're doing about it>`, without pausing.")
     const { compose } = await armedBy($, on, `/jbit:autopilot ${level}`, { tag })
     const { text } = await compose()

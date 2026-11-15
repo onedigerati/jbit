@@ -865,7 +865,7 @@ function unattendedRules(s: Session): string {
 
 /** What an armed autopilot tells the user as it goes (jbit:autopilot step 5 and its concerns), for when the skill isn't loaded. */
 export const PROGRESS_NOTE =
-  "Right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. Write it in a headless run too, where the chat is all the user sees; the final report doesn't replace it. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
+  "When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
 
 /**
  * Why an armed run is attended, for the rules of one: unattended is the default only for the user's own command, and
@@ -1303,13 +1303,13 @@ type Told = { n: string; total: number; name: string; next: { number: string; na
 
 /**
  * The reminder the main session reads after the commit that closed a stage with one left: the progress note is due
- * now, before the next stage's first tool call. Undefined when nothing was newly told.
+ * now, before the next stage's first tool call, when someone reads along (headless, the final report carries it). Undefined when nothing was newly told.
  */
 function progressReminder(told: readonly Told[]): string | undefined {
   const last = told[told.length - 1]
   if (!last) return undefined
   const note = PROGRESS_NOTE.replace('stage-<n>', `stage-${last.n}`)
-  return `JBIT: stage ${last.n} of ${last.total} (${oneLine(last.name)}) closed with this commit; stage ${last.next.number} (${oneLine(last.next.name)}) is next. Before any tool call for stage ${last.next.number}, write the user its progress note in the chat, then go on without waiting. ${note}`
+  return `JBIT: stage ${last.n} of ${last.total} (${oneLine(last.name)}) closed with this commit; stage ${last.next.number} (${oneLine(last.next.name)}) is next. Before any tool call for stage ${last.next.number}, write the user its progress note in the chat when someone reads along, then go on without waiting; a headless run (\`claude -p\`) leaves it to the final report. ${note}`
 }
 
 /** Marks these notices told for this Goal; true when one of them wasn't yet, so the caller tells it. */

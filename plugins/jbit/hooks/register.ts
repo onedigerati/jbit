@@ -2,7 +2,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import { keptRules, loadProjectRules, mergeRules, NO_RULES, projectOutward, projectRisky, type ProjectRules } from './project.ts'
 import { findSecrets, type Finding } from './secrets.ts'
 import { MODEL_ROLES, MODELS_FORM, modelsText, modelsValues, parseModels, settingText, type ModelRole, type Models } from './models.ts'
-import { addScope, commitScope, gitCall, joinPath, outwardReason, parseCommands, type Command } from './shell.ts'
+import { addScope, commitScope, gitCall, joinPath, networkReason, outwardReason, parseCommands, type Command } from './shell.ts'
 
 /** Where a project's plan can live; the first that exists wins. */
 const PLAN_PATHS = ['docs/PLAN.md', 'PLAN.md', 'docs/BUILD_PLAN.md']
@@ -1813,8 +1813,12 @@ function planWriteDenial(planPath: string, cmd: Command): string {
   ].join('\n')
 }
 
-const outwardDenial = (reason: string) =>
-  `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.`
+/** What a network command's denial adds: reading a page needs no send, so it needn't wait. */
+const READ_HINT =
+  'To read a web page, use WebFetch (or WebSearch to find one); a plain `curl` or `wget` GET with no body, upload, credentials or auth or cookie header, its output not piped into another network command, is allowed.'
+
+const outwardDenial = (reason: string, network = false) =>
+  `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.${network ? ` ${READ_HINT}` : ''}`
 
 /** Why a project rule holds one of these commands, naming the rule and its file, or undefined. `root` is the repo root, for path rules. */
 function projectReason(rules: ProjectRules, commands: Command[], root?: string): string | undefined {
@@ -1827,7 +1831,7 @@ function projectReason(rules: ProjectRules, commands: Command[], root?: string):
 }
 
 /** What a Bash line might do that the hook looks at without autopilot: a commit, or a command the built-in check names. */
-const PREFILTER = /\bgit\b|\b(gh|npm|pnpm|yarn|bun|cargo|twine|gem|poetry|uv|docker|podman|vercel|netlify|fly|flyctl|firebase|serverless|sls|wrangler|railway|cdk|terraform|tofu|pulumi|kubectl|helm|gcloud|az|aws|curl)\b/
+const PREFILTER = /\bgit\b|\b(gh|npm|pnpm|yarn|bun|cargo|twine|gem|poetry|uv|docker|podman|vercel|netlify|fly|flyctl|firebase|serverless|sls|wrangler|railway|cdk|terraform|tofu|pulumi|kubectl|helm|gcloud|az|aws|curl|wget)\b/
 
 export const register: Register = on => {
   // the plan's current position rides in the system prompt, so it survives compaction and long runs
@@ -2075,7 +2079,7 @@ export const register: Register = on => {
     // `unattended outward` lets them through; the commit gates below hold in every run
     if (driving(plan, s) && s.unattended !== 'outward') {
       const reason = commands.map(outwardReason).find(Boolean)
-      if (reason) return { deny: outwardDenial(reason) }
+      if (reason) return { deny: outwardDenial(reason, networkReason(reason)) }
       const rules = await sessionRules($)()
       const root = rules.outward.length ? await $.session.cwd().catch(() => undefined) : undefined
       const project = projectReason(rules, commands, root)

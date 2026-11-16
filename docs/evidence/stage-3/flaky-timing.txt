@@ -1,0 +1,20 @@
+$ claude plugin test plugins/jbit   # first run, then two re-runs
+(first run) 497 pass, 2 fail:
+(fail) the evidence scan stays linear on long lines [515.61ms] — expected < 500, received 500
+(fail) long pathological lines parse in well under 100 ms [135.23ms] — "cat <<A; cat" took >= 100 ms
+(re-run 1)
+ 499 pass
+ 0 fail
+(re-run 2)
+ 499 pass
+ 0 fail
+
+$ node --experimental-strip-types time.ts <shell.ts>   # median of 5, 20,000-repeat lines
+HEAD (before stage 3):
+cat <<A; c   median ms 28.5
+$x $x $x $   median ms 8.4
+echo "$(ec   median ms 15.1
+stage 3:
+cat <<A; c   median ms 31.4
+$x $x $x $   median ms 5.3
+echo "$(ec   median ms 19.5

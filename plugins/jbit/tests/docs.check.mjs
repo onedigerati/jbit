@@ -222,6 +222,19 @@ test('stage and autopilot research a domain decision before deciding it; unatten
   assert.ok(skill('stage').includes('Bring the findings to the user with the options'), 'stage SKILL.md lacks: Bring the findings to the user with the options')
 })
 
+test('stage and autopilot send research reads through WebFetch and WebSearch: a read-only curl or wget GET passes, a send waits', () => {
+  for (const name of ['stage', 'autopilot']) {
+    const text = skill(name)
+    for (const words of [
+      'Research reads go through WebFetch and WebSearch.',
+      'A read-only `curl` or `wget` GET (no body, upload, credentials or auth or cookie header, its output not piped into another network command) is allowed too',
+      'a send waits for the user',
+    ])
+      assert.ok(text.includes(words), `${name} SKILL.md lacks: ${words}`)
+  }
+  assert.ok(hook.includes('To read a web page, use WebFetch (or WebSearch to find one)'), 'register.ts: the outward denial for a network command lacks the WebFetch pointer')
+})
+
 test('review briefs the reviewer with the research notes the stage relies on, to check the work against', () => {
   const text = skill('review')
   const brief = text.slice(text.indexOf('## 2. Hand it to fresh eyes'), text.indexOf('Do **not** tell it'))

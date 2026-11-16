@@ -7,20 +7,20 @@ Let the user choose which model, and at what effort, each delegated JBIT role ru
 2026-11-15 · tests: 439 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 29 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes with the known marketplace-description warning
 
 ## Now
-Stage 1 of 4 · Models line and hook
-Risk: user input (the plan line and prompt text the hook parses)
+Stage 2 of 4 · Command, default, skills
+Risk: user input (the `JBIT models` command and `CLAUDE.md` text the hook parses)
 Checks:
-- [ ] A `Models:` line in `## Now` (roles `build`, `review`, `verify`; model `sonnet|opus|haiku|fable`; effort `low|medium|high|xhigh|max`; either half optional) is parsed into per-role settings, and an unknown role or value counts as no setting for that role (proof: test)
-- [ ] The status line shows the roles set (`jbit · lean · build sonnet/med · review opus/high`) and nothing extra without a line (proof: test)
-- [ ] The hook's context tells Claude which model and effort to pass for each role it starts an agent for, and that planning and project management stay on the session's model (proof: test)
-- [ ] With a line set, an Agent call that names no model or effort, or one the line doesn't list, is denied with a message naming the roles' settings; without a line, Agent calls pass as today (proof: test)
-- [ ] A `Models:` line that appears or changes mid-session without the user's own words in that turn naming a model or effort is ignored, with a one-line notice, the way an unconfirmed `wide` is (proof: test)
-- [ ] The engine's Agent event carries the call's `model` and `effort`, shown by a hook log from a real session (proof: run the product, a test can't show what the engine sends)
+- [ ] The user's own whole-message `JBIT models <role> <model>/<effort> …` sets those roles: the hook tells Claude the exact `Models:` line to write (roles not named kept as they stand) and honours it at once; changing only the named roles needs no re-naming of the others (proof: test)
+- [ ] `JBIT models default` tells Claude to remove the line, after which agents run as the session; a `plan` or `lead` role is refused with a pointer to `/model`, and an unknown role or value is refused listing the valid ones, the line left unchanged either way (proof: test)
+- [ ] A `JBIT models: …` line in `CLAUDE.md` is the project default: a plan's `Models:` line that matches it is honoured without the user naming it, and the context says new plans start from it (proof: test)
+- [ ] The plan, stage, autopilot, review and verify skills say to pass the line's model and effort when starting each role's agent, never to choose an effort, that planning stays on the session's model, and that under `lean` with a build setting `jbit:stage` hands building to one builder agent; `jbit:plan` writes the `CLAUDE.md` default into a new plan (proof: docs check)
+- [ ] Suite, docs check and validate green (proof: command)
 Open: none
+Mode: autopilot — unattended
 Agents: lean
 
 ## Stages
-- [ ] 1. Models line and hook — parse the line, status line, context hint, check Agent calls
+- [x] 1. Models line and hook — parse the line, status line, context hint, check Agent calls
 - [ ] 2. Command, default, skills — `JBIT models …`, `CLAUDE.md` default, skills pass model and effort, lean handling
 - [ ] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
 - [ ] 4. Proof, docs, 0.17.0 — headless run, evals, READMEs and field guide, version
@@ -35,8 +35,12 @@ Agents: lean
 - 2026-11-15 · Research fetches: a `curl`/`wget` GET with no body, upload, auth or cookie header, and no output piped to another network command, counts as a read and passes the outward check; anything else stays held. Releasing one named host on the user's word is left out of this plan (open question) — the read/send split fixes the eVelo case without a new approval path.
 - 2026-11-15 · No research: the facts this plan turns on (the Agent tool's `model` and `effort` options) are in Claude Code's own tool schema; stage 1's last check confirms the hook sees them.
 - 2026-11-15 · Scale: 4 stages, one release; no signal fired, one plan.
+- 2026-11-15 · Agents: lean, named in the user's autopilot command ("Jbit autopilot lean").
+- 2026-11-15 · (unattended) An Agent call naming neither model nor effort runs as the session, whatever the line sets; only a call that names one is checked, and it must match a role exactly (an unset half absent). Stage 1 review: denying unnamed calls would force research and Explore agents, which are no role, onto a role's model, and the hook can't tell a forgetful builder from them. The context line tells Claude to pass the role's setting.
+- 2026-11-15 · (unattended) A changed Models line is confirmed only by the user's own prompt naming its settings (each model and effort in it), not by a plain "yes" or any common word like "high" — stage 1 review found a planted line honoured by "fix the high priority bug".
 
 ## Open questions
+- Stage 1 review (0.17.0), deferred: the Agent hook now reads session state (`readSession`, `syncModels`) inside its handler, so a state read or write that throws lets the call through past both the Models check and the lean cap (before, only a `readPlan` throw did). Same remedy as the "fail closed on state-write errors" item below. Also left by the builder: confirmation matches values as words, not per role; any new prompt (a background agent's report) clears what the user named; a line changed by a git checkout is a change like any other.
 - Releasing one named outward step or host for a run on the user's plain word (e.g. "allow en.wikipedia.org"), from the eVelo run of 2026-11-14 — left out of this plan; for the user.
 - Candidates from 0.16.0 not taken by this plan: key the plan-write refusal on the armed session rather than the Mode line, and have a run set "All stages done" itself (see the stage 3 proof run note below).
 - Stage 3 proof run (0.16.0), deferred: the pre-run refusal applies only once the plan says `Mode: autopilot`, so a run's first close made in the same line that writes the Mode line (headless Sonnet did: a python heredoc that ticked stage 1, wrote the Mode line and committed) passes it; the post-run check caught it, flagged it to reopen, and an amend closed it ([evidence](plans/2026-11-14-headless-progress-commit-gate/evidence/stage-3/headless-run.txt)). Keying the refusal on the armed session rather than the Mode line as written would close it. The same run ended asking whether to set `## Now` to "All stages done" rather than doing it.

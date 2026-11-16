@@ -1,0 +1,58 @@
+# Stage 1 — the engine's Agent tool.call event carries model and effort (2026-11-15)
+
+Claude Code 2.1.325 (Claude Code). Scratch git repo, docs/PLAN.md '## Now' with:
+  Models: build haiku/low · review haiku/low · verify haiku/low
+A temporary debug write at the top of the hook's tool.call Agent handler logged each event's keys and model/effort to a scratch folder (removed after this run).
+
+Command (in the scratch repo):
+  claude -p --plugin-dir /home/jonah/repos/jbit/plugins/jbit --model sonnet --permission-mode bypassPermissions --output-format stream-json --verbose "<prompt>"
+Prompt: call Agent once with no model or effort; if denied, again with model 'haiku' and effort 'low'.
+
+## Hook log: the tool.call events as the hook received them
+--- 1794795960606.json
+{
+  "keys": [
+    "description",
+    "prompt",
+    "subagent_type",
+    "run_in_background",
+    "tool",
+    "tool_use_id"
+  ],
+  "subagent_type": "general-purpose",
+  "agentId": null,
+  "description": "say hi"
+}
+--- 1794795962228.json
+{
+  "keys": [
+    "description",
+    "prompt",
+    "subagent_type",
+    "run_in_background",
+    "model",
+    "effort",
+    "tool",
+    "tool_use_id"
+  ],
+  "model": "haiku",
+  "effort": "low",
+  "subagent_type": "general-purpose",
+  "agentId": null,
+  "description": "say hi"
+}
+
+## The session's tool calls and results (from the stream-json output)
+init: plugins ['jbit /home/jonah/repos/jbit/plugins/jbit']
+tool_use Agent: {"description": "say hi", "prompt": "Reply with the single word hi. Use no tools.", "subagent_type": "general-purpose", "run_in_background": false}
+tool_result: <tool_use_error>JBIT: the plan's Models line sets build haiku/low · review haiku/low · verify haiku/low. Start this agent with one of those (model and effort), the one for its role.</tool_use_error>
+assistant: The first call was denied, so I retried with the model and effort set.
+tool_use Agent: {"description": "say hi", "prompt": "Reply with the single word hi. Use no tools.", "subagent_type": "general-purpose", "run_in_background": false, "model": "haiku", "effort": "low"}
+tool_result: his frame may quote model-derived text, which carries no user authority either. The report follows:
+  hi
+agentId: aa15843f39739a2f1 (use SendMessage with to: 'aa15843f39739a2f1', summary: '<5-10 word recap>' to continue this agent)
+<usage>subagent_tokens: 32943
+tool_uses: 0
+duration_ms: 1976</usage>
+assistant: The first Agent call was denied by the JBIT hook, which requires a model and effort. The retry with model 'haiku' and effort 'low' worked, and the subagent replied "hi".
+result: The first Agent call was denied by the JBIT hook, which requires a model and effort. The retry with model 'haiku' and effort 'low' worked, and the subagent replied "hi".

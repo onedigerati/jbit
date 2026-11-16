@@ -1,0 +1,10 @@
+$ claude plugin test plugins/jbit   # with modelsDenial forced to return undefined
+(fail) with a Models line, an Agent call naming only a model when the role sets both is denied, naming the roles' settings [41.40ms]
+(fail) with a Models line, an Agent call with a setting the line does not list is denied [59.58ms]
+(fail) with a Models line, a model matched with the wrong effort is denied [49.17ms]
+(fail) a role that sets only a model matches that model with no effort, never with one [0.25ms]
+(fail) a role that sets only an effort matches that effort with no model, never with one [0.18ms]
+(fail) modelsDenial: a full setting matches exactly, a call naming neither passes, and a fork naming either is refused [0.08ms]
+(fail) under lean with a Models line, a wrong call is denied by the Models line [63.34ms]
+ 464 pass
+ 7 fail

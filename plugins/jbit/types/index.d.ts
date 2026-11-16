@@ -23,6 +23,10 @@ declare module 'claude-code' {
       noPlanSeen: boolean
       /** The plan's `Agents:` line as this session first read it (level and confirmation stamp); a `wide` already there is honoured only once restamped. */
       firstAgents: { level: 'lean' | 'balanced' | 'wide' | 'none' | 'unknown'; stamp?: string; at?: number }
+      /** The plan's `Models:` line this session honours, as the hook writes it (`build sonnet/medium · review opus/high`; `''` for none): the line at the session's first look that read a plan, or one changed while the user's own latest prompt named all its models and efforts. */
+      modelsHonoured: string
+      /** The models and efforts the latest prompt named as words, when it was the user's own (empty otherwise): a changed Models line is honoured only when this names every value it sets. */
+      modelsNamed: string[]
       /** Every project rule (`JBIT risk:` / `JBIT outward:` in CLAUDE.md) seen this session, so a line removed mid-run still holds until a new session. */
       projectRules: { risk: string[]; outward: { words: string[]; file: string }[] }
     }

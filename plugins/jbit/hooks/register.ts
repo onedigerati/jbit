@@ -33,6 +33,64 @@ type Mode = { kind: 'autopilot' } | { kind: 'paused'; reason: string }
 /** The `Agents:` line in `## Now`: how widely work fans out to subagents. No line means `balanced`. */
 export type AgentsLevel = 'lean' | 'balanced' | 'wide'
 
+/** The delegated roles a `Models:` line can set; planning and project management stay on the session's model. */
+export const MODEL_ROLES = ['build', 'review', 'verify'] as const
+export type ModelRole = (typeof MODEL_ROLES)[number]
+const MODEL_NAMES = ['sonnet', 'opus', 'haiku', 'fable'] as const
+const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
+export type RoleSetting = { model?: (typeof MODEL_NAMES)[number]; effort?: (typeof EFFORT_LEVELS)[number] }
+/** What the `Models:` line sets, per role; a role left out runs as the session would have it. */
+export type Models = Partial<Record<ModelRole, RoleSetting>>
+
+/**
+ * The roles a `Models:` line sets (`Models: build sonnet/medium · review opus/high · verify haiku`): entries split on
+ * `·`, `•`, `—`, `–`, `,`, `;` or `|`, each a role, an optional colon, and a value: a model, an effort, or `model/effort`
+ * (either half optional, in any case). An entry with an unknown role, an unknown model or effort, two models, two efforts or anything more is
+ * no setting for that role; a role named twice keeps its first entry. Undefined when no role is set.
+ */
+export function parseModels(line: string): Models | undefined {
+  const body = line.replace(/^\s*Models:/i, '')
+  const models: Models = {}
+  for (const entry of body.split(/[·•—–,;|]/)) {
+    const m = entry.trim().toLowerCase().match(/^([a-z]+)(?:\s*:\s*|\s+)([a-z]*(?:\s*\/\s*[a-z]*)?)$/)
+    if (!m) continue
+    const role = m[1] as ModelRole
+    if (!MODEL_ROLES.includes(role) || models[role]) continue
+    const setting: RoleSetting = {}
+    let ok = true
+    for (const part of (m[2] ?? '').split('/').map(p => p.trim()).filter(Boolean)) {
+      if ((MODEL_NAMES as readonly string[]).includes(part) && !setting.model) setting.model = part as RoleSetting['model']
+      else if ((EFFORT_LEVELS as readonly string[]).includes(part) && !setting.effort) setting.effort = part as RoleSetting['effort']
+      else ok = false
+    }
+    if (ok && (setting.model || setting.effort)) models[role] = setting
+  }
+  return Object.keys(models).length ? models : undefined
+}
+
+/** A role's setting as the line writes it: `sonnet/medium`, `sonnet` or `medium`; `short` abbreviates the effort for the band. */
+function settingText(s: RoleSetting, short = false): string {
+  const effort = short && s.effort === 'medium' ? 'med' : s.effort
+  return [s.model, effort].filter(Boolean).join('/')
+}
+
+/** Every model and effort the roles set, each once: what the user's prompt must name to confirm the line. */
+export function modelsValues(models: Models): string[] {
+  return [...new Set(MODEL_ROLES.flatMap(r => [models[r]?.model, models[r]?.effort]).filter((v): v is string => !!v))]
+}
+
+/** The accepted form, for the note on a Models line that sets nothing. */
+const MODELS_FORM =
+  '`Models: build sonnet/medium · review opus/high · verify sonnet/medium` (roles build, review, verify; model sonnet, opus, haiku or fable; effort low, medium, high, xhigh or max; either half optional)'
+
+/** The roles set, in role order (`build sonnet/medium · review opus/high`): also the canonical form the session compares. */
+export function modelsText(models: Models | undefined, short = false): string {
+  if (!models) return ''
+  return MODEL_ROLES.filter(r => models[r])
+    .map(r => `${r} ${settingText(models[r]!, short)}`)
+    .join(' · ')
+}
+
 interface Stage {
   /** The first line of `## Now`, e.g. `Stage 3 of 5 · Accounts`. */
   key: string
@@ -56,6 +114,10 @@ interface Plan {
   agentsLine: string | undefined
   /** The date and optional time after `confirmed` on the Agents line, as digits (`202611081405`); undefined without one. */
   agentsStamp: string | undefined
+  /** The roles the `Models:` line sets (`parseModels`); undefined with no line or no role it sets. */
+  models: Models | undefined
+  /** Whether `## Now` has a `Models:` line at all, understood or not. */
+  hasModelsLine: boolean
   stage: Stage | undefined
   done: number
   total: number
@@ -136,12 +198,14 @@ export function parsePlan(path: string, text: string): Plan {
   const agentsLine = nowLines?.map(l => l.trim()).find(l => /^Agents:/i.test(l))
   const agents = agentsLine?.match(/^Agents:\s*(lean|balanced|wide)\b/i)?.[1]?.toLowerCase() as AgentsLevel | undefined
   const agentsStamp = agentsLine === undefined ? undefined : stampIn(agentsLine)
+  const modelsLine = nowLines?.map(l => l.trim()).find(l => /^Models:/i.test(l))
+  const models = modelsLine === undefined ? undefined : parseModels(modelsLine)
 
   let stage: Stage | undefined
   if (now && nowLines) {
-    // the stage line is the first line of `## Now` that isn't the Mode or Agents line, which may sit above it
+    // the stage line is the first line of `## Now` that isn't the Mode, Agents or Models line, which may sit above it
     // (a pause reason can itself name a stage, so Mode lines never count)
-    const lines = now.split('\n').map(l => l.trim()).filter(l => l && !/^(Mode|Agents):/i.test(l))
+    const lines = now.split('\n').map(l => l.trim()).filter(l => l && !/^(Mode|Agents|Models):/i.test(l))
     const key = lines.find(l => /\bstage\s+\d+/i.test(l) && !/^[-*]\s+\[/.test(l)) ?? lines[0] ?? ''
     const risk = nowLines.map(l => l.match(/^Risk:\s*(.*)$/i)?.[1]).find(r => r !== undefined) ?? ''
     const risky = [...new Set([...risk.matchAll(RISKY)].map(m => (m[1] ?? '').toLowerCase()))]
@@ -163,7 +227,7 @@ export function parsePlan(path: string, text: string): Plan {
 
   const done = stages.length - stages.filter(l => /\[ \]/.test(l)).length
   const goal = sections.get('goal')?.join('\n').trim() || undefined
-  return { path, goal, now, mode, agents, agentsLine, agentsStamp, stage, done, total: stages.length, current }
+  return { path, goal, now, mode, agents, agentsLine, agentsStamp, models, hasModelsLine: modelsLine !== undefined, stage, done, total: stages.length, current }
 }
 
 // ---- the roadmap: a large project's milestones and requirement ledger, read only when docs/ROADMAP.md exists ----
@@ -375,6 +439,10 @@ const OPEN_CHECKS = { plugin: 'jbit', key: 'openChecks' } as const
 const GOAL = { plugin: 'jbit', key: 'goal' } as const
 const CHECK_COUNTS = { plugin: 'jbit', key: 'checkCounts' } as const
 const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
+/** The Models line this session honours, as `modelsText` writes it (`''` for none): see `syncModels`. */
+const MODELS_HONOURED = { plugin: 'jbit', key: 'modelsHonoured' } as const
+/** The models and efforts the latest prompt named, when it was the user's own (`namedModels`); empty otherwise. */
+const MODELS_NAMED = { plugin: 'jbit', key: 'modelsNamed' } as const
 const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
 const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 
@@ -575,16 +643,19 @@ interface Session {
   firstAgents: FirstAgents | undefined
   /** The time (ms) at the last sync, read only while the plan asks for wide; undefined when the clock can't be read. */
   now: number | undefined
+  /** The Models line this session honours (`modelsText`, `''` for none); undefined until the session has looked. */
+  modelsHonoured: string | undefined
 }
 
 async function readSession($: EngineInterface): Promise<Session> {
-  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents] = await Promise.all([
+  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured] = await Promise.all([
     $.state.get(ARMED),
     $.state.get(UNATTENDED),
     $.state.get(CLEARED),
     $.state.get(OPEN_CHECKS),
     $.state.get(CHECK_COUNTS),
     $.state.get(FIRST_AGENTS),
+    $.state.get(MODELS_HONOURED),
   ])
   return {
     armed: armed.value ?? false,
@@ -594,7 +665,75 @@ async function readSession($: EngineInterface): Promise<Session> {
     checkCounts: checkCounts.value ?? {},
     firstAgents: typeof firstAgents.value === 'object' ? firstAgents.value : undefined,
     now: undefined,
+    modelsHonoured: typeof modelsHonoured.value === 'string' ? modelsHonoured.value : undefined,
   }
+}
+
+/** A model or effort named as a word in a prompt. */
+const MODEL_WORDS = /\b(sonnet|opus|haiku|fable|low|medium|high|xhigh|max)\b/gi
+
+/** The models and efforts a prompt names as words, lowercased, each once (`MODEL_WORDS`). */
+export function namedModels(text: string): string[] {
+  return [...new Set([...normalised(text).matchAll(MODEL_WORDS)].map(m => (m[1] ?? '').toLowerCase()))]
+}
+
+/**
+ * Keeps the Models line the session honours (decided 2026-11-15: only the user sets model and effort, and a changed line
+ * is confirmed only by their naming its settings). The line as the session first reads a plan is the approved plan's and
+ * is honoured; a look that finds no plan (or can't read it) records nothing, so the first look that reads one sets the
+ * baseline. A line that later appears or changes is honoured only when the latest prompt was the user's own and named,
+ * as words, every model and effort the line sets (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms
+ * `build sonnet/medium · review opus/high`; a plain "yes", or "fix the high priority bug", doesn't. Then it becomes the
+ * honoured one. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
+ * until the user confirms (or the line goes back to the honoured one). A line removed is simply no line; the honoured
+ * one stays, so restoring it needs nothing. Edges left: any prompt (a background agent's report, say) clears what was
+ * named, so a line Claude writes after one needs the user again; words are matched, not roles, so a prompt naming the
+ * values for other roles confirms too; and a line that changes in git (a checkout) is a change like any other.
+ */
+async function syncModels($: EngineInterface, plan: Plan | undefined, honoured: string | undefined): Promise<string | undefined> {
+  const current = modelsText(plan?.models)
+  if (honoured === undefined) {
+    if (!plan) return undefined
+    await $.state.set(MODELS_HONOURED, current)
+    return current
+  }
+  if (!current || current === honoured) return honoured
+  const named = (await $.state.get(MODELS_NAMED)).value
+  if (!Array.isArray(named) || !modelsValues(plan!.models!).every(v => named.includes(v))) return honoured
+  await $.state.set(MODELS_HONOURED, current)
+  return current
+}
+
+/** The roles the plan's Models line sets, when this session honours it; undefined otherwise. */
+export const effectiveModels = (plan: Pick<Plan, 'models'> | undefined, honoured: string | undefined): Models | undefined =>
+  plan?.models && modelsText(plan.models) === honoured ? plan.models : undefined
+
+/** The plan has a Models line this session doesn't honour (it changed without the user's words). */
+const ignoredModels = (plan: Plan, s: Session) => !!plan.models && !effectiveModels(plan, s.modelsHonoured)
+
+/**
+ * Why an Agent call from the main loop breaks the honoured Models line, or undefined when it keeps it (decided
+ * 2026-11-15, stage 1 review). A call naming neither model nor effort runs as the session, whatever the line sets: it
+ * may be a role the line leaves out or an agent that is no role (research, Explore), which the hook can't tell from a
+ * builder. A call naming either must match one role's setting exactly, a half the role leaves unset absent from the
+ * call, so Claude never picks it. A fork runs on the session's model and effort whatever it names, so one naming
+ * either is refused.
+ */
+export function modelsDenial(models: Models, call: { model?: unknown; effort?: unknown; subagent_type?: unknown }): string | undefined {
+  const model = typeof call.model === 'string' ? call.model.toLowerCase() : undefined
+  const effort = typeof call.effort === 'string' ? call.effort.toLowerCase() : undefined
+  if (!model && !effort) return undefined
+  const sets = `JBIT: the plan's Models line sets ${modelsText(models)}.`
+  const neither = ' An agent for none of these roles names neither, and runs as the session.'
+  if (call.subagent_type === 'fork')
+    return `${sets} A fork runs on your own model and effort whatever the call names: start a named agent type with the setting for its role instead.${neither}`
+  const matches = MODEL_ROLES.some(r => {
+    const set = models[r]
+    return !!set && set.model === model && set.effort === effort
+  })
+  return matches
+    ? undefined
+    : `${sets} Start this agent with exactly the setting for its role (its model and effort, and nothing the line leaves out for it).${neither}`
 }
 
 /**
@@ -717,6 +856,7 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
     session.firstAgents = firstAgentsOf(plan, await clockNow($))
     await $.state.set(FIRST_AGENTS, session.firstAgents)
   }
+  session.modelsHonoured = await syncModels($, plan, session.modelsHonoured)
   // a wide line's stamp is checked against the time, so read it only then
   if (plan?.agents === 'wide') session.now = await clockNow($)
   const stage = plan?.stage
@@ -811,7 +951,9 @@ function statusLine(plan: Plan, s: Session, roadmap?: Roadmap): string {
             : ' · autopilot'
   const fanOut = effectiveAgents(plan, s.firstAgents, s.now)
   const agents = fanOut === 'lean' || fanOut === 'wide' ? ` · ${fanOut}` : ''
-  return `jbit${mode}${agents}${milestone} · ${plan.done}/${plan.total} done · next: ${plan.current}`
+  const set = effectiveModels(plan, s.modelsHonoured)
+  const models = set ? ` · ${modelsText(set, true)}` : ''
+  return `jbit${mode}${agents}${models}${milestone} · ${plan.done}/${plan.total} done · next: ${plan.current}`
 }
 
 /** What the Agents line asks of this session, or `''` with no line. */
@@ -828,9 +970,22 @@ function agentsRule(plan: Plan, s: Session, now: string | undefined): string {
 }
 
 function workingRules(plan: Plan, s: Session, now: string | undefined): string {
-  const rules = baseRules(plan, s)
-  const agents = agentsRule(plan, s, now)
-  return agents ? `${rules} ${agents}` : rules
+  return [baseRules(plan, s), agentsRule(plan, s, now), modelsRule(plan, s)].filter(Boolean).join(' ')
+}
+
+/** What the Models line asks of this session, or `''` with no line. */
+function modelsRule(plan: Plan, s: Session): string {
+  if (plan.hasModelsLine && !plan.models)
+    return `Models: the plan's Models line is not understood, so agents start as if there were none; the form is ${MODELS_FORM}.`
+  if (ignoredModels(plan, s)) {
+    const named = MODEL_ROLES.filter(r => plan.models![r]).map(r => `${r} ${settingText(plan.models![r]!)}`).join(', ')
+    return `Models: the plan's Models line (${modelsText(plan.models)}) changed without the user naming its settings, so it is ignored until they confirm: ask them to confirm by naming the settings (e.g. "${named}"); a plain yes won't do. Start agents as if there were no line meanwhile.`
+  }
+  const set = effectiveModels(plan, s.modelsHonoured)
+  if (!set) return ''
+  const unset = MODEL_ROLES.filter(r => !set[r])
+  const leftOut = unset.length ? ` A role it leaves out (${unset.join(', ')}) gets neither, as usual.` : ''
+  return `Models: the plan's Models line sets ${modelsText(set)}. When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
 }
 
 function baseRules(plan: Plan, s: Session): string {
@@ -1563,6 +1718,8 @@ export const register: Register = on => {
 
   on('prompt.submit', async ($, e, next) => {
     const fromUser = USER_ORIGINS.has(e.origin.kind)
+    // a changed Models line counts only when the user's own prompt names its settings (`syncModels`)
+    await $.state.set(MODELS_NAMED, fromUser ? namedModels(e.text) : [])
     // the person speaking up gives a stalled autopilot a fresh allowance
     if (e.origin.kind !== 'plugin') stalledTurns = 0
     lastPromptFromUser = fromUser
@@ -1689,7 +1846,8 @@ export const register: Register = on => {
     }
   }).catch(($, e, next) => next(e))
 
-  // lean runs one agent at a time: the main loop starts no agent while one it started is still working, and an agent starts none of its own
+  // lean runs one agent at a time: the main loop starts no agent while one it started is still working, and an agent starts none of its own.
+  // The Models line governs the main loop's spawns alone: a subagent's own Agent call isn't checked against it
   on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
     if (e.agentId) {
       const plan = await readPlan($)
@@ -1713,6 +1871,11 @@ export const register: Register = on => {
     if (next.signal.aborted) release()
     try {
       const plan = await readPlan($)
+      // the Models line the session honours: an Agent call must carry one of its roles' settings
+      const honoured = await syncModels($, plan, (await readSession($)).modelsHonoured)
+      const models = effectiveModels(plan, honoured)
+      const wrong = models && modelsDenial(models, e as { model?: unknown; effort?: unknown; subagent_type?: unknown })
+      if (wrong) return { deny: wrong }
       if (effectiveAgents(plan, undefined) !== 'lean') return await next(e)
       if (before === 0 && !(await backgroundBusy($))) return await next(e)
       return {

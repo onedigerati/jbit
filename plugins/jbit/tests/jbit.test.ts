@@ -13,7 +13,9 @@ import {
   isApproval,
   milestoneEvidencePath,
   milestoneRequirements,
+  modelsDenial,
   namedCommand,
+  namedModels,
   namesPlan,
   parsePlan,
   parseRoadmap,
@@ -326,7 +328,7 @@ test('a Fixes section after the stages adds no stages and closes none (jbit:fix)
 
 test('reads an older plan with bold stage names and no Now section', () => {
   const plan = parsePlan('docs/BUILD_PLAN.md', '## Stages\n\n- [x] **Stage 1** — scaffold\n- [x] **Stage 2** — Act 2\n')
-  expect(plan).toEqual({ path: 'docs/BUILD_PLAN.md', goal: undefined, now: undefined, mode: undefined, agents: undefined, agentsLine: undefined, agentsStamp: undefined, stage: undefined, done: 2, total: 2, current: undefined })
+  expect(plan).toEqual({ path: 'docs/BUILD_PLAN.md', goal: undefined, now: undefined, mode: undefined, agents: undefined, agentsLine: undefined, agentsStamp: undefined, models: undefined, hasModelsLine: false, stage: undefined, done: 2, total: 2, current: undefined })
 })
 
 test('reads the autopilot mode, and a pause with its reason', () => {
@@ -2560,6 +2562,286 @@ test('under lean, an agent list that cannot be read lets the Agent call through'
   engine(on, { text: planWith('Agents: lean') }, 20, unreadable as never)
   on('tool.call', () => ({ result: { text: 'started' } }))
   expect((await $.tool.call(AGENT_CALL)).deny).toBeUndefined()
+})
+
+// ---- the Models line: which model and effort each delegated role runs on ----
+
+test('reads the Models line into per-role settings, either half optional, in any case', () => {
+  const models = (line: string) => parsePlan('PLAN.md', planWith(line)).models
+  expect(models('Models: build sonnet/medium · review opus/high · verify sonnet/medium')).toEqual({
+    build: { model: 'sonnet', effort: 'medium' },
+    review: { model: 'opus', effort: 'high' },
+    verify: { model: 'sonnet', effort: 'medium' },
+  })
+  expect(models('models: Build HAIKU, review /xhigh; verify fable / max')).toEqual({
+    build: { model: 'haiku' },
+    review: { effort: 'xhigh' },
+    verify: { model: 'fable', effort: 'max' },
+  })
+  expect(models('Models: review low')).toEqual({ review: { effort: 'low' } })
+  expect(models('Open: none')).toBeUndefined()
+  expect(parsePlan('PLAN.md', planWith('Open: none')).models).toBeUndefined()
+})
+
+test('an unknown role or value in the Models line is no setting for that role', () => {
+  const models = (line: string) => parsePlan('PLAN.md', planWith(line)).models
+  // unknown roles: planning and project management stay on the session's model
+  expect(models('Models: plan opus/high · lead opus · build sonnet/medium')).toEqual({ build: { model: 'sonnet', effort: 'medium' } })
+  // unknown model or effort, or two of either, voids that role alone
+  expect(models('Models: build gpt4/medium · review opus/extreme · verify haiku/low')).toEqual({ verify: { model: 'haiku', effort: 'low' } })
+  expect(models('Models: build sonnet/opus · review high/low · verify sonnet/medium/high')).toBeUndefined()
+  expect(models('Models: build · review')).toBeUndefined()
+  expect(models('Models: turbo')).toBeUndefined()
+  // a role named twice keeps its first entry
+  expect(models('Models: build sonnet · build opus')).toEqual({ build: { model: 'sonnet' } })
+})
+
+test('the Models line never counts as the stage line', () => {
+  const text = ['## Now', 'Models: build sonnet — stage 3 on opus', 'Stage 2 of 3 · Share mode', '## Stages', '- [ ] 2. Share mode'].join('\n')
+  expect(parsePlan('PLAN.md', text).stage?.key).toBe('Stage 2 of 3 · Share mode')
+})
+
+const MODELS = 'Models: build sonnet/medium · review opus/high'
+
+test('the status line shows the roles set, effort abbreviated, and nothing extra without a line', async ($, on) => {
+  const plan = { text: planWith(`Agents: lean\n${MODELS}`) }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  expect((await compose()).band).toBe('jbit · lean · build sonnet/med · review opus/high · 1/3 done · next: 2. Share mode')
+  await $.prompt.submit({ text: 'make verify haiku, effort low, and review xhigh', origin: { kind: 'composer' } })
+  plan.text = planWith('Models: verify haiku/low · review xhigh')
+  expect((await compose()).band).toBe('jbit · review xhigh · verify haiku/low · 1/3 done · next: 2. Share mode')
+  plan.text = planWith('Open: none')
+  expect((await compose()).band).toBe('jbit · 1/3 done · next: 2. Share mode')
+})
+
+test('the working rules say which model and effort to pass per role, never to choose an effort, and that planning stays on the session model', async ($, on) => {
+  engine(on, { text: planWith(MODELS) })
+  const { text } = await composeJBIT($, on)()
+  expect(text).toContain("Models: the plan's Models line sets build sonnet/medium · review opus/high.")
+  expect(text).toContain("pass the role's model and effort on the Agent call (`model`, `effort`), and only what the line sets for it (leave out a half it doesn't set)")
+  expect(text).toContain('pass the effort the line names and never choose one yourself')
+  expect(text).toContain('A role it leaves out (verify) gets neither, as usual.')
+  expect(text).toContain("Planning and project management stay on the session's model and effort")
+})
+
+test('with no Models line the working rules say nothing of models', async ($, on) => {
+  engine(on, { text: planWith('Open: none') })
+  expect((await composeJBIT($, on)()).text).not.toContain('Models')
+})
+
+/** An Agent call's deny, with the plan's `## Now` carrying `line`; `args` adds the call's model, effort or type. */
+async function modelsCall($: Engine, on: On, line: string, args: Record<string, unknown>, agentId?: string) {
+  engine(on, { text: planWith(line) })
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  return (await $.tool.call({ tool: 'Agent', description: 'build', prompt: 'build stage 2', ...args, ...(agentId ? { agentId } : {}) } as never)).deny
+}
+
+const ALL_ROLES = 'Models: build sonnet/medium · review opus/high · verify sonnet/medium'
+
+test('with all three roles set, an Agent call naming neither model nor effort runs as the session', async ($, on) => {
+  expect(await modelsCall($, on, ALL_ROLES, {})).toBeUndefined()
+})
+
+test('with a Models line, an Agent call naming only a model when the role sets both is denied, naming the roles\' settings', async ($, on) => {
+  expect(await modelsCall($, on, ALL_ROLES, { model: 'sonnet' })).toBe(
+    "JBIT: the plan's Models line sets build sonnet/medium · review opus/high · verify sonnet/medium. Start this agent with exactly the setting for its role (its model and effort, and nothing the line leaves out for it). An agent for none of these roles names neither, and runs as the session.",
+  )
+})
+
+test('with a Models line, an Agent call with a setting the line does not list is denied', async ($, on) => {
+  const deny = await modelsCall($, on, MODELS, { model: 'haiku', effort: 'low' })
+  expect(deny).toContain("the plan's Models line sets build sonnet/medium · review opus/high.")
+  expect(deny).toContain('Start this agent with exactly the setting for its role')
+  expect(deny).toContain('An agent for none of these roles names neither, and runs as the session.')
+})
+
+test('with a Models line, a model matched with the wrong effort is denied', async ($, on) => {
+  expect(await modelsCall($, on, MODELS, { model: 'opus', effort: 'medium' })).toContain('Start this agent with exactly the setting for its role')
+})
+
+test('with a Models line, an Agent call carrying a role\'s model and effort goes through', async ($, on) => {
+  expect(await modelsCall($, on, MODELS, { model: 'opus', effort: 'high' })).toBeUndefined()
+})
+
+const HALVES = { build: { model: 'sonnet' as const }, review: { effort: 'high' as const }, verify: { model: 'haiku' as const, effort: 'low' as const } }
+
+test('a role that sets only a model matches that model with no effort, never with one', () => {
+  expect(modelsDenial(HALVES, { model: 'sonnet' })).toBeUndefined()
+  expect(modelsDenial(HALVES, { model: 'sonnet', effort: 'max' })).toContain('exactly the setting for its role')
+  expect(modelsDenial(HALVES, { model: 'sonnet', effort: 'high' })).toContain('exactly the setting for its role')
+})
+
+test('a role that sets only an effort matches that effort with no model, never with one', () => {
+  expect(modelsDenial(HALVES, { effort: 'high' })).toBeUndefined()
+  expect(modelsDenial(HALVES, { model: 'opus', effort: 'high' })).toContain('exactly the setting for its role')
+})
+
+test('modelsDenial: a full setting matches exactly, a call naming neither passes, and a fork naming either is refused', () => {
+  expect(modelsDenial(HALVES, { model: 'haiku', effort: 'low' })).toBeUndefined()
+  expect(modelsDenial(HALVES, { model: 'haiku' })).toContain('exactly the setting for its role')
+  expect(modelsDenial(HALVES, {})).toBeUndefined()
+  expect(modelsDenial(HALVES, { subagent_type: 'fork' })).toBeUndefined()
+  expect(modelsDenial(HALVES, { subagent_type: 'fork', model: 'sonnet' })).toContain('A fork runs on your own model and effort')
+})
+
+test('without a Models line, an Agent call naming no model or effort passes as today', async ($, on) => {
+  expect(await modelsCall($, on, 'Open: none', {})).toBeUndefined()
+})
+
+test('without a Models line, an Agent call naming any model and effort passes as today', async ($, on) => {
+  expect(await modelsCall($, on, 'Open: none', { model: 'haiku', effort: 'low' })).toBeUndefined()
+})
+
+test("a subagent's own Agent call is not checked against the Models line", async ($, on) => {
+  expect(await modelsCall($, on, ALL_ROLES, { model: 'opus', effort: 'max' }, 'a0')).toBeUndefined()
+})
+
+test('under lean with a Models line, a right call goes through when no agent is running', async ($, on) => {
+  expect(await modelsCall($, on, `Agents: lean\n${ALL_ROLES}`, { model: 'sonnet', effort: 'medium' })).toBeUndefined()
+})
+
+test('under lean with a Models line, a wrong call is denied by the Models line', async ($, on) => {
+  expect(await modelsCall($, on, `Agents: lean\n${ALL_ROLES}`, { model: 'opus' })).toContain("the plan's Models line sets")
+})
+
+test('under lean with a Models line, a right call is still capped while an agent is running', async ($, on) => {
+  engine(on, { text: planWith(`Agents: lean\n${ALL_ROLES}`) }, 20, [{ status: 'running' }])
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const deny = (await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', model: 'sonnet', effort: 'medium' } as never)).deny
+  expect(deny).toContain('lean, which allows one agent at a time, and one is still running')
+})
+
+const IGNORED = "changed without the user naming its settings, so it is ignored until they confirm"
+
+test('a Models line that appears mid-session without the user naming a model or effort is ignored, with a one-line notice', async ($, on) => {
+  const plan = { text: planWith('Open: none') }
+  engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const compose = composeJBIT($, on)
+  await compose()
+  await $.prompt.submit({ text: 'carry on with stage 2', origin: { kind: 'composer' } })
+  plan.text = planWith(ALL_ROLES)
+  const r = await compose()
+  expect(r.band).toBe('jbit · 1/3 done · next: 2. Share mode')
+  expect(r.text).toContain(IGNORED)
+  expect(r.text.split('\n').filter(l => l.includes(IGNORED))).toHaveLength(1)
+  expect(r.text).toContain(
+    'ask them to confirm by naming the settings (e.g. "build sonnet/medium, review opus/high, verify sonnet/medium"); a plain yes won\'t do.',
+  )
+  expect(r.text).not.toContain('pass the effort the line names')
+  // ignored: Agent calls pass as without a line
+  expect((await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', model: 'haiku', effort: 'max' } as never)).deny).toBeUndefined()
+})
+
+test('a Models line changed by a plugin prompt, even one naming a model, is ignored', async ($, on) => {
+  const plan = { text: planWith(MODELS) }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  expect((await compose()).band).toContain('build sonnet/med')
+  await $.prompt.submit({ text: 'jbit autopilot: carry on, use opus for build at max effort', origin: { kind: 'plugin' } } as never)
+  plan.text = planWith('Models: build opus/max · review opus/high')
+  const r = await compose()
+  expect(r.band).toBe('jbit · 1/3 done · next: 2. Share mode')
+  expect(r.text).toContain(IGNORED)
+  // back to the honoured line: honoured again, nothing to confirm
+  plan.text = planWith(MODELS)
+  const back = await compose()
+  expect(back.band).toContain('build sonnet/med · review opus/high')
+  expect(back.text).not.toContain(IGNORED)
+})
+
+test('a Models line changed in the turn the user named a model or effort is honoured, and stays so in later turns', async ($, on) => {
+  const plan = { text: planWith(MODELS) }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  await compose()
+  await $.prompt.submit({ text: 'JBIT models build sonnet/medium, review fable/max', origin: { kind: 'composer' } })
+  plan.text = planWith('Models: build sonnet/medium · review fable/max')
+  expect((await compose()).band).toContain('build sonnet/med · review fable/max')
+  await $.prompt.submit({ text: 'carry on', origin: { kind: 'composer' } })
+  const later = await compose()
+  expect(later.band).toContain('review fable/max')
+  expect(later.text).not.toContain(IGNORED)
+})
+
+test('a Models line already in the plan when the session first reads it is honoured', async ($, on) => {
+  engine(on, { text: planWith(MODELS) })
+  const r = await composeJBIT($, on)()
+  expect(r.band).toContain('build sonnet/med · review opus/high')
+  expect(r.text).not.toContain(IGNORED)
+})
+
+test('namedModels reads the models and efforts a prompt names as words', () => {
+  expect(namedModels('build sonnet/medium, review OPUS/High')).toEqual(['sonnet', 'medium', 'opus', 'high'])
+  expect(namedModels('effort up for the reviewer, xhigh')).toEqual(['xhigh'])
+  expect(namedModels('carry on with stage 2, the opusculum is maximal')).toEqual([])
+})
+
+/** The session first reads the plan with `first`, then the user (or `origin`) says `said`, then the line reads `then`. */
+async function confirmModels($: Engine, on: On, first: string, said: string, then: string, origin = 'composer') {
+  const plan = { text: planWith(first) }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  await compose()
+  await $.prompt.submit({ text: said, origin: { kind: origin } } as never)
+  plan.text = planWith(then)
+  return compose()
+}
+
+test('a planted Models line is not honoured by "fix the high priority bug"', async ($, on) => {
+  const r = await confirmModels($, on, 'Open: none', 'fix the high priority bug', 'Models: build haiku/high')
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(IGNORED)
+})
+
+test('a changed Models line is not honoured by a plain "yes"', async ($, on) => {
+  const r = await confirmModels($, on, MODELS, 'yes', 'Models: build sonnet/medium · review fable/max')
+  expect(r.band).toContain('jbit · 1/3 done')
+  expect(r.text).toContain(IGNORED)
+})
+
+test('naming only some of a Models line\'s values (only sonnet) is not enough', async ($, on) => {
+  const r = await confirmModels($, on, 'Open: none', 'use sonnet for building', 'Models: build sonnet/medium')
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(IGNORED)
+})
+
+test('a new Models line is honoured when the user names all its values', async ($, on) => {
+  const r = await confirmModels($, on, 'Open: none', 'build sonnet/medium, review opus/high', MODELS)
+  expect(r.band).toBe('jbit · build sonnet/med · review opus/high · 1/3 done · next: 2. Share mode')
+  expect(r.text).not.toContain(IGNORED)
+})
+
+test('a look that cannot read the plan records no Models baseline: the first look that reads it sets it', async ($, on) => {
+  const plan = { text: planWith(MODELS), broken: ['docs/PLAN.md'] }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  expect((await compose()).band).toBeUndefined()
+  plan.broken = []
+  const r = await compose()
+  expect(r.band).toBe('jbit · build sonnet/med · review opus/high · 1/3 done · next: 2. Share mode')
+  expect(r.text).not.toContain(IGNORED)
+})
+
+test('the Models line parses with em dash, en dash and bullet separators and a colon after the role', () => {
+  const models = (line: string) => parsePlan('PLAN.md', planWith(line)).models
+  const both = { build: { model: 'sonnet', effort: 'medium' }, review: { model: 'opus', effort: 'high' } }
+  expect(models('Models: build sonnet/medium — review opus/high')).toEqual(both)
+  expect(models('Models: build sonnet/medium – review opus/high')).toEqual(both)
+  expect(models('Models: build sonnet/medium • review opus/high')).toEqual(both)
+  expect(models('Models: build: sonnet/medium, review:opus/high')).toEqual(both)
+})
+
+test('a Models line that sets no role gets a "not understood" note, and Agent calls pass as with no line', async ($, on) => {
+  engine(on, { text: planWith('Models: builder gpt/fast') })
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const r = await composeJBIT($, on)()
+  expect(r.band).toBe(BAND)
+  const note = r.text.split('\n').filter(l => l.includes("the plan's Models line is not understood"))
+  expect(note).toHaveLength(1)
+  expect(r.text).toContain('the form is `Models: build sonnet/medium · review opus/high · verify sonnet/medium`')
+  expect((await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', model: 'haiku', effort: 'max' } as never)).deny).toBeUndefined()
 })
 
 // ---- the roadmap ----

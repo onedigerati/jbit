@@ -1,6 +1,7 @@
 import type { EngineInterface, Register } from 'claude-code'
 import { keptRules, loadProjectRules, mergeRules, NO_RULES, projectOutward, projectRisky, type ProjectRules } from './project.ts'
 import { findSecrets, type Finding } from './secrets.ts'
+import { MODEL_ROLES, MODELS_FORM, modelsText, modelsValues, parseModels, settingText, type ModelRole, type Models } from './models.ts'
 import { addScope, commitScope, gitCall, joinPath, outwardReason, parseCommands, type Command } from './shell.ts'
 
 /** Where a project's plan can live; the first that exists wins. */
@@ -33,63 +34,7 @@ type Mode = { kind: 'autopilot' } | { kind: 'paused'; reason: string }
 /** The `Agents:` line in `## Now`: how widely work fans out to subagents. No line means `balanced`. */
 export type AgentsLevel = 'lean' | 'balanced' | 'wide'
 
-/** The delegated roles a `Models:` line can set; planning and project management stay on the session's model. */
-export const MODEL_ROLES = ['build', 'review', 'verify'] as const
-export type ModelRole = (typeof MODEL_ROLES)[number]
-const MODEL_NAMES = ['sonnet', 'opus', 'haiku', 'fable'] as const
-const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
-export type RoleSetting = { model?: (typeof MODEL_NAMES)[number]; effort?: (typeof EFFORT_LEVELS)[number] }
-/** What the `Models:` line sets, per role; a role left out runs as the session would have it. */
-export type Models = Partial<Record<ModelRole, RoleSetting>>
-
-/**
- * The roles a `Models:` line sets (`Models: build sonnet/medium · review opus/high · verify haiku`): entries split on
- * `·`, `•`, `—`, `–`, `,`, `;` or `|`, each a role, an optional colon, and a value: a model, an effort, or `model/effort`
- * (either half optional, in any case). An entry with an unknown role, an unknown model or effort, two models, two efforts or anything more is
- * no setting for that role; a role named twice keeps its first entry. Undefined when no role is set.
- */
-export function parseModels(line: string): Models | undefined {
-  const body = line.replace(/^\s*Models:/i, '')
-  const models: Models = {}
-  for (const entry of body.split(/[·•—–,;|]/)) {
-    const m = entry.trim().toLowerCase().match(/^([a-z]+)(?:\s*:\s*|\s+)([a-z]*(?:\s*\/\s*[a-z]*)?)$/)
-    if (!m) continue
-    const role = m[1] as ModelRole
-    if (!MODEL_ROLES.includes(role) || models[role]) continue
-    const setting: RoleSetting = {}
-    let ok = true
-    for (const part of (m[2] ?? '').split('/').map(p => p.trim()).filter(Boolean)) {
-      if ((MODEL_NAMES as readonly string[]).includes(part) && !setting.model) setting.model = part as RoleSetting['model']
-      else if ((EFFORT_LEVELS as readonly string[]).includes(part) && !setting.effort) setting.effort = part as RoleSetting['effort']
-      else ok = false
-    }
-    if (ok && (setting.model || setting.effort)) models[role] = setting
-  }
-  return Object.keys(models).length ? models : undefined
-}
-
-/** A role's setting as the line writes it: `sonnet/medium`, `sonnet` or `medium`; `short` abbreviates the effort for the band. */
-function settingText(s: RoleSetting, short = false): string {
-  const effort = short && s.effort === 'medium' ? 'med' : s.effort
-  return [s.model, effort].filter(Boolean).join('/')
-}
-
-/** Every model and effort the roles set, each once: what the user's prompt must name to confirm the line. */
-export function modelsValues(models: Models): string[] {
-  return [...new Set(MODEL_ROLES.flatMap(r => [models[r]?.model, models[r]?.effort]).filter((v): v is string => !!v))]
-}
-
-/** The accepted form, for the note on a Models line that sets nothing. */
-const MODELS_FORM =
-  '`Models: build sonnet/medium · review opus/high · verify sonnet/medium` (roles build, review, verify; model sonnet, opus, haiku or fable; effort low, medium, high, xhigh or max; either half optional)'
-
-/** The roles set, in role order (`build sonnet/medium · review opus/high`): also the canonical form the session compares. */
-export function modelsText(models: Models | undefined, short = false): string {
-  if (!models) return ''
-  return MODEL_ROLES.filter(r => models[r])
-    .map(r => `${r} ${settingText(models[r]!, short)}`)
-    .join(' · ')
-}
+export { MODEL_ROLES, modelsText, modelsValues, parseModels, type ModelRole, type Models, type RoleSetting } from './models.ts'
 
 interface Stage {
   /** The first line of `## Now`, e.g. `Stage 3 of 5 · Accounts`. */
@@ -443,6 +388,12 @@ const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
 const MODELS_HONOURED = { plugin: 'jbit', key: 'modelsHonoured' } as const
 /** The models and efforts the latest prompt named, when it was the user's own (`namedModels`); empty otherwise. */
 const MODELS_NAMED = { plugin: 'jbit', key: 'modelsNamed' } as const
+/** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as `modelsText` writes it (`''` for none). */
+const MODELS_DEFAULT = { plugin: 'jbit', key: 'modelsDefault' } as const
+/** The honoured Models line was set by the user's `JBIT models` command and the plan doesn't carry it yet (`modelsInEffect`). */
+const MODELS_PENDING = { plugin: 'jbit', key: 'modelsPending' } as const
+/** The user chose the honoured Models line this session (a `JBIT models` command, or a change they named): the default no longer confirms one. */
+const MODELS_CHOSEN = { plugin: 'jbit', key: 'modelsChosen' } as const
 const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
 const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 
@@ -609,6 +560,120 @@ export function autopilotAsk(text: string): Unattended | undefined {
 }
 
 /**
+ * `JBIT models` opening a message, as `NAMED` reads the name: then a colon (spaces or none before or after it), or the
+ * end, a space or tab, or `.` `!` `,` `;` right after the word.
+ */
+const NAMED_MODELS = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)models(?:[ \t]*:|(?=$|[ \t.!,;]))/i
+
+/** The most a `JBIT models` command may hold: three roles' settings with room to spare. Longer is refused, not read. */
+const MODELS_COMMAND_MAX = 400
+
+/** Roles that run in the main session: JBIT can't set them, and points to `/model`. */
+const SESSION_ROLES = new Set(['plan', 'planning', 'planner', 'lead', 'manager', 'pm', 'main', 'session'])
+
+/** The words that drop a role, or with nothing else the whole line: agents run as the session. */
+const NONE_WORDS = new Set(['none', 'off'])
+
+/**
+ * What the user's `JBIT models …` command asks: back to the project default (`default`), no line (`none`), roles set,
+ * taken from the project default (`defaulted`) or dropped (`cleared`), or nothing JBIT can do, and why.
+ */
+export type ModelsAsk =
+  | { kind: 'default' }
+  | { kind: 'none' }
+  | { kind: 'set'; set: Models; defaulted: ModelRole[]; cleared: ModelRole[] }
+  | { kind: 'refused'; why: string }
+
+const VALID_SETTINGS =
+  'Roles are build, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line.'
+
+/**
+ * The user's own `JBIT models …` command (decided 2026-11-15), or undefined when the message isn't one. The whole
+ * message, trimmed, is one line with no question mark (else it's talk): the name (as `NAMED` reads it), `models` and an
+ * optional colon, then `default` (back to the project default), `none` or `off` (no line), or entries in the Models
+ * line's form (`build sonnet/medium · review: opus/high`, split on `·` `•` `—` `–` `,` `;` `|` or the word `and`), each
+ * a role and a value: `model/effort` (either half), `default` (the project default's setting for that role, or none)
+ * or `none`/`off` (drop the role). A trailing `.` or `!` is fine. Every entry must be sound or the whole command is
+ * refused, listing what's valid, so the line is never half-changed: a session role (`plan`, `lead`, …) points to
+ * `/model`; an unknown role or value, a role named twice, no entry at all or a message too long lists the valid ones.
+ */
+export function modelsCommand(text: string): ModelsAsk | undefined {
+  const t = normalised(text).trim()
+  if (/[\r\n]/.test(t) || QUESTION_MARK.test(t)) return undefined
+  const m = NAMED_MODELS.exec(t)
+  if (!m) return undefined
+  if (t.length > MODELS_COMMAND_MAX) return { kind: 'refused', why: `It's longer than a Models line could be. ${VALID_SETTINGS}` }
+  const body = t.slice(m[0].length).replace(/^[\s,;:]+/, '').replace(/[\s.!]+$/, '').toLowerCase()
+  if (body === 'default') return { kind: 'default' }
+  if (NONE_WORDS.has(body)) return { kind: 'none' }
+  const entries = body.split(/[·•—–,;|]|\band\b/).map(e => e.trim()).filter(Boolean)
+  if (!entries.length) return { kind: 'refused', why: `It names no role. ${VALID_SETTINGS}` }
+  const set: Models = {}
+  const defaulted: ModelRole[] = []
+  const cleared: ModelRole[] = []
+  for (const entry of entries) {
+    const e = entry.match(/^([a-z]+)(?:\s*:\s*|\s+)([a-z]+(?:\s*\/\s*[a-z]+)?|\/\s*[a-z]+)$/)
+    const role = (e?.[1] ?? entry.match(/^[a-z]+/)?.[0] ?? '') as ModelRole
+    if (SESSION_ROLES.has(role))
+      return {
+        kind: 'refused',
+        why: `\`${role}\` runs in the main session, on the model and effort set in Claude Code: change them with \`/model\` (and its effort setting). JBIT sets only the agents it starts: build, review and verify.`,
+      }
+    if (!e) return { kind: 'refused', why: `\`${entry}\` isn't a role and a setting. ${VALID_SETTINGS}` }
+    if (!MODEL_ROLES.includes(role)) return { kind: 'refused', why: `\`${role}\` isn't a role JBIT can set. ${VALID_SETTINGS}` }
+    if (set[role] || defaulted.includes(role) || cleared.includes(role)) return { kind: 'refused', why: `It names ${role} twice. ${VALID_SETTINGS}` }
+    const value = (e[2] ?? '').replace(/\s+/g, '')
+    if (value === 'default') defaulted.push(role)
+    else if (NONE_WORDS.has(value)) cleared.push(role)
+    else {
+      const setting = parseModels(`Models: ${role} ${value}`)?.[role]
+      if (!setting) return { kind: 'refused', why: `\`${value}\` isn't a model and effort JBIT knows. ${VALID_SETTINGS}` }
+      set[role] = setting
+    }
+  }
+  return { kind: 'set', set, defaulted, cleared }
+}
+
+/**
+ * The roles a `JBIT models` command leaves (`''` for no line), as `modelsText` writes them. `inEffect` is what agents
+ * start on now (`modelsInEffect`: the plan's line when the session honours it, none when the plan has no line or one
+ * it ignores), never a stored value the plan no longer carries, so a role removed by hand stays removed. `dflt` is the
+ * project default (`JBIT models:` in CLAUDE.md, `''` or undefined for none). `default` is the project default, `none`
+ * no line; a set keeps the roles it doesn't name as they stand, a role's `default` takes the project default's setting
+ * for it (dropped when that sets none), and `none` drops it.
+ */
+export function modelsAfter(inEffect: Models | undefined, ask: Exclude<ModelsAsk, { kind: 'refused' }>, dflt: string | undefined): string {
+  const project = dflt ? parseModels(`Models: ${dflt}`) : undefined
+  if (ask.kind === 'default') return modelsText(project)
+  if (ask.kind === 'none') return ''
+  const now: Models = { ...inEffect }
+  for (const r of ask.cleared) delete now[r]
+  for (const r of ask.defaulted) {
+    if (project?.[r]) now[r] = project[r]
+    else delete now[r]
+  }
+  return modelsText({ ...now, ...ask.set })
+}
+
+/**
+ * What rides beside the user's `JBIT models` command, for this turn: what Claude writes in the plan, or why nothing.
+ * `line` is the new line's settings (`''` to remove it), undefined on a refusal; `plan` the plan's path, if there is one;
+ * `inEffect` the line agents start on now, for a refusal to name.
+ */
+export function modelsContext(ask: ModelsAsk, line: string | undefined, plan: string | undefined, inEffect: string | undefined): string {
+  if (ask.kind === 'refused')
+    return `JBIT: the user's \`JBIT models\` command was refused, and the Models line is left as it is${inEffect ? ` (\`Models: ${inEffect}\`)` : ''}. ${ask.why} Tell the user this in a line, and don't change the plan's Models line.`
+  const toDefault = ask.kind === 'default'
+  if (!plan)
+    return line
+      ? `JBIT: the user's \`JBIT models\` command sets \`Models: ${line}\`${toDefault ? ', the project default' : ''}, but there's no plan to write it to. Tell the user so in a line; when jbit:plan writes a plan, put that line in its \`## Now\`, beside the Agents line.`
+      : `JBIT: the user's \`JBIT models\` command asks for agents to run as the session${toDefault ? ' (there is no project default in CLAUDE.md)' : ''}, and there's no plan, so no Models line to remove. Tell the user so in a line.`
+  if (!line)
+    return `JBIT: the user's own \`JBIT models\` command leaves no role set${toDefault ? ' (it asks for the project default, and CLAUDE.md has no `JBIT models:` line)' : ''}: remove the \`Models:\` line from \`## Now\` in \`${plan}\`, so agents run as the session, and log it as a dated decision ("Models line removed by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line.`
+  return `JBIT: the user's own \`JBIT models\` command sets the Models line${toDefault ? ' back to the project default (`JBIT models:` in CLAUDE.md)' : ''}, honoured from now on. Write exactly this line in \`## Now\` in \`${plan}\`, beside the Agents line, in place of any Models line there: \`Models: ${line}\`. Log it as a dated decision ("Models: ${line}, set by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line. Agents for these roles start with these settings from now on.`
+}
+
+/**
  * The project's rules for one hook call, read on first use and at most once: `CLAUDE.md`'s rules now, joined with every
  * rule seen earlier this session (kept in session state, within the same caps). So an edit adds a rule at once, but a
  * rule removed mid-session (by the agent under autopilot, say) still holds until a new session. Never throws.
@@ -627,7 +692,9 @@ async function stickyRules($: EngineInterface): Promise<ProjectRules> {
     ),
   ])
   const all = mergeRules([kept, fresh])
-  if (all.risk.length > kept.risk.length || all.outward.length > kept.outward.length) await $.state.set(PROJECT_RULES, all).catch(() => undefined)
+  // the models default is read fresh each time and kept apart (`projectModels`), never with the hold words
+  const { models: _models, ...guards } = all
+  if (all.risk.length > kept.risk.length || all.outward.length > kept.outward.length) await $.state.set(PROJECT_RULES, guards).catch(() => undefined)
   return all
 }
 
@@ -645,10 +712,16 @@ interface Session {
   now: number | undefined
   /** The Models line this session honours (`modelsText`, `''` for none); undefined until the session has looked. */
   modelsHonoured: string | undefined
+  /** The project's default Models line (`projectModels`, `''` for none); undefined until the session has read it. */
+  modelsDefault: string | undefined
+  /** The honoured line came from the user's `JBIT models` command and the plan doesn't carry it yet. */
+  modelsPending: boolean
+  /** The user chose the honoured line in this session, so a line matching the project default needs them like any other. */
+  modelsChosen: boolean
 }
 
 async function readSession($: EngineInterface): Promise<Session> {
-  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured] = await Promise.all([
+  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured, modelsDefault, modelsPending, modelsChosen] = await Promise.all([
     $.state.get(ARMED),
     $.state.get(UNATTENDED),
     $.state.get(CLEARED),
@@ -656,6 +729,9 @@ async function readSession($: EngineInterface): Promise<Session> {
     $.state.get(CHECK_COUNTS),
     $.state.get(FIRST_AGENTS),
     $.state.get(MODELS_HONOURED),
+    $.state.get(MODELS_DEFAULT),
+    $.state.get(MODELS_PENDING),
+    $.state.get(MODELS_CHOSEN),
   ])
   return {
     armed: armed.value ?? false,
@@ -666,6 +742,9 @@ async function readSession($: EngineInterface): Promise<Session> {
     firstAgents: typeof firstAgents.value === 'object' ? firstAgents.value : undefined,
     now: undefined,
     modelsHonoured: typeof modelsHonoured.value === 'string' ? modelsHonoured.value : undefined,
+    modelsDefault: typeof modelsDefault.value === 'string' ? modelsDefault.value : undefined,
+    modelsPending: modelsPending.value === true,
+    modelsChosen: modelsChosen.value === true,
   }
 }
 
@@ -684,32 +763,80 @@ export function namedModels(text: string): string[] {
  * baseline. A line that later appears or changes is honoured only when the latest prompt was the user's own and named,
  * as words, every model and effort the line sets (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms
  * `build sonnet/medium · review opus/high`; a plain "yes", or "fix the high priority bug", doesn't. Then it becomes the
- * honoured one. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
+ * honoured one. A line equal to the project default (`JBIT models:` in CLAUDE.md, as the session first read it) is
+ * honoured unnamed too, but only until the user chooses a line this session (`MODELS_CHOSEN`: a `JBIT models` command,
+ * or a change they named), so the default never undoes their choice. The user's `JBIT models` command sets the honoured
+ * line itself (`prompt.submit`); once the plan carries it, `MODELS_PENDING` clears. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
  * until the user confirms (or the line goes back to the honoured one). A line removed is simply no line; the honoured
  * one stays, so restoring it needs nothing. Edges left: any prompt (a background agent's report, say) clears what was
  * named, so a line Claude writes after one needs the user again; words are matched, not roles, so a prompt naming the
  * values for other roles confirms too; and a line that changes in git (a checkout) is a change like any other.
  */
-async function syncModels($: EngineInterface, plan: Plan | undefined, honoured: string | undefined): Promise<string | undefined> {
+async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session): Promise<void> {
   const current = modelsText(plan?.models)
-  if (honoured === undefined) {
-    if (!plan) return undefined
+  if (s.modelsHonoured === undefined) {
+    if (!plan) return
     await $.state.set(MODELS_HONOURED, current)
-    return current
+    s.modelsHonoured = current
+    return
   }
-  if (!current || current === honoured) return honoured
-  const named = (await $.state.get(MODELS_NAMED)).value
-  if (!Array.isArray(named) || !modelsValues(plan!.models!).every(v => named.includes(v))) return honoured
+  if (current === s.modelsHonoured) {
+    // the plan now carries the line the user's command set
+    if (s.modelsPending) {
+      await $.state.set(MODELS_PENDING, false)
+      s.modelsPending = false
+    }
+    return
+  }
+  if (!current) return
+  // the project's default (`JBIT models:` in CLAUDE.md, as the session first read it) is the user's own setting, until
+  // they choose another in this session: then a line matching it is a change like any other
+  const byDefault = !s.modelsChosen && !!s.modelsDefault && current === s.modelsDefault
+  if (!byDefault) {
+    const named = (await $.state.get(MODELS_NAMED)).value
+    if (!Array.isArray(named) || !modelsValues(plan!.models!).every(v => named.includes(v))) return
+  }
   await $.state.set(MODELS_HONOURED, current)
-  return current
+  s.modelsHonoured = current
+  if (s.modelsPending) await $.state.set(MODELS_PENDING, false)
+  s.modelsPending = false
+  if (!byDefault && !s.modelsChosen) await $.state.set(MODELS_CHOSEN, true)
+  if (!byDefault) s.modelsChosen = true
+}
+
+/**
+ * The project's default Models line (`JBIT models:` in `CLAUDE.md` or `.claude/CLAUDE.md`), as `modelsText` writes it
+ * (`''` for none or one that sets no role). It is read once, at the session's first compose (or its first `JBIT models`
+ * command), and kept for the session: like a Models line the session first reads, it is the user's own; an edit to
+ * `CLAUDE.md` mid-session (by the agent, say) changes nothing until a new session. A file that can't be read is no default.
+ */
+async function projectModels($: EngineInterface, rules: () => Promise<ProjectRules>): Promise<string> {
+  const kept = (await $.state.get(MODELS_DEFAULT)).value
+  if (typeof kept === 'string') return kept
+  // `parseProjectRules` already wrote it as `modelsText` does, from the first line that sets a role
+  const text = (await rules()).models ?? ''
+  await $.state.set(MODELS_DEFAULT, text)
+  return text
 }
 
 /** The roles the plan's Models line sets, when this session honours it; undefined otherwise. */
 export const effectiveModels = (plan: Pick<Plan, 'models'> | undefined, honoured: string | undefined): Models | undefined =>
   plan?.models && modelsText(plan.models) === honoured ? plan.models : undefined
 
-/** The plan has a Models line this session doesn't honour (it changed without the user's words). */
-const ignoredModels = (plan: Plan, s: Session) => !!plan.models && !effectiveModels(plan, s.modelsHonoured)
+/**
+ * The roles agents start on now. The plan's line when the session honours it; and while the user's `JBIT models`
+ * command waits for Claude to write its line (`modelsPending`), the line that command set, at once (decided in the
+ * stage 2 review): the user's command is the setting, and the plan only records it, so an Agent call between the
+ * command and the edit carries the new setting, never the replaced one. Undefined otherwise: agents run as the session.
+ */
+export function modelsInEffect(plan: Pick<Plan, 'models'> | undefined, s: Pick<Session, 'modelsHonoured' | 'modelsPending'>): Models | undefined {
+  const honoured = effectiveModels(plan, s.modelsHonoured)
+  if (honoured) return honoured
+  return s.modelsPending && s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined
+}
+
+/** The plan has a Models line this session doesn't honour (it changed without the user's words), and no command of theirs waits to be written. */
+const ignoredModels = (plan: Plan, s: Session) => !s.modelsPending && !!plan.models && !effectiveModels(plan, s.modelsHonoured)
 
 /**
  * Why an Agent call from the main loop breaks the honoured Models line, or undefined when it keeps it (decided
@@ -856,7 +983,7 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
     session.firstAgents = firstAgentsOf(plan, await clockNow($))
     await $.state.set(FIRST_AGENTS, session.firstAgents)
   }
-  session.modelsHonoured = await syncModels($, plan, session.modelsHonoured)
+  await syncModels($, plan, session)
   // a wide line's stamp is checked against the time, so read it only then
   if (plan?.agents === 'wide') session.now = await clockNow($)
   const stage = plan?.stage
@@ -951,7 +1078,7 @@ function statusLine(plan: Plan, s: Session, roadmap?: Roadmap): string {
             : ' · autopilot'
   const fanOut = effectiveAgents(plan, s.firstAgents, s.now)
   const agents = fanOut === 'lean' || fanOut === 'wide' ? ` · ${fanOut}` : ''
-  const set = effectiveModels(plan, s.modelsHonoured)
+  const set = modelsInEffect(plan, s)
   const models = set ? ` · ${modelsText(set, true)}` : ''
   return `jbit${mode}${agents}${models}${milestone} · ${plan.done}/${plan.total} done · next: ${plan.current}`
 }
@@ -973,8 +1100,24 @@ function workingRules(plan: Plan, s: Session, now: string | undefined): string {
   return [baseRules(plan, s), agentsRule(plan, s, now), modelsRule(plan, s)].filter(Boolean).join(' ')
 }
 
-/** What the Models line asks of this session, or `''` with no line. */
+/** What the Models line asks of this session, or `''` with no line; and the project's default, when it has one. */
 function modelsRule(plan: Plan, s: Session): string {
+  const line = lineRule(plan, s)
+  const dflt = s.modelsDefault ? defaultNote(s.modelsDefault) : ''
+  return [line, dflt].filter(Boolean).join(' ')
+}
+
+/** The context's word on the project's default Models line. */
+const defaultNote = (dflt: string) =>
+  `The project default (\`JBIT models:\` in CLAUDE.md) is \`Models: ${dflt}\`: new plans start from it, and a plan's Models line that matches it is honoured.`
+
+function lineRule(plan: Plan, s: Session): string {
+  // the user's command waits to be written: say what to write, not that the old line changed
+  if (s.modelsPending && modelsText(plan.models) !== s.modelsHonoured) {
+    if (!s.modelsHonoured)
+      return `Models: the user removed the Models line with \`JBIT models\`: remove the \`Models:\` line from \`## Now\` and log it as a dated decision. Agents run as the session already: start them naming no model or effort.`
+    return `Models: the user set \`Models: ${s.modelsHonoured}\` with \`JBIT models\`: write exactly that line in \`## Now\`, in place of any Models line there, and log it as a dated decision. It applies already. ${passRule(parseModels(`Models: ${s.modelsHonoured}`)!)}`
+  }
   if (plan.hasModelsLine && !plan.models)
     return `Models: the plan's Models line is not understood, so agents start as if there were none; the form is ${MODELS_FORM}.`
   if (ignoredModels(plan, s)) {
@@ -982,10 +1125,14 @@ function modelsRule(plan: Plan, s: Session): string {
     return `Models: the plan's Models line (${modelsText(plan.models)}) changed without the user naming its settings, so it is ignored until they confirm: ask them to confirm by naming the settings (e.g. "${named}"); a plain yes won't do. Start agents as if there were no line meanwhile.`
   }
   const set = effectiveModels(plan, s.modelsHonoured)
-  if (!set) return ''
+  return set ? `Models: the plan's Models line sets ${modelsText(set)}. ${passRule(set)}` : ''
+}
+
+/** How to start each role's agent under `set`. */
+function passRule(set: Models): string {
   const unset = MODEL_ROLES.filter(r => !set[r])
   const leftOut = unset.length ? ` A role it leaves out (${unset.join(', ')}) gets neither, as usual.` : ''
-  return `Models: the plan's Models line sets ${modelsText(set)}. When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
+  return `When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
 }
 
 function baseRules(plan: Plan, s: Session): string {
@@ -1687,6 +1834,8 @@ export const register: Register = on => {
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
     const rules = sessionRules($)
+    // the project's default Models line, read once a session, before the plan's line is weighed against it
+    const dflt = await projectModels($, rules).catch(() => undefined)
     const plan = await loadPlan($, rules).catch(() => undefined)
     const s = await sync($, plan)
     // while autopilot drives, each request notes the project's rules before any tool runs, so one removed mid-run still holds
@@ -1694,7 +1843,9 @@ export const register: Register = on => {
     // the roadmap rides with the plan: without a plan there is no section to carry it
     const roadmap = plan ? await loadRoadmap($) : undefined
     $.ui.status(plan ? statusLine(plan, s, roadmap) : undefined)
-    if (!plan) return composed
+    // with no plan yet, the project's default is all there is to say: the plan jbit:plan writes starts from it
+    if (!plan)
+      return dflt ? { sections: [...composed.sections, { id: 'jbit:plan', text: `# JBIT\n${defaultNote(dflt)}`, scope: 'session' as const }] } : composed
     const now = unconfirmedWide(plan, s) && s.now !== undefined ? stampOf(s.now) : undefined
     let decisionsFile = false
     try {
@@ -1718,11 +1869,33 @@ export const register: Register = on => {
 
   on('prompt.submit', async ($, e, next) => {
     const fromUser = USER_ORIGINS.has(e.origin.kind)
+    // the user's own `JBIT models …` command sets the honoured line itself, so it names nothing for `syncModels`
+    const modelsAsk = fromUser ? modelsCommand(e.text) : undefined
     // a changed Models line counts only when the user's own prompt names its settings (`syncModels`)
-    await $.state.set(MODELS_NAMED, fromUser ? namedModels(e.text) : [])
+    await $.state.set(MODELS_NAMED, fromUser && !modelsAsk ? namedModels(e.text) : [])
     // the person speaking up gives a stalled autopilot a fresh allowance
     if (e.origin.kind !== 'plugin') stalledTurns = 0
     lastPromptFromUser = fromUser
+    if (modelsAsk) {
+      // bring the session's view up to date first, so the honoured line is the one the plan's first look set
+      const rules = sessionRules($)
+      await projectModels($, rules)
+      const plan = await loadPlan($, rules).catch(() => undefined)
+      const s = await sync($, plan)
+      const inEffect = modelsInEffect(plan, s)
+      let line: string | undefined
+      if (modelsAsk.kind !== 'refused') {
+        // from what agents start on now, not a stored line the plan no longer carries
+        line = modelsAfter(inEffect, modelsAsk, s.modelsDefault)
+        // honoured at once, so the line Claude writes needs no naming of the roles the command left as they stand; it
+        // applies until then too (`modelsInEffect`), and the user has chosen, so the project default confirms nothing now
+        await $.state.set(MODELS_HONOURED, line)
+        await $.state.set(MODELS_PENDING, modelsText(plan?.models) !== line)
+        await $.state.set(MODELS_CHOSEN, true)
+      }
+      const entry = modelsContext(modelsAsk, line, plan?.path, modelsText(inEffect))
+      return next({ ...e, context: [...(e.context ?? []), entry] })
+    }
     if (fromUser) {
       // the user's autopilot command, typed or opening with "JBIT" (`autopilotAsk`), comes first: it sets the level,
       // even over a held stage (an unattended level lifts the hold; `attended` keeps it), and the level holds until
@@ -1872,8 +2045,9 @@ export const register: Register = on => {
     try {
       const plan = await readPlan($)
       // the Models line the session honours: an Agent call must carry one of its roles' settings
-      const honoured = await syncModels($, plan, (await readSession($)).modelsHonoured)
-      const models = effectiveModels(plan, honoured)
+      const session = await readSession($)
+      await syncModels($, plan, session)
+      const models = modelsInEffect(plan, session)
       const wrong = models && modelsDenial(models, e as { model?: unknown; effort?: unknown; subagent_type?: unknown })
       if (wrong) return { deny: wrong }
       if (effectiveAgents(plan, undefined) !== 'lean') return await next(e)

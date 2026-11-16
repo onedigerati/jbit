@@ -27,6 +27,12 @@ declare module 'claude-code' {
       modelsHonoured: string
       /** The models and efforts the latest prompt named as words, when it was the user's own (empty otherwise): a changed Models line is honoured only when this names every value it sets. */
       modelsNamed: string[]
+      /** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as the hook writes it (`''` for none): a plan's line that matches it is honoured without the user naming it. */
+      modelsDefault: string
+      /** The honoured Models line was set by the user's `JBIT models` command and the plan doesn't carry it yet: it applies at once, and the rules say to write it. */
+      modelsPending: boolean
+      /** The user chose the honoured Models line this session (a `JBIT models` command or a change they named), so a line matching the project default needs them like any other. */
+      modelsChosen: boolean
       /** Every project rule (`JBIT risk:` / `JBIT outward:` in CLAUDE.md) seen this session, so a line removed mid-run still holds until a new session. */
       projectRules: { risk: string[]; outward: { words: string[]; file: string }[] }
     }

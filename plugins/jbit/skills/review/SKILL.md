@@ -22,6 +22,8 @@ Spawn one reviewer agent (general-purpose) that did not write the code. Brief it
 - the lenses below;
 - what to return: each finding with file and line, what goes wrong, a concrete failing scenario, and confidence.
 
+Start each reviewer with the plan's Models line's `review` setting: pass the line's model and effort for the role on the Agent call, and leave out a half it doesn't set; with no `review` setting, name neither. Never choose an effort yourself.
+
 How many follows the plan's Agents line (`jbit:plan`), and every level gets at least one. `lean` and no line (`balanced`): the one reviewer, and under `lean` it's the only agent running. `wide` the hook honours (one it isn't honouring yet counts as balanced), when the security lens applies: two at once, one with the always lenses and one with the security lens, each briefed as above.
 
 Do **not** tell it what you believe is fine, what you already checked, or what you suspect. A reviewer handed a conclusion confirms it.

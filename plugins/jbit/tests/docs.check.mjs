@@ -446,3 +446,50 @@ test('the hook\'s armed-autopilot rules carry the progress note, in both the una
   assert.ok(hook.includes('are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE}'), 'attended autopilot rules lack PROGRESS_NOTE')
   assert.ok(hook.includes('    outward,\n    PROGRESS_NOTE,\n  ].join'), 'unattended rules lack PROGRESS_NOTE')
 })
+
+/** What a skill says when it starts a role's agent: the Models line's setting on the Agent call, and no effort of Claude's choosing. */
+const PASS_SETTING = "pass the line's model and effort for the role on the Agent call"
+const NO_EFFORT = 'Never choose an effort yourself'
+
+test('plan, stage, autopilot, review and verify say to pass the Models line\'s model and effort on the Agent call, never choosing an effort', () => {
+  for (const name of ['plan', 'stage', 'autopilot', 'review', 'verify'])
+    for (const words of [PASS_SETTING, NO_EFFORT]) assert.ok(skill(name).includes(words), `${name} SKILL.md lacks: ${words}`)
+  for (const name of ['stage', 'autopilot', 'review', 'verify'])
+    assert.ok(skill(name).includes("leave out a half it doesn't set"), `${name} SKILL.md lacks: leave out a half it doesn't set`)
+})
+
+test('plan, stage and autopilot say planning and project management stay on the session\'s model; plan points a plan or lead role to /model', () => {
+  for (const name of ['plan', 'stage', 'autopilot'])
+    assert.ok(skill(name).includes("Planning and project management stay on the session's model"), `${name} SKILL.md lacks: Planning and project management stay on the session's model`)
+  assert.ok(skill('plan').includes('when the user asks for a `plan` or `lead` setting, point them to `/model`'), 'plan SKILL.md lacks the /model pointer')
+})
+
+test('under lean with a build setting, jbit:stage hands building to one builder agent; verify under lean stays in the main session', () => {
+  assert.ok(skill('stage').includes('Under `lean` with a `build` setting, one builder agent builds it all, foundation first, still one agent at a time'), 'stage SKILL.md lacks the lean build handoff')
+  assert.ok(skill('stage').includes('With a `build` setting, all building runs on it: the foundation goes to a builder too'), 'stage SKILL.md lacks: the foundation goes to a builder too')
+  assert.ok(skill('stage').includes('you build first (with a `build` setting on the Models line, a builder builds them; below)'), 'stage SKILL.md: Foundation yourself lacks the build-setting exception')
+  assert.ok(skill('stage').includes('under `lean` with a `build` setting on the Models line, hand the building to one builder agent instead'), 'stage SKILL.md Agents rule lacks the lean build handoff')
+  assert.ok(skill('autopilot').includes('under `lean` with a `build` setting, `jbit:stage` hands building to one builder agent'), 'autopilot SKILL.md lacks the lean build handoff')
+  assert.ok(skill('review').includes("Start each reviewer with the plan's Models line's `review` setting"), 'review SKILL.md lacks the review setting')
+  assert.ok(skill('verify').includes("A fresh verifier agent gets the plan's Models line's `verify` setting"), 'verify SKILL.md lacks the verify setting')
+  assert.ok(skill('verify').includes('Under `lean`, verify stays in the main session'), 'verify SKILL.md lacks: under lean, verify stays in the main session')
+})
+
+test('plan describes the Models line: roles, form, a role left out runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default', () => {
+  const text = skill('plan')
+  for (const words of [
+    '`Models: build sonnet/medium · review opus/high · verify sonnet/medium`',
+    'The roles are `build`, `review` and `verify`, each written `model/effort` (either half optional)',
+    'A role left out runs as the session',
+    'Only the user sets it',
+    'a `JBIT models …` command',
+    'a `JBIT models:` line in `CLAUDE.md`, the project default',
+    '`JBIT models default` goes back to that default (no line when there is none)',
+    '`JBIT models none` removes the line so agents run as the session',
+    '`<role> default` or `<role> none` does the same for one role',
+    "A new plan starts from that default: write it as the plan's Models line",
+    'carry the line into every new `## Now` as it stands, like the Agents line',
+    'The Agents and Models lines carry over',
+  ])
+    assert.ok(text.includes(words), `plan SKILL.md lacks: ${words}`)
+})

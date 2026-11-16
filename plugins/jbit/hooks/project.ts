@@ -6,6 +6,10 @@
  * consulted only beside or after them; there is no allow, negation or wildcard syntax, so a cloned repo's `CLAUDE.md`
  * can't loosen a guard. A line or entry that doesn't parse adds nothing, and a file that can't be read is no rules.
  *
+ * One rule is no guard: a `JBIT models:` line sets the project's default `Models:` line (the model and effort each
+ * delegated role starts its agents on), which new plans start from and which a plan's line matching it is honoured by.
+ * It loosens no hold or check; the hook reads it once a session, and only the first line that sets a role counts.
+ *
  * Everything here runs on requests and tool calls, so it is linear and bounded: the file is stat'ed before it is read
  * (a regular file inside the working directory, at most `MAX_BYTES`), only so many characters, lines, entries and words
  * are looked at, and no pattern is ever built from the file's text: words and commands are compared literally.
@@ -14,6 +18,7 @@
  * state, so an edit to `CLAUDE.md` adds rules at once but removes them only for a new session.
  */
 import type { EngineInterface } from 'claude-code'
+import { modelsText, parseModels } from './models.ts'
 import { joinPath, parseCommands, runnerless, type Command } from './shell.ts'
 
 /** Where project rules are read from, relative to the working directory. */
@@ -44,6 +49,11 @@ export interface ProjectRules {
   /** Hold words, lowercased. */
   risk: string[]
   outward: OutwardRule[]
+  /**
+   * The project's default Models line, as `modelsText` writes it (`build sonnet/medium · review opus/high`): the first
+   * `JBIT models:` line that sets at least one role. Unlike the hold words it is never kept in session state.
+   */
+  models?: string
 }
 
 export const NO_RULES: ProjectRules = Object.freeze({ risk: [], outward: [] }) as ProjectRules
@@ -54,7 +64,10 @@ export const NO_RULES: ProjectRules = Object.freeze({ risk: [], outward: [] }) a
  * `keel` is the legacy name from before the plugin was renamed: `Keel risk:` / `Keel outward:` rules live in other
  * people's committed `CLAUDE.md` files, so they stay honoured beside the `JBIT` forms.
  */
-const RULE_LINE = /^(?:[-*+][ \t]+|\d{1,9}[.)][ \t]+)?[*_`]{0,3}(?:jbit|keel)[ \t]+(risk|outward)[*_`]{0,3}[ \t]*:[*_`]{0,3}/i
+const RULE_LINE = /^(?:[-*+][ \t]+|\d{1,9}[.)][ \t]+)?[*_`]{0,3}(?:jbit|keel)[ \t]+(risk|outward|models)[*_`]{0,3}[ \t]*:[*_`]{0,3}/i
+
+/** The most of a `JBIT models:` line kept: far more than three roles' settings need. */
+const MODELS_MAX = 200
 
 /** A fence line (```` ``` ```` or `~~~`, indented or not): rule lines between fences are examples, not rules. */
 const FENCE = /^[ \t]*(`{3,}|~{3,})/
@@ -102,6 +115,7 @@ function outwardCommand(entry: string): string[] | undefined {
 export function parseProjectRules(text: string, file = 'CLAUDE.md'): ProjectRules {
   const risk = new Set<string>()
   const outward = new Map<string, OutwardRule>()
+  let models: string | undefined
   let fence: string | undefined
   for (const raw of text.slice(0, MAX_CHARS).split('\n', MAX_LINES)) {
     if (risk.size >= MAX_ENTRIES && outward.size >= MAX_ENTRIES) break
@@ -116,6 +130,12 @@ export function parseProjectRules(text: string, file = 'CLAUDE.md'): ProjectRule
     const m = RULE_LINE.exec(line)
     if (!m) continue
     const kind = (m[1] ?? '').toLowerCase()
+    if (kind === 'models') {
+      // the first line that sets a role is the default; its marks taken off as an entry's would be, and one that sets
+      // nothing is passed over
+      if (models === undefined) models = modelsText(parseModels(unmarked(line.slice(m[0].length, m[0].length + MODELS_MAX)))) || undefined
+      continue
+    }
     for (const part of line.slice(m[0].length).split(',', LINE_ENTRIES)) {
       const entry = unmarked(part)
       if (kind === 'risk') {
@@ -127,7 +147,7 @@ export function parseProjectRules(text: string, file = 'CLAUDE.md'): ProjectRule
       }
     }
   }
-  return { risk: [...risk], outward: [...outward.values()] }
+  return { risk: [...risk], outward: [...outward.values()], ...(models !== undefined ? { models } : {}) }
 }
 
 /** Both files' rules together, the first file's first, each entry once, within the overall caps. */
@@ -138,7 +158,8 @@ export function mergeRules(all: ProjectRules[]): ProjectRules {
     .flatMap(r => r.outward)
     .filter(r => !seen.has(r.words.join(' ')) && !!seen.add(r.words.join(' ')))
     .slice(0, MAX_ENTRIES)
-  return { risk, outward }
+  const models = all.find(r => r.models !== undefined)?.models
+  return { risk, outward, ...(models !== undefined ? { models } : {}) }
 }
 
 /**

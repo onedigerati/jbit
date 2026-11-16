@@ -13,8 +13,12 @@ import {
   isApproval,
   milestoneEvidencePath,
   milestoneRequirements,
+  modelsAfter,
+  modelsCommand,
   modelsDenial,
+  modelsText,
   namedCommand,
+  parseModels,
   namedModels,
   namesPlan,
   parsePlan,
@@ -2842,6 +2846,282 @@ test('a Models line that sets no role gets a "not understood" note, and Agent ca
   expect(note).toHaveLength(1)
   expect(r.text).toContain('the form is `Models: build sonnet/medium · review opus/high · verify sonnet/medium`')
   expect((await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', model: 'haiku', effort: 'max' } as never)).deny).toBeUndefined()
+})
+
+// ---- the user's `JBIT models …` command and the CLAUDE.md default ----
+
+/** The plan reads `first`; the user (or `origin`) says `said`; returns the engine's record, the plan and a composer. */
+async function modelsSaid($: Engine, on: On, first: string | undefined, said: string, files?: Record<string, string>, origin = 'composer') {
+  // no plan: the plan file exists but can't be read, which the hook takes as none
+  const plan: Parameters<typeof engine>[1] = { text: planWith(first ?? 'Open: none'), files, broken: first === undefined ? ['docs/PLAN.md'] : [] }
+  const sent = engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const compose = composeJBIT($, on)
+  await compose()
+  await $.prompt.submit({ text: said, origin: { kind: origin } } as never)
+  const entry = (sent.submitted.at(-1)?.context ?? []).join('\n')
+  const agent = async (args: Record<string, unknown>) => (await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', ...args } as never)).deny
+  return { sent, plan, compose, entry, agent }
+}
+
+test('JBIT models sets the named roles: the entry gives the exact line, other roles kept, honoured at once without re-naming them', async ($, on) => {
+  const { plan, compose, entry, agent } = await modelsSaid($, on, MODELS, 'JBIT models verify haiku/low')
+  expect(entry).toContain("the user's own `JBIT models` command sets the Models line, honoured from now on.")
+  expect(entry).toContain('Write exactly this line in `## Now` in `docs/PLAN.md`, beside the Agents line, in place of any Models line there: `Models: build sonnet/medium · review opus/high · verify haiku/low`.')
+  expect(entry).toContain('Log it as a dated decision')
+  // Claude writes the line it was given: honoured, though the user named only verify's setting
+  plan.text = planWith('Models: build sonnet/medium · review opus/high · verify haiku/low')
+  const r = await compose()
+  expect(r.band).toBe('jbit · build sonnet/med · review opus/high · verify haiku/low · 1/3 done · next: 2. Share mode')
+  expect(r.text).not.toContain(IGNORED)
+  expect(await agent({ model: 'haiku', effort: 'low' })).toBeUndefined()
+  expect(await agent({ model: 'opus', effort: 'max' })).toContain("the plan's Models line sets build sonnet/medium · review opus/high · verify haiku/low.")
+  // and it stays honoured through later prompts that name nothing
+  await $.prompt.submit({ text: 'carry on', origin: { kind: 'composer' } })
+  expect((await compose()).band).toContain('verify haiku/low')
+})
+
+test('JBIT models replaces only the roles it names, in the forms the line accepts', async ($, on) => {
+  const cases: [string, string][] = [
+    ['JBIT models review fable/max', 'build sonnet/medium · review fable/max'],
+    ['jbit, Models: review: fable/max', 'build sonnet/medium · review fable/max'],
+    ['JBIT models build haiku · verify /xhigh', 'build haiku · review opus/high · verify xhigh'],
+    ['JBIT models build opus/low; review sonnet', 'build opus/low · review sonnet'],
+    ['JBIT models build opus/low — verify sonnet/medium', 'build opus/low · review opus/high · verify sonnet/medium'],
+    ['JBIT models build opus/low • verify sonnet/medium.', 'build opus/low · review opus/high · verify sonnet/medium'],
+    ['JBIT models build opus/low and verify Sonnet / Medium', 'build opus/low · review opus/high · verify sonnet/medium'],
+    ['JBIT models review default', 'build sonnet/medium'],
+    ['JBIT models review none', 'build sonnet/medium'],
+    ['JBIT models review off.', 'build sonnet/medium'],
+  ]
+  for (const [said, line] of cases) {
+    const ask = modelsCommand(said)
+    expect(ask?.kind).toBe('set')
+    expect(modelsAfter(parseModels(MODELS), ask as never, undefined)).toBe(line)
+  }
+  const { entry } = await modelsSaid($, on, MODELS, 'JBIT models: review fable/max')
+  expect(entry).toContain('`Models: build sonnet/medium · review fable/max`')
+})
+
+test('a JBIT models command naming every value of the old line still sets the new one, not the old', async ($, on) => {
+  const { plan, compose, entry } = await modelsSaid($, on, MODELS, 'JBIT models build opus/high, review sonnet/medium')
+  expect(entry).toContain('`Models: build opus/high · review sonnet/medium`')
+  // the old line, still in the plan until Claude edits it, no longer applies: the command's line does
+  expect((await compose()).band).toContain('build opus/high · review sonnet/med')
+  plan.text = planWith('Models: build opus/high · review sonnet/medium')
+  expect((await compose()).band).toContain('build opus/high · review sonnet/med')
+})
+
+test('JBIT models default tells Claude to remove the line, after which agents run as the session', async ($, on) => {
+  const { plan, compose, entry, agent } = await modelsSaid($, on, MODELS, 'JBIT models default')
+  expect(entry).toContain('remove the `Models:` line from `## Now` in `docs/PLAN.md`, so agents run as the session')
+  // the old line, until removed, is no longer honoured: an agent with any setting runs
+  expect(await agent({ model: 'haiku', effort: 'max' })).toBeUndefined()
+  plan.text = planWith('Open: none')
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).not.toContain('Models')
+  expect(await agent({ model: 'opus', effort: 'low' })).toBeUndefined()
+  // a line Claude writes back afterwards isn't honoured without the user
+  plan.text = planWith(MODELS)
+  expect((await compose()).text).toContain(IGNORED)
+})
+
+test('a plan or lead role is refused with a pointer to /model, the line left unchanged', async ($, on) => {
+  for (const said of ['JBIT models plan opus/high', 'JBIT models build haiku, lead opus/max', 'JBIT models manager: opus']) {
+    const ask = modelsCommand(said)
+    expect(ask?.kind).toBe('refused')
+    expect((ask as { why: string }).why).toContain('runs in the main session, on the model and effort set in Claude Code: change them with `/model`')
+  }
+  const { plan, compose, entry } = await modelsSaid($, on, MODELS, 'JBIT models build haiku/low, lead opus/max')
+  expect(entry).toContain("the user's `JBIT models` command was refused, and the Models line is left as it is (`Models: build sonnet/medium · review opus/high`).")
+  expect(entry).toContain("don't change the plan's Models line")
+  expect((await compose()).band).toContain('build sonnet/med · review opus/high')
+  // a line Claude changes anyway, to the refused command's build, isn't honoured
+  plan.text = planWith('Models: build haiku/low · review opus/high')
+  expect((await compose()).text).toContain(IGNORED)
+})
+
+test('an unknown role or value is refused listing the valid ones, the line left unchanged', async ($, on) => {
+  for (const said of ['JBIT models builder sonnet', 'JBIT models build gpt5/high', 'JBIT models review opus/extreme', 'JBIT models build sonnet medium', 'JBIT models build sonnet, build opus', 'JBIT models']) {
+    const ask = modelsCommand(said)
+    expect(ask?.kind).toBe('refused')
+    expect((ask as { why: string }).why).toContain('Roles are build, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max')
+  }
+  const { compose, entry } = await modelsSaid($, on, MODELS, 'JBIT models build turbo/high')
+  expect(entry).toContain('was refused, and the Models line is left as it is')
+  expect(entry).toContain('`turbo/high` isn\'t a model and effort JBIT knows.')
+  expect((await compose()).band).toContain('build sonnet/med · review opus/high')
+})
+
+test('JBIT models with no plan says there is no plan to write it to', async ($, on) => {
+  const { entry } = await modelsSaid($, on, undefined, 'JBIT models build sonnet/medium')
+  expect(entry).toContain("the user's `JBIT models` command sets `Models: build sonnet/medium`, but there's no plan to write it to.")
+  expect(entry).toContain('when jbit:plan writes a plan, put that line in its `## Now`')
+})
+
+test('JBIT models default with no plan says there is no line to remove', async ($, on) => {
+  const { entry } = await modelsSaid($, on, undefined, 'JBIT models default')
+  expect(entry).toContain("there's no plan, so no Models line to remove")
+})
+
+test('only the user\'s own whole-message JBIT models is a command, and it is no autopilot command', async ($, on) => {
+  expect(modelsCommand('JBIT models build sonnet/medium?')).toBeUndefined()
+  expect(modelsCommand('JBIT models build sonnet/medium\nand then autopilot')).toBeUndefined()
+  expect(modelsCommand('please JBIT models build sonnet')).toBeUndefined()
+  expect(modelsCommand('JBIT modelsbuild sonnet')).toBeUndefined()
+  expect(modelsCommand('JBIT autopilot lean')).toBeUndefined()
+  expect(autopilotAsk('JBIT models build sonnet/medium')).toBeUndefined()
+  expect(autopilotAsk('JBIT autopilot lean')).toBe('on')
+  expect(namedCommand('JBIT models build sonnet/medium')).toBeUndefined()
+  // a plugin's prompt gets no entry and sets nothing
+  const { entry, compose, plan } = await modelsSaid($, on, MODELS, 'JBIT models build haiku/low', undefined, 'plugin')
+  expect(entry).toBe('')
+  plan.text = planWith('Models: build haiku/low · review opus/high')
+  expect((await compose()).text).toContain(IGNORED)
+})
+
+const DEFAULT_RULE = { 'CLAUDE.md': '# Project\n\n- **JBIT models:** build sonnet/medium · review opus/high\n' }
+
+test('a JBIT models line in CLAUDE.md is the project default: a plan line matching it is honoured unnamed, and the context says new plans start from it', async ($, on) => {
+  const plan = { text: planWith('Open: none'), files: DEFAULT_RULE }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  const first = await compose()
+  expect(first.text).toContain('The project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`: new plans start from it')
+  await $.prompt.submit({ text: 'carry on with stage 2', origin: { kind: 'composer' } })
+  plan.text = planWith(MODELS)
+  const r = await compose()
+  expect(r.band).toBe('jbit · build sonnet/med · review opus/high · 1/3 done · next: 2. Share mode')
+  expect(r.text).not.toContain(IGNORED)
+  // a line that differs from the default still needs the user
+  plan.text = planWith('Models: build haiku/low · review opus/high')
+  expect((await compose()).text).toContain(IGNORED)
+})
+
+test('the CLAUDE.md default is read as the session first saw it: an edit mid-session sets no new default', async ($, on) => {
+  const plan = { text: planWith('Open: none'), files: DEFAULT_RULE }
+  engine(on, plan)
+  const compose = composeJBIT($, on)
+  await compose()
+  plan.files = { 'CLAUDE.md': 'JBIT models: build haiku/max' }
+  plan.text = planWith('Models: build haiku/max')
+  const r = await compose()
+  expect(r.text).toContain(IGNORED)
+  expect(r.text).toContain('is `Models: build sonnet/medium · review opus/high`')
+})
+
+test('with no plan, the CLAUDE.md default still rides in the context for the plan jbit:plan writes', async ($, on) => {
+  engine(on, { text: planWith('Open: none'), files: DEFAULT_RULE, broken: ['docs/PLAN.md'] })
+  const r = await composeJBIT($, on)()
+  expect(r.band).toBeUndefined()
+  expect(r.text).toBe('# JBIT\nThe project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`: new plans start from it, and a plan\'s Models line that matches it is honoured.')
+})
+
+test('parseProjectRules reads the first JBIT models line, its marks taken off, beside the hold words', () => {
+  expect(parseProjectRules('JBIT risk: pci\n**JBIT models:** build sonnet/medium\nJBIT models: build opus').models).toBe('build sonnet/medium')
+  expect(parseProjectRules('JBIT risk: pci')).toEqual({ risk: ['pci'], outward: [] })
+  expect(parseProjectRules('```\nJBIT models: build opus\n```').models).toBeUndefined()
+})
+
+// ---- stage 2 review: the command turn, the default, partial commands, default vs none, near misses ----
+
+test('right after JBIT models, the rules say what the user set and to write it, never that the old line changed; the setting applies at once', async ($, on) => {
+  const { compose, agent } = await modelsSaid($, on, MODELS, 'JBIT models verify haiku/low')
+  const r = await compose()
+  expect(r.text).not.toContain(IGNORED)
+  expect(r.text).toContain('Models: the user set `Models: build sonnet/medium · review opus/high · verify haiku/low` with `JBIT models`: write exactly that line in `## Now`, in place of any Models line there, and log it as a dated decision. It applies already.')
+  expect(r.text).toContain("pass the role's model and effort on the Agent call")
+  expect(r.band).toContain('build sonnet/med · review opus/high · verify haiku/low')
+  expect(await agent({ model: 'haiku', effort: 'low' })).toBeUndefined()
+  expect(await agent({ model: 'fable', effort: 'max' })).toContain('verify haiku/low')
+})
+
+test('right after JBIT models none, the rules say to remove the line, never that it changed, and agents run as the session', async ($, on) => {
+  const { compose, agent } = await modelsSaid($, on, MODELS, 'JBIT models none')
+  const r = await compose()
+  expect(r.text).not.toContain(IGNORED)
+  expect(r.text).toContain('Models: the user removed the Models line with `JBIT models`: remove the `Models:` line from `## Now`')
+  expect(r.band).toBe(BAND)
+  expect(await agent({ model: 'haiku', effort: 'max' })).toBeUndefined()
+})
+
+test('after JBIT models none, a line Claude writes back that matches the CLAUDE.md default is not honoured', async ($, on) => {
+  const { plan, compose } = await modelsSaid($, on, MODELS, 'JBIT models none', DEFAULT_RULE)
+  plan.text = planWith('Open: none')
+  await compose()
+  await $.prompt.submit({ text: 'carry on', origin: { kind: 'composer' } })
+  plan.text = planWith(MODELS)
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(IGNORED)
+})
+
+test('after the user sets build haiku/low, Claude reverting the line to the CLAUDE.md default is not honoured', async ($, on) => {
+  const { plan, compose } = await modelsSaid($, on, MODELS, 'JBIT models build haiku/low', DEFAULT_RULE)
+  plan.text = planWith('Models: build haiku/low · review opus/high')
+  await compose()
+  await $.prompt.submit({ text: 'carry on', origin: { kind: 'composer' } })
+  plan.text = planWith(MODELS)
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(IGNORED)
+})
+
+test('a partial JBIT models after the line was removed by hand starts from no line, not the removed roles', async ($, on) => {
+  const plan = { text: planWith(MODELS) }
+  const sent = engine(on, plan)
+  const compose = composeJBIT($, on)
+  await compose()
+  plan.text = planWith('Open: none')
+  await compose()
+  await $.prompt.submit({ text: 'JBIT models verify haiku', origin: { kind: 'composer' } })
+  const entry = (sent.submitted.at(-1)?.context ?? []).join('\n')
+  expect(entry).toContain('`Models: verify haiku`')
+  expect(entry).not.toContain('build sonnet/medium')
+})
+
+test('JBIT models default goes back to the CLAUDE.md default; with none it removes the line', async ($, on) => {
+  const { plan, compose, entry } = await modelsSaid($, on, 'Models: build haiku/low', 'JBIT models default', DEFAULT_RULE)
+  expect(entry).toContain('sets the Models line back to the project default (`JBIT models:` in CLAUDE.md), honoured from now on.')
+  expect(entry).toContain('`Models: build sonnet/medium · review opus/high`')
+  plan.text = planWith(MODELS)
+  const r = await compose()
+  expect(r.band).toContain('build sonnet/med · review opus/high')
+  expect(r.text).not.toContain('Models: the user set')
+  expect(modelsAfter(undefined, { kind: 'default' }, undefined)).toBe('')
+})
+
+test('JBIT models none and off remove the line; a role\'s default takes the project default\'s setting, or drops it', () => {
+  expect(modelsCommand('JBIT models none')).toEqual({ kind: 'none' })
+  expect(modelsCommand('JBIT models: off.')).toEqual({ kind: 'none' })
+  expect(modelsAfter(parseModels(MODELS), { kind: 'none' }, 'build opus')).toBe('')
+  const ask = modelsCommand('JBIT models build default, review default, verify none') as never
+  expect(modelsAfter(parseModels(ALL_ROLES), ask, 'build opus/max')).toBe('build opus/max')
+  expect(modelsAfter(parseModels(ALL_ROLES), ask, undefined)).toBe('')
+})
+
+test('the refusal lists default and none among the valid forms', () => {
+  const why = (modelsCommand('JBIT models builder opus') as { why: string }).why
+  expect(why).toContain('`JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line.')
+  expect(why).toContain('`<role> none` to drop one role')
+})
+
+test('near-miss JBIT models commands are read or refused, never passed over as talk', () => {
+  expect(modelsCommand('JBIT models:build sonnet')).toEqual({ kind: 'set', set: { build: { model: 'sonnet' } }, defaulted: [], cleared: [] })
+  expect(modelsCommand('JBIT models: build opus/high.')).toEqual({ kind: 'set', set: { build: { model: 'opus', effort: 'high' } }, defaulted: [], cleared: [] })
+  expect(modelsCommand('jbit: models build opus/high!')?.kind).toBe('set')
+  expect(modelsCommand('JBIT models default.')).toEqual({ kind: 'default' })
+  for (const said of ['JBIT models.', 'JBIT models build opus/high please', 'JBIT models build sonnet medium', 'JBIT models ' + 'build opus, '.repeat(40)])
+    expect(modelsCommand(said)?.kind).toBe('refused')
+  // a question or a second line is talk
+  expect(modelsCommand('JBIT models build opus?')).toBeUndefined()
+  expect(modelsCommand('JBIT models build opus\nthanks')).toBeUndefined()
+})
+
+test('CLAUDE.md\'s first JBIT models line that sets a role is the default; one that sets nothing is passed over', () => {
+  expect(parseProjectRules('JBIT models: turbo\nJBIT models: Build Sonnet / Medium, review opus').models).toBe('build sonnet/medium · review opus')
+  expect(parseProjectRules('JBIT models: plan opus').models).toBeUndefined()
 })
 
 // ---- the roadmap ----

@@ -7,13 +7,13 @@ Let the user choose which model, and at what effort, each delegated JBIT role ru
 2026-11-15 · tests: 439 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 29 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes with the known marketplace-description warning
 
 ## Now
-Stage 2 of 4 · Command, default, skills
-Risk: user input (the `JBIT models` command and `CLAUDE.md` text the hook parses)
+Stage 3 of 4 · Research fetches
+Risk: external services (which network commands the outward check lets through under autopilot)
 Checks:
-- [ ] The user's own whole-message `JBIT models <role> <model>/<effort> …` sets those roles: the hook tells Claude the exact `Models:` line to write (roles not named kept as they stand) and honours it at once; changing only the named roles needs no re-naming of the others (proof: test)
-- [ ] `JBIT models default` tells Claude to remove the line, after which agents run as the session; a `plan` or `lead` role is refused with a pointer to `/model`, and an unknown role or value is refused listing the valid ones, the line left unchanged either way (proof: test)
-- [ ] A `JBIT models: …` line in `CLAUDE.md` is the project default: a plan's `Models:` line that matches it is honoured without the user naming it, and the context says new plans start from it (proof: test)
-- [ ] The plan, stage, autopilot, review and verify skills say to pass the line's model and effort when starting each role's agent, never to choose an effort, that planning stays on the session's model, and that under `lean` with a build setting `jbit:stage` hands building to one builder agent; `jbit:plan` writes the `CLAUDE.md` default into a new plan (proof: docs check)
+- [ ] Under autopilot, a read-only `curl` or `wget` GET (no body, upload, method other than GET/HEAD, auth or cookie header or credentials, and no output piped or substituted into another network command) passes the outward check, e.g. `curl -s https://en.wikipedia.org/wiki/Fargo` (proof: test)
+- [ ] Anything else stays blocked as before: `-d`/`--data*`/`--json`/`-F`/`-T`/`--upload-file`, `-X POST|PUT|PATCH|DELETE`, `-H 'Authorization: …'`/`Cookie`/`-u`/`-b`/`--oauth2-bearer`, `wget --post-data|--post-file|--method|--body-*|--header=Authorization`, a config file (`-K`/`--config`, `-e`/`--execute`), and a GET whose output feeds another network command (proof: test)
+- [ ] The outward block message for a network command points to WebFetch/WebSearch for reading pages (proof: test)
+- [ ] The autopilot and stage skills say research reads go through WebFetch/WebSearch, and that a read-only `curl`/`wget` GET is allowed while a send is not (proof: docs check)
 - [ ] Suite, docs check and validate green (proof: command)
 Open: none
 Mode: autopilot — unattended
@@ -21,7 +21,7 @@ Agents: lean
 
 ## Stages
 - [x] 1. Models line and hook — parse the line, status line, context hint, check Agent calls
-- [ ] 2. Command, default, skills — `JBIT models …`, `CLAUDE.md` default, skills pass model and effort, lean handling
+- [x] 2. Command, default, skills — `JBIT models …`, `CLAUDE.md` default, skills pass model and effort, lean handling
 - [ ] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
 - [ ] 4. Proof, docs, 0.17.0 — headless run, evals, READMEs and field guide, version
 
@@ -38,8 +38,12 @@ Agents: lean
 - 2026-11-15 · Agents: lean, named in the user's autopilot command ("Jbit autopilot lean").
 - 2026-11-15 · (unattended) An Agent call naming neither model nor effort runs as the session, whatever the line sets; only a call that names one is checked, and it must match a role exactly (an unset half absent). Stage 1 review: denying unnamed calls would force research and Explore agents, which are no role, onto a role's model, and the hook can't tell a forgetful builder from them. The context line tells Claude to pass the role's setting.
 - 2026-11-15 · (unattended) A changed Models line is confirmed only by the user's own prompt naming its settings (each model and effort in it), not by a plain "yes" or any common word like "high" — stage 1 review found a planted line honoured by "fix the high priority bug".
+- 2026-11-15 · (unattended) `JBIT models default` returns to the `CLAUDE.md` default when there is one, and `JBIT models none` (or `off`) removes the line — stage 2 review: with a project default, "default" read as both.
+- 2026-11-15 · (unattended) A plan line matching the `CLAUDE.md` default counts as confirmed only until the user chooses otherwise in the session; the `CLAUDE.md` default is read once per session, so an edit mid-session sets nothing — stage 2 review and builder.
+- 2026-11-15 · (unattended) With a `build` setting, all building goes to builder agents, the foundation included (one at a time under `lean`), so the setting covers every line of the stage's code.
 
 ## Open questions
+- Stage 2 review (0.17.0), deferred: a `JBIT models:` default in `CLAUDE.md` is honoured without the user's word in the session, so a cloned repo's committed default (or one Claude wrote in an earlier session) can raise spend (`build opus/max`) unasked, where `wide` needs in-session confirmation for the same reason. Showing the source in the status line, or asking once per session before honouring a default above the session's model, would close it — for the user.
 - Stage 1 review (0.17.0), deferred: the Agent hook now reads session state (`readSession`, `syncModels`) inside its handler, so a state read or write that throws lets the call through past both the Models check and the lean cap (before, only a `readPlan` throw did). Same remedy as the "fail closed on state-write errors" item below. Also left by the builder: confirmation matches values as words, not per role; any new prompt (a background agent's report) clears what the user named; a line changed by a git checkout is a change like any other.
 - Releasing one named outward step or host for a run on the user's plain word (e.g. "allow en.wikipedia.org"), from the eVelo run of 2026-11-14 — left out of this plan; for the user.
 - Candidates from 0.16.0 not taken by this plan: key the plan-write refusal on the armed session rather than the Mode line, and have a run set "All stages done" itself (see the stage 3 proof run note below).

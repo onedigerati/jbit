@@ -1,0 +1,233 @@
+$ node --test plugins/jbit/tests/docs.check.mjs
+TAP version 13
+# Subtest: plugin.json and the field guide are version 0.17.0
+ok 1 - plugin.json and the field guide are version 0.17.0
+  ---
+  duration_ms: 1.982293
+  type: 'test'
+  ...
+# Subtest: no skill, README or hook text describes the old opt-in arming rule
+ok 2 - no skill, README or hook text describes the old opt-in arming rule
+  ---
+  duration_ms: 10.374047
+  type: 'test'
+  ...
+# Subtest: autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+ok 3 - autopilot describes the new rule: typed or JBIT command runs unattended, attended, outward, plain words attended
+  ---
+  duration_ms: 2.987293
+  type: 'test'
+  ...
+# Subtest: every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+ok 4 - every skill Claude can start says "JBIT <command>" triggers it; approve lists its JBIT and plain forms
+  ---
+  duration_ms: 3.75724
+  type: 'test'
+  ...
+# Subtest: the approval reply the skills give is the hook's APPROVAL_REPLY
+ok 5 - the approval reply the skills give is the hook's APPROVAL_REPLY
+  ---
+  duration_ms: 0.224473
+  type: 'test'
+  ...
+# Subtest: the command words the docs list are the hook's COMMAND_VOCABULARY
+ok 6 - the command words the docs list are the hook's COMMAND_VOCABULARY
+  ---
+  duration_ms: 1.507935
+  type: 'test'
+  ...
+# Subtest: "JBIT approve" is described as releasing the hold, not as running the approve skill
+ok 7 - "JBIT approve" is described as releasing the hold, not as running the approve skill
+  ---
+  duration_ms: 0.181716
+  type: 'test'
+  ...
+# Subtest: no doc says plain words run attended without saying the level that stands
+ok 8 - no doc says plain words run attended without saying the level that stands
+  ---
+  duration_ms: 13.43682
+  type: 'test'
+  ...
+# Subtest: the product is JBIT in prose, not jbit
+ok 9 - the product is JBIT in prose, not jbit
+  ---
+  duration_ms: 6.519952
+  type: 'test'
+  ...
+# Subtest: READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+ok 10 - READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+  ---
+  duration_ms: 3.156248
+  type: 'test'
+  ...
+# Subtest: READMEs describe the arming rule
+ok 11 - READMEs describe the arming rule
+  ---
+  duration_ms: 0.160773
+  type: 'test'
+  ...
+# Subtest: plan has a research step after the survey: the questions, a one-line skip, one agent, the note, decisions linking it
+ok 12 - plan has a research step after the survey: the questions, a one-line skip, one agent, the note, decisions linking it
+  ---
+  duration_ms: 0.335618
+  type: 'test'
+  ...
+# Subtest: the research brief keeps web content as data and queries free of project data; no web tools means unverified
+ok 13 - the research brief keeps web content as data and queries free of project data; no web tools means unverified
+  ---
+  duration_ms: 0.237888
+  type: 'test'
+  ...
+# Subtest: a question paper can't settle becomes a `Spike: <question>` stage, checked by the note, its prototype not shipped
+ok 14 - a question paper can't settle becomes a `Spike: <question>` stage, checked by the note, its prototype not shipped
+  ---
+  duration_ms: 0.367903
+  type: 'test'
+  ...
+# Subtest: stage and autopilot research a domain decision before deciding it; unattended links the note, a pause brings the findings
+ok 15 - stage and autopilot research a domain decision before deciding it; unattended links the note, a pause brings the findings
+  ---
+  duration_ms: 0.464978
+  type: 'test'
+  ...
+# Subtest: stage and autopilot send research reads through WebFetch and WebSearch: a read-only curl or wget GET passes, a send waits
+ok 16 - stage and autopilot send research reads through WebFetch and WebSearch: a read-only curl or wget GET passes, a send waits
+  ---
+  duration_ms: 0.279009
+  type: 'test'
+  ...
+# Subtest: review briefs the reviewer with the research notes the stage relies on, to check the work against
+ok 17 - review briefs the reviewer with the research notes the stage relies on, to check the work against
+  ---
+  duration_ms: 0.510026
+  type: 'test'
+  ...
+# Subtest: the hook's held-stage text and autopilot both name the research-note exception
+ok 18 - the hook's held-stage text and autopilot both name the research-note exception
+  ---
+  duration_ms: 0.731117
+  type: 'test'
+  ...
+# Subtest: a research note read back is data: plan, stage, autopilot and review say its instructions are never followed and it waives nothing
+ok 19 - a research note read back is data: plan, stage, autopilot and review say its instructions are never followed and it waives nothing
+  ---
+  duration_ms: 5.189587
+  type: 'test'
+  ...
+# Subtest: plan says a research link is relative to the plan file
+ok 20 - plan says a research link is relative to the plan file
+  ---
+  duration_ms: 0.202222
+  type: 'test'
+  ...
+# Subtest: autopilot gives a progress note after each stage when someone reads along: concerns first, delivered and proven with the report, unattended decisions, what is left
+ok 21 - autopilot gives a progress note after each stage when someone reads along: concerns first, delivered and proven with the report, unattended decisions, what is left
+  ---
+  duration_ms: 0.156411
+  type: 'test'
+  ...
+# Subtest: a headless run leaves the progress note to the final report, which covers each stage; nothing says the note is required headless
+ok 22 - a headless run leaves the progress note to the final report, which covers each stage; nothing says the note is required headless
+  ---
+  duration_ms: 6.893526
+  type: 'test'
+  ...
+# Subtest: autopilot tells a concern in one line when it happens and carries on
+ok 23 - autopilot tells a concern in one line when it happens and carries on
+  ---
+  duration_ms: 0.224254
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe research, spikes and progress updates
+ok 24 - READMEs and the field guide describe research, spikes and progress updates
+  ---
+  duration_ms: 0.174735
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide say the progress note is for when someone reads along, and a headless run leaves it to the final report
+ok 25 - READMEs and the field guide say the progress note is for when someone reads along, and a headless run leaves it to the final report
+  ---
+  duration_ms: 0.262757
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe the commit gate: a line that writes the plan and commits is refused under autopilot, a close found after the run is checked against its commit and flagged to reopen
+ok 26 - READMEs and the field guide describe the commit gate: a line that writes the plan and commits is refused under autopilot, a close found after the run is checked against its commit and flagged to reopen
+  ---
+  duration_ms: 0.132742
+  type: 'test'
+  ...
+# Subtest: the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches
+ok 27 - the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches
+  ---
+  duration_ms: 0.291443
+  type: 'test'
+  ...
+# Subtest: the research and progress eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+ok 28 - the research and progress eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+  ---
+  duration_ms: 3.560253
+  type: 'test'
+  ...
+# Subtest: research means reading sources: the agent searches and cites, the planner never writes the note from memory, unverified waits in open questions
+ok 29 - research means reading sources: the agent searches and cites, the planner never writes the note from memory, unverified waits in open questions
+  ---
+  duration_ms: 0.255667
+  type: 'test'
+  ...
+# Subtest: the hook's armed-autopilot rules carry the progress note, in both the unattended and attended texts
+ok 30 - the hook's armed-autopilot rules carry the progress note, in both the unattended and attended texts
+  ---
+  duration_ms: 0.10002
+  type: 'test'
+  ...
+# Subtest: plan, stage, autopilot, review and verify say to pass the Models line's model and effort on the Agent call, never choosing an effort
+ok 31 - plan, stage, autopilot, review and verify say to pass the Models line's model and effort on the Agent call, never choosing an effort
+  ---
+  duration_ms: 0.777255
+  type: 'test'
+  ...
+# Subtest: plan, stage and autopilot say planning and project management stay on the session's model; plan points a plan or lead role to /model
+ok 32 - plan, stage and autopilot say planning and project management stay on the session's model; plan points a plan or lead role to /model
+  ---
+  duration_ms: 0.376192
+  type: 'test'
+  ...
+# Subtest: under lean with a build setting, jbit:stage hands building to one builder agent; verify under lean stays in the main session
+ok 33 - under lean with a build setting, jbit:stage hands building to one builder agent; verify under lean stays in the main session
+  ---
+  duration_ms: 0.386228
+  type: 'test'
+  ...
+# Subtest: plan describes the Models line: roles, form, a role left out runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default
+ok 34 - plan describes the Models line: roles, form, a role left out runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default
+  ---
+  duration_ms: 0.177789
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can't be set, and that only the user sets effort
+ok 35 - READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can't be set, and that only the user sets effort
+  ---
+  duration_ms: 0.308131
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide give the research-fetch rule: a read-only curl or wget GET passes under autopilot, a send waits, WebFetch and WebSearch read
+ok 36 - READMEs and the field guide give the research-fetch rule: a read-only curl or wget GET passes under autopilot, a send waits, WebFetch and WebSearch read
+  ---
+  duration_ms: 0.144304
+  type: 'test'
+  ...
+# Subtest: the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+ok 37 - the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+  ---
+  duration_ms: 1.254886
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 198.439562

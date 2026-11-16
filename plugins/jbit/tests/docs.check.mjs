@@ -61,11 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json and the field guide are version 0.16.0', () => {
-  assert.equal(manifest.version, '0.16.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 0.16.0</span>'), 'field guide header lacks JBIT 0.16.0')
-  assert.ok(guide.includes('<footer>JBIT 0.16.0 ·'), 'field guide footer lacks JBIT 0.16.0')
-  assert.doesNotMatch(guide, /JBIT 0\.1[0-5]\.\d/, 'field guide still names an older version')
+test('plugin.json and the field guide are version 0.17.0', () => {
+  assert.equal(manifest.version, '0.17.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.17.0</span>'), 'field guide header lacks JBIT 0.17.0')
+  assert.ok(guide.includes('<footer>JBIT 0.17.0 ·'), 'field guide footer lacks JBIT 0.17.0')
+  assert.doesNotMatch(guide, /JBIT 0\.1[0-6]\.\d/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -505,4 +505,82 @@ test('plan describes the Models line: roles, form, a role left out runs as the s
     'The Agents and Models lines carry over',
   ])
     assert.ok(text.includes(words), `plan SKILL.md lacks: ${words}`)
+})
+
+test('READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can\'t be set, and that only the user sets effort', () => {
+  const phrases = {
+    root: [
+      '`Models: build sonnet/medium · review opus/high`',
+      '`build`, `review` and `verify`, each `model/effort`',
+      'A role left out runs as the session.',
+      '`JBIT models build sonnet/medium`',
+      '`JBIT models default` goes back to the project default (a `JBIT models:` line in `CLAUDE.md`',
+      '`JBIT models none` removes the line',
+      'Planning and project management run in the main session, so they stay on the session\'s model: change that with `/model`.',
+      'Only you set effort',
+    ],
+    plugin: [
+      '### Models',
+      'Models: build sonnet/medium · review opus/high · verify sonnet/medium',
+      'A role left out runs as the session, and no line means every agent does.',
+      '`JBIT models build sonnet/medium, review opus/high`',
+      '`JBIT models default` goes back to the project default, `JBIT models none` (or `off`) removes the line',
+      'A `JBIT models: build sonnet/medium · review opus/high` line in `CLAUDE.md`',
+      'Planning and project management run in the main session, so they stay on the session\'s model and effort, set in Claude Code with `/model`.',
+      '`JBIT models plan …` or `lead …` is refused with a pointer to `/model`',
+      '**Only you set effort.** Claude passes the effort the line names and never picks one itself',
+      'With a `build` setting, `/jbit:stage` hands building to one builder agent',
+      'or it\'s denied with a message naming the roles\' settings',
+    ],
+    'field-guide.html': [
+      '<section id="models">',
+      '<a href="#models">Models</a>',
+      '<code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>',
+      'A role left out runs as the session.',
+      '<code>JBIT models build sonnet/medium</code>',
+      '<code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code>',
+      '<code>JBIT models none</code> removes the line',
+      'they stay on the session\'s model, set in Claude Code with <code>/model</code>',
+      'Only you set effort: Claude passes the effort the line names and never picks one itself',
+    ],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+})
+
+test('READMEs and the field guide give the research-fetch rule: a read-only curl or wget GET passes under autopilot, a send waits, WebFetch and WebSearch read', () => {
+  const phrases = {
+    root: ['Reading isn\'t held: a read-only `curl` or `wget` GET passes, while anything that sends (a body, an upload, credentials, an auth or cookie header) waits, and the hold points to WebFetch and WebSearch for reading pages.'],
+    plugin: [
+      'A research read isn\'t a send: a `curl` or `wget` GET to an outside host passes when every option is a known-harmless one',
+      'still waits, and the hold points to WebFetch and WebSearch for reading pages',
+      'Reading isn\'t held: a read-only `curl` or `wget` GET passes, a send waits, and research reads go through WebFetch and WebSearch.',
+    ],
+    'field-guide.html': ['Reading isn\'t held: a read-only <code>curl</code> or <code>wget</code> GET passes, while a send (a body, an upload, credentials, an auth or cookie header) waits, and the hold points to WebFetch and WebSearch for reading pages.'],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+  // the hold's own text still carries the pointer the docs promise
+  assert.ok(hook.includes('To read a web page, use WebFetch (or WebSearch to find one)'), 'the hook\'s outward denial lacks the WebFetch pointer')
+})
+
+test('the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them', () => {
+  for (const name of ['models-line', 'research-fetch']) {
+    const dir = join(plugin, 'evals', name)
+    assert.ok(existsSync(join(dir, 'case.yaml')), `evals/${name}/case.yaml is missing`)
+    assert.ok(existsSync(join(dir, 'scaffold.sh')), `evals/${name}/scaffold.sh is missing`)
+    const text = read(join(dir, 'case.yaml'))
+    assert.ok(text.includes(`name: ${name}\n`), `evals/${name}/case.yaml names itself`)
+    assert.match(text, /\ngraders:\n  - type: /, `evals/${name}/case.yaml has graders`)
+    assert.ok(text.includes('prompt: JBIT autopilot lean\n'), `evals/${name} runs under the user's own JBIT command`)
+    assert.ok(read(join(dir, 'scaffold.sh')).includes('git config user.email eval@example.com'), `evals/${name}/scaffold.sh sets a repo-local git author`)
+    assert.ok(readmes.plugin.includes(`(\`${name}\``), `plugin README lacks the eval case ${name}`)
+  }
+  assert.ok(read(join(plugin, 'evals', 'models-line', 'scaffold.sh')).includes('Models: build sonnet/medium · review opus/high'), 'models-line scaffold carries the Models line')
+  const models = read(join(plugin, 'evals', 'models-line', 'case.yaml'))
+  for (const g of ['builder-on-sonnet-medium', 'reviewer-on-opus-high', 'no-other-effort']) assert.ok(models.includes(`name: ${g}\n`), `models-line lacks the ${g} grader`)
+  const fetch = read(join(plugin, 'evals', 'research-fetch', 'case.yaml'))
+  for (const g of ['runs-the-get', 'post-held-with-webfetch-pointer']) assert.ok(fetch.includes(`name: ${g}\n`), `research-fetch lacks the ${g} grader`)
 })

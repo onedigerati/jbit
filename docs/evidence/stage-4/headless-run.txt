@@ -1,0 +1,76 @@
+$ claude -p "JBIT autopilot lean" --plugin-dir <scratch>/agent-observer --plugin-dir /home/jonah/repos/jbit/plugins/jbit --model sonnet --max-turns 80 --max-budget-usd 8 --allowedTools Read Glob Grep Bash Write Edit Skill Agent --output-format stream-json --verbose
+# Run 2 of 2, from a fresh copy of plugins/jbit/evals/models-line/scaffold.sh (repo-local git author; ## Now carries `Agents: lean` and `Models: build sonnet/medium · review opus/high` from the start, risk line names user input), Claude Code 2.1.325, jbit 0.17.0 loaded from the working tree.
+# <scratch>/agent-observer is a throwaway plugin beside jbit (not part of it): one tool.call hook on Agent that logs the event as hooks receive it (its keys, model, effort) and what the rest of the chain answered, then passes it on. It is the hook's view of each Agent call; jbit's own Agent hook receives the same event.
+# Sections: the main session (text in full, each tool call's first line, every hook refusal); the observer's log; the model each agent's own messages ran on; the result; the scaffold's git log.
+
+## Main session (stream-json)
+INIT model=claude-sonnet-5-5 jbit loaded=True permissionMode=auto
+TOOL: Skill {"skill": "jbit:autopilot"}
+TOOL: Read {"file_path": "<scaffold>/docs/PLAN.md"}
+TOOL: Bash ls -a . src test* 2>&1; cat package.json src/*.js; cat test/* 2>/dev/null | head -30
+TEXT: Set Mode, then delegate the build.
+TOOL: Edit {"replace_all": false, "file_path": "<scaffold>/docs/PLAN.md", "old_string": "Stage 1 of 1 · Slugify\n", "new_string": "Stage 1 of 1 · Slugify\nMode: autopilot 
+AGENT CALL: {"description": "Build slugify", "subagent_type": null, "model": "sonnet", "effort": "medium"}
+AGENT RESULT (Build slugify): returned a report
+TEXT: The builder is running in the background. I'll wait for its report.
+INIT model=claude-sonnet-5-5 jbit loaded=True permissionMode=auto
+TEXT: Now verify myself (lean).
+TOOL: Skill {"skill": "jbit:verify"}
+TOOL: Bash cat src/slug.js && mkdir -p docs/evidence/stage-1 && { echo '$ npm test'; npm test 2>&1; } > docs/evidence/stage-1/tests.txt; tail -12 docs/evidence/stage-1/tests.txt; { echo '$ npm audit --omit=dev'; npm audit --omit=de
+TOOL: Bash ls docs/evidence/.gitignore 2>&1 | head -1; [ -f docs/evidence/.gitignore ] || printf '# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.\n*.png\n*.jpg\n*.jpeg\n*.webp\n*.gif\n*.zi
+TOOL: Skill {"skill": "jbit:review"}
+AGENT CALL: {"description": "Review slugify", "subagent_type": null, "model": "opus", "effort": "high"}
+AGENT RESULT (Review slugify): returned a report
+TEXT: Reviewer is running; I'll wait for its report.
+INIT model=claude-sonnet-5-5 jbit loaded=True permissionMode=auto
+AGENT CALL: {"description": "Fix review findings", "subagent_type": null, "model": "sonnet", "effort": "medium"}
+AGENT RESULT (Fix review findings): returned a report
+TEXT: Waiting on the fix builder.
+INIT model=claude-sonnet-5-5 jbit loaded=True permissionMode=auto
+TEXT: Re-verify, update evidence and plan, commit.
+TOOL: Bash { echo '$ npm test'; npm test 2>&1; } > docs/evidence/stage-1/tests.txt; grep -E '^# (pass|fail)' docs/evidence/stage-1/tests.txt; node -e "import('./src/index.js').then(m=>console.log(m.slugify('Héllo,  World!'),m.slugi
+TOOL: Bash git add -A && git commit -qm "Stage 1: slugify with tests and evidence
+TEXT: All stages are done and `slugify(title)` is committed (`2fe7921`). No `(unattended)` decisions were needed, and `npm test` passes 11/11.
+
+**Stage 1 · Slugify: no concerns.**
+- **Delivered:** `slugify` is in `src/slug.js` and exported from `src/index.js`.
+  - It lowercases, strips accents with NFKD, turns runs of spaces and punctuation into one hyphen and trims the ends. `"Héllo,  World!"` gives `"hello-world"`.
+  - A non-string throws `TypeError`. An empty slug or input over 200 characters throws `RangeError`.
+- **Proof:** both checks are proven by tests, and `"Héllo,  World!"` also gave `hello-world` when I ran it directly. The report is `docs/evidence/stage-1/report.md`. `npm audit` could not run because there is no lockfile and no dependencies.
+- **Review:** a fresh reviewer, who found no security problems, flagged two things I fixed.
+  - Letters NFKD can't reduce, and invisible characters, split words, so `"Straße"` gave `"stra-e"`. They are now dropped, so it gives `"strae"`.
+  - Two tests proved nothing, so I replaced one and removed the other.
+- **Deferred:**
+  - The 200-character limit is checked on the raw input. NFKD can expand some characters, such as `㎯`, so a slug can come out longer than 200.
+  - The limit counts UTF-16 code units, so an emoji counts as two characters.
+  - Both are in the plan's open questions.
+
+## The hook's view: each Agent tool.call event (observer log, one file per call)
+{"agentId": null, "keys": ["description", "model", "effort", "prompt", "tool", "tool_use_id"], "description": "Build slugify", "model": "sonnet", "effort": "medium", "denied": null}
+{"agentId": null, "keys": ["description", "model", "effort", "prompt", "tool", "tool_use_id"], "description": "Review slugify", "model": "opus", "effort": "high", "denied": null}
+{"agentId": null, "keys": ["description", "model", "effort", "prompt", "tool", "tool_use_id"], "description": "Fix review findings", "model": "sonnet", "effort": "medium", "denied": null}
+
+## The model each agent's own messages ran on (message.model in the stream)
+main: ['claude-sonnet-5-5']
+Build slugify: ['claude-sonnet-5-5']
+Review slugify: ['claude-opus-5-5']
+Fix review findings: ['claude-sonnet-5-5']
+
+RESULT: success cost_usd=0.9541626000000001 result events=4
+
+## git log (scaffold)
+2fe7921 Stage 1: slugify with tests and evidence
+00c7e10 Plan: slugify
+
+## Run 1 (same scaffold and command, without the observer plugin), in short
+# The same two calls, each on its first try, no Models denial:
+AGENT CALL: {"description": "Build slugify", "subagent_type": "general-purpose", "model": "sonnet", "effort": "medium"}
+AGENT CALL: {"description": "Review slugify stage", "subagent_type": "general-purpose", "model": "opus", "effort": "high"}
+DENIED: <tool_use_error>JBIT blocked this command: it names the plan file `docs/PLAN.md` (`python3 -`) and commits on the same line, and the commit gates read what a commit closes before the line runs
+DENIED: <tool_use_error>JBIT blocked this commit: it closes stage 1, but `docs/evidence/stage-1/report.md` has 0 check rows in its table and the stage has 2 checks in `## Now`.
+main: ['claude-sonnet-5-5']
+Build slugify: ['claude-sonnet-5-5']
+Review slugify stage: ['claude-opus-5-5']
+
+RESULT: success cost_usd=0.9413813 result events=3
+# The two refusals were JBIT's commit gates (a python heredoc that wrote the plan and committed on one line; then a report with no check table), both fixed by the run; neither concerns models. Committed as 09ac21c.

@@ -266,8 +266,8 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 0.16.0</span>
-  <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
+  <span class="brand">JBIT 0.17.0</span>
+  <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#models">Models</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
 <header class="hero">
@@ -467,6 +467,17 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </div>
 </section>
 
+<!-- MODELS -->
+<section id="models">
+  <div class="col stack">
+    <span class="eyebrow">Spend</span>
+    <h2>Models: which model, and how hard, each role works</h2>
+    <p>One more line in <code>## Now</code> sets the model and effort each delegated role's agents start on: <code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>. The roles are <code>build</code>, <code>review</code> and <code>verify</code>, each written <code>model/effort</code>, either half optional. A role left out runs as the session.</p>
+    <p>Only you set it: in your own words, or with your own command, <code>JBIT models build sonnet/medium</code>. <code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code> that a new plan starts from, and <code>JBIT models none</code> removes the line. The status line shows the roles set, and the hook denies an agent started with a setting no role has, so Claude retries with the right one. A line that changes mid-session without your command waits until your own message names its settings.</p>
+    <p>Planning and project management run in the main session, so JBIT can't set them: they stay on the session's model, set in Claude Code with <code>/model</code>. Only you set effort: Claude passes the effort the line names and never picks one itself, even for a stage that looks hard. Under <code>lean</code>, a <code>build</code> setting hands the building to one builder agent so it applies, and verify stays in the main session.</p>
+  </div>
+</section>
+
 <!-- GUARDS -->
 <section id="guards">
   <div class="col stack">
@@ -478,7 +489,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <div class="guard"><h3>Evidence gate</h3><p>A commit that ticks stage <i>n</i> is refused unless <code>docs/evidence/stage-&lt;n&gt;/report.md</code> has a row for each of the stage's checks. Under autopilot, a line that writes the plan and commits is refused before it runs. A close found only after a line ran is checked against its commit and, if it fails, flagged to reopen.</p><div class="eg">refused: stage 2 has 3 checks, report has 2 rows</div></div>
     <div class="guard"><h3>Ticked-checks gate</h3><p>A stage can't be closed if its <code>## Now</code> checks were never seen ticked.</p><div class="eg">refused: stage 3 checks never ticked</div></div>
     <div class="guard"><h3>Risky-stage hold</h3><p>While autopilot is armed, a stage that names auth, money or personal data gets no file edits outside the plan and its <code>docs/research/</code> notes, and no builders, until you type the approval yourself ("yes", "go", "just build it" or <code>/jbit:approve</code>). Claude can't approve its own stage. Your own JBIT or <code>/jbit:autopilot</code> command runs unattended and lifts the hold, unless it says <code>attended</code>.</p><div class="eg">held: "go?" is a question, not an approval</div></div>
-    <div class="guard"><h3>Outward block</h3><p>While autopilot is armed, <code>git push</code>, publishes, deploys and <code>gh</code> writes are blocked, along with your own <code>JBIT outward:</code> commands. It sees through <code>sudo</code>, <code>sh -c</code>, <code>eval</code> and similar wrappers. Only your own autopilot command with <code>outward</code> in it lifts it. It covers shell commands, not web searches: research queries go out at any level, briefed to carry only the domain question.</p><div class="eg">blocked: git push (outward-facing)</div></div>
+    <div class="guard"><h3>Outward block</h3><p>While autopilot is armed, <code>git push</code>, publishes, deploys and <code>gh</code> writes are blocked, along with your own <code>JBIT outward:</code> commands. It sees through <code>sudo</code>, <code>sh -c</code>, <code>eval</code> and similar wrappers. Only your own autopilot command with <code>outward</code> in it lifts it. It covers shell commands, not web searches: research queries go out at any level, briefed to carry only the domain question. Reading isn't held: a read-only <code>curl</code> or <code>wget</code> GET passes, while a send (a body, an upload, credentials, an auth or cookie header) waits, and the hold points to WebFetch and WebSearch for reading pages.</p><div class="eg">blocked: git push (outward-facing)</div></div>
     <div class="guard"><h3>Secret guard</h3><p>Every commit is scanned for keys, tokens, JWTs, database URLs with passwords and <code>.env</code> files. Credential headers in evidence must be masked.</p><div class="eg">blocked: src/db.ts:12 database URL with password</div></div>
     <div class="guard"><h3>Run keeper</h3><p>When a turn ends with stages left, the hook compacts the context once it's past 65% full, keeping the plan state, then prompts the manager to carry on. It gives up after three turns that leave the plan unchanged.</p><div class="eg" style="background:var(--sea-soft);color:var(--sea)">continue: stage 3 of 4</div></div>
   </div>
@@ -581,7 +592,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </table></div>
 </section>
 
-<footer>JBIT 0.16.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 0.17.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>

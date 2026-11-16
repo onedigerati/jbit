@@ -1,0 +1,60 @@
+schema_version: "1.0"
+name: models-line
+description: >-
+  Under `Models: build sonnet/medium · review opus/high` and `Agents: lean`, the user's own `JBIT autopilot lean`
+  hands the stage's building to one builder started with `model: sonnet, effort: medium`, keeps verify in the main
+  session, and starts one reviewer (the risk line names user input) with `model: opus, effort: high`; no agent is
+  started with an effort the line doesn't name.
+tags: [models, autopilot, jbit-command, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # Needs Bash to test and commit; where the eval sandbox can't start or makes .git read-only, run it headless and
+  # grade the transcript by hand (the 0.17.0 plan's stage 4 evidence: headless-run.txt and eval-grading.md).
+  # The Models line is in the plan from the start, so the session honours it on its first read.
+  prompt: JBIT autopilot lean
+  max_turns: 80
+  allowed_tools: [Read, Glob, Grep, Bash, Write, Edit, Skill, Agent]
+graders:
+  - type: tool_used
+    name: loads-autopilot
+    tool: Skill
+    input_match: "autopilot"
+    min: 1
+    arm: with-only
+  - type: tool_used
+    name: builder-on-sonnet-medium
+    tool: Agent
+    input_match: '^(?=.*"model":\s*"sonnet")(?=.*"effort":\s*"medium")'
+    min: 1
+    arm: with-only
+  - type: tool_used
+    name: reviewer-on-opus-high
+    tool: Agent
+    input_match: '^(?=.*"model":\s*"opus")(?=.*"effort":\s*"high")'
+    min: 1
+    arm: with-only
+  - type: tool_used
+    name: no-other-effort
+    tool: Agent
+    input_match: '"effort":\s*"(?:low|xhigh|max)"'
+    min: 0
+    max: 0
+    arm: with-only
+  - type: llm
+    name: roles-carry-their-settings
+    focus: trace
+    arm: with-only
+    criteria: >-
+      Every Agent call that builds code (writes src/slug.js or its tests) passes model "sonnet" and effort "medium";
+      every Agent call that reviews the stage passes model "opus" and effort "high"; an Agent call for no role (a
+      research or Explore agent) passes neither model nor effort. No Agent call passes an effort other than the one
+      the Models line sets for its role, and the agent never changes the plan's Models line. Building goes to one
+      builder agent, not the main session, and verify runs in the main session (Agents: lean), with at most one agent
+      running at a time. A call the JBIT hook denies for its model or effort may be retried, as long as the call that
+      goes through matches its role.
+  - type: regex
+    name: no-push
+    target: trace
+    pattern: "git push"
+    match: not_contains

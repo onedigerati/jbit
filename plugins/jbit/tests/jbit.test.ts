@@ -28,6 +28,7 @@ import {
   samePath,
   stageList,
   stampOf,
+  storedModels,
   tickedMilestones,
   unattendedOf,
 } from '../hooks/register.ts'
@@ -381,6 +382,10 @@ function engine(
     stats?: Record<string, { kind: 'file' | 'dir' | 'other'; size: number; realPath?: string } | 'throws'>
     /** Paths whose exists check throws. */
     unsure?: string[]
+    /** No plan file exists (until a test clears it): the exists check answers no for `docs/PLAN.md`. */
+    absent?: boolean
+    /** The test answers `$.store` itself (`mock.store` with entries, or a store that fails). */
+    ownStore?: boolean
   },
   percent = 20,
   agents: { status: string; parentId?: string }[] = [],
@@ -396,13 +401,15 @@ function engine(
   }
   on('agent.list', () => ({ value: agents.map((a, i) => ({ id: `a${i}`, description: 'build', type: 'general-purpose', ...a })) as never }))
   on('session.cwd', () => ({ value: '/repo' }))
+  // the plugin's own store, empty: a test that keeps a user's Models default passes `store` to `withStore` first
+  if (!plan.ownStore) mock.store(on)
   // `untracked` files are read only as a `git add` lists them, never seen by an exists check
   const find = <T,>(files: Record<string, T> | undefined, path: string) => Object.entries(files ?? {}).find(([p]) => path === p || path.endsWith(`/${p}`))?.[1]
   const listed = (paths: string[] | undefined, path: string) => !!paths?.some(p => path === p || path.endsWith(`/${p}`))
   on('fs.exists', (_, e) => {
     sent.looks.push(e.path)
     if (listed(plan.unsure, e.path)) throw new Error(`EACCES: permission denied, access '${e.path}'`)
-    return { value: e.path.endsWith('/docs/PLAN.md') || find(plan.files, e.path) !== undefined || listed(plan.broken, e.path) }
+    return { value: (!plan.absent && e.path.endsWith('/docs/PLAN.md')) || find(plan.files, e.path) !== undefined || listed(plan.broken, e.path) }
   })
   // a `broken` path exists but its read throws, as a directory's would
   const broken = (path: string) => listed(plan.broken, path)
@@ -3211,7 +3218,7 @@ test('a plan or lead role is refused with a pointer to /model, the line left unc
 })
 
 test('an unknown role or value is refused listing the valid ones, the line left unchanged', async ($, on) => {
-  for (const said of ['JBIT models builder sonnet', 'JBIT models build gpt5/high', 'JBIT models review opus/extreme', 'JBIT models build sonnet medium', 'JBIT models build sonnet, build opus', 'JBIT models']) {
+  for (const said of ['JBIT models builder sonnet', 'JBIT models build gpt5/high', 'JBIT models review opus/extreme', 'JBIT models build sonnet medium', 'JBIT models build sonnet, build opus']) {
     const ask = modelsCommand(said)
     expect(ask?.kind).toBe('refused')
     expect((ask as { why: string }).why).toContain('Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max')
@@ -3251,18 +3258,21 @@ test('only the user\'s own whole-message JBIT models is a command, and it is no 
 
 const DEFAULT_RULE = { 'CLAUDE.md': '# Project\n\n- **JBIT models:** build sonnet/medium · review opus/high\n' }
 
-test('a JBIT models line in CLAUDE.md is the project default: a plan line matching it is honoured unnamed, and the context says new plans start from it', async ($, on) => {
+// 0.18.0 stage 3 replaces this test's old expectation (a plan line matching the CLAUDE.md default honoured unnamed):
+// the default now waits for the user's word, and a line matching it is a change like any other until then
+test('a JBIT models line in CLAUDE.md is the project default: unconfirmed, a plan line matching it is not honoured unnamed, and the context says it waits for the user', async ($, on) => {
   const plan = { text: planWith('Open: none'), files: DEFAULT_RULE }
   engine(on, plan)
   const compose = composeJBIT($, on)
   const first = await compose()
-  expect(first.text).toContain('The project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`: new plans start from it')
+  expect(first.text).toContain('The project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`, waiting for the user\'s word')
+  expect(first.band).toBe(BAND)
   await $.prompt.submit({ text: 'carry on with stage 2', origin: { kind: 'composer' } })
   plan.text = planWith(MODELS)
   const r = await compose()
-  expect(r.band).toBe('jbit · build sonnet/med · review opus/high · 1/3 done · next: 2. Share mode')
-  expect(r.text).not.toContain(IGNORED)
-  // a line that differs from the default still needs the user
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(IGNORED)
+  // a line that differs from the default needs the user too
   plan.text = planWith('Models: build haiku/low · review opus/high')
   expect((await compose()).text).toContain(IGNORED)
 })
@@ -3283,7 +3293,10 @@ test('with no plan, the CLAUDE.md default still rides in the context for the pla
   engine(on, { text: planWith('Open: none'), files: DEFAULT_RULE, broken: ['docs/PLAN.md'] })
   const r = await composeJBIT($, on)()
   expect(r.band).toBeUndefined()
-  expect(r.text).toBe('# JBIT\nThe project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`: new plans start from it, and a plan\'s Models line that matches it is honoured.')
+  // 0.18.0 stage 3: unconfirmed, the default rides as waiting for the user's word, not as what new plans start from
+  expect(r.text).toBe(
+    '# JBIT\nThe project default (`JBIT models:` in CLAUDE.md) is `Models: build sonnet/medium · review opus/high`, waiting for the user\'s word: a default committed to the repo isn\'t honoured until the user\'s own message names its settings (e.g. "build sonnet/medium, review opus/high") or they type `JBIT models default`. Until then don\'t start agents on it or write it into a plan; you may ask them once whether to use it.',
+  )
 })
 
 test('parseProjectRules reads the first JBIT models line, its marks taken off, beside the hold words', () => {
@@ -3380,7 +3393,9 @@ test('near-miss JBIT models commands are read or refused, never passed over as t
   expect(modelsCommand('JBIT models: build opus/high.')).toEqual({ kind: 'set', set: { build: { model: 'opus', effort: 'high' } }, defaulted: [], cleared: [] })
   expect(modelsCommand('jbit: models build opus/high!')?.kind).toBe('set')
   expect(modelsCommand('JBIT models default.')).toEqual({ kind: 'default' })
-  for (const said of ['JBIT models.', 'JBIT models build opus/high please', 'JBIT models build sonnet medium', 'JBIT models ' + 'build opus, '.repeat(40)])
+  // bare, it shows each role's setting (stage 3, 0.18.0), so `JBIT models.` is no longer refused
+  expect(modelsCommand('JBIT models.')).toEqual({ kind: 'show' })
+  for (const said of ['JBIT models build opus/high please', 'JBIT models build sonnet medium', 'JBIT models ' + 'build opus, '.repeat(40)])
     expect(modelsCommand(said)?.kind).toBe('refused')
   // a question or a second line is talk
   expect(modelsCommand('JBIT models build opus?')).toBeUndefined()
@@ -3483,6 +3498,350 @@ test('research: a changed research setting is honoured once the user names it', 
 test('research: changing only research is not honoured by a prompt naming only part of the new line', async ($, on) => {
   const r = await confirmModels($, on, RESEARCH, 'research on haiku', 'Models: build sonnet/medium · research haiku/low · review opus/high')
   expect(r.text).toContain(IGNORED)
+})
+
+// ---- the user's own Models default (0.18.0 stage 3) ----
+
+const MINE_CMD = 'JBIT models build sonnet/medium · research sonnet/high — my default'
+const MINE = 'build sonnet/medium · research sonnet/high'
+
+/** The plugin's store as a test keeps it: what it holds, and which calls fail. */
+function fakeStore(on: On, entries: Record<string, unknown> = {}, fail: { get?: boolean; set?: boolean; delete?: boolean } = {}) {
+  const held: Record<string, unknown> = { ...entries }
+  const calls = { get: 0, set: 0, delete: 0 }
+  on('store.get', (_, e) => {
+    calls.get++
+    if (fail.get) throw new Error('EACCES: store unreadable')
+    return { value: held[e.key] }
+  })
+  on('store.set', (_, e) => {
+    calls.set++
+    if (fail.set) throw new Error('ENOSPC: store full')
+    held[e.key] = JSON.parse(JSON.stringify(e.value))
+    return { value: undefined }
+  })
+  on('store.delete', (_, e) => {
+    calls.delete++
+    if (fail.delete) throw new Error('EROFS: store read-only')
+    delete held[e.key]
+    return { value: undefined }
+  })
+  on('store.keys', () => ({ value: Object.keys(held) }))
+  return { held, calls }
+}
+
+/** A session over `first` (undefined: no plan) whose store holds `entries`. */
+async function mineSession($: Engine, on: On, first: string | undefined, entries: Record<string, unknown> = {}, files?: Record<string, string>, fail = {}) {
+  const store = fakeStore(on, entries, fail)
+  const plan: Parameters<typeof engine>[1] = { text: planWith(first ?? 'Open: none'), files, broken: first === undefined ? ['docs/PLAN.md'] : [], ownStore: true }
+  const sent = engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const compose = composeJBIT($, on)
+  const say = async (text: string, kind = 'composer') => {
+    await $.prompt.submit({ text, origin: { kind } } as never)
+    return (sent.submitted.at(-1)?.context ?? []).join('\n')
+  }
+  const agent = async (args: Record<string, unknown>) => (await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', ...args } as never)).deny
+  return { store, plan, sent, compose, say, agent }
+}
+
+test('my default: the command parses with an em dash, a hyphen or a comma, saves only settings, and keeps the forms tight', () => {
+  const want = { kind: 'set', set: { build: { model: 'sonnet', effort: 'medium' }, research: { model: 'sonnet', effort: 'high' } }, defaulted: [], cleared: [], mine: true }
+  expect(modelsCommand(MINE_CMD)).toEqual(want)
+  expect(modelsCommand('JBIT models build sonnet/medium · research sonnet/high - my default')).toEqual(want)
+  expect(modelsCommand('JBIT models build sonnet/medium, research sonnet/high, my default.')).toEqual(want)
+  expect(modelsCommand('jbit models: build sonnet/medium and research sonnet/high – My Default')).toEqual(want)
+  for (const said of ['JBIT models — my default', 'JBIT models default — my default', 'JBIT models none - my default', 'JBIT models build default — my default', 'JBIT models build none, my default'])
+    expect(modelsCommand(said)?.kind).toBe('refused')
+  expect((modelsCommand('JBIT models default — my default') as { why: string }).why).toContain('`— my default` saves settings only')
+  // no separator, or more words, is no setting
+  expect(modelsCommand('JBIT models build sonnet/medium my default')?.kind).toBe('refused')
+  expect(modelsCommand('JBIT models build sonnet/medium — my default please')?.kind).toBe('refused')
+  expect(modelsCommand('JBIT models clear my default')).toEqual({ kind: 'clearMine' })
+  expect(modelsCommand('JBIT models')).toEqual({ kind: 'show' })
+})
+
+test('my default: typed by the user, it saves the line to the store and sets this session\'s line as JBIT models does', async ($, on) => {
+  const { store, plan, compose, say, agent } = await mineSession($, on, MODELS)
+  const entry = await say(MINE_CMD)
+  expect(store.held).toEqual({ models: MINE })
+  expect(entry).toContain("the user's own `JBIT models` command sets the Models line, honoured from now on.")
+  // as JBIT models does: the roles it names set, the others kept
+  expect(entry).toContain('`Models: build sonnet/medium · research sonnet/high · review opus/high`')
+  expect(entry).toContain("It also saved `Models: build sonnet/medium · research sonnet/high` as the user's own default")
+  expect((await compose()).band).toContain('build sonnet/med · research sonnet/high · review opus/high')
+  expect(await agent({ model: 'sonnet', effort: 'high' })).toBeUndefined()
+  plan.text = planWith('Models: build sonnet/medium · research sonnet/high · review opus/high')
+  expect((await compose()).text).not.toContain(IGNORED)
+})
+
+test('my default: the same words from an agent report, a plugin prompt, a file or an answer save nothing', async ($, on) => {
+  const files = { 'CLAUDE.md': `# Project\n\n${MINE_CMD}\nJBIT models: build haiku — my default\n` }
+  const { store, plan, compose, say } = await mineSession($, on, `Open: none\n${MINE_CMD}`, {}, files)
+  await compose()
+  expect(await say(MINE_CMD, 'task-notification')).toBe('')
+  expect(await say(MINE_CMD, 'plugin')).toBe('')
+  await $.turn.complete({ ...ended('t1'), answer: MINE_CMD })
+  plan.text = planWith(`Models: build sonnet/medium · research sonnet/high — my default`)
+  await compose()
+  expect(store.calls.set).toBe(0)
+  expect(store.held).toEqual({})
+})
+
+test('my default: a new session in another repo whose plan has no Models line honours it, and Claude is told to write it as the plan\'s line', async ($, on) => {
+  const { plan, compose, agent } = await mineSession($, on, 'Open: none', { models: MINE })
+  const r = await compose()
+  expect(r.band).toContain('build sonnet/med · research sonnet/high')
+  expect(r.text).toContain("Models: agents start on the user's defaults: build sonnet/medium (the user's own default), research sonnet/high (the user's own default).")
+  expect(r.text).toContain('Write `Models: build sonnet/medium · research sonnet/high` in `## Now`, beside the Agents line, as the plan\'s Models line')
+  expect(r.text).toContain('pass the effort the line names and never choose one yourself')
+  expect(await agent({ model: 'sonnet', effort: 'high' })).toBeUndefined()
+  expect(await agent({ model: 'opus', effort: 'max' })).toContain("the Models settings in effect (the plan's line, then the user's defaults) set build sonnet/medium · research sonnet/high.")
+  // Claude writes it: honoured unnamed, and the hint stops asking for it
+  plan.text = planWith(`Models: ${MINE}`)
+  const after = await compose()
+  expect(after.text).not.toContain(IGNORED)
+  expect(after.text).toContain(`Models: the plan's Models line sets ${MINE}.`)
+  expect(after.band).toContain('build sonnet/med · research sonnet/high')
+})
+
+test('my default: with no plan, the context says a new plan starts from it', async ($, on) => {
+  const { compose } = await mineSession($, on, undefined, { models: MINE })
+  expect((await compose()).text).toBe(
+    "# JBIT\nA new plan starts from the user's defaults: write `Models: build sonnet/medium · research sonnet/high` as its Models line (build sonnet/medium (the user's own default), research sonnet/high (the user's own default)).",
+  )
+})
+
+test('my default: a plan line wins over it per role, and a role the line leaves out takes it', async ($, on) => {
+  const { compose, agent } = await mineSession($, on, 'Models: build opus/high · review opus/high', { models: MINE })
+  const r = await compose()
+  expect(r.band).toContain('build opus/high · research sonnet/high · review opus/high')
+  expect(r.text).toContain("Models: the plan's Models line sets build opus/high · review opus/high; the roles it leaves out start on the user's defaults: research sonnet/high (the user's own default).")
+  expect(await agent({ model: 'sonnet', effort: 'medium' })).toContain('build opus/high · research sonnet/high · review opus/high')
+  expect(await agent({ model: 'sonnet', effort: 'high' })).toBeUndefined()
+})
+
+test('my default: a confirmed CLAUDE.md default wins over it per role; an unconfirmed one does not count', async ($, on) => {
+  const files = { 'CLAUDE.md': 'JBIT models: research opus/max · verify haiku/low\n' }
+  const { compose, say } = await mineSession($, on, 'Models: build opus/high', { models: MINE }, files)
+  const before = await compose()
+  expect(before.band).toContain('build opus/high · research sonnet/high ·')
+  expect(before.band).not.toContain('verify')
+  expect(before.text).toContain("waiting for the user's word")
+  await say('use the project default: research opus max, verify haiku low')
+  const after = await compose()
+  // plan > confirmed CLAUDE.md > my default > session
+  expect(after.band).toContain('build opus/high · research opus/max · verify haiku/low')
+  expect(after.text).toContain('research opus/max (CLAUDE.md, confirmed), verify haiku/low (CLAUDE.md, confirmed)')
+  expect(after.text).toContain('confirmed by the user this session')
+})
+
+test('CLAUDE.md default: not honoured unasked, waiting for the user\'s word, and confirmed only by the user\'s own prompt naming its settings and roles', async ($, on) => {
+  const { compose, say, agent } = await mineSession($, on, 'Open: none', {}, DEFAULT_RULE)
+  const waiting = "is `Models: build sonnet/medium · review opus/high`, waiting for the user's word"
+  let r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).toContain(waiting)
+  expect(await agent({ model: 'haiku', effort: 'max' })).toBeUndefined()
+  // a plain yes, values without roles, a plugin prompt or an agent report naming it all confirm nothing
+  for (const [text, kind] of [
+    ['yes', 'composer'],
+    ['sonnet medium and opus high', 'composer'],
+    ['build sonnet/medium, review opus/high', 'plugin'],
+    ['build sonnet/medium, review opus/high', 'task-notification'],
+  ]) {
+    await say(text!, kind)
+    r = await compose()
+    expect(r.band).toBe(BAND)
+    expect(r.text).toContain(waiting)
+  }
+  await say('yes, build sonnet/medium and review opus/high')
+  r = await compose()
+  expect(r.band).toContain('build sonnet/med · review opus/high')
+  expect(r.text).not.toContain(waiting)
+  expect(r.text).toContain('Write `Models: build sonnet/medium · review opus/high` in `## Now`')
+})
+
+test('CLAUDE.md default: JBIT models default confirms it', async ($, on) => {
+  const { compose, say } = await mineSession($, on, 'Open: none', {}, DEFAULT_RULE)
+  await compose()
+  const entry = await say('JBIT models default')
+  expect(entry).toContain('sets the Models line back to the project default')
+  const r = await compose()
+  expect(r.band).toContain('build sonnet/med · review opus/high')
+  expect(r.text).not.toContain("waiting for the user's word")
+})
+
+test('JBIT models alone shows each role\'s setting and its source, and changes nothing', async ($, on) => {
+  const files = { 'CLAUDE.md': 'JBIT models: verify haiku/low\n' }
+  const { store, compose, say } = await mineSession($, on, 'Models: build opus/high', { models: MINE }, files)
+  await compose()
+  await say('verify haiku low, as the project says')
+  await compose()
+  const entry = await say('JBIT models')
+  expect(entry).toContain(
+    "Show them exactly these lines, one per role: `build: opus/high (plan)`, `research: sonnet/high (my default)`, `review: as the session (session)`, `verify: haiku/low (CLAUDE.md)`.",
+  )
+  expect(entry).toContain(`Their own default is \`Models: ${MINE}\`.`)
+  expect(store.calls.set + store.calls.delete).toBe(0)
+  expect((await compose()).band).toContain('build opus/high · research sonnet/high · verify haiku/low')
+})
+
+test('JBIT models alone names an unconfirmed CLAUDE.md default as waiting, and no own default', async ($, on) => {
+  const { compose, say } = await mineSession($, on, 'Open: none', {}, DEFAULT_RULE)
+  await compose()
+  const entry = await say('JBIT models')
+  expect(entry).toContain('`build: as the session (session)`')
+  expect(entry).toContain('is waiting for their word')
+  expect(entry).toContain('They have no own default saved')
+})
+
+test('JBIT models clear my default removes the stored default, here and for new sessions', async ($, on) => {
+  const { store, compose, say } = await mineSession($, on, 'Open: none', { models: MINE })
+  expect((await compose()).band).toContain('research sonnet/high')
+  const entry = await say('JBIT models clear my default')
+  expect(entry).toContain("removed their own Models default (`Models: build sonnet/medium · research sonnet/high`)")
+  expect(store.held).toEqual({})
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).not.toContain('Models')
+})
+
+test('a store read that fails leaves the session with no default and says so once', async ($, on) => {
+  const { store, compose } = await mineSession($, on, 'Open: none', { models: MINE }, undefined, { get: true })
+  const first = await compose()
+  expect(first.band).toBe(BAND)
+  // (a throwing test hook reaches the plugin as a store with no answer, so the reason is the engine's)
+  expect(first.text).toContain("JBIT couldn't read the user's own Models default (`JBIT models … — my default`) from its store (")
+  expect(first.text).toContain('so none applies this session. Tell the user so in a line.')
+  const second = await compose()
+  expect(second.text).not.toContain("couldn't read")
+  expect(second.band).toBe(BAND)
+  expect(store.calls.get).toBe(1)
+})
+
+test('a store write that fails sets the session line, saves nothing, and says so; a failed clear leaves the default', async ($, on) => {
+  const { store, compose, say } = await mineSession($, on, 'Open: none', {}, undefined, { set: true, delete: true })
+  await compose()
+  const entry = await say(MINE_CMD)
+  expect(entry).toContain("Saving it as the user's own default failed: the store couldn't be written (")
+  expect(entry).toContain('so no default is saved and this session\'s line is set all the same')
+  expect(store.held).toEqual({})
+  expect((await compose()).band).toContain('build sonnet/med · research sonnet/high')
+  const cleared = await say('JBIT models clear my default')
+  expect(cleared).toContain("failed: the store couldn't be written (")
+  expect(cleared).toContain('so their own default is left as it was')
+})
+
+test('a stored value that does not parse, or is not the canonical line, is ignored', async ($, on) => {
+  expect(storedModels(MINE)).toBe(MINE)
+  for (const bad of [42, null, { build: 'sonnet' }, 'build turbo/high', 'build sonnet/medium · research gpt/high', 'Build Sonnet/Medium', 'x'.repeat(500), ''])
+    expect(storedModels(bad)).toBe('')
+  const { compose } = await mineSession($, on, 'Open: none', { models: 'build sonnet/medium · research gpt/high' })
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(r.text).not.toContain('Models')
+  expect(r.text).not.toContain("couldn't read")
+})
+
+test('after JBIT models none, the user\'s own default fills in nothing this session', async ($, on) => {
+  const { compose, say, agent } = await mineSession($, on, 'Open: none', { models: MINE })
+  await compose()
+  await say('JBIT models none')
+  const r = await compose()
+  expect(r.band).toBe(BAND)
+  expect(await agent({ model: 'opus', effort: 'max' })).toBeUndefined()
+})
+
+/** A session that first finds no plan file at all, whose store holds `entries`; `plan.absent = false` writes one. */
+async function noPlanSession($: Engine, on: On, entries: Record<string, unknown> = {}, files?: Record<string, string>) {
+  fakeStore(on, entries)
+  const plan: Parameters<typeof engine>[1] = { text: planWith('Open: none'), files, absent: true, ownStore: true }
+  engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  const compose = composeJBIT($, on)
+  const say = (text: string) => $.prompt.submit({ text, origin: { kind: 'composer' } } as never)
+  const agent = async (args: Record<string, unknown>) => (await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', ...args } as never)).deny
+  return { plan, compose, say, agent }
+}
+
+test('no plan at first: a new plan whose line matches only an unconfirmed CLAUDE.md default is ignored, so opus/max is never in effect', async ($, on) => {
+  const { plan, compose, say, agent } = await noPlanSession($, on, {}, { 'CLAUDE.md': '# Project\n\nJBIT models: build opus/max\n' })
+  await compose()
+  await say('JBIT plan')
+  plan.absent = false
+  plan.text = planWith('Models: build opus/max')
+  const r = await compose()
+  expect(r.text).toContain(IGNORED)
+  expect(r.band).toBe(BAND)
+  expect(r.text).not.toContain('pass the effort the line names')
+  // ignored, as any line changed unasked: agents run as the session, so a call naming the session's own setting passes
+  // where the honoured line would have denied it
+  expect(await agent({ model: 'sonnet', effort: 'medium' })).toBeUndefined()
+})
+
+test('no plan at first: a new plan whose line is the user\'s own stored default is honoured unnamed', async ($, on) => {
+  const { plan, compose, say, agent } = await noPlanSession($, on, { models: MINE })
+  await compose()
+  await say('JBIT plan')
+  plan.absent = false
+  plan.text = planWith(`Models: ${MINE}`)
+  const r = await compose()
+  expect(r.text).not.toContain(IGNORED)
+  expect(r.text).toContain(`Models: the plan's Models line sets ${MINE}.`)
+  expect(await agent({ model: 'sonnet', effort: 'high' })).toBeUndefined()
+})
+
+test('no plan at first: a new plan whose line the user named is honoured', async ($, on) => {
+  const { plan, compose, say, agent } = await noPlanSession($, on)
+  await compose()
+  await say('JBIT plan, build on opus max')
+  plan.absent = false
+  plan.text = planWith('Models: build opus/max')
+  const r = await compose()
+  expect(r.text).not.toContain(IGNORED)
+  expect(await agent({ model: 'opus', effort: 'max' })).toBeUndefined()
+})
+
+test('my default: saving some roles merges them into the stored default, the others kept, and the notice gives the full line', async ($, on) => {
+  const { store, compose, say } = await mineSession($, on, 'Open: none', { models: MINE })
+  await compose()
+  const entry = await say('JBIT models review opus/high — my default')
+  const merged = 'build sonnet/medium · research sonnet/high · review opus/high'
+  expect(store.held).toEqual({ models: merged })
+  expect(entry).toContain(`It also saved \`Models: ${merged}\` as the user's own default (the roles this command named replaced theirs in the earlier default, the rest kept)`)
+  await say('JBIT models build haiku/low — my default')
+  expect(store.held).toEqual({ models: 'build haiku/low · research sonnet/high · review opus/high' })
+  await say('JBIT models clear my default')
+  expect(store.held).toEqual({})
+})
+
+test('my default: a save whose store read fails saves nothing, so no stored role is lost', async ($, on) => {
+  const { store, compose, say } = await mineSession($, on, 'Open: none', { models: MINE }, undefined, { get: true })
+  await compose()
+  const entry = await say('JBIT models review opus/high — my default')
+  expect(entry).toContain("Saving it as the user's own default failed: the store couldn't be read (")
+  expect(store.held).toEqual({ models: MINE })
+})
+
+test('JBIT models clear my default after a failed store read does not claim none was stored', async ($, on) => {
+  const { store, compose, say } = await mineSession($, on, 'Open: none', { models: MINE }, undefined, { get: true })
+  await compose()
+  const entry = await say('JBIT models clear my default')
+  expect(entry).not.toContain('none was stored')
+  expect(entry).toContain("(whether one was stored couldn't be read)")
+  expect(store.held).toEqual({})
+})
+
+test('JBIT models none and <role> none say the user\'s own default fills those roles in again in later sessions', async ($, on) => {
+  const { compose, say } = await mineSession($, on, MODELS, { models: MINE })
+  await compose()
+  const none = await say('JBIT models none')
+  expect(none).toContain('Their own default (`Models: build sonnet/medium · research sonnet/high`) still sets build, research: it fills those roles in again in later sessions')
+  expect(none).toContain('unless they type `JBIT models clear my default`')
+  const one = await say('JBIT models research none')
+  expect(one).toContain('still sets research: it fills that role in again in later sessions')
+  expect(await say('JBIT models review none')).not.toContain('fills that role in again')
 })
 
 // ---- the roadmap ----

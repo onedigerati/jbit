@@ -1,4 +1,5 @@
 import type { EngineInterface, Register } from 'claude-code'
+import type { JbitStore } from '../types/index.d.ts'
 import { keptRules, loadProjectRules, mergeRules, NO_RULES, projectOutward, projectRisky, type ProjectRules } from './project.ts'
 import { findSecrets, type Finding } from './secrets.ts'
 import { MODEL_ROLES, MODELS_FORM, modelsText, modelsValues, parseModels, settingText, type ModelRole, type Models } from './models.ts'
@@ -392,8 +393,14 @@ const MODELS_NAMED = { plugin: 'jbit', key: 'modelsNamed' } as const
 const MODELS_DEFAULT = { plugin: 'jbit', key: 'modelsDefault' } as const
 /** The honoured Models line was set by the user's `JBIT models` command and the plan doesn't carry it yet (`modelsInEffect`). */
 const MODELS_PENDING = { plugin: 'jbit', key: 'modelsPending' } as const
-/** The user chose the honoured Models line this session (a `JBIT models` command, or a change they named): the default no longer confirms one. */
+/** The user's `JBIT models` command set the honoured Models line this session: the defaults fill in nothing more (`fallbackModels`). */
 const MODELS_CHOSEN = { plugin: 'jbit', key: 'modelsChosen' } as const
+/** The user confirmed the project's default this session (`syncModels`, or `JBIT models default`): only then is it honoured. */
+const MODELS_DEFAULT_CONFIRMED = { plugin: 'jbit', key: 'modelsDefaultConfirmed' } as const
+/** The user's own Models default (`userModels`) as the session first read it from the store (`''` for none). */
+const MODELS_MINE = { plugin: 'jbit', key: 'modelsMine' } as const
+/** Where the user's own Models default lives in the plugin's store (`JbitStore`): per user, outside every repo. */
+const STORE_MODELS: keyof JbitStore = 'models'
 const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
 const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
 
@@ -581,11 +588,16 @@ const NONE_WORDS = new Set(['none', 'off'])
 export type ModelsAsk =
   | { kind: 'default' }
   | { kind: 'none' }
-  | { kind: 'set'; set: Models; defaulted: ModelRole[]; cleared: ModelRole[] }
+  | { kind: 'set'; set: Models; defaulted: ModelRole[]; cleared: ModelRole[]; mine?: true }
+  | { kind: 'show' }
+  | { kind: 'clearMine' }
   | { kind: 'refused'; why: string }
 
+/** `— my default` closing a `JBIT models` command (after an em or en dash, a hyphen or a comma): save it as the user's own default too. */
+const MY_DEFAULT = /\s*(?:[—–-]|,)\s*my default$/
+
 const VALID_SETTINGS =
-  'Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line.'
+  'Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line. `— my default` after the settings also saves them as your own default for every repo; `JBIT models clear my default` removes it; `JBIT models` alone shows each role\'s setting and where it comes from.'
 
 /**
  * The user's own `JBIT models …` command (decided 2026-11-15), or undefined when the message isn't one. The whole
@@ -595,7 +607,10 @@ const VALID_SETTINGS =
  * a role and a value: `model/effort` (either half), `default` (the project default's setting for that role, or none)
  * or `none`/`off` (drop the role). A trailing `.` or `!` is fine. Every entry must be sound or the whole command is
  * refused, listing what's valid, so the line is never half-changed: a session role (`plan`, `lead`, …) points to
- * `/model`; an unknown role or value, a role named twice, no entry at all or a message too long lists the valid ones.
+ * `/model`; an unknown role or value, a role named twice or a message too long lists the valid ones. Nothing after the
+ * name shows each role's setting and source (`show`); `clear my default` removes the user's own default (`clearMine`);
+ * entries closed by `— my default` (or `- my default`, `, my default`) are also saved as the user's own default
+ * (`mine`, decided 2026-11-16), and then must all be settings: `default` or `none`, for a role or the line, is refused.
  */
 export function modelsCommand(text: string): ModelsAsk | undefined {
   const t = normalised(text).trim()
@@ -603,7 +618,18 @@ export function modelsCommand(text: string): ModelsAsk | undefined {
   const m = NAMED_MODELS.exec(t)
   if (!m) return undefined
   if (t.length > MODELS_COMMAND_MAX) return { kind: 'refused', why: `It's longer than a Models line could be. ${VALID_SETTINGS}` }
-  const body = t.slice(m[0].length).replace(/^[\s,;:]+/, '').replace(/[\s.!]+$/, '').toLowerCase()
+  let body = t.slice(m[0].length).replace(/^[\s,;:]+/, '').replace(/[\s.!]+$/, '').toLowerCase()
+  if (!body) return { kind: 'show' }
+  if (body === 'clear my default') return { kind: 'clearMine' }
+  const mine = MY_DEFAULT.test(body)
+  if (mine) {
+    body = body.replace(MY_DEFAULT, '')
+    const ask = modelsCommand(`JBIT models ${body}`)
+    if (ask?.kind === 'refused') return ask
+    if (ask?.kind !== 'set' || ask.defaulted.length || ask.cleared.length)
+      return { kind: 'refused', why: `\`— my default\` saves settings only: name each role's model and effort (\`JBIT models build sonnet/medium · review opus/high — my default\`); \`JBIT models clear my default\` removes your default. ${VALID_SETTINGS}` }
+    return { ...ask, mine: true }
+  }
   if (body === 'default') return { kind: 'default' }
   if (NONE_WORDS.has(body)) return { kind: 'none' }
   const entries = body.split(/[·•—–,;|]|\band\b/).map(e => e.trim()).filter(Boolean)
@@ -642,7 +668,7 @@ export function modelsCommand(text: string): ModelsAsk | undefined {
  * no line; a set keeps the roles it doesn't name as they stand, a role's `default` takes the project default's setting
  * for it (dropped when that sets none), and `none` drops it.
  */
-export function modelsAfter(inEffect: Models | undefined, ask: Exclude<ModelsAsk, { kind: 'refused' }>, dflt: string | undefined): string {
+export function modelsAfter(inEffect: Models | undefined, ask: Extract<ModelsAsk, { kind: 'default' | 'none' | 'set' }>, dflt: string | undefined): string {
   const project = dflt ? parseModels(`Models: ${dflt}`) : undefined
   if (ask.kind === 'default') return modelsText(project)
   if (ask.kind === 'none') return ''
@@ -660,7 +686,12 @@ export function modelsAfter(inEffect: Models | undefined, ask: Exclude<ModelsAsk
  * `line` is the new line's settings (`''` to remove it), undefined on a refusal; `plan` the plan's path, if there is one;
  * `inEffect` the line agents start on now, for a refusal to name.
  */
-export function modelsContext(ask: ModelsAsk, line: string | undefined, plan: string | undefined, inEffect: string | undefined): string {
+export function modelsContext(
+  ask: Exclude<ModelsAsk, { kind: 'show' | 'clearMine' }>,
+  line: string | undefined,
+  plan: string | undefined,
+  inEffect: string | undefined,
+): string {
   if (ask.kind === 'refused')
     return `JBIT: the user's \`JBIT models\` command was refused, and the Models line is left as it is${inEffect ? ` (\`Models: ${inEffect}\`)` : ''}. ${ask.why} Tell the user this in a line, and don't change the plan's Models line.`
   const toDefault = ask.kind === 'default'
@@ -716,12 +747,16 @@ interface Session {
   modelsDefault: string | undefined
   /** The honoured line came from the user's `JBIT models` command and the plan doesn't carry it yet. */
   modelsPending: boolean
-  /** The user chose the honoured line in this session, so a line matching the project default needs them like any other. */
+  /** The user's `JBIT models` command set the honoured line this session, so the defaults fill in nothing more. */
   modelsChosen: boolean
+  /** The user confirmed the project's default this session. */
+  modelsDefaultConfirmed: boolean
+  /** The user's own Models default (`userModels`, `''` for none); undefined until the session has read it. */
+  modelsMine: string | undefined
 }
 
 async function readSession($: EngineInterface): Promise<Session> {
-  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured, modelsDefault, modelsPending, modelsChosen] = await Promise.all([
+  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured, modelsDefault, modelsPending, modelsChosen, modelsDefaultConfirmed, modelsMine] = await Promise.all([
     $.state.get(ARMED),
     $.state.get(UNATTENDED),
     $.state.get(CLEARED),
@@ -732,6 +767,8 @@ async function readSession($: EngineInterface): Promise<Session> {
     $.state.get(MODELS_DEFAULT),
     $.state.get(MODELS_PENDING),
     $.state.get(MODELS_CHOSEN),
+    $.state.get(MODELS_DEFAULT_CONFIRMED),
+    $.state.get(MODELS_MINE),
   ])
   return {
     armed: armed.value ?? false,
@@ -745,6 +782,8 @@ async function readSession($: EngineInterface): Promise<Session> {
     modelsDefault: typeof modelsDefault.value === 'string' ? modelsDefault.value : undefined,
     modelsPending: modelsPending.value === true,
     modelsChosen: modelsChosen.value === true,
+    modelsDefaultConfirmed: modelsDefaultConfirmed.value === true,
+    modelsMine: typeof modelsMine.value === 'string' ? modelsMine.value : undefined,
   }
 }
 
@@ -779,9 +818,12 @@ function changedRoles(current: Models, honoured: string): ModelRole[] {
  * (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms `build sonnet/medium · review opus/high`; a plain
  * "yes", or "fix the high priority bug", doesn't, and nor does "keep build on sonnet medium and review on opus high"
  * when the change adds `research opus/high`, since it never says "research". Then it becomes the
- * honoured one. A line equal to the project default (`JBIT models:` in CLAUDE.md, as the session first read it) is
- * honoured unnamed too, but only until the user chooses a line this session (`MODELS_CHOSEN`: a `JBIT models` command,
- * or a change they named), so the default never undoes their choice. The user's `JBIT models` command sets the honoured
+ * honoured one. When the plan had no line, a line equal to the defaults the context gave Claude to write
+ * (`fallbackModels`: a confirmed project default over the user's own) is honoured unnamed too, but never after the
+ * user's `JBIT models` command (`MODELS_CHOSEN`), so the defaults never undo their choice. The project default
+ * (`JBIT models:` in CLAUDE.md) is confirmed here too (decided 2026-11-16, replacing the 2026-11-15 rule that a line
+ * matching it was the user's own): once the user's own latest prompt names, as words, every model, effort and role it
+ * sets, as a changed line needs. The user's `JBIT models` command sets the honoured
  * line itself (`prompt.submit`); once the plan carries it, `MODELS_PENDING` clears. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
  * until the user confirms (or the line goes back to the honoured one). A line removed is simply no line; the honoured
  * one stays, so restoring it needs nothing. Edges left: any prompt (a background agent's report, say) clears what was
@@ -790,9 +832,19 @@ function changedRoles(current: Models, honoured: string): ModelRole[] {
  * setting both); and a line that changes in git (a checkout) is a change like any other.
  */
 async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session): Promise<void> {
+  if (!s.modelsDefaultConfirmed && s.modelsDefault && !s.modelsChosen) {
+    const dflt = parseModels(`Models: ${s.modelsDefault}`)
+    const named = (await $.state.get(MODELS_NAMED)).value
+    if (dflt && Array.isArray(named) && namesAll(dflt, named, MODEL_ROLES.filter(r => dflt[r]))) {
+      await $.state.set(MODELS_DEFAULT_CONFIRMED, true)
+      s.modelsDefaultConfirmed = true
+    }
+  }
   const current = modelsText(plan?.models)
   if (s.modelsHonoured === undefined) {
-    if (!plan) return
+    // no plan file at all is a look that found none: a plan written later is a change from no line, so its line needs
+    // the user's words (or matches their defaults); a plan that couldn't be read records nothing yet
+    if (!plan && !(await noPlanFile($))) return
     await $.state.set(MODELS_HONOURED, current)
     s.modelsHonoured = current
     return
@@ -806,28 +858,137 @@ async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session
     return
   }
   if (!current) return
-  // the project's default (`JBIT models:` in CLAUDE.md, as the session first read it) is the user's own setting, until
-  // they choose another in this session: then a line matching it is a change like any other
-  const byDefault = !s.modelsChosen && !!s.modelsDefault && current === s.modelsDefault
+  // a plan with no line takes the defaults the context told Claude to write (the user's own and a confirmed project
+  // default), until the user's `JBIT models` command: then a line matching them is a change like any other
+  const byDefault = s.modelsHonoured === '' && current === modelsText(fallbackModels(s))
   if (!byDefault) {
     const named = (await $.state.get(MODELS_NAMED)).value
-    if (!Array.isArray(named) || !modelsValues(plan!.models!).every(v => named.includes(v))) return
-    // and every role the change adds or sets differently must be named too: values alone may be other roles'
-    if (!changedRoles(plan!.models!, s.modelsHonoured).every(r => named.includes(r))) return
+    // every value, and every role the change adds or sets differently: values alone may be other roles'
+    if (!Array.isArray(named) || !namesAll(plan!.models!, named, changedRoles(plan!.models!, s.modelsHonoured))) return
   }
   await $.state.set(MODELS_HONOURED, current)
   s.modelsHonoured = current
   if (s.modelsPending) await $.state.set(MODELS_PENDING, false)
   s.modelsPending = false
-  if (!byDefault && !s.modelsChosen) await $.state.set(MODELS_CHOSEN, true)
-  if (!byDefault) s.modelsChosen = true
 }
+
+/** No plan file exists at any of `PLAN_PATHS`; false when that can't be told (a check that throws). */
+async function noPlanFile($: EngineInterface): Promise<boolean> {
+  try {
+    for (const path of PLAN_PATHS) if (await $.fs.exists(path)) return false
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** The user's words (`MODELS_NAMED`) name every model and effort `models` sets, and each of `roles`. */
+const namesAll = (models: Models, named: unknown[], roles: readonly ModelRole[]) =>
+  modelsValues(models).every(v => named.includes(v)) && roles.every(r => named.includes(r))
+
+/**
+ * The user's own Models default as the store holds it (`JbitStore.models`), as `modelsText` writes it, or `''` when it
+ * isn't one: not a string, too long, or not exactly the canonical line a `— my default` command saves (so a value
+ * edited by hand into something that half parses is ignored whole, never read in part).
+ */
+export function storedModels(value: unknown): string {
+  if (typeof value !== 'string' || value.length > MODELS_COMMAND_MAX) return ''
+  const text = modelsText(parseModels(`Models: ${value}`))
+  return text === value ? text : ''
+}
+
+/**
+ * The user's own Models default (decided 2026-11-16: per user, in the plugin's own `$.store`, outside every repo, and
+ * written only by their `JBIT models … — my default` command), read once a session and kept, like the project default.
+ * A store that can't be read is no default: `failed` says why, on that one read only, so the context says so once.
+ */
+async function userModels($: EngineInterface): Promise<{ text: string; failed?: string }> {
+  const kept = (await $.state.get(MODELS_MINE)).value
+  if (typeof kept === 'string') return { text: kept }
+  let text = ''
+  let failed: string | undefined
+  try {
+    text = storedModels(await $.store.get(STORE_MODELS))
+  } catch (err) {
+    failed = storeError(err)
+  }
+  await $.state.set(MODELS_MINE, text)
+  return { text, failed }
+}
+
+/** The user's own default as the store holds it now, read fresh (not the session's kept copy); `failed` when it can't be read. */
+async function storedMine($: EngineInterface): Promise<{ text: string; failed?: string }> {
+  try {
+    return { text: storedModels(await $.store.get(STORE_MODELS)) }
+  } catch (err) {
+    return { text: '', failed: storeError(err) }
+  }
+}
+
+/** Why a store call failed, in one short line. */
+const storeError = (err: unknown) => cutAt(oneLine(err instanceof Error ? err.message : String(err)), 120) || 'unknown error'
+
+/**
+ * What rides beside the user's bare `JBIT models`: each role's setting and where it comes from (the plan's line, the
+ * project default in CLAUDE.md once confirmed, the user's own default, or the session), and the defaults that apply to
+ * no role now. Changes nothing.
+ */
+export function modelsShown(plan: Pick<Plan, 'models'> | undefined, s: Session): string {
+  const inEffect = modelsInEffect(plan, s) ?? {}
+  const own = effectiveModels(plan, s.modelsHonoured) ?? (s.modelsPending && s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined) ?? {}
+  const rows = MODEL_ROLES.map(r => {
+    const set = inEffect[r]
+    if (!set) return `${r}: as the session (session)`
+    const source = own[r] ? (s.modelsPending ? 'plan, set by `JBIT models`, not yet written' : 'plan') : fallbackSource(s, r)
+    return `${r}: ${settingText(set)} (${source})`
+  })
+  const extra = [
+    s.modelsDefault && !s.modelsDefaultConfirmed && !s.modelsChosen
+      ? `The project default in CLAUDE.md, \`Models: ${s.modelsDefault}\`, is waiting for their word: it applies once they name its settings in their own message or type \`JBIT models default\`.`
+      : '',
+    s.modelsMine ? `Their own default is \`Models: ${s.modelsMine}\`${s.modelsChosen ? ', not used in this session since their `JBIT models` command set the line' : ''}.` : 'They have no own default saved (`JBIT models … — my default` saves one).',
+  ].filter(Boolean)
+  return `JBIT: the user's \`JBIT models\` asks what each role's agents start on. Show them exactly these lines, one per role: ${rows.map(r => `\`${r}\``).join(', ')}. ${extra.join(' ')} Change nothing in the plan.`
+}
+
+/** The context's word on a store read that failed. */
+const mineReadNote = (why: string) =>
+  `JBIT couldn't read the user's own Models default (\`JBIT models … — my default\`) from its store (${why}), so none applies this session. Tell the user so in a line.`
+
+/**
+ * What agents start on for roles the plan's line leaves out, by precedence per role (decided 2026-11-16: plan line >
+ * confirmed project default > the user's own default > session): the project default (`JBIT models:` in CLAUDE.md)
+ * once the user confirmed it this session, over the user's own default. None once the user's `JBIT models` command set
+ * the line (`MODELS_CHOSEN`): that line already holds every role they kept, and a role they dropped stays dropped.
+ */
+export function fallbackModels(
+  s: Pick<Session, 'modelsChosen' | 'modelsDefault' | 'modelsDefaultConfirmed' | 'modelsMine'>,
+): Models | undefined {
+  if (s.modelsChosen) return undefined
+  const mine = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+  const merged: Models = { ...mine, ...project }
+  return Object.keys(merged).length ? merged : undefined
+}
+
+/** Where each role's setting in `fallbackModels` comes from: `CLAUDE.md` or `my default`. */
+function fallbackSource(s: Pick<Session, 'modelsDefault' | 'modelsDefaultConfirmed'>, role: ModelRole): 'CLAUDE.md' | 'my default' {
+  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+  return project?.[role] ? 'CLAUDE.md' : 'my default'
+}
+
+/** `build sonnet/medium (my default), review opus/high (CLAUDE.md)`: the fallback's roles with their sources. */
+const sourcedText = (models: Models, s: Session) =>
+  MODEL_ROLES.filter(r => models[r])
+    .map(r => `${r} ${settingText(models[r]!)} (${fallbackSource(s, r) === 'my default' ? "the user's own default" : 'CLAUDE.md, confirmed'})`)
+    .join(', ')
 
 /**
  * The project's default Models line (`JBIT models:` in `CLAUDE.md` or `.claude/CLAUDE.md`), as `modelsText` writes it
  * (`''` for none or one that sets no role). It is read once, at the session's first compose (or its first `JBIT models`
- * command), and kept for the session: like a Models line the session first reads, it is the user's own; an edit to
- * `CLAUDE.md` mid-session (by the agent, say) changes nothing until a new session. A file that can't be read is no default.
+ * command), and kept for the session; an edit to `CLAUDE.md` mid-session (by the agent, say) changes nothing until a new
+ * session. A file that can't be read is no default. It is honoured only once the user confirms it this session
+ * (`MODELS_DEFAULT_CONFIRMED`, decided 2026-11-16): a cloned repo's committed default never raises spend unasked.
  */
 async function projectModels($: EngineInterface, rules: () => Promise<ProjectRules>): Promise<string> {
   const kept = (await $.state.get(MODELS_DEFAULT)).value
@@ -846,12 +1007,18 @@ export const effectiveModels = (plan: Pick<Plan, 'models'> | undefined, honoured
  * The roles agents start on now. The plan's line when the session honours it; and while the user's `JBIT models`
  * command waits for Claude to write its line (`modelsPending`), the line that command set, at once (decided in the
  * stage 2 review): the user's command is the setting, and the plan only records it, so an Agent call between the
- * command and the edit carries the new setting, never the replaced one. Undefined otherwise: agents run as the session.
+ * command and the edit carries the new setting, never the replaced one. A role the honoured line leaves out (or every
+ * role, with no line or one ignored) takes the defaults (`fallbackModels`). Undefined otherwise: agents run as the session.
  */
-export function modelsInEffect(plan: Pick<Plan, 'models'> | undefined, s: Pick<Session, 'modelsHonoured' | 'modelsPending'>): Models | undefined {
+export function modelsInEffect(
+  plan: Pick<Plan, 'models'> | undefined,
+  s: Pick<Session, 'modelsHonoured' | 'modelsPending' | 'modelsChosen' | 'modelsDefault' | 'modelsDefaultConfirmed' | 'modelsMine'>,
+): Models | undefined {
   const honoured = effectiveModels(plan, s.modelsHonoured)
-  if (honoured) return honoured
-  return s.modelsPending && s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined
+  const fallback = fallbackModels(s)
+  if (honoured) return fallback ? { ...fallback, ...honoured } : honoured
+  if (s.modelsPending) return s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined
+  return fallback
 }
 
 /** The plan has a Models line this session doesn't honour (it changed without the user's words), and no command of theirs waits to be written. */
@@ -863,13 +1030,19 @@ const ignoredModels = (plan: Plan, s: Session) => !s.modelsPending && !!plan.mod
  * may be a role the line leaves out or an agent that is no role (Explore), which the hook can't tell from a
  * builder. A call naming either must match one role's setting exactly, a half the role leaves unset absent from the
  * call, so Claude never picks it. A fork runs on the session's model and effort whatever it names, so one naming
- * either is refused.
+ * either is refused. `withDefaults`: some roles come from the defaults (`fallbackModels`), not the plan's line.
  */
-export function modelsDenial(models: Models, call: { model?: unknown; effort?: unknown; subagent_type?: unknown }): string | undefined {
+export function modelsDenial(
+  models: Models,
+  call: { model?: unknown; effort?: unknown; subagent_type?: unknown },
+  withDefaults = false,
+): string | undefined {
   const model = typeof call.model === 'string' ? call.model.toLowerCase() : undefined
   const effort = typeof call.effort === 'string' ? call.effort.toLowerCase() : undefined
   if (!model && !effort) return undefined
-  const sets = `JBIT: the plan's Models line sets ${modelsText(models)}.`
+  const sets = withDefaults
+    ? `JBIT: the Models settings in effect (the plan's line, then the user's defaults) set ${modelsText(models)}.`
+    : `JBIT: the plan's Models line sets ${modelsText(models)}.`
   const neither = ' An agent for none of these roles names neither, and runs as the session.'
   if (call.subagent_type === 'fork')
     return `${sets} A fork runs on your own model and effort whatever the call names: start a named agent type with the setting for its role instead.${neither}`
@@ -1121,14 +1294,32 @@ function workingRules(plan: Plan, s: Session, now: string | undefined): string {
 
 /** What the Models line asks of this session, or `''` with no line; and the project's default, when it has one. */
 function modelsRule(plan: Plan, s: Session): string {
-  const line = lineRule(plan, s)
-  const dflt = s.modelsDefault ? defaultNote(s.modelsDefault) : ''
-  return [line, dflt].filter(Boolean).join(' ')
+  return [lineRule(plan, s), defaultNote(s)].filter(Boolean).join(' ')
 }
 
-/** The context's word on the project's default Models line. */
-const defaultNote = (dflt: string) =>
-  `The project default (\`JBIT models:\` in CLAUDE.md) is \`Models: ${dflt}\`: new plans start from it, and a plan's Models line that matches it is honoured.`
+/**
+ * The context's word on the project's default Models line (`''` without one): honoured once the user confirms it this
+ * session, and until then waiting for their word (decided 2026-11-16).
+ */
+function defaultNote(s: Session): string {
+  if (!s.modelsDefault) return ''
+  const dflt = `The project default (\`JBIT models:\` in CLAUDE.md) is \`Models: ${s.modelsDefault}\``
+  if (s.modelsChosen) return `${dflt}; the user's \`JBIT models\` command set the line this session, so it fills in nothing (\`JBIT models default\` goes back to it).`
+  if (s.modelsDefaultConfirmed) return `${dflt}, confirmed by the user this session: it sets the roles a plan's line leaves out, over the user's own default, and new plans start from it.`
+  const named = MODEL_ROLES.filter(r => parseModels(`Models: ${s.modelsDefault}`)?.[r])
+    .map(r => `${r} ${settingText(parseModels(`Models: ${s.modelsDefault}`)![r]!)}`)
+    .join(', ')
+  return `${dflt}, waiting for the user's word: a default committed to the repo isn't honoured until the user's own message names its settings (e.g. "${named}") or they type \`JBIT models default\`. Until then don't start agents on it or write it into a plan; you may ask them once whether to use it.`
+}
+
+/** What the context says about models with no plan yet (`''` for nothing): the defaults the plan jbit:plan writes starts from. */
+function noPlanModels(s: Session): string {
+  const fallback = fallbackModels(s)
+  const start = fallback
+    ? `A new plan starts from the user's defaults: write \`Models: ${modelsText(fallback)}\` as its Models line (${sourcedText(fallback, s)}).`
+    : ''
+  return [start, defaultNote(s)].filter(Boolean).join(' ')
+}
 
 function lineRule(plan: Plan, s: Session): string {
   // the user's command waits to be written: say what to write, not that the old line changed
@@ -1144,7 +1335,19 @@ function lineRule(plan: Plan, s: Session): string {
     return `Models: the plan's Models line (${modelsText(plan.models)}) changed without the user naming its settings, so it is ignored until they confirm: ask them to confirm by naming the settings (e.g. "${named}"); a plain yes won't do. Start agents as if there were no line meanwhile.`
   }
   const set = effectiveModels(plan, s.modelsHonoured)
-  return set ? `Models: the plan's Models line sets ${modelsText(set)}. ${passRule(set)}` : ''
+  const fallback = s.modelsPending ? undefined : fallbackModels(s)
+  if (!set) {
+    if (!fallback) return ''
+    // a plan with no line (or one not honoured) starts on the defaults; with no line at all, Claude writes them in
+    const write = plan.hasModelsLine
+      ? ''
+      : ` Write \`Models: ${modelsText(fallback)}\` in \`## Now\`, beside the Agents line, as the plan's Models line, and log it as a dated decision ("Models: ${modelsText(fallback)}, from the user's defaults").`
+    return `Models: agents start on the user's defaults: ${sourcedText(fallback, s)}.${write} ${passRule(fallback)}`
+  }
+  const filled = MODEL_ROLES.filter(r => !set[r] && fallback?.[r])
+  if (!filled.length) return `Models: the plan's Models line sets ${modelsText(set)}. ${passRule(set)}`
+  const from: Models = Object.fromEntries(filled.map(r => [r, fallback![r]]))
+  return `Models: the plan's Models line sets ${modelsText(set)}; the roles it leaves out start on the user's defaults: ${sourcedText(from, s)}. ${passRule({ ...from, ...set })}`
 }
 
 /** How to start each role's agent under `set`. */
@@ -1861,17 +2064,22 @@ export const register: Register = on => {
     const composed = await next(e)
     const rules = sessionRules($)
     // the project's default Models line, read once a session, before the plan's line is weighed against it
-    const dflt = await projectModels($, rules).catch(() => undefined)
+    await projectModels($, rules).catch(() => undefined)
+    // and the user's own, from the plugin's store: a read that fails is no default, said once
+    const mine = await userModels($).catch(() => ({ text: '', failed: undefined }))
     const plan = await loadPlan($, rules).catch(() => undefined)
     const s = await sync($, plan)
+    const failed = mine.failed ? mineReadNote(mine.failed) : ''
     // while autopilot drives, each request notes the project's rules before any tool runs, so one removed mid-run still holds
     if (driving(plan, s)) await rules()
     // the roadmap rides with the plan: without a plan there is no section to carry it
     const roadmap = plan ? await loadRoadmap($) : undefined
     $.ui.status(plan ? statusLine(plan, s, roadmap) : undefined)
-    // with no plan yet, the project's default is all there is to say: the plan jbit:plan writes starts from it
-    if (!plan)
-      return dflt ? { sections: [...composed.sections, { id: 'jbit:plan', text: `# JBIT\n${defaultNote(dflt)}`, scope: 'session' as const }] } : composed
+    // with no plan yet, the defaults are all there is to say: the plan jbit:plan writes starts from them
+    if (!plan) {
+      const said = [noPlanModels(s), failed].filter(Boolean).join(' ')
+      return said ? { sections: [...composed.sections, { id: 'jbit:plan', text: `# JBIT\n${said}`, scope: 'session' as const }] } : composed
+    }
     const now = unconfirmedWide(plan, s) && s.now !== undefined ? stampOf(s.now) : undefined
     let decisionsFile = false
     try {
@@ -1879,7 +2087,8 @@ export const register: Register = on => {
     } catch {
       // an exists check that fails adds nothing
     }
-    return { sections: [...composed.sections, { id: 'jbit:plan', text: planSection(plan, s, now, roadmap, decisionsFile), scope: 'session' as const }] }
+    const text = planSection(plan, s, now, roadmap, decisionsFile)
+    return { sections: [...composed.sections, { id: 'jbit:plan', text: failed ? `${text}\n${failed}` : text, scope: 'session' as const }] }
   })
 
   // tell the summarizer what must survive
@@ -1906,21 +2115,61 @@ export const register: Register = on => {
       // bring the session's view up to date first, so the honoured line is the one the plan's first look set
       const rules = sessionRules($)
       await projectModels($, rules)
+      const mine = await userModels($)
       const plan = await loadPlan($, rules).catch(() => undefined)
       const s = await sync($, plan)
       const inEffect = modelsInEffect(plan, s)
-      let line: string | undefined
-      if (modelsAsk.kind !== 'refused') {
-        // from what agents start on now, not a stored line the plan no longer carries
-        line = modelsAfter(inEffect, modelsAsk, s.modelsDefault)
-        // honoured at once, so the line Claude writes needs no naming of the roles the command left as they stand; it
-        // applies until then too (`modelsInEffect`), and the user has chosen, so the project default confirms nothing now
-        await $.state.set(MODELS_HONOURED, line)
-        await $.state.set(MODELS_PENDING, modelsText(plan?.models) !== line)
-        await $.state.set(MODELS_CHOSEN, true)
+      const mineModels = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+      const notes = mine.failed ? [mineReadNote(mine.failed)] : []
+      let entry: string
+      if (modelsAsk.kind === 'show') entry = modelsShown(plan, s)
+      else if (modelsAsk.kind === 'clearMine') {
+        // the user's own word removes their default: this session stops using it too
+        // what was stored, read fresh: the session's copy is empty after a failed read, which says nothing of the store
+        const before = s.modelsMine ? { text: s.modelsMine } : await storedMine($)
+        const was = before.text ? ` (\`Models: ${before.text}\`)` : before.failed ? ' (whether one was stored couldn\'t be read)' : ' (none was stored)'
+        try {
+          await $.store.delete(STORE_MODELS)
+          await $.state.set(MODELS_MINE, '')
+          entry = `JBIT: the user's own \`JBIT models clear my default\` removed their own Models default${was}: no repo starts from it now, and agents in this session no longer fall back on it. Tell the user so in a line; change nothing in the plan.`
+        } catch (err) {
+          entry = `JBIT: the user's \`JBIT models clear my default\` failed: the store couldn't be written (${storeError(err)}), so their own default is left as it was. Tell the user so in a line; change nothing in the plan.`
+        }
+      } else {
+        let line: string | undefined
+        if (modelsAsk.kind !== 'refused') {
+          // from what agents start on now, not a stored line the plan no longer carries
+          line = modelsAfter(inEffect, modelsAsk, s.modelsDefault)
+          // honoured at once, so the line Claude writes needs no naming of the roles the command left as they stand; it
+          // applies until then too (`modelsInEffect`), and the user has chosen, so the defaults fill in nothing now
+          await $.state.set(MODELS_HONOURED, line)
+          await $.state.set(MODELS_PENDING, modelsText(plan?.models) !== line)
+          await $.state.set(MODELS_CHOSEN, true)
+          // going back to the project default, for the line or a role, is the user's word on it
+          if (modelsAsk.kind === 'default' || (modelsAsk.kind === 'set' && modelsAsk.defaulted.length)) await $.state.set(MODELS_DEFAULT_CONFIRMED, true)
+        }
+        entry = modelsContext(modelsAsk, line, plan?.path, modelsText(inEffect))
+        // dropping roles holds for this session; the user's own default fills them in again in later ones
+        const dropped = modelsAsk.kind === 'none' ? MODEL_ROLES.filter(r => mineModels?.[r]) : modelsAsk.kind === 'set' ? modelsAsk.cleared.filter(r => mineModels?.[r]) : []
+        if (dropped.length)
+          notes.push(`Their own default (\`Models: ${s.modelsMine}\`) still sets ${dropped.join(', ')}: it fills ${dropped.length > 1 ? 'those roles' : 'that role'} in again in later sessions, in any repo whose plan line leaves ${dropped.length > 1 ? 'them' : 'it'} out, unless they type \`JBIT models clear my default\`. Say so in the same line.`)
+        if (modelsAsk.kind === 'set' && modelsAsk.mine) {
+          // the user's own default, for every repo: the roles the command named replace theirs in the stored default,
+          // the others kept. The store is read fresh, and a read that fails saves nothing, so no stored role is lost unseen
+          const stored = await storedMine($)
+          const kept = stored.text ? parseModels(`Models: ${stored.text}`) : undefined
+          const saved = modelsText({ ...kept, ...modelsAsk.set })
+          try {
+            if (stored.failed) throw new Error(stored.failed)
+            await $.store.set(STORE_MODELS, saved)
+            await $.state.set(MODELS_MINE, saved)
+            notes.push(`It also saved \`Models: ${saved}\` as the user's own default${kept ? ' (the roles this command named replaced theirs in the earlier default, the rest kept)' : ''}: in any repo, a plan with no Models line starts from it (a plan's line, then a project default the user confirms, win over it per role). Say so in the same line.`)
+          } catch (err) {
+            notes.push(`Saving it as the user's own default failed: the store couldn't be ${stored.failed ? 'read' : 'written'} (${storeError(err)}), so no default is saved and this session's line is set all the same. Say so in the same line.`)
+          }
+        }
       }
-      const entry = modelsContext(modelsAsk, line, plan?.path, modelsText(inEffect))
-      return next({ ...e, context: [...(e.context ?? []), entry] })
+      return next({ ...e, context: [...(e.context ?? []), [entry, ...notes].join(' ')] })
     }
     if (fromUser) {
       // the user's autopilot command, typed or opening with "JBIT" (`autopilotAsk`), comes first: it sets the level,
@@ -2074,7 +2323,8 @@ export const register: Register = on => {
       const session = await readSession($)
       await syncModels($, plan, session)
       const models = modelsInEffect(plan, session)
-      const wrong = models && modelsDenial(models, e as { model?: unknown; effort?: unknown; subagent_type?: unknown })
+      const fromDefaults = !!models && modelsText(models) !== modelsText(effectiveModels(plan, session.modelsHonoured) ?? (session.modelsPending ? models : undefined))
+      const wrong = models && modelsDenial(models, e as { model?: unknown; effort?: unknown; subagent_type?: unknown }, fromDefaults)
       if (wrong) return { deny: wrong }
       if (effectiveAgents(plan, undefined) !== 'lean') return await next(e)
       if (before === 0 && !(await backgroundBusy($))) return await next(e)

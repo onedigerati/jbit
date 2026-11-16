@@ -27,14 +27,27 @@ declare module 'claude-code' {
       modelsHonoured: string
       /** The models and efforts the latest prompt named as words, when it was the user's own (empty otherwise): a changed Models line is honoured only when this names every value it sets. */
       modelsNamed: string[]
-      /** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as the hook writes it (`''` for none): a plan's line that matches it is honoured without the user naming it. */
+      /** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as the hook writes it (`''` for none): honoured only once the user confirms it this session (`modelsDefaultConfirmed`). */
       modelsDefault: string
+      /** The user confirmed the project's default this session: their own prompt named its settings and roles, or they typed `JBIT models default`. A cloned repo's committed default never raises spend unasked. */
+      modelsDefaultConfirmed: boolean
+      /** The user's own Models default (`JBIT models … — my default`, kept in the plugin's store under `models`) as the session first read it, as the hook writes it (`''` for none, a value that doesn't parse, or a store that can't be read). */
+      modelsMine: string
       /** The honoured Models line was set by the user's `JBIT models` command and the plan doesn't carry it yet: it applies at once, and the rules say to write it. */
       modelsPending: boolean
-      /** The user chose the honoured Models line this session (a `JBIT models` command or a change they named), so a line matching the project default needs them like any other. */
+      /** The user's `JBIT models` command set the honoured Models line this session: it names every role it keeps, so the defaults fill in nothing more, and a line matching them needs the user like any other. */
       modelsChosen: boolean
       /** Every project rule (`JBIT risk:` / `JBIT outward:` in CLAUDE.md) seen this session, so a line removed mid-run still holds until a new session. */
       projectRules: { risk: string[]; outward: { words: string[]; file: string }[] }
     }
   }
+}
+
+/**
+ * What JBIT keeps in its own `$.store` (one JSON file per user, under the Claude Code configuration directory, outside
+ * every repo), written only by the user's own commands. The hook imports it as a type.
+ */
+export interface JbitStore {
+  /** The user's Models default, as `modelsText` writes it (`build sonnet/medium · research sonnet/high`): set by `JBIT models … — my default`, removed by `JBIT models clear my default`. */
+  models?: string
 }

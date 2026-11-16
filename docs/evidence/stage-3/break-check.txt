@@ -1,0 +1,8 @@
+$ claude plugin test plugins/jbit   # fallbackModels takes the CLAUDE.md default without confirmation (break check, then restored)
+(fail) a JBIT models line in CLAUDE.md is the project default: unconfirmed, a plan line matching it is not honoured unnamed, and the context says it waits for the user [43.74ms]
+(fail) with no plan, the CLAUDE.md default still rides in the context for the plan jbit:plan writes [56.01ms]
+(fail) my default: a confirmed CLAUDE.md default wins over it per role; an unconfirmed one does not count [49.83ms]
+(fail) CLAUDE.md default: not honoured unasked, waiting for the user's word, and confirmed only by the user's own prompt naming its settings and roles [43.19ms]
+(fail) JBIT models alone names an unconfirmed CLAUDE.md default as waiting, and no own default [71.71ms]
+ 525 pass
+ 5 fail

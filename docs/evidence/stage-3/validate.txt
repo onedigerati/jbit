@@ -1,0 +1,4 @@
+$ claude plugin validate .
+Validating marketplace manifest: /home/jonah/repos/jbit/.claude-plugin/marketplace.json
+
+✔ Validation passed

@@ -499,12 +499,13 @@ test('plan, stage and autopilot give research agents the research setting, and s
   assert.doesNotMatch(readmes.plugin, /research or Explore agent, which is no role/, 'plugin README still calls research no role')
 })
 
-test('plan describes the Models line: roles, form, a role left out runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default', () => {
+test('plan describes the Models line: roles, form, a role left out takes the defaults or runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default', () => {
   const text = skill('plan')
   for (const words of [
     '`Models: build sonnet/medium · research sonnet/high · review opus/high · verify sonnet/medium`',
     'The roles are `build`, `research`, `review` and `verify`, each written `model/effort` (either half optional)',
-    'A role left out runs as the session',
+    "A role the line leaves out takes the user's own default (or a confirmed CLAUDE.md default) when there is one, else runs as the session",
+    'fills those roles in again in later sessions unless they type `JBIT models clear my default`',
     'Only the user sets it',
     'a `JBIT models …` command',
     'a `JBIT models:` line in `CLAUDE.md`, the project default',
@@ -638,4 +639,38 @@ test('the small-agent rules cost nothing for small work: no split for a single s
         i = text.indexOf(rule, i + 1)
       }
     }
+})
+
+test('plan, stage, autopilot and the plugin README say a CLAUDE.md default waits for the user\'s word, and describe the user\'s own default and its precedence', () => {
+  const phrases = {
+    plan: [
+      'A project default counts only once the user confirms it in the session, by naming its settings and roles in their own message or typing `JBIT models default`',
+      "until then the hook's context says it is waiting for their word, so don't write it into a plan or start agents on it",
+      '`JBIT models … — my default` saves the settings it names in JBIT\'s per-user store (only their own typed command writes it)',
+      '`JBIT models clear my default` removes it',
+      '`JBIT models` alone shows each role\'s setting and where it comes from (plan, CLAUDE.md, my default or session)',
+      "Per role, the plan's line wins, then a confirmed project default, then the user's own default, then the session.",
+    ],
+    stage: [
+      "A role the line leaves out takes the defaults the hook's context names (a project default in `CLAUDE.md` the user confirmed this session, then the user's own default from `JBIT models … — my default`)",
+      "A project default the context says is waiting for the user's word sets nothing",
+    ],
+    autopilot: [
+      "a project default still waiting for the user's word sets nothing, and an unattended run never confirms it",
+    ],
+  }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(skill(name).includes(words), `${name} SKILL.md lacks: ${words}`)
+  for (const words of [
+    'It counts only once you confirm it in the session, by naming its settings and roles in your own message',
+    "so a cloned repo's committed default never raises spend unasked; until then the context tells Claude it is waiting for your word",
+    '`JBIT models build sonnet/medium · research sonnet/high — my default` (or `- my default`, `, my default`)',
+    'Only your own typed command saves it, never an agent, a plugin\'s prompt or a file. `JBIT models clear my default` removes it.',
+    'Per role: the plan\'s line, then a confirmed project default, then your own default, then the session.',
+    '`JBIT models` alone shows each role\'s setting and where it comes from (plan, CLAUDE.md, my default or session)',
+  ])
+    assert.ok(readmes.plugin.includes(words), `plugin README lacks: ${words}`)
+  // the struck 2026-11-15 rule: a plan line matching the CLAUDE.md default is no longer honoured unasked
+  for (const [name, text] of [['plan', skill('plan')], ['stage', skill('stage')], ['autopilot', skill('autopilot')], ['plugin README', readmes.plugin]])
+    assert.ok(!/matches (?:it|the (?:project )?default) is honoured/i.test(text), `${name} still says a line matching the default is honoured`)
 })

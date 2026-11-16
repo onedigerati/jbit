@@ -1,18 +1,44 @@
 # JBIT plan
 
 ## Goal
-None yet: 0.16.0 is shipped, and the next body of work waits on the user. Candidates from 0.16.0: key the plan-write refusal on the armed session rather than the Mode line, and have a run set "All stages done" itself (open questions).
+Let the user choose which model, and at what effort, each delegated JBIT role runs on (build, review, verify), set by their own words in the plan, a `JBIT models …` command or a `CLAUDE.md` project default, shown in the status line and checked by the hook when an agent starts; planning and project management stay on the session's model, set in Claude Code. Alongside it, stop autopilot blocking read-only research fetches. Done when a headless autopilot run with `Models: build sonnet/medium · review opus/high` starts its builder on Sonnet at medium and its reviewer on Opus at high, a read-only `curl` GET passes under autopilot while a POST is still held, and 0.17.0 ships with docs and evals.
+
+## Baseline
+2026-11-15 · tests: 439 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 29 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes with the known marketplace-description warning
 
 ## Now
-No plan yet: waiting on the user's next goal
+Stage 1 of 4 · Models line and hook
+Risk: user input (the plan line and prompt text the hook parses)
+Checks:
+- [ ] A `Models:` line in `## Now` (roles `build`, `review`, `verify`; model `sonnet|opus|haiku|fable`; effort `low|medium|high|xhigh|max`; either half optional) is parsed into per-role settings, and an unknown role or value counts as no setting for that role (proof: test)
+- [ ] The status line shows the roles set (`jbit · lean · build sonnet/med · review opus/high`) and nothing extra without a line (proof: test)
+- [ ] The hook's context tells Claude which model and effort to pass for each role it starts an agent for, and that planning and project management stay on the session's model (proof: test)
+- [ ] With a line set, an Agent call that names no model or effort, or one the line doesn't list, is denied with a message naming the roles' settings; without a line, Agent calls pass as today (proof: test)
+- [ ] A `Models:` line that appears or changes mid-session without the user's own words in that turn naming a model or effort is ignored, with a one-line notice, the way an unconfirmed `wide` is (proof: test)
+- [ ] The engine's Agent event carries the call's `model` and `effort`, shown by a hook log from a real session (proof: run the product, a test can't show what the engine sends)
+Open: none
 Agents: lean
 
 ## Stages
+- [ ] 1. Models line and hook — parse the line, status line, context hint, check Agent calls
+- [ ] 2. Command, default, skills — `JBIT models …`, `CLAUDE.md` default, skills pass model and effort, lean handling
+- [ ] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
+- [ ] 4. Proof, docs, 0.17.0 — headless run, evals, READMEs and field guide, version
 
 ## Decisions
 - 2026-11-14 · Agents: lean, carried from the last plan.
+- 2026-11-15 · Roles are `build`, `review` and `verify`, each a model and an effort written `model/effort`; a role left out inherits the session, as today — the user's design in this session.
+- 2026-11-15 · Planning and project management run in the main session, so JBIT can't switch their model or effort: a `plan` or `lead` role is refused with a pointer to `/model` and the session's effort setting, and the line is left unchanged — a plugin can't change the session it runs in.
+- 2026-11-15 · Only the user sets effort: Claude passes the effort the line names and never picks one itself, even for a stage that looks hard; it may suggest a change and ask — Claude Code allows an agent's effort only when the user or written instructions ask for it.
+- 2026-11-15 · Under `lean`, a build model set means `jbit:stage` hands building to one builder agent (still one agent at a time), so the setting always applies; verify under `lean` stays in the main session on the session's model — default picked in planning, for the user to change.
+- 2026-11-15 · The hook checks and denies, it doesn't rewrite the call, since it can't reliably tell a builder from a reviewer: a denial naming the roles' settings lets Claude retry correctly.
+- 2026-11-15 · Research fetches: a `curl`/`wget` GET with no body, upload, auth or cookie header, and no output piped to another network command, counts as a read and passes the outward check; anything else stays held. Releasing one named host on the user's word is left out of this plan (open question) — the read/send split fixes the eVelo case without a new approval path.
+- 2026-11-15 · No research: the facts this plan turns on (the Agent tool's `model` and `effort` options) are in Claude Code's own tool schema; stage 1's last check confirms the hook sees them.
+- 2026-11-15 · Scale: 4 stages, one release; no signal fired, one plan.
 
 ## Open questions
+- Releasing one named outward step or host for a run on the user's plain word (e.g. "allow en.wikipedia.org"), from the eVelo run of 2026-11-14 — left out of this plan; for the user.
+- Candidates from 0.16.0 not taken by this plan: key the plan-write refusal on the armed session rather than the Mode line, and have a run set "All stages done" itself (see the stage 3 proof run note below).
 - Stage 3 proof run (0.16.0), deferred: the pre-run refusal applies only once the plan says `Mode: autopilot`, so a run's first close made in the same line that writes the Mode line (headless Sonnet did: a python heredoc that ticked stage 1, wrote the Mode line and committed) passes it; the post-run check caught it, flagged it to reopen, and an amend closed it ([evidence](plans/2026-11-14-headless-progress-commit-gate/evidence/stage-3/headless-run.txt)). Keying the refusal on the armed session rather than the Mode line as written would close it. The same run ended asking whether to set `## Now` to "All stages done" rather than doing it.
 - Stage 2 review (0.16.0), deferred: the pre-run refusal of a line that writes the plan and commits misses a path held in a variable (`PLAN=docs/PLAN.md; sed -i x "$PLAN"`), `exec 3>docs/PLAN.md`, `"$PWD/docs/PLAN.md"`, and commands after the line's last commit (a loop that commits then edits); and when `session.cwd` fails the absolute path falls back to a relative one that can match a longer path. All are left to the post-run check against the commit, as the guardrail decision says.
 - Stage 1 review, deferred: WebSearch and WebFetch aren't covered by the outward check, which reads Bash only, so an unattended run's research queries go out whatever the run's level, and keeping personal data out of them rests on the brief. Consistent with the 2026-11-08 decision that the outward check is a guardrail, not a sandbox; the docs now say it covers shell commands.

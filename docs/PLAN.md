@@ -16,6 +16,9 @@ Agents: lean
 - [x] 3. Research fetches — read-only `curl`/`wget` GETs pass the outward check; block message points to WebFetch/WebSearch
 - [x] 4. Proof, docs, 0.17.0 — headless run, evals, READMEs and field guide, version
 
+## Fixes
+- 2026-11-16 · JBIT logo: the dark wordmark with the orange dot as `favicon.png` at the repo root (T3 Code's project logo) and as the plugin icon `plugins/jbit/.claude-plugin/icon.png`, rendered by `docs/assets/render-icon.mjs` — checked by eye at 256 px and 20 px, docs checks and `claude plugin validate` run
+
 ## Decisions
 - 2026-11-14 · Agents: lean, carried from the last plan.
 - 2026-11-15 · Roles are `build`, `review` and `verify`, each a model and an effort written `model/effort`; a role left out inherits the session, as today — the user's design in this session.

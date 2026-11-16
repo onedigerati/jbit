@@ -1,0 +1,46 @@
+schema_version: "1.0"
+name: models-my-default
+description: >-
+  The user's own `JBIT models build sonnet/medium · research sonnet/high — my default` writes
+  `Models: build sonnet/medium · research sonnet/high` into the plan's `## Now`, and Claude's reply says the settings
+  are also saved as the user's own default for every repo (or, when the hook says the store couldn't be written,
+  that nothing was saved); nothing is built. The cross-repo part, a fresh session in a second repo starting its plan
+  from the saved default, needs the per-user store across sessions, which the eval can't seed: it is proven by a
+  headless run.
+tags: [models, jbit-command, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # No Bash, so the case runs where the eval sandbox can't start; setting the line needs none.
+  prompt: "JBIT models build sonnet/medium · research sonnet/high — my default"
+  max_turns: 10
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Skill]
+graders:
+  - type: llm
+    name: writes-models-line
+    # an llm grader on the file: a regex grader's `target: files` matches changed paths, not contents
+    focus:
+      source: file
+      path: docs/PLAN.md
+    arm: with-only
+    criteria: >-
+      The plan's `## Now` contains the line `Models: build sonnet/medium · research sonnet/high`, exactly.
+  - type: llm
+    name: reply-names-my-default
+    focus: trace
+    arm: with-only
+    criteria: >-
+      Claude writes the line `Models: build sonnet/medium · research sonnet/high` into the plan's `## Now` (the
+      exact line the JBIT hook's context gives) and tells the user in its reply that the line is set for this plan
+      and that the same settings are saved as their own default, used in any repo whose plan has no Models line. If
+      the hook's context says the store couldn't be read or written, the reply must instead say no default was
+      saved, and passes. Fails if the reply claims a save the hook's context says failed, if Claude edits any file
+      but the plan, or if it starts building the stage.
+  - type: llm
+    name: plan-otherwise-unchanged
+    focus: { source: file, path: docs/PLAN.md }
+    arm: with-only
+    criteria: >-
+      The plan's `## Now` carries `Models: build sonnet/medium · research sonnet/high` and nothing else in the plan
+      changed beyond that line and, optionally, one dated decision recording the change: the stage, its checks and
+      its unticked box are as they were.

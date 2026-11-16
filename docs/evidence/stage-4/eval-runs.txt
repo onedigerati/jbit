@@ -1,0 +1,36 @@
+$ claude plugin eval plugins/jbit --case <case> --scaffold --runs 1 --ablation none --model sonnet --allow-tools Write Edit WebFetch --no-publish --trust-plugin --max-cost-usd 6 --json <scratch>/eval-<case>.json
+# The eval runs in its own home directory, so the per-user store it writes is not the real one (the real store read `{}` after each run).
+
+## models-my-default (after replacing the path-matching regex grader with a file grader)
+claude 2.1.325 cost 0.052
+models-my-default score 1 passed True error None
+   writes-models-line PASS - judge votes: PASS PASS PASS
+   reply-names-my-default PASS - judge votes: PASS PASS PASS
+   plan-otherwise-unchanged PASS - judge votes: PASS PASS PASS
+
+## research-role, final (the trace-judged grader replaced by a deterministic one)
+claude 2.1.325 cost 0.283
+research-role score 1 passed True error None
+   loads-plan PASS - Skill called 1x (expected 1..∞)
+   research-on-sonnet-high PASS - Agent called 1x (expected 1..∞)
+   no-other-effort PASS - Agent called 0x (expected 0..0)
+   no-agent-on-build-or-review-setting PASS - Agent called 0x (expected 0..0)
+   models-line-kept PASS - judge votes: PASS PASS PASS
+   writes-research-note PASS - docs/research/*.md exists as expected
+
+## research-role, previous run (same transcript behaviour; the trace judge split 2-1 because its trace excerpt held no Agent call)
+claude 2.1.325 cost 0.336
+research-role score 0.8333333333333334 passed False error None
+   loads-plan PASS - Skill called 1x (expected 1..∞)
+   research-on-sonnet-high PASS - Agent called 1x (expected 1..∞)
+   no-other-effort PASS - Agent called 0x (expected 0..0)
+   research-agent-carries-research-setting FAIL - judge votes: FAIL PASS FAIL
+   models-line-kept PASS - judge votes: PASS PASS PASS
+   writes-research-note PASS - docs/research/*.md exists as expected
+
+## First run of models-my-default (regex grader with `target: files`, which matches changed paths, so it could not pass)
+claude 2.1.325 cost 0.051
+models-my-default score 0.6666666666666666 passed False error None
+   writes-models-line FAIL - pattern not found in files
+   reply-names-my-default PASS - judge votes: PASS PASS PASS
+   plan-otherwise-unchanged PASS - judge votes: PASS PASS PASS

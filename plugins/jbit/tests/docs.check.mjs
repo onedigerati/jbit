@@ -61,11 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json and the field guide are version 0.17.0', () => {
-  assert.equal(manifest.version, '0.17.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 0.17.0</span>'), 'field guide header lacks JBIT 0.17.0')
-  assert.ok(guide.includes('<footer>JBIT 0.17.0 ·'), 'field guide footer lacks JBIT 0.17.0')
-  assert.doesNotMatch(guide, /JBIT 0\.1[0-6]\.\d/, 'field guide still names an older version')
+test('plugin.json and the field guide are version 0.18.0', () => {
+  assert.equal(manifest.version, '0.18.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.18.0</span>'), 'field guide header lacks JBIT 0.18.0')
+  assert.ok(guide.includes('<footer>JBIT 0.18.0 ·'), 'field guide footer lacks JBIT 0.18.0')
+  assert.doesNotMatch(guide, /JBIT 0\.1[0-7]\.\d/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -524,7 +524,7 @@ test('READMEs and the field guide describe the Models line, JBIT models, the CLA
     root: [
       '`Models: build sonnet/medium · review opus/high`',
       '`build`, `research`, `review` and `verify`, each `model/effort`',
-      'A role left out runs as the session.',
+      'A role the line leaves out takes your own default (or a confirmed project default) when there is one, else runs as the session.',
       '`JBIT models build sonnet/medium`',
       '`JBIT models default` goes back to the project default (a `JBIT models:` line in `CLAUDE.md`',
       '`JBIT models none` removes the line',
@@ -534,7 +534,7 @@ test('READMEs and the field guide describe the Models line, JBIT models, the CLA
     plugin: [
       '### Models',
       'Models: build sonnet/medium · review opus/high · verify sonnet/medium',
-      'A role left out runs as the session, and no line means every agent does.',
+      'A role the line leaves out takes your own default (or a confirmed project default) when there is one, else runs as the session; with no line and no default, every agent does.',
       '`JBIT models build sonnet/medium, review opus/high`',
       '`JBIT models default` goes back to the project default, `JBIT models none` (or `off`) removes the line',
       'A `JBIT models: build sonnet/medium · review opus/high` line in `CLAUDE.md`',
@@ -548,7 +548,7 @@ test('READMEs and the field guide describe the Models line, JBIT models, the CLA
       '<section id="models">',
       '<a href="#models">Models</a>',
       '<code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>',
-      'A role left out runs as the session.',
+      'A role the line leaves out takes your own default (or a confirmed project default) when there is one, else runs as the session.',
       '<code>JBIT models build sonnet/medium</code>',
       '<code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code>',
       '<code>JBIT models none</code> removes the line',
@@ -673,4 +673,72 @@ test('plan, stage, autopilot and the plugin README say a CLAUDE.md default waits
   // the struck 2026-11-15 rule: a plan line matching the CLAUDE.md default is no longer honoured unasked
   for (const [name, text] of [['plan', skill('plan')], ['stage', skill('stage')], ['autopilot', skill('autopilot')], ['plugin README', readmes.plugin]])
     assert.ok(!/matches (?:it|the (?:project )?default) is honoured/i.test(text), `${name} still says a line matching the default is honoured`)
+})
+
+// 0.18.0 docs: the research role, small agents, the user's own default, and a CLAUDE.md default waiting for the user's word.
+test('READMEs and the field guide describe the research role, small agents, the user\'s own default and a CLAUDE.md default waiting for the user\'s word', () => {
+  const phrases = {
+    root: [
+      'Research agents get the `research` setting, so the research that once ran on the session\'s model can run on a cheaper one.',
+      'A project default counts only once you confirm it in the session, so a cloned repo\'s committed default never raises spend unasked.',
+      '`JBIT models build sonnet/medium · research sonnet/high — my default` also saves the settings as your own default, kept outside every repo: a new plan in any repo starts from it. `JBIT models clear my default` removes it',
+      '- **Small agents.** A fan-out gives each agent a small batch, a few items at most (a nine-item research list goes to agents of at most three each)',
+      'read narrowly, stop when its brief is done and hand back a short report (20 lines at most, no diffs or dumps)',
+    ],
+    plugin: [
+      'Builders, research agents, verifiers and reviewers start on the model and effort the plan\'s Models line sets for their role',
+      'starts the Models line from your own default and a `CLAUDE.md` default you\'ve confirmed in the session',
+      'or a role neither the line nor a default sets) runs as the session',
+      '- **Small agents, at every level.** A fan-out, research or build, gives each agent a small batch, a few items at most: a nine-item research list goes to agents of at most three each.',
+      'Every brief asks the agent to read narrowly (grep and read the lines it needs, not whole large files), stop when its brief is done, and hand back a short report, 20 lines at most with no diffs or file dumps.',
+      'A single small item needs no split, and the rule adds no agent',
+    ],
+    'field-guide.html': [
+      'Research agents get the <code>research</code> setting, so research can run on a cheaper model than the session\'s.',
+      'A project default waits for your word: it counts only once you confirm it in the session',
+      'Your own default follows you to every repo: <code>JBIT models build sonnet/medium · research sonnet/high — my default</code> sets the line and also saves those settings in JBIT\'s per-user store, outside every repo',
+      '<code>JBIT models clear my default</code> removes it',
+      'Per role, the plan\'s line wins, then a confirmed project default, then your own default, then the session',
+      'At every level the agents stay small. A fan-out, research or build, gives each agent a few items at most (a nine-item research list goes to agents of at most three each)',
+      'hand back a short report, 20 lines at most with no diffs or dumps',
+    ],
+  }
+  const texts = { ...readmes, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
+  // the old phrasings: a role left out simply runs as the session, a new plan starts from an unconfirmed CLAUDE.md default
+  const old = [
+    /A role left out runs as the session/i,
+    /a role the line leaves out\) runs as the session/i,
+    /CLAUDE\.md(?:<\/code>)?`?,? (?:which|that) a new plan starts from/i,
+    /starts the Models line from the `CLAUDE\.md` default/i,
+  ]
+  for (const [name, text] of Object.entries(texts))
+    for (const re of old) assert.doesNotMatch(text, re, `${name} still says: ${re}`)
+})
+
+test('the research-role, research-batches and models-my-default eval cases exist with a case.yaml, scaffold and graders, and the README lists them', () => {
+  for (const name of ['research-role', 'research-batches', 'models-my-default']) {
+    const dir = join(plugin, 'evals', name)
+    assert.ok(existsSync(join(dir, 'case.yaml')), `evals/${name}/case.yaml is missing`)
+    assert.ok(existsSync(join(dir, 'scaffold.sh')), `evals/${name}/scaffold.sh is missing`)
+    const text = read(join(dir, 'case.yaml'))
+    assert.ok(text.includes(`name: ${name}\n`), `evals/${name}/case.yaml names itself`)
+    assert.match(text, /\ngraders:\n  - type: /, `evals/${name}/case.yaml has graders`)
+    assert.ok(read(join(dir, 'scaffold.sh')).includes('git config user.email eval@example.com'), `evals/${name}/scaffold.sh sets a repo-local git author`)
+    assert.ok(readmes.plugin.includes(`(\`${name}\``), `plugin README lacks the eval case ${name}`)
+  }
+  assert.ok(read(join(plugin, 'evals', 'research-role', 'scaffold.sh')).includes('Models: build sonnet/medium · research sonnet/high · review opus/high'), 'research-role scaffold carries the Models line')
+  const role = read(join(plugin, 'evals', 'research-role', 'case.yaml'))
+  for (const g of ['research-on-sonnet-high', 'no-other-effort', 'no-agent-on-build-or-review-setting']) assert.ok(role.includes(`name: ${g}\n`), `research-role lacks the ${g} grader`)
+  const batches = read(join(plugin, 'evals', 'research-batches', 'case.yaml'))
+  for (const g of ['batches-of-at-most-three', 'briefs-ask-narrow-and-short']) assert.ok(batches.includes(`name: ${g}\n`), `research-batches lacks the ${g} grader`)
+  const mine = read(join(plugin, 'evals', 'models-my-default', 'case.yaml'))
+  assert.ok(mine.includes('prompt: "JBIT models build sonnet/medium · research sonnet/high — my default"\n'), 'models-my-default runs the user\'s own — my default command')
+  for (const g of ['writes-models-line', 'reply-names-my-default']) assert.ok(mine.includes(`name: ${g}\n`), `models-my-default lacks the ${g} grader`)
+  assert.ok(mine.includes('proven by a\n  headless run') || /proven by a\s+headless run/.test(mine), 'models-my-default says the cross-repo part is proven by a headless run')
+})
+
+test('plan\'s description says to load it before any research for a plan, so its batch rule applies', () => {
+  assert.match(description('plan'), /before any research for a plan/)
 })

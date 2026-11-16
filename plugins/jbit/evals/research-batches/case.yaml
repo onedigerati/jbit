@@ -1,0 +1,51 @@
+schema_version: "1.0"
+name: research-batches
+description: >-
+  A plan whose research list has nine items (the e-book VAT rate in nine EU countries) gives the research to agents
+  of at most three items each, never one agent for all nine, and each research brief asks the agent to read
+  narrowly, stop when its brief is done, and hand back a short report (20 lines at most, no dumps).
+tags: [research, agents, outcome]
+context:
+  scaffold_script: scaffold.sh
+execution:
+  # No Bash, so the case runs where the eval sandbox can't start; planning and research need none.
+  prompt: >-
+    I want invoices to add VAT for e-books sold to customers in Germany, France, Italy, Spain, the Netherlands,
+    Poland, Sweden, Ireland and Austria. Research each country's current VAT rate for e-books (the reduced rate if
+    one applies) and plan it out before we write anything; assume sensible defaults rather than asking me questions.
+  max_turns: 40
+  allowed_tools: [Read, Glob, Grep, Write, Edit, Skill, Agent, WebSearch, WebFetch]
+graders:
+  - type: tool_used
+    name: loads-plan
+    tool: Skill
+    input_match: "plan"
+    min: 1
+    arm: with-only
+  - type: tool_used
+    name: at-least-three-agents
+    tool: Agent
+    min: 3
+    arm: with-only
+  - type: llm
+    name: batches-of-at-most-three
+    focus: trace
+    arm: with-only
+    criteria: >-
+      The nine countries' VAT research goes to research agents (Agent calls), and no single Agent call's prompt asks
+      for more than three of the nine countries; together the research agents cover all nine. Fails if one agent is
+      briefed with four or more countries, if the main session researches some countries itself instead of
+      delegating them, or if any country is left unresearched.
+  - type: llm
+    name: briefs-ask-narrow-and-short
+    focus: trace
+    arm: with-only
+    criteria: >-
+      Each research Agent call's prompt asks the agent to keep its reading narrow (read only what it needs, such as
+      the pages or lines that answer its question, not whole sites or large files) and to stop once its brief is
+      done, and asks for a short handoff report with a line cap of about 20 lines and no dumps of pages or files.
+      Fails if any research brief lacks the narrow-reading ask, the stop-when-done ask, or the short-report ask.
+  - type: file_exists
+    name: writes-plan-file
+    path: docs/PLAN.md
+    arm: with-only

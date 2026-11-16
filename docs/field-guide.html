@@ -266,7 +266,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 0.17.0</span>
+  <span class="brand">JBIT 0.18.0</span>
   <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#models">Models</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
@@ -452,6 +452,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <span class="eyebrow">Fan-out</span>
     <h2>Agents level: spending tokens to save time</h2>
     <p>One line in <code>## Now</code> sets how widely work fans out to subagents. <code>/jbit:plan</code> asks once, and every skill follows the answer.</p>
+    <p>At every level the agents stay small. A fan-out, research or build, gives each agent a few items at most (a nine-item research list goes to agents of at most three each), and every brief asks the agent to read narrowly, stop when its brief is done and hand back a short report, 20 lines at most with no diffs or dumps. An agent's cost grows with its turns and context, so small agents spend less. The rule adds no agent: under <code>lean</code> the batches go one after another.</p>
   </div>
   <div class="fan">
     <div class="stack">
@@ -472,8 +473,9 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">Spend</span>
     <h2>Models: which model, and how hard, each role works</h2>
-    <p>One more line in <code>## Now</code> sets the model and effort each delegated role's agents start on: <code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>. The roles are <code>build</code>, <code>research</code>, <code>review</code> and <code>verify</code>, each written <code>model/effort</code>, either half optional. A role left out runs as the session.</p>
-    <p>Only you set it: in your own words, or with your own command, <code>JBIT models build sonnet/medium</code>. <code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code> that a new plan starts from, and <code>JBIT models none</code> removes the line. The status line shows the roles set, and the hook denies an agent started with a setting no role has, so Claude retries with the right one. A line that changes mid-session without your command waits until your own message names its settings.</p>
+    <p>One more line in <code>## Now</code> sets the model and effort each delegated role's agents start on: <code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>. The roles are <code>build</code>, <code>research</code>, <code>review</code> and <code>verify</code>, each written <code>model/effort</code>, either half optional. Research agents get the <code>research</code> setting, so research can run on a cheaper model than the session's. A role the line leaves out takes your own default (or a confirmed project default) when there is one, else runs as the session.</p>
+    <p>Only you set it: in your own words, or with your own command, <code>JBIT models build sonnet/medium</code>. <code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code>, and <code>JBIT models none</code> removes the line. A project default waits for your word: it counts only once you confirm it in the session, by naming its settings or typing <code>JBIT models default</code>, so a cloned repo's committed default never raises spend unasked. The status line shows the roles set, and the hook denies an agent started with a setting no role has, so Claude retries with the right one. A line that changes mid-session without your command waits until your own message names its settings.</p>
+    <p>Your own default follows you to every repo: <code>JBIT models build sonnet/medium · research sonnet/high — my default</code> sets the line and also saves those settings in JBIT's per-user store, outside every repo, and a new plan in any repo starts from it. Only your own typed command saves it; <code>JBIT models clear my default</code> removes it. Per role, the plan's line wins, then a confirmed project default, then your own default, then the session; <code>JBIT models</code> alone shows each role's setting and where it comes from.</p>
     <p>Planning and project management run in the main session, so JBIT can't set them: they stay on the session's model, set in Claude Code with <code>/model</code>. Only you set effort: Claude passes the effort the line names and never picks one itself, even for a stage that looks hard. Under <code>lean</code>, a <code>build</code> setting hands the building to one builder agent so it applies, and verify stays in the main session.</p>
   </div>
 </section>
@@ -592,7 +594,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </table></div>
 </section>
 
-<footer>JBIT 0.17.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 0.18.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>

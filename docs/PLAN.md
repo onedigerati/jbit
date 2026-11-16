@@ -7,24 +7,14 @@ Make JBIT runs cheaper without making them less careful, aimed at where the toke
 2026-11-16 · tests: 499 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 37 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 4 of 4 · Proof, docs, 0.18.0
-Mode: autopilot — unattended
+All stages done
 Agents: lean
-Risk: user input (evals and a headless run drive the `JBIT models` command and the Models line; the rest is docs and the version)
-Checks:
-- [ ] A headless autopilot run (`claude -p`) under `Models: build sonnet/medium · research sonnet/high · review opus/high` starts its research agent on Sonnet at high and its builder on Sonnet at medium, shown by the Agent calls in its transcript (proof: headless run)
-- [ ] In a headless planning run with a research list of nine items, the research goes to agents of at most three items each, shown by the Agent calls' prompts (proof: headless run)
-- [ ] `JBIT models build sonnet/medium · research sonnet/high — my default` in one scratch repo, then a fresh session planning in a second scratch repo, writes that line as the new plan's Models line (proof: headless run)
-- [ ] Evals cover the research role, small-agent briefs and the per-user default (cases in `plugins/jbit/evals/`, valid JSON, run by the eval tool or graded by hand where the sandbox can't commit) (proof: eval run or headless run)
-- [ ] The root README, the plugin README and the field guide describe the research role, small agents, the per-user default and the `CLAUDE.md` default waiting for the user's word; none still says a role left out simply runs as the session or that a new plan starts from an unconfirmed `CLAUDE.md` default (proof: docs check)
-- [ ] The plugin is 0.18.0 in its manifest and the marketplace, with a changelog entry, and the suite, docs checks and validate are green (proof: test, CLI run)
-Open: none
 
 ## Stages
 - [x] 1. Research role — `research` on the Models line, command, status line, hint, Agent check, skills
 - [x] 2. Small agents — brief rules in plan, stage, autopilot, review: batch sizing, narrow reading, short handoff reports
 - [x] 3. Per-user default — `… — my default` in `$.store`, precedence plan > confirmed `CLAUDE.md` > user default > session, `JBIT models` shows each role's source
-- [ ] 4. Proof, docs, 0.18.0 — headless run, evals, READMEs and field guide, version
+- [x] 4. Proof, docs, 0.18.0 — headless run, evals, READMEs and field guide, version
 
 ## Decisions
 - 2026-11-16 · Plan from the eVelo token-spend analysis (57 sessions, 276 subagent transcripts, cost weighted cache read 0.1×, cache write 2×, output 5×): model routing and agent size are the levers worth building first; lighter verify and review (`Checks: light`) wait until this plan's savings are measured — the user's pick in this session ("A and B", then "include" the per-user default).
@@ -37,6 +27,9 @@ Open: none
 - 2026-11-16 · (unattended) Stage 1 review fix: a changed Models line needs each added or changed role named as a word, besides its values — without it, adding `research` with values already on the line was confirmed by a prompt that never said "research"; tying each value to its role is deferred as a larger change to the confirmation rule.
 - 2026-11-16 · (unattended) Stage 3: the user's own default fills each role the plan's line leaves out, as the precedence says, so `JBIT models none` or `<role> none` holds for the session only; the notice says so and names `JBIT models clear my default` — keeping the planned precedence over a sticky "none", which the store can't tell apart from no line.
 - 2026-11-16 · (unattended) Stage 3: `… — my default` merges the named roles into the stored default rather than replacing it, and saves nothing when the store can't be read first, so a partial save never drops stored roles unseen — review finding.
+- 2026-11-16 · (unattended) Stage 4 risk line corrected to docs only: the diff touches skill text, READMEs, field guide, eval cases and the version, no hook code, so no security review.
+- 2026-11-16 · (unattended) Stage 4: `jbit:plan`'s description says to load it before any research for a plan — a headless run researched nine items inline before loading it, so the batch rule never applied; skill text, not a hook, as the agent-size decision says.
+- 2026-11-16 · (unattended) Stage 4: the 0.18.0 changelog is the plan's `## Shipped` line, as for 0.17.0; the repo keeps no changelog file.
 - 2026-11-16 · Scale: 4 stages, one release; no signal fired, one plan.
 
 ## Open questions
@@ -103,3 +96,4 @@ Open: none
 - 2026-11-14 · Headless rules: the user's own JBIT command carries its working rules beside the prompt, so a headless run (`claude -p`) or a session's first turn loads jbit:autopilot and writes the Mode line; a stage-closing commit gets a progress-note reminder (headless Sonnet and Opus still leave the note to the final report) (0.15.0) — [plan](plans/2026-11-14-headless-rules.md) · [evidence](plans/2026-11-14-headless-rules/evidence/)
 - 2026-11-14 · Headless progress and commit gate: the progress note between stages is for when someone reads along, a headless run leaves it to the final report; under autopilot a line that writes the plan and commits is refused, and a close found after the run is checked against its commit and flagged to reopen (0.16.0, pushed) — [plan](plans/2026-11-14-headless-progress-commit-gate.md) · [evidence](plans/2026-11-14-headless-progress-commit-gate/evidence/)
 - 2026-11-15 · Models and research fetches: a `Models: build … · review … · verify …` line sets each delegated role's model and effort, by the user's words, `JBIT models …` or a `CLAUDE.md` default, shown in the status line and checked by the hook on each Agent call; read-only `curl`/`wget` GETs pass autopilot's outward check (0.17.0) — [plan](plans/2026-11-15-models-research-fetches.md) · [evidence](plans/2026-11-15-models-research-fetches/evidence/)
+- 2026-11-16 · Research role, small agents, per-user default: `research` is a Models-line role, so research agents run on their own model and effort; skills brief every delegated agent small (a few items each, narrow reading, short handoff); `JBIT models … — my default` keeps a per-user default used in every repo, and a `CLAUDE.md` default waits for the user's word (0.18.0) — [evidence](evidence/)

@@ -1,0 +1,95 @@
+$ (repo A) claude -p "JBIT models build sonnet/medium · research sonnet/high — my default" --plugin-dir /home/jonah/repos/jbit/plugins/jbit --model sonnet --max-turns 15 --allowedTools Read Glob Grep Write Edit Skill --output-format stream-json --verbose
+#  then (repo B, a fresh repo with no plan) claude -p "JBIT plan: a tiny word-count library — countWords(text) returning the number of words, with tests. Plan it only; don't build." (same flags), then (repo A) claude -p "JBIT models clear my default" to leave the store as it was (no jbit entry before the run).
+# Repo A: plugins/jbit/evals/models-my-default/scaffold.sh. Repo B: package.json, src/index.js, CLAUDE.md, one commit, no docs/. Claude Code 2.1.325, jbit 0.18.0 from the working tree.
+
+## Repo A: the command
+INIT model=claude-sonnet-5-5 plugins=['jbit', 'tokeneconomizer', 'cc-plugin-agents-md', 'cc-plugin-telemetry', 'cc-plugin-privacy', 'cc-plugin-plugin-authoring'] permissionMode=auto
+TOOL: Read {"file_path": "<scaffold>/docs/PLAN.md"}
+TOOL: Edit {"replace_all": false, "file_path": "<scaffold>/docs/PLAN.md", "old_string": "Open: none\n\n## Stages", "new_string": "Open: none\nModels: build sonnet/medium \u00b7 research sonnet/high\n\n## Stages"}
+TOOL: Edit {"replace_all": false, "file_path": "<scaffold>/docs/PLAN.md", "old_string": "- 2026-11-01 \u00b7 Slugs are ASCII only", "new_string": "- 2026-11-01 \u00b7 Slugs are ASCII only\n- 2026-11-16 \u00b7 Models: build sonnet/medium \u00b7 research sonnet/high, set by the user's `JBIT models` command"}
+TEXT: I set the Models line in `docs/PLAN.md` to `Models: build sonnet/medium · research sonnet/high` and logged it as a dated decision. The plan has no Agents line, so I put the Models line at the end of `## Now` rather than beside one. Agents for those roles start with these settings from now on. It's also saved as your default, so any repo whose plan has no Models line starts from it, and a plan's own line or a project default you confirm still wins per role.
+RESULT: subtype=success turns=4 cost=0.1137585
+I set the Models line in `docs/PLAN.md` to `Models: build sonnet/medium · research sonnet/high` and logged it as a dated decision. The plan has no Agents line, so I put the Models line at the end of `## Now` rather than beside one. Agents for those roles start with these settings from now on. It's also saved as your default, so any repo whose plan has no Models line starts from it, and a plan's own line or a project default you confirm still wins per role.
+
+## Model each agent's own messages ran on
+
+## The per-user store after repo A (~/.claude/plugins/store/jbit_inline-*.json)
+{ "models": "build sonnet/medium · research sonnet/high" }
+
+## Repo B: a new session plans
+INIT model=claude-sonnet-5-5 plugins=['jbit', 'tokeneconomizer', 'cc-plugin-agents-md', 'cc-plugin-telemetry', 'cc-plugin-privacy', 'cc-plugin-plugin-authoring'] permissionMode=auto
+TOOL: Skill {"skill": "jbit:plan", "args": "a tiny word-count library \u2014 countWords(text) returning the number of words, with tests. Plan it only; don't build."}
+TOOL: Bash {"command": "ls -la && git ls-files && cat package.json 2>/dev/null; ls docs 2>/dev/null"}
+TOOL ERROR: "Exit code 2\ntotal 24\ndrwxr-xr-x  4 jonah jonah 4096 Nov 16 10:57 .\ndrwx------ 11 jonah jonah 4096 Nov 16 10:57 ..\ndrwxr-xr-x  8 jonah jonah 4096 Nov 16 10:57 .git\n-rw-r--r--  1 jonah jonah   26 Nov 16 10:57 CLAUDE.md\n-rw-r--r--  1 jonah jonah   96 Nov 16 10:57 package.json\ndrwxr-xr-x  2 jonah jonah 4096 Nov 16 10:57 src\nCLAUDE.md\npackage.json\nsrc/index.js\n{ \"name\": \"tally\", \"version\": \"1.0.0\", \"type\": \"module\", \"scripts\": { \"test\": \"node --test\" } }"
+TOOL: Bash {"command": "cat src/index.js; npm test 2>&1 | tail -8"}
+TOOL: Write {"file_path": "<scaffold>/docs/PLAN.md", "content": "# tally plan\n\n## Goal\nA tiny, dependency-free ESM library whose `countWords(text)` returns the number of words in a string, with tests run by `npm test`. Done = the function is exported from `src/index.js`, its edge cases are covered by passing
+TEXT: The plan is in `docs/PLAN.md`. Nothing is built, and nothing is committed.
+
+**Baseline:** `src/index.js` is just `export {}`, and `npm test` finds no tests, so 0 run and 0 failed.
+
+**Plan:** one stage, since the work is a few lines and a test file.
+1. **countWords:** export `countWords(text)` from `src/index.js`, with tests in `src/index.test.js` using the built-in `node:test`.
+
+Each check below is proven by an automated test:
+- `"hello world"` gives 2 and `"one"` gives 1.
+- `""` and whitespace-only strings give 0.
+- Mixed tabs, newlines and extra spaces don't create extra words, so `"  a \t b\n\nc  "` gives 3.
+- Non-string input throws a `TypeError`.
+- `npm test` exits 0.
+
+**Defaults I chose, which you can change:**
+- A word is any run of non-whitespace characters, the same rule as `wc -w`. So `don't` and `well-known` each count as one word.
+- Non-string input throws a `TypeError` instead of being coerced or returning 0.
+- No research or extra agents are needed, and the plan uses your default models line.
+
+**Open question:** should a lone punctuation token like `—` count as a word? I default to yes, matching `wc -w`.
+
+Say the word to start it, either stage by stage or on autopilot.
+RESULT: subtype=success turns=6 cost=0.17744699999999997
+The plan is in `docs/PLAN.md`. Nothing is built, and nothing is committed.
+
+**Baseline:** `src/index.js` is just `export {}`, and `npm test` finds no tests, so 0 run and 0 failed.
+
+**Plan:** one stage, since the work is a few lines and a test file.
+1. **countWords:** export `countWords(text)` from `src/index.js`, with tests in `src/index.test.js` using the built-in `node:test`.
+
+Each check below is proven by an automated test:
+- `"hello world"` gives 2 and `"one"` gives 1.
+- `""` and whitespace-only strings give 0.
+- Mixed tabs, newlines and extra spaces don't create extra words, so `"  a \t b\n\nc  "` gives 3.
+- Non-string input throws a `TypeError`.
+- `npm test` exits 0.
+
+**Defaults I chose, which you can change:**
+- A word is any run of non-whitespace characters, the same rule as `wc -w`. So `don't` and `well-known` each count as one word.
+- Non-string input throws a `TypeError` instead of being coerced or returning 0.
+- No research or extra agents are needed, and the plan uses your default models line.
+
+**Open question:** should a lone punctuation token like `—` count as a word? I default to yes, matching `wc -w`.
+
+Say the word to start it, either stage by stage or on autopilot.
+
+## Model each agent's own messages ran on
+
+## Repo B: docs/PLAN.md ## Now as written
+## Now
+Stage 1 of 1 · countWords
+Models: build sonnet/medium · research sonnet/high
+Risk: UI only
+Checks:
+- [ ] `countWords("hello world")` returns 2 and `countWords("one")` returns 1 (proof: test)
+- [ ] Empty, whitespace-only, and non-string-empty inputs (`""`, `"   \n\t"`) return 0 (proof: test)
+- [ ] Runs of mixed whitespace (spaces, tabs, newlines) and leading/trailing whitespace don't create extra words, e.g. `"  a \t b\n\nc  "` returns 3 (proof: test)
+- [ ] Non-string input (`null`, `undefined`, number) throws a `TypeError` (proof: test)
+- [ ] `npm test` runs the new tests and exits 0 (proof: test)
+Open: none
+
+## Stages
+
+## Repo A: clear my default
+RESULT: subtype=success turns=1 cost=0.1838463
+Your `Models` default (`build sonnet/medium · research sonnet/high`) is cleared. No repo starts from it now, and agents in this session no longer fall back on it. I haven't changed `docs/PLAN.md`.
+
+## Model each agent's own messages ran on
+## Store after clear
+{}

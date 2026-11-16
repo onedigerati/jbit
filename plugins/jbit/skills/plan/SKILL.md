@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Create or update the project's single plan file (docs/PLAN.md) — goal, current position, stages with acceptance checks and risk, dated decisions, open questions — and start a fresh plan once the current one's goal is met. Use when starting a multi-step project or the next body of work (one feature, several, or a milestone), when the user makes or changes a decision worth keeping, when scope or direction shifts, or when asked to plan or re-plan. Also when a message opens with "JBIT plan" (any case, after a space, comma or colon, as in "JBit, plan"), which works as `/jbit:plan`.
+description: Create or update the project's single plan file (docs/PLAN.md) — goal, current position, stages with acceptance checks and risk, dated decisions, open questions — and start a fresh plan once the current one's goal is met. Use when starting a multi-step project or the next body of work (one feature, several, or a milestone), when the user makes or changes a decision worth keeping, when scope or direction shifts, or when asked to plan or re-plan, and before any research for a plan ("research X and plan it"): its research step sets how research is split among agents. Also when a message opens with "JBIT plan" (any case, after a space, comma or colon, as in "JBit, plan"), which works as `/jbit:plan`.
 ---
 
 # JBIT: plan

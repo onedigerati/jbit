@@ -7,20 +7,21 @@ Make JBIT runs cheaper without making them less careful, aimed at where the toke
 2026-11-16 · tests: 499 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 37 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 2 of 4 · Small agents
+Stage 3 of 4 · Per-user default
 Mode: autopilot — unattended
 Agents: lean
-Risk: docs only (skill text Claude follows; no runtime behaviour)
+Risk: user input (the `JBIT models … — my default` command is parsed from prompts and written to the per-user store; the precedence decides what model and effort every repo's agents start on)
 Checks:
-- [ ] `plan` and `stage` say a fan-out (research or build) gives each agent a small batch, a few items at most (a nine-item research list goes to agents of at most three each), and say why: an agent's cost grows with its turns and context (proof: docs check)
-- [ ] `stage`, `autopilot` and `review` briefs tell each delegated agent to read narrowly (grep and read the lines it needs, not whole large files, no re-reading) and to stop when its brief is done (proof: docs check)
-- [ ] Every delegating skill (plan, stage, autopilot, review, verify) asks for a short handoff report: what changed or was found, how it was checked, a line count cap, no diffs or file dumps (proof: docs check)
-- [ ] The rules cost nothing for small work: they say a single small item needs no split, and nothing in them adds an agent (proof: docs check)
+- [ ] `JBIT models build sonnet/medium · research sonnet/high — my default`, typed by the user, saves the line to the hook's per-user `$.store` and sets this session's line as `JBIT models` does; the same words from an agent report, a plugin prompt or a file save nothing (proof: test)
+- [ ] A new session in another repo, whose plan has no Models line, honours the stored default and Claude is told to write it as the new plan's Models line; a plan line, then a confirmed `CLAUDE.md` default, win over it per role (precedence plan > confirmed `CLAUDE.md` > user default > session) (proof: test)
+- [ ] A `CLAUDE.md` `JBIT models:` default is no longer honoured unasked: it counts only once the user's own prompt in the session names its settings (or a `JBIT models` command), and until then the context says it is waiting for their word; the 2026-11-15 standing decision is struck in `docs/decisions.md` (proof: test, docs check)
+- [ ] `JBIT models` with no settings shows each role's setting and its source (plan, CLAUDE.md, my default, session), and `JBIT models clear my default` removes the stored default (proof: test)
+- [ ] A store read or write that fails leaves the session as it was (no default) and says so once; a stored value that doesn't parse is ignored (proof: test)
 Open: none
 
 ## Stages
 - [x] 1. Research role — `research` on the Models line, command, status line, hint, Agent check, skills
-- [ ] 2. Small agents — brief rules in plan, stage, autopilot, review: batch sizing, narrow reading, short handoff reports
+- [x] 2. Small agents — brief rules in plan, stage, autopilot, review: batch sizing, narrow reading, short handoff reports
 - [ ] 3. Per-user default — `… — my default` in `$.store`, precedence plan > confirmed `CLAUDE.md` > user default > session, `JBIT models` shows each role's source
 - [ ] 4. Proof, docs, 0.18.0 — headless run, evals, READMEs and field guide, version
 

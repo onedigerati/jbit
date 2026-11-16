@@ -595,3 +595,47 @@ test('the models-line and research-fetch eval cases exist with a case.yaml, scaf
   const fetch = read(join(plugin, 'evals', 'research-fetch', 'case.yaml'))
   for (const g of ['runs-the-get', 'post-held-with-webfetch-pointer']) assert.ok(fetch.includes(`name: ${g}\n`), `research-fetch lacks the ${g} grader`)
 })
+
+// Small agents (0.18.0): one shared phrasing, echoed in each delegating skill.
+const SMALL_BATCH = 'A fan-out, research or build, gives each agent a small batch, a few items at most (a nine-item research list goes to agents of at most three each): an agent\'s cost grows with its turns and context.'
+const NO_SPLIT = 'A single small item needs no split, and the rule adds no agent: the Agents line still sets how many run (under `lean`, the batches go one after another).'
+const READ_NARROWLY = 'read narrowly (grep and read the lines it needs, not whole large files, no re-reading) and stop when its brief is done'
+const HANDOFF = 'a short handoff report: what changed or was found, how it was checked, 20 lines at most, no diffs or file dumps'
+
+test('plan and stage give a fan-out small batches, a few items each, and say why: cost grows with turns and context', () => {
+  for (const name of ['plan', 'stage']) assert.ok(skill(name).includes(SMALL_BATCH), `${name} SKILL.md lacks the small-batch rule`)
+  const plan = skill('plan')
+  const at = plan.indexOf(SMALL_BATCH)
+  assert.ok(at > plan.indexOf('**Research what the plan turns on outside the repo.**') && at < plan.indexOf('Cut the work into stages'), 'plan: the batch rule sits in the research step')
+  const stage = skill('stage')
+  assert.ok(stage.indexOf(SMALL_BATCH) > stage.indexOf('**Brief subagents like peers.**'), 'stage: the batch rule follows the brief bullet')
+})
+
+test('stage, autopilot and review briefs tell each agent to read narrowly and stop when its brief is done', () => {
+  for (const name of ['stage', 'autopilot', 'review']) assert.ok(skill(name).includes(READ_NARROWLY), `${name} SKILL.md lacks the read-narrowly rule`)
+  assert.ok(skill('review').includes(`- how to work: ${READ_NARROWLY};`), 'review: the reviewer brief lacks the how-to-work item')
+  assert.ok(skill('autopilot').includes(`have each brief tell the agent to ${READ_NARROWLY}`), 'autopilot: the builder brief lacks the read-narrowly rule')
+})
+
+test('every delegating skill asks for a short handoff report with a line cap and no diffs or dumps', () => {
+  for (const name of ['plan', 'stage', 'autopilot', 'review', 'verify']) assert.ok(skill(name).includes(HANDOFF), `${name} SKILL.md lacks the handoff-report rule`)
+  assert.ok(skill('verify').includes(`briefed with the stage number and this skill, and asked for ${HANDOFF}`), 'verify: the fresh verifier brief lacks the handoff report')
+})
+
+test('the small-agent rules cost nothing for small work: no split for a single small item, and they add no agent', () => {
+  for (const name of ['plan', 'stage']) assert.ok(skill(name).includes(NO_SPLIT), `${name} SKILL.md lacks the no-split rule`)
+  // no rule sentence starts, spawns or adds an agent of its own
+  const adds = /\b(spawn|start|add|launch)s?\b[^.]*\b(another|an extra|a new|more|one more)\b[^.]*\bagents?\b/i
+  for (const name of ['plan', 'stage', 'autopilot', 'review', 'verify'])
+    for (const rule of [SMALL_BATCH, NO_SPLIT, READ_NARROWLY, HANDOFF]) {
+      assert.doesNotMatch(rule, adds, `rule text adds an agent: ${rule}`)
+      const text = skill(name)
+      let i = text.indexOf(rule)
+      while (i >= 0) {
+        const sentenceStart = Math.max(text.lastIndexOf('. ', i), text.lastIndexOf('\n', i)) + 1
+        const sentenceEnd = text.indexOf('.', i + rule.length)
+        assert.doesNotMatch(text.slice(sentenceStart, sentenceEnd), adds, `${name}: the sentence carrying a small-agent rule adds an agent`)
+        i = text.indexOf(rule, i + 1)
+      }
+    }
+})

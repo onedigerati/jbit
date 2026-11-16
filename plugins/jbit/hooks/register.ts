@@ -386,7 +386,7 @@ const CHECK_COUNTS = { plugin: 'jbit', key: 'checkCounts' } as const
 const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
 /** The Models line this session honours, as `modelsText` writes it (`''` for none): see `syncModels`. */
 const MODELS_HONOURED = { plugin: 'jbit', key: 'modelsHonoured' } as const
-/** The models and efforts the latest prompt named, when it was the user's own (`namedModels`); empty otherwise. */
+/** The models, efforts and roles the latest prompt named, when it was the user's own (`namedModels`, `namedRoles`); empty otherwise. */
 const MODELS_NAMED = { plugin: 'jbit', key: 'modelsNamed' } as const
 /** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as `modelsText` writes it (`''` for none). */
 const MODELS_DEFAULT = { plugin: 'jbit', key: 'modelsDefault' } as const
@@ -565,7 +565,7 @@ export function autopilotAsk(text: string): Unattended | undefined {
  */
 const NAMED_MODELS = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)models(?:[ \t]*:|(?=$|[ \t.!,;]))/i
 
-/** The most a `JBIT models` command may hold: three roles' settings with room to spare. Longer is refused, not read. */
+/** The most a `JBIT models` command may hold: every role's settings with room to spare. Longer is refused, not read. */
 const MODELS_COMMAND_MAX = 400
 
 /** Roles that run in the main session: JBIT can't set them, and points to `/model`. */
@@ -585,7 +585,7 @@ export type ModelsAsk =
   | { kind: 'refused'; why: string }
 
 const VALID_SETTINGS =
-  'Roles are build, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line.'
+  'Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line.'
 
 /**
  * The user's own `JBIT models …` command (decided 2026-11-15), or undefined when the message isn't one. The whole
@@ -617,7 +617,7 @@ export function modelsCommand(text: string): ModelsAsk | undefined {
     if (SESSION_ROLES.has(role))
       return {
         kind: 'refused',
-        why: `\`${role}\` runs in the main session, on the model and effort set in Claude Code: change them with \`/model\` (and its effort setting). JBIT sets only the agents it starts: build, review and verify.`,
+        why: `\`${role}\` runs in the main session, on the model and effort set in Claude Code: change them with \`/model\` (and its effort setting). JBIT sets only the agents it starts: build, research, review and verify.`,
       }
     if (!e) return { kind: 'refused', why: `\`${entry}\` isn't a role and a setting. ${VALID_SETTINGS}` }
     if (!MODEL_ROLES.includes(role)) return { kind: 'refused', why: `\`${role}\` isn't a role JBIT can set. ${VALID_SETTINGS}` }
@@ -756,21 +756,38 @@ export function namedModels(text: string): string[] {
   return [...new Set([...normalised(text).matchAll(MODEL_WORDS)].map(m => (m[1] ?? '').toLowerCase()))]
 }
 
+/** A delegated role named as a word in a prompt (`MODEL_ROLES`). */
+const ROLE_WORDS = new RegExp(`\\b(${MODEL_ROLES.join('|')})\\b`, 'gi')
+
+/** The roles a prompt names as words, lowercased, each once (`ROLE_WORDS`): "reviewer" or "builds" names none. */
+export function namedRoles(text: string): string[] {
+  return [...new Set([...normalised(text).matchAll(ROLE_WORDS)].map(m => (m[1] ?? '').toLowerCase()))]
+}
+
+/** The roles `current` adds or sets differently from `honoured` (both as `modelsText` writes them); a role removed is none. */
+function changedRoles(current: Models, honoured: string): ModelRole[] {
+  const before = parseModels(`Models: ${honoured}`) ?? {}
+  return MODEL_ROLES.filter(r => current[r] && (!before[r] || settingText(before[r]!) !== settingText(current[r]!)))
+}
+
 /**
  * Keeps the Models line the session honours (decided 2026-11-15: only the user sets model and effort, and a changed line
  * is confirmed only by their naming its settings). The line as the session first reads a plan is the approved plan's and
  * is honoured; a look that finds no plan (or can't read it) records nothing, so the first look that reads one sets the
  * baseline. A line that later appears or changes is honoured only when the latest prompt was the user's own and named,
- * as words, every model and effort the line sets (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms
- * `build sonnet/medium · review opus/high`; a plain "yes", or "fix the high priority bug", doesn't. Then it becomes the
+ * as words, every model and effort the line sets and every role it adds or sets differently from the honoured line
+ * (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms `build sonnet/medium · review opus/high`; a plain
+ * "yes", or "fix the high priority bug", doesn't, and nor does "keep build on sonnet medium and review on opus high"
+ * when the change adds `research opus/high`, since it never says "research". Then it becomes the
  * honoured one. A line equal to the project default (`JBIT models:` in CLAUDE.md, as the session first read it) is
  * honoured unnamed too, but only until the user chooses a line this session (`MODELS_CHOSEN`: a `JBIT models` command,
  * or a change they named), so the default never undoes their choice. The user's `JBIT models` command sets the honoured
  * line itself (`prompt.submit`); once the plan carries it, `MODELS_PENDING` clears. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
  * until the user confirms (or the line goes back to the honoured one). A line removed is simply no line; the honoured
  * one stays, so restoring it needs nothing. Edges left: any prompt (a background agent's report, say) clears what was
- * named, so a line Claude writes after one needs the user again; words are matched, not roles, so a prompt naming the
- * values for other roles confirms too; and a line that changes in git (a checkout) is a change like any other.
+ * named, so a line Claude writes after one needs the user again; a prompt that names each changed role and, anywhere,
+ * the values still confirms, as words are not paired with roles ("research and review, opus high" confirms a line
+ * setting both); and a line that changes in git (a checkout) is a change like any other.
  */
 async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session): Promise<void> {
   const current = modelsText(plan?.models)
@@ -795,6 +812,8 @@ async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session
   if (!byDefault) {
     const named = (await $.state.get(MODELS_NAMED)).value
     if (!Array.isArray(named) || !modelsValues(plan!.models!).every(v => named.includes(v))) return
+    // and every role the change adds or sets differently must be named too: values alone may be other roles'
+    if (!changedRoles(plan!.models!, s.modelsHonoured).every(r => named.includes(r))) return
   }
   await $.state.set(MODELS_HONOURED, current)
   s.modelsHonoured = current
@@ -841,7 +860,7 @@ const ignoredModels = (plan: Plan, s: Session) => !s.modelsPending && !!plan.mod
 /**
  * Why an Agent call from the main loop breaks the honoured Models line, or undefined when it keeps it (decided
  * 2026-11-15, stage 1 review). A call naming neither model nor effort runs as the session, whatever the line sets: it
- * may be a role the line leaves out or an agent that is no role (research, Explore), which the hook can't tell from a
+ * may be a role the line leaves out or an agent that is no role (Explore), which the hook can't tell from a
  * builder. A call naming either must match one role's setting exactly, a half the role leaves unset absent from the
  * call, so Claude never picks it. A fork runs on the session's model and effort whatever it names, so one naming
  * either is refused.
@@ -1132,7 +1151,10 @@ function lineRule(plan: Plan, s: Session): string {
 function passRule(set: Models): string {
   const unset = MODEL_ROLES.filter(r => !set[r])
   const leftOut = unset.length ? ` A role it leaves out (${unset.join(', ')}) gets neither, as usual.` : ''
-  return `When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
+  const research = set.research
+    ? ` Research agents (web or domain lookups, a research fan-out) are the \`research\` role: pass ${settingText(set.research)} on them.`
+    : ''
+  return `When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${research}${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
 }
 
 function baseRules(plan: Plan, s: Session): string {
@@ -1876,7 +1898,7 @@ export const register: Register = on => {
     // the user's own `JBIT models …` command sets the honoured line itself, so it names nothing for `syncModels`
     const modelsAsk = fromUser ? modelsCommand(e.text) : undefined
     // a changed Models line counts only when the user's own prompt names its settings (`syncModels`)
-    await $.state.set(MODELS_NAMED, fromUser && !modelsAsk ? namedModels(e.text) : [])
+    await $.state.set(MODELS_NAMED, fromUser && !modelsAsk ? [...namedModels(e.text), ...namedRoles(e.text)] : [])
     // the person speaking up gives a stalled autopilot a fresh allowance
     if (e.origin.kind !== 'plugin') stalledTurns = 0
     lastPromptFromUser = fromUser

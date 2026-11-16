@@ -1,10 +1,10 @@
 /**
- * The `Models:` line: which model and effort each delegated JBIT role (build, review, verify) starts its agents on.
+ * The `Models:` line: which model and effort each delegated JBIT role (build, research, review, verify) starts its agents on.
  * Shared by the hook and the project rules, which read a `JBIT models:` default from `CLAUDE.md`.
  */
 
 /** The delegated roles a `Models:` line can set; planning and project management stay on the session's model. */
-export const MODEL_ROLES = ['build', 'review', 'verify'] as const
+export const MODEL_ROLES = ['build', 'research', 'review', 'verify'] as const
 export type ModelRole = (typeof MODEL_ROLES)[number]
 const MODEL_NAMES = ['sonnet', 'opus', 'haiku', 'fable'] as const
 const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const
@@ -51,7 +51,7 @@ export function modelsValues(models: Models): string[] {
 
 /** The accepted form, for the note on a Models line that sets nothing. */
 export const MODELS_FORM =
-  '`Models: build sonnet/medium · review opus/high · verify sonnet/medium` (roles build, review, verify; model sonnet, opus, haiku or fable; effort low, medium, high, xhigh or max; either half optional)'
+  '`Models: build sonnet/medium · research sonnet/high · review opus/high · verify sonnet/medium` (roles build, research, review, verify; model sonnet, opus, haiku or fable; effort low, medium, high, xhigh or max; either half optional)'
 
 /** The roles set, in role order (`build sonnet/medium · review opus/high`): also the canonical form the session compares. */
 export function modelsText(models: Models | undefined, short = false): string {

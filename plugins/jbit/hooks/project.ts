@@ -66,7 +66,7 @@ export const NO_RULES: ProjectRules = Object.freeze({ risk: [], outward: [] }) a
  */
 const RULE_LINE = /^(?:[-*+][ \t]+|\d{1,9}[.)][ \t]+)?[*_`]{0,3}(?:jbit|keel)[ \t]+(risk|outward|models)[*_`]{0,3}[ \t]*:[*_`]{0,3}/i
 
-/** The most of a `JBIT models:` line kept: far more than three roles' settings need. */
+/** The most of a `JBIT models:` line kept: far more than every role's settings need. */
 const MODELS_MAX = 200
 
 /** A fence line (```` ``` ```` or `~~~`, indented or not): rule lines between fences are examples, not rules. */

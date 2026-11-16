@@ -2873,7 +2873,7 @@ test('the working rules say which model and effort to pass per role, never to ch
   expect(text).toContain("Models: the plan's Models line sets build sonnet/medium · review opus/high.")
   expect(text).toContain("pass the role's model and effort on the Agent call (`model`, `effort`), and only what the line sets for it (leave out a half it doesn't set)")
   expect(text).toContain('pass the effort the line names and never choose one yourself')
-  expect(text).toContain('A role it leaves out (verify) gets neither, as usual.')
+  expect(text).toContain('A role it leaves out (research, verify) gets neither, as usual.')
   expect(text).toContain("Planning and project management stay on the session's model and effort")
 })
 
@@ -3065,6 +3065,26 @@ test('a new Models line is honoured when the user names all its values', async (
   expect(r.text).not.toContain(IGNORED)
 })
 
+test('research: adding research opus/high is not honoured by a prompt that names the values but not "research"', async ($, on) => {
+  const r = await confirmModels($, on, MODELS, 'keep build on sonnet medium and review on opus high', 'Models: build sonnet/medium · research opus/high · review opus/high')
+  expect(r.band).toContain('jbit · 1/3 done')
+  expect(r.band).not.toContain('research')
+  expect(r.text).toContain(IGNORED)
+})
+
+test('research: adding research opus/high is honoured when the user names research with its values', async ($, on) => {
+  const r = await confirmModels($, on, MODELS, 'build sonnet/medium, research opus/high, review opus/high', 'Models: build sonnet/medium · research opus/high · review opus/high')
+  expect(r.band).toContain('build sonnet/med · research opus/high · review opus/high')
+  expect(r.text).not.toContain(IGNORED)
+})
+
+test('research: changing review to values already on the line is not honoured without naming "review"', async ($, on) => {
+  const r = await confirmModels($, on, MODELS, 'keep sonnet medium and opus high', 'Models: build sonnet/medium · review sonnet/medium')
+  expect(r.band).toContain('jbit · 1/3 done')
+  expect(r.band).not.toContain('review sonnet')
+  expect(r.text).toContain(IGNORED)
+})
+
 test('a look that cannot read the plan records no Models baseline: the first look that reads it sets it', async ($, on) => {
   const plan = { text: planWith(MODELS), broken: ['docs/PLAN.md'] }
   engine(on, plan)
@@ -3092,7 +3112,7 @@ test('a Models line that sets no role gets a "not understood" note, and Agent ca
   expect(r.band).toBe(BAND)
   const note = r.text.split('\n').filter(l => l.includes("the plan's Models line is not understood"))
   expect(note).toHaveLength(1)
-  expect(r.text).toContain('the form is `Models: build sonnet/medium · review opus/high · verify sonnet/medium`')
+  expect(r.text).toContain('the form is `Models: build sonnet/medium · research sonnet/high · review opus/high · verify sonnet/medium`')
   expect((await $.tool.call({ tool: 'Agent', description: 'b', prompt: 'b', model: 'haiku', effort: 'max' } as never)).deny).toBeUndefined()
 })
 
@@ -3194,7 +3214,7 @@ test('an unknown role or value is refused listing the valid ones, the line left 
   for (const said of ['JBIT models builder sonnet', 'JBIT models build gpt5/high', 'JBIT models review opus/extreme', 'JBIT models build sonnet medium', 'JBIT models build sonnet, build opus', 'JBIT models']) {
     const ask = modelsCommand(said)
     expect(ask?.kind).toBe('refused')
-    expect((ask as { why: string }).why).toContain('Roles are build, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max')
+    expect((ask as { why: string }).why).toContain('Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max')
   }
   const { compose, entry } = await modelsSaid($, on, MODELS, 'JBIT models build turbo/high')
   expect(entry).toContain('was refused, and the Models line is left as it is')
@@ -3370,6 +3390,99 @@ test('near-miss JBIT models commands are read or refused, never passed over as t
 test('CLAUDE.md\'s first JBIT models line that sets a role is the default; one that sets nothing is passed over', () => {
   expect(parseProjectRules('JBIT models: turbo\nJBIT models: Build Sonnet / Medium, review opus').models).toBe('build sonnet/medium · review opus')
   expect(parseProjectRules('JBIT models: plan opus').models).toBeUndefined()
+})
+
+// ---- the research role (0.18.0) ----
+
+const RESEARCH = 'Models: build sonnet/medium · research sonnet/high · review opus/high'
+
+test('research: Models: research sonnet/high parses, round-trips through modelsText, and a CLAUDE.md default reads it the same way', () => {
+  expect(parseModels('Models: research sonnet/high')).toEqual({ research: { model: 'sonnet', effort: 'high' } })
+  expect(modelsText(parseModels('Models: research sonnet/high'))).toBe('research sonnet/high')
+  expect(parsePlan('PLAN.md', planWith('Models: research sonnet/high')).models).toEqual({ research: { model: 'sonnet', effort: 'high' } })
+  // canonical order is build · research · review · verify, whatever order the line is written in
+  expect(modelsText(parseModels('Models: verify haiku · review opus/high · research Sonnet / High · build sonnet/medium'))).toBe(
+    'build sonnet/medium · research sonnet/high · review opus/high · verify haiku',
+  )
+  expect(parseProjectRules('JBIT models: research sonnet/high').models).toBe('research sonnet/high')
+  expect(parseProjectRules('**JBIT models:** review opus/high, research: sonnet/high').models).toBe('research sonnet/high · review opus/high')
+})
+
+test('research: JBIT models research sonnet/high sets only that role; research default and none work like the other roles', () => {
+  const ask = modelsCommand('JBIT models research sonnet/high')
+  expect(ask).toEqual({ kind: 'set', set: { research: { model: 'sonnet', effort: 'high' } }, defaulted: [], cleared: [] })
+  expect(modelsAfter(parseModels(ALL_ROLES), ask as never, undefined)).toBe('build sonnet/medium · research sonnet/high · review opus/high · verify sonnet/medium')
+  expect(modelsAfter(parseModels(RESEARCH), modelsCommand('JBIT models research none') as never, undefined)).toBe('build sonnet/medium · review opus/high')
+  expect(modelsAfter(parseModels(RESEARCH), modelsCommand('JBIT models research off') as never, undefined)).toBe('build sonnet/medium · review opus/high')
+  expect(modelsAfter(parseModels(MODELS), modelsCommand('JBIT models research default') as never, 'research haiku/low')).toBe('build sonnet/medium · research haiku/low · review opus/high')
+  expect(modelsAfter(parseModels(RESEARCH), modelsCommand('JBIT models research default') as never, 'build opus')).toBe('build sonnet/medium · review opus/high')
+})
+
+test('research: a bad research value is refused with the valid forms, which list research', async ($, on) => {
+  for (const said of ['JBIT models research gpt5/high', 'JBIT models research sonnet/extreme', 'JBIT models research sonnet, research opus']) {
+    const ask = modelsCommand(said)
+    expect(ask?.kind).toBe('refused')
+    expect((ask as { why: string }).why).toContain('Roles are build, research, review and verify')
+  }
+  expect((modelsCommand('JBIT models plan opus') as { why: string }).why).toContain('JBIT sets only the agents it starts: build, research, review and verify.')
+  const { entry } = await modelsSaid($, on, MODELS, 'JBIT models research turbo/high')
+  expect(entry).toContain('was refused, and the Models line is left as it is')
+})
+
+test('research: the status line and the context hint show the research setting and say to pass it on research agents', async ($, on) => {
+  engine(on, { text: planWith(`Agents: lean\n${RESEARCH}`) })
+  const r = await composeJBIT($, on)()
+  expect(r.band).toBe('jbit · lean · build sonnet/med · research sonnet/high · review opus/high · 1/3 done · next: 2. Share mode')
+  expect(r.text).toContain("Models: the plan's Models line sets build sonnet/medium · research sonnet/high · review opus/high.")
+  expect(r.text).toContain('Research agents (web or domain lookups, a research fan-out) are the `research` role: pass sonnet/high on them.')
+  expect(r.text).toContain('A role it leaves out (verify) gets neither, as usual.')
+})
+
+test('research: with no research setting, the hint names research among the roles left out', async ($, on) => {
+  engine(on, { text: planWith(MODELS) })
+  const { text } = await composeJBIT($, on)()
+  expect(text).toContain('A role it leaves out (research, verify) gets neither, as usual.')
+  expect(text).not.toContain('Research agents (web or domain lookups')
+})
+
+test('research: an Agent call naming sonnet/high passes when research sets it', async ($, on) => {
+  expect(await modelsCall($, on, RESEARCH, { model: 'sonnet', effort: 'high' })).toBeUndefined()
+})
+
+test('research: with research set, a call naming neither still runs as the session, so Explore agents are unchanged', async ($, on) => {
+  expect(await modelsCall($, on, RESEARCH, { subagent_type: 'Explore' })).toBeUndefined()
+  expect(modelsDenial(parseModels(RESEARCH)!, {})).toBeUndefined()
+})
+
+test('research: an Agent call naming sonnet/high is denied, naming every role\'s setting, research included, when no role sets it', async ($, on) => {
+  const line = 'Models: build sonnet/medium · research haiku/low · review opus/high · verify sonnet/medium'
+  expect(await modelsCall($, on, line, { model: 'sonnet', effort: 'high' })).toBe(
+    "JBIT: the plan's Models line sets build sonnet/medium · research haiku/low · review opus/high · verify sonnet/medium. Start this agent with exactly the setting for its role (its model and effort, and nothing the line leaves out for it). An agent for none of these roles names neither, and runs as the session.",
+  )
+})
+
+test('research: a changed line that adds research is ignored until the user names its settings', async ($, on) => {
+  const plain = await confirmModels($, on, MODELS, 'yes', RESEARCH)
+  expect(plain.text).toContain(IGNORED)
+  expect(plain.text).toContain('(e.g. "build sonnet/medium, research sonnet/high, review opus/high")')
+  expect(plain.band).not.toContain('research')
+})
+
+test('research: a changed line that adds research is honoured once the user names its settings', async ($, on) => {
+  const named = await confirmModels($, on, MODELS, 'build sonnet/medium, research sonnet/high, review opus/high', RESEARCH)
+  expect(named.text).not.toContain(IGNORED)
+  expect(named.band).toContain('research sonnet/high')
+})
+
+test('research: a changed research setting is honoured once the user names it', async ($, on) => {
+  const named = await confirmModels($, on, RESEARCH, 'build sonnet/medium, research haiku/low, review opus/high', 'Models: build sonnet/medium · research haiku/low · review opus/high')
+  expect(named.text).not.toContain(IGNORED)
+  expect(named.band).toContain('research haiku/low')
+})
+
+test('research: changing only research is not honoured by a prompt naming only part of the new line', async ($, on) => {
+  const r = await confirmModels($, on, RESEARCH, 'research on haiku', 'Models: build sonnet/medium · research haiku/low · review opus/high')
+  expect(r.text).toContain(IGNORED)
 })
 
 // ---- the roadmap ----

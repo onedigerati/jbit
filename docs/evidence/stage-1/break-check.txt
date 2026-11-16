@@ -1,0 +1,14 @@
+$ claude plugin test plugins/jbit   # with research removed from MODEL_ROLES (break check, then restored)
+(fail) the working rules say which model and effort to pass per role, never to choose an effort, and that planning stays on the session model [69.59ms]
+(fail) research: Models: research sonnet/high parses, round-trips through modelsText, and a CLAUDE.md default reads it the same way [0.14ms]
+(fail) research: JBIT models research sonnet/high sets only that role; research default and none work like the other roles [0.12ms]
+(fail) research: the status line and the context hint show the research setting and say to pass it on research agents [73.55ms]
+(fail) research: with no research setting, the hint names research among the roles left out [71.64ms]
+(fail) research: an Agent call naming sonnet/high passes when research sets it [55.90ms]
+(fail) research: an Agent call naming sonnet/high is denied, naming every role's setting, research included, when no role sets it [58.17ms]
+(fail) research: a changed line that adds research is ignored until the user names its settings [66.60ms]
+(fail) research: a changed line that adds research is honoured once the user names its settings [69.64ms]
+(fail) research: a changed research setting is honoured once the user names it [65.21ms]
+(fail) research: changing only research is not honoured by a prompt naming only part of the new line [62.10ms]
+ 500 pass
+ 11 fail

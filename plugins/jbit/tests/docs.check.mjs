@@ -488,11 +488,22 @@ test('under lean with a build setting, jbit:stage hands building to one builder 
   assert.ok(skill('verify').includes('Under `lean`, verify stays in the main session'), 'verify SKILL.md lacks: under lean, verify stays in the main session')
 })
 
+/** What plan, stage and autopilot say of research agents: the Models line's `research` setting, its halves as the line sets them. */
+const RESEARCH_SETTING = "Research agents (web or domain lookups, a research fan-out) get the line's `research` setting: pass its model and effort on the Agent call, and leave out a half it doesn't set."
+
+test('plan, stage and autopilot give research agents the research setting, and stage no longer calls research no role', () => {
+  for (const name of ['plan', 'stage', 'autopilot']) assert.ok(skill(name).includes(RESEARCH_SETTING), `${name} SKILL.md lacks: ${RESEARCH_SETTING}`)
+  assert.ok(skill('plan').includes("started with the Models line's `research` setting"), 'plan SKILL.md step 3 lacks the research setting')
+  for (const name of ['plan', 'stage', 'autopilot'])
+    assert.doesNotMatch(skill(name), /no role \([^)]*research/i, `${name} SKILL.md still calls research no role`)
+  assert.doesNotMatch(readmes.plugin, /research or Explore agent, which is no role/, 'plugin README still calls research no role')
+})
+
 test('plan describes the Models line: roles, form, a role left out runs as the session, only the user sets it, and a new plan starts from the CLAUDE.md default', () => {
   const text = skill('plan')
   for (const words of [
-    '`Models: build sonnet/medium · review opus/high · verify sonnet/medium`',
-    'The roles are `build`, `review` and `verify`, each written `model/effort` (either half optional)',
+    '`Models: build sonnet/medium · research sonnet/high · review opus/high · verify sonnet/medium`',
+    'The roles are `build`, `research`, `review` and `verify`, each written `model/effort` (either half optional)',
     'A role left out runs as the session',
     'Only the user sets it',
     'a `JBIT models …` command',
@@ -511,7 +522,7 @@ test('READMEs and the field guide describe the Models line, JBIT models, the CLA
   const phrases = {
     root: [
       '`Models: build sonnet/medium · review opus/high`',
-      '`build`, `review` and `verify`, each `model/effort`',
+      '`build`, `research`, `review` and `verify`, each `model/effort`',
       'A role left out runs as the session.',
       '`JBIT models build sonnet/medium`',
       '`JBIT models default` goes back to the project default (a `JBIT models:` line in `CLAUDE.md`',

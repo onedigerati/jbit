@@ -766,3 +766,10 @@ test('the research-role, research-batches and models-my-default eval cases exist
 test('plan\'s description says to load it before any research for a plan, so its batch rule applies', () => {
   assert.match(description('plan'), /before any research for a plan/)
 })
+
+test('the plugin README says how to set a role agent\'s model and effort for one project or every repo', () => {
+  const m = /\n### Role agents\n([\s\S]*?)\n### /.exec(readmes.plugin)
+  assert.ok(m, 'plugin README lacks a ### Role agents section')
+  for (const words of ['.claude/agents/', '~/.claude/agents/', 'model:', 'effort:'])
+    assert.ok(m[1].includes(words), `Role agents section lacks ${words}`)
+})

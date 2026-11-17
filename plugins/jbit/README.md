@@ -179,6 +179,29 @@ then `## Out of scope` and `## Open questions`. Rows are never deleted, and `Cov
 
 A project without `docs/ROADMAP.md` behaves exactly as before: there's no setting, no roadmap line, no milestone gate and no extra checks. The layer is on only when the file is there.
 
+### Role agents
+
+JBIT's skills hand delegated work to four role agents, defined in the plugin's `agents/` folder:
+
+- **`builder`** builds one leaf of a stage: writes the code and its tests, runs them, and reports back.
+- **`reviewer`** reviews work it didn't write, with fresh eyes, against the plan's intent.
+- **`verifier`** checks finished work against the running product and the project's own checks.
+- **`researcher`** looks up a research question (web or domain) for a plan or a stage and reports what it found.
+
+The plugin's files set no model or effort, so each role runs as the session. Because the skills start these roles by name, a same-named agent file of your own takes over:
+
+- **For one project**, copy the role's file to `.claude/agents/<role>.md` in that repo (for example `.claude/agents/builder.md`).
+- **For every repo**, copy it to `~/.claude/agents/<role>.md`.
+
+A project file beats your user file, which beats the plugin's. Then change only the two fields in its frontmatter:
+
+```yaml
+model: sonnet
+effort: medium
+```
+
+`model:` takes `sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`; `effort:` takes `low`, `medium`, `high`, `xhigh` or `max`. Your file replaces the plugin's whole definition, not just those fields, so start from a copy of the plugin's file and keep the rest as it is. The environment variables `CLAUDE_CODE_SUBAGENT_MODEL` (with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`) and `CLAUDE_CODE_EFFORT_LEVEL` beat these per-role settings when set.
+
 ### Agents level
 
 How widely JBIT fans work out to subagents is a line in the plan's `## Now`, beside the Mode line. It trades tokens for wall-clock time. `/jbit:plan` asks once and records it, and you can change it any time (ask Claude, or edit the line yourself; a change to `wide` made during the session, from no line, `lean` or `balanced`, is honoured without a stamp); stage, autopilot, review and verify follow it, and it carries into every new `## Now` and into the next plan.

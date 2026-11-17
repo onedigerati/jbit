@@ -23,7 +23,7 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 - 2026-11-17 · (unattended) The field guide's header and footer say JBIT 1.1.0, and the version docs check now asserts 1.1.0. Why: the existing check tied the guide to the manifest version.
 
 ## Open questions
-- 1.0.0 isn't reinstalled from the local marketplace yet; this session runs the installed 0.18.1 hook — for the user.
+- 2026-11-17 · Shipped: `main` pushed (1.0.0 and 1.1.0) and the installed plugin updated from 0.18.1 to 1.1.0; takes effect after a Claude Code restart.
 - milestone-close-gap's `tal-04-stays-blank` and `m1-not-ticked` graders judge changed files only, so a run that rightly changes nothing fails them — for a later plan.
 - Single-run eval drops outside 1.0.0's pass condition: charter-prd 0.92 → 0.64, regression-caught 1.0 → 0.60, research-spike 1.0 → 0.75 — worth a two-run check before shipping, for the user.
 - A `/jbit:stage` run in a repo with a project `builder.md` hasn't been shown to pick `builder` over `jbit:builder` — for a later plan.

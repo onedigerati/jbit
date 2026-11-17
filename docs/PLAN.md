@@ -1,52 +1,46 @@
 # JBIT plan
 
 ## Goal
-Make sure the 20-line handoff never loses findings without anyone knowing. Each role agent (`builder`, `verifier`, `reviewer`, `researcher`) still hands back a report of 20 lines at most. When the detail doesn't fit, the agent writes all of it to a file, puts the path in the report, and says how much it left out. The reviewer gets the Write tool for this, saves its full review to `docs/evidence/stage-<n>/review.md` with fix-now findings first, and still edits no project files. Done when the four agent files carry the rule, a docs check holds it, a headless run shows a reviewer with more findings than 20 lines can hold saving all of them to `review.md` while handing back a short report with the path, the same run settles whether a subagent can write its own `.md` report today, and the plugin is 1.2.0.
+Release 0.18.1's plugin, unchanged in behaviour, as JBIT 2.0.0. The user chose this after comparing eval scores: 0.18.1 scored higher (0.88 against 1.0.0's 0.75, single runs) and its hook enforces the commit gates that 1.x only asks for. Anyone on 1.2.0 moves forward with a normal update, since 2.0.0 is above 1.2.0. A plan in progress under 1.x can still close its stage, and the README says what changes for them. Done when `plugins/jbit/` matches 0.18.1 apart from version strings and the migration note, its suite, docs check and validate are green, an isolated install updates from 1.2.0 to 2.0.0, a headless run shows a 1.x plan mid-stage closing under 2.0.0, and `docs/decisions.md` says which decisions stand again. Pushing is a separate step that waits for the user.
 
 ## Baseline
-2026-11-17 · tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 31 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
+2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 477 hook tests passing.
 
 ## Now
-All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is wanted.
+Stage 1 of 2 · Restore 0.18.1 as 2.0.0
+Risk: secrets, user input (the secret guard and the hook's command parsing come back, unchanged from 0.18.1)
+Checks:
+- [ ] `git diff bdd4c76 -- plugins/jbit` shows only version strings (2.0.0) and the plugin description; `agents/` is gone, and `approve`, `fix` and `review` are back (proof: saved diff)
+- [ ] The root `README.md` and `.claude-plugin/marketplace.json` match 0.18.1 apart from the version and the 2.0.0 wording (proof: saved diff)
+- [ ] `claude plugin test plugins/jbit` passes the same number of tests 0.18.1 recorded (477), and the docs check passes with its version test at 2.0.0 (proof: test run)
+- [ ] `claude plugin validate .` passes (proof: test run)
+Open: the field guide (see Open questions)
 
 ## Stages
-- [x] 1. Handoff overflow — overflow rule in the four agent files, reviewer gets Write and `review.md`, docs check, headless proof, 1.2.0 · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md) (check 4 accepted by the user; see Decisions)
+- [ ] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green
+- [ ] 2. Moving from 1.x — README "Moving from 1.x" note; decisions restored and 1.x's retired; isolated 1.2.0 → 2.0.0 update; headless proof that a 1.x plan mid-stage closes under 2.0.0
 
 ## Decisions
-- 2026-11-17 · The reviewer gets the Write tool and saves its full review to `docs/evidence/stage-<n>/review.md`. The user chose this over keeping it read-only and having it report a count of what it cut. Why: the report is the only copy of a review's findings, unlike a builder's diff, a verifier's `report.md` or a researcher's note.
-- 2026-11-17 · (pm) The overflow rule goes in the four agent files, not the skills. Why: the six skills are at 4,996 of their 5,000-word cap, and every skill already starts these roles by name, so the agent file always reaches them.
-- 2026-11-17 · (pm) Each role overflows into a file it already owns or one next to it: the builder to `build-<part>.md` in the stage's evidence folder, the verifier to `report.md`, the reviewer to `review.md`, the researcher to its note. Outside a plan stage, the reviewer writes `docs/reviews/<date>-<topic>.md`. Why: the detail lands where archiving already carries it, with no new place to look.
-- 2026-11-17 · (pm) Every overflowing report says how much it left out. Why: a silent cut is the failure this plan is about.
-- 2026-11-17 · (pm) Version 1.2.0: new behaviour, nothing removed.
-- 2026-11-17 · (pm) Scale: one stage, no PRD, so one plan. No research: everything this plan depends on is inside the repo, and the subagent-write question is tested directly.
-- ~~2026-11-17 · (pm) The 2026-11-08 finding that subagents can't write report `.md` files looks out of date. In 1.1.0's headless run ([run](plans/2026-11-17-fan-out-limit/evidence/stage-1/stage-run.jsonl.txt)) the verifier subagent wrote `report.md` itself; only shell redirection was blocked, and the main session then rewrote the file. The fourth check confirms it in a clean run instead of resting on that one sighting.~~ — wrong: that run's verifier Write was refused too, and the main session wrote the file.
-- 2026-11-17 · (autopilot) Settled by check 4, but not as the plan expected: Claude Code refuses a subagent's Write of `report.md` with "Subagents should return findings as text, not write report files." This happened in this stage's run and also in 1.1.0's. The same run let the reviewer write `review.md` and the verifier write `.txt` evidence. The 2026-11-08 finding still holds, so the verifier's overflow into `report.md` can't work. Stopped for the user ([evidence](evidence/stage-1/subagent-writes.txt)).
-- 2026-11-17 · The verifier hands back its full results table as text, and the main session writes `report.md`, which is what already happened in practice. `jbit:verify` says so. Builder, reviewer and researcher keep their overflow files, which worked. Checks 1 and 4 were reworded to match. This was the user's choice, after the stop; the risk is that Claude Code widens the refusal to other `.md` files.
-- 2026-11-17 · (autopilot) The reviewer always saves its full review to `review.md`, not only when it overflows. Why: that is the user's choice and the Goal's wording; the builder had made it overflow-only.
-
-- 2026-11-17 · (autopilot) Fix round 2: the reviewer's handback has a set layout (the review file's full path on line 1, one line per fix-now finding, one line counting the rest, one line on what is sound), and every role uses no blank lines. Why: a line limit stated alone still produced 23 lines.
-- 2026-11-17 · (autopilot) Fix round 3: after a verifier, verify writes its table to `report.md` before any fix, and re-verifies with a fresh verifier rather than in the main session. Why: one run had replaced the verifier's fail rows with the main session's own re-check.
-- 2026-11-17 · (autopilot) The reviewer may write probe scripts outside the repo; inside it, its only file is the review. Why: it confirms findings by running code, which `/tmp` probes did in every run.
-- 2026-11-17 · (autopilot) Words cut from `verify` to pay for the new rules, keeping every rule and every checked phrase: the opening line, some examples (`pyproject.toml`, `govulncheck`, the "unproven" examples, a dev-server aside) and "its agent file sets those". Why: the six skills are at exactly 5,000 words.
-- 2026-11-17 · Check 4 accepted as passed after three fix rounds. Round 4's run 2 wrote the verifier's rows word for word but in verify's report format, which meets the check's wording; "exactly as it came" was a stricter bar added in fix round 3. verify now says "rows as they came, in this format". The user chose this. The report keeps the verifier's fail row and adds a History line.
-- 2026-11-17 · (autopilot) Code review, deferred: the field guide still says the skills hand work to all four role agents (left alone because the file has the user's uncommitted edits), and `docs/reviews/` isn't carried by archiving. Rejected: "Write is enforced by prompt alone" — the user chose to give the reviewer Write, and check 3 showed it keeps to the review file in the repo.
-## Fixes
-- 2026-11-17 · Lifted the 5,000-word total on the six skills, then the 1,500-word limit per skill (docs check and standing decision updated) — docs check, plugin tests and validate green
-- 2026-11-17 · Restored the words cut from `verify` to fit 1.2.0 under the old cap (opening line, unproven examples, `pyproject.toml`, `govulncheck`, the dev-server aside, "The" in §3's heading, the role agent-file note, "With no plan stage involved"); 1.2.0's three rule changes stay — docs check, plugin tests and validate green; diff against 1.1.0 is only those three lines
+- 2026-11-17 · Release 0.18.1's code as 2.0.0, not as 0.18.1 — the user's choice. Why: a version below the installed 1.2.0 might never reach users through `claude plugin update`; 2.0.0 is a clean forward update, and a major number marks the change of approach.
+- 2026-11-17 · (pm) "Unchanged in behaviour" means the files at `bdd4c76`, with only the version, the description and the README's migration note changed. A compatibility fix goes in only if stage 2's headless run shows a 1.x plan can't close its stage, and it gets logged as a decision. Why: the point is 0.18.1's proven behaviour, not a new mix.
+- 2026-11-17 · (pm) The evals return to 0.18.1's set too. Why: they grade 0.18.1's behaviour (Agents levels, Models lines, approvals), and 1.x's evals would fail against it.
+- 2026-11-17 · (pm) `docs/decisions.md`: 0.18.1's decisions under "Retired in 1.0.0" stand again, and the 1.x decisions move under "Retired in 2.0.0", struck through rather than deleted, as the plan rules ask. Why: the file has to say what's true for the code that ships.
+- 2026-11-17 · (pm) Stage 1's diff against 0.18.1 is version strings only, so `/code-review` reviews that diff, not the restored code. Why: the restored code is 0.18.1's, already reviewed and shipped. Stage 2's `/security-review` covers any compatibility fix.
+- 2026-11-17 · (pm) Scale: two stages, one plan. No outside research; the update path is tested directly with an isolated install.
+- 2026-11-17 · The 1.2.0 plan was archived with check 4's report row still fail, as the verifier gave it, and the user's acceptance noted in its Goal line.
 
 ## Open questions
-- 2026-11-17 · Shipped: `main` pushed (1.2.0 and the word-limit fixes) and the installed plugin updated from 1.1.0 to 1.2.0; takes effect after a Claude Code restart.
-- In every headless review the reviewer missed one planted bug (P7, `applyDiscount` returns the discount instead of the total) — review quality, outside this plan.
-- The field guide's role-agent line and `docs/reviews/` archiving (deferred from code review) — for a later plan.
-- `docs/field-guide.html` still has your uncommitted changes; the 1.2.0 commit took only its two version lines — for the user.
-- milestone-close-gap's `tal-04-stays-blank` and `m1-not-ticked` graders judge changed files only, so a run that rightly changes nothing fails them — for a later plan.
-- Single-run eval drops outside 1.0.0's pass condition: charter-prd 0.92 → 0.64, regression-caught 1.0 → 0.60, research-spike 1.0 → 0.75 — worth a two-run check before shipping, for the user.
-- A `/jbit:stage` run in a repo with a project `builder.md` hasn't been shown to pick `builder` over `jbit:builder` — for a later plan.
-- The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts; 0.18.1 couldn't either — for a later plan.
-- `shell.ts` still exports parser details nothing reads (`DEEP`, `BUILT`, `STDIN`, `FROM_INPUT`, the git `alias` flag) — safe to trim later.
-- At a plan's last stage, the committed plan keeps the ticked stage line but not its ticked checks; they live in the evidence report — for the user.
-- `plugins/jbit/evals-ablation/` (untracked) holds the ablation's case copies and raw results; delete it once the user has looked — for the user.
-- Leftover agent worktrees in `.claude/worktrees/` (five, from 1.0.0's stages 1–2, all merged) — remove with `git worktree remove` once the user has looked.
+- `docs/field-guide.html` has your uncommitted edits (a "Slower machines" note for 1.1.0's `CLAUDE.md` fan-out limit, which 2.0.0 drops). The default restores 0.18.1's field guide at 2.0.0 and leaves your edits uncommitted on top, which means they'll conflict. Keep them, drop them, or commit them first? For the user, before stage 1 touches the file.
+- What users lose (they get 0.18.1's behaviour):
+  - role agents and any `.claude/agents/<role>.md` overrides
+  - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)
+  - 1.2.0's handoff overflow rule and the reviewer's `review.md`
+  - 0.18.1 still assumes the verifier subagent writes `report.md`, which Claude Code refuses (see the 1.2.0 plan); it worked around this by running verify in the main session
+
+  The README note will say this; carrying any of it into 2.0.x is for a later plan.
+- Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs, so the reason for this change rests on one run per case — for the user.
+- The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts — carried; 0.18.1 has the same gap.
+- `plugins/jbit/evals-ablation/` (untracked) and five leftover worktrees in `.claude/worktrees/` — carried; for the user.
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).
@@ -54,3 +48,4 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 ## Shipped
 - 2026-11-07 · Verification evidence: verify saves a per-check report and its output to `docs/evidence/stage-<n>/`, stage and autopilot link it, archiving carries it along, and the commit guard refuses to close a stage without it (keel 0.5.0–0.5.2) — [plan](plans/2026-11-07-verification-evidence.md) · [evidence](plans/2026-11-07-verification-evidence/evidence/)
 - 2026-11-17 · Fan-out limit: `stage`, `autopilot` and `plan` follow a `CLAUDE.md` limit on agents at once and worktrees; README "Slower machines" (1.1.0, pushed) — [plan](plans/2026-11-17-fan-out-limit.md) · [evidence](plans/2026-11-17-fan-out-limit/evidence/)
+- 2026-11-17 · Handoff overflow: role agents hand back 20 lines at most and say what they cut; the reviewer saves `review.md`; the verifier hands back its table for the main session to write `report.md` (1.2.0, pushed) — [plan](plans/2026-11-17-handoff-overflow.md) · [evidence](plans/2026-11-17-handoff-overflow/evidence/)

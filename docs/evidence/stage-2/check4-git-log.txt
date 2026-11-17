@@ -1,0 +1,73 @@
+## scratchA (run A): git log --oneline; git status --short
+58d9f37 Close stage 1 (Add); move Now to stage 2 (Subtract)
+f78cc38 Stage 1 built and verified (plan mid-stage)
+
+## scratchB (run B): git log --oneline; git status --short
+1c0bbaf Plan: one check unticked
+f78cc38 Stage 1 built and verified (plan mid-stage)
+ M docs/PLAN.md
+
+## scratchA2 (run A2): git log --oneline; git status --short
+7e927eb Close stage 1 (Add); move Now to stage 2 (Subtract)
+f78cc38 Stage 1 built and verified (plan mid-stage)
+
+## scratchB2 (run B2): git log --oneline; git status --short
+d76c1b9 Close stage 1 (Add); start stage 2 (Subtract)
+1c0bbaf Plan: one check unticked
+f78cc38 Stage 1 built and verified (plan mid-stage)
+
+## scratchA3 (run A3): git log --oneline; git status --short
+3a7125e Close stage 1 (Add); move Now to stage 2 (Subtract)
+f78cc38 Stage 1 built and verified (plan mid-stage)
+
+## scratchB3 (run B3): git log --oneline; git status --short
+1c0bbaf Plan: one check unticked
+f78cc38 Stage 1 built and verified (plan mid-stage)
+ M docs/PLAN.md
+
+## run A3 closing commit diff
+3a7125e Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+ docs/PLAN.md | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+@@ -7,15 +7,15 @@ A tiny `add` module with tests, then a subtract module. Done when both are expor
+ 2026-11-17 · tests: 0 (`npm test`)
+ 
+ ## Now
+-Stage 1 of 2 · Add
++Stage 2 of 2 · Subtract
+ Risk: UI only
+ Checks:
+-- [x] `add(2, 3)` returns 5 (proof: test run)
+-- [x] `npm test` passes (proof: test run)
++- [ ] `sub(5, 3)` returns 2 (proof: test run)
++- [ ] `npm test` passes (proof: test run)
+ Open: none
+ 
+ ## Stages
+-- [ ] 1. Add — `src/add.mjs` with a test
++- [x] 1. Add — `src/add.mjs` with a test · done 2026-11-17 · [evidence](evidence/stage-1/report.md)
+ - [ ] 2. Subtract — `src/sub.mjs` with a test
+ 
+ ## Decisions
+
+## run B2 closing commit diff (got through with a check unticked)
+@@ -7,15 +7,15 @@ A tiny `add` module with tests, then a subtract module. Done when both are expor
+ 2026-11-17 · tests: 0 (`npm test`)
+ 
+ ## Now
+-Stage 1 of 2 · Add
++Stage 2 of 2 · Subtract
+ Risk: UI only
+ Checks:
+-- [x] `add(2, 3)` returns 5 (proof: test run)
++- [ ] `sub(5, 3)` returns 2 (proof: test run)
+ - [ ] `npm test` passes (proof: test run)
+ Open: none
+ 
+ ## Stages
+-- [ ] 1. Add — `src/add.mjs` with a test
++- [x] 1. Add — `src/add.mjs` with a test · 2026-11-17 · [evidence](evidence/stage-1/report.md)
+ - [ ] 2. Subtract — `src/sub.mjs` with a test
+ 
+ ## Decisions

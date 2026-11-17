@@ -106,6 +106,17 @@ What changes and what doesn't:
 - The status line reads `jbit`, and the hook's per-session state starts fresh once.
 - Your repos need no edits. `Keel risk:` and `Keel outward:` lines in `CLAUDE.md` are still read, exactly like `JBIT risk:` and `JBIT outward:`, and a `keel:allow-secret` marker still exempts a line from the secret guard, like `jbit:allow-secret`. Old plans that mention `keel:plan` and the like need no edit either: the hook's notes to Claude use the current names.
 
+## Moving from 1.x
+
+JBIT 2.0.0 is 0.18.1's plugin again, numbered above 1.2.0 so that `claude plugin update` moves a 1.x install forward. A plan in progress needs no edit: a 1.x plan has no Mode, Agents or Models line, and 2.0.0 reads it as `balanced` with no Models line. What changes, and what to do:
+
+- **Role agents are gone.** 2.0.0 ships no `builder`, `reviewer`, `verifier` or `researcher` agent; the skills brief fresh agents themselves. An override file in `.claude/agents/<role>.md` or `~/.claude/agents/<role>.md` goes unused, so move its model and effort to the Models line.
+- **The fan-out limit is the Agents line.** A limit written in plain words in `CLAUDE.md` is no longer read. Put it on the plan's Agents line in `## Now` instead: `Agents: lean` builds and verifies one agent at a time, `balanced` is the default, and `wide` needs your yes (see [Agents level](#agents-level)).
+- **Model and effort come from the Models line.** Set them with `JBIT models build sonnet/medium, review opus/high`, and add `— my default` to keep them for every repo (see [Models](#models)). With no line, every agent runs as the session.
+- **Risky stages are held again.** A stage whose risk line names auth, money, personal data or a project risk word waits for your approval: reply "yes" or "go", or type `/jbit:approve`. Your own autopilot command runs unattended and builds it without a hold; `attended` brings the holds back, and `outward` lets push, publish and deploy through.
+- **The commit gates are back.** The hook refuses a commit that closes a stage while a check in `## Now` is unticked or `docs/evidence/stage-<n>/report.md` lacks a row per check. A plan edit and commit in one shell command is caught only under autopilot, so outside autopilot edit the plan and commit in separate steps.
+- **The handoff rules are 0.18.1's.** Agents still hand back a short report, 20 lines at most, but there's no overflow file and no reviewer's `review.md`: `/jbit:review` brings its findings back. A verifier agent hands back its full table under `## Report`, and the main session writes `report.md` from it, since Claude Code refuses a subagent's report file. `/jbit:fix` and `/jbit:review` are back as skills.
+
 ## Reference
 
 ### Install

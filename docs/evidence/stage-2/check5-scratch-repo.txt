@@ -1,0 +1,40 @@
+# Scratch repo for the check 5 run (/tmp/jbit-verify-s2-c5): files as they were before the run
+$ git -C /tmp/jbit-verify-s2-c5 show 8ba2fce:docs/PLAN.md
+# Adder plan
+
+## Goal
+A tiny `add` module with tests, then a subtract module. Done when both are exported with tests passing.
+
+## Baseline
+2026-11-17 · tests: 0 (`npm test`)
+
+## Now
+Stage 1 of 2 · Add
+Risk: UI only
+Checks:
+- [ ] `add(2, 3)` returns 5 (proof: test run)
+- [ ] `npm test` passes (proof: test run)
+Open: none
+
+## Stages
+- [ ] 1. Add — `src/add.mjs` with a test
+- [ ] 2. Subtract — `src/sub.mjs` with a test
+
+## Decisions
+- 2026-11-17 · (pm) Node's built-in test runner. Why: no dependencies.
+$ git -C /tmp/jbit-verify-s2-c5 log --oneline; git status --short  # after the run
+8ba2fce Fix test script
+8a7a75b Stage 1 built (not yet verified)
+ M docs/PLAN.md
+?? docs/evidence/
+$ cat docs/evidence/stage-1/report.md  # after the run
+# Stage 1 · Add — evidence
+Verified 2026-11-17 on 8ba2fce
+
+| Check | Result | Evidence |
+|---|---|---|
+| `add(2, 3)` returns 5 (proof: test run) | pass | [tests.txt](tests.txt): `add(2, 3) is 5` ok via `npm test`; [break-check.txt](break-check.txt): fails with `-1 !== 5` when add is changed to `a - b`, passes again after restore |
+| `npm test` passes (proof: test run) | pass | [tests.txt](tests.txt): tests 1, pass 1, fail 0, exit 0 |
+
+Project checks: type check none · lint none · tests 1/1 ([tests.txt](tests.txt)) · build none
+Audit: `npm audit --omit=dev` did not run (ENOLOCK, no lockfile); no dependencies declared, so 0 high, 0 critical ([audit.txt](audit.txt))

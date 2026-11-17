@@ -1,0 +1,55 @@
+# CLAUDE_CONFIG_DIR=/tmp/jbit-verify-s2/cfg ; claude 2.1.326 (Claude Code)
+$ git -C clone checkout 7b22dc2  (plugin.json version: "version": "1.2.0")
+$ claude plugin marketplace add /tmp/jbit-verify-s2/clone  -> Successfully added marketplace: jbit-local [exit 0] (run above)
+$ claude plugin install jbit@jbit-local
+Installing plugin "jbit@jbit-local"...✔ Successfully installed plugin: jbit@jbit-local (scope: user)
+[exit 0]
+$ claude plugin list
+Installed plugins:
+
+  ❯ jbit@jbit-local
+    Version: 1.2.0
+    Read from: /tmp/jbit-verify-s2/clone/plugins/jbit
+    Scope: user
+    Status: ✔ enabled
+
+[exit 0]
+$ git -C clone checkout 0afa92f  (plugin.json version: "version": "2.0.0")
+$ claude plugin marketplace update jbit-local
+Updating marketplace: jbit-local...Validating local marketplace
+✔ Successfully updated marketplace: jbit-local
+[exit 0]
+$ claude plugin update jbit@jbit-local
+Checking for updates for plugin "jbit@jbit-local"…
+✔ Plugin "jbit" updated from 1.2.0 to 2.0.0 for scope user. Restart to apply changes.
+[exit 0]
+$ claude plugin list
+Installed plugins:
+
+  ❯ jbit@jbit-local
+    Version: 2.0.0
+    Read from: /tmp/jbit-verify-s2/clone/plugins/jbit
+    Scope: user
+    Status: ✔ enabled
+
+[exit 0]
+$ cat $CLAUDE_CONFIG_DIR/plugins/installed_plugins.json
+{
+  "version": 2,
+  "plugins": {
+    "jbit@jbit-local": [
+      {
+        "scope": "user",
+        "installPath": "/tmp/jbit-verify-s2/cfg/plugins/cache/jbit-local/jbit/2.0.0",
+        "version": "2.0.0",
+        "installedAt": "2026-11-17T22:48:38.202Z",
+        "lastUpdated": "2026-11-17T22:48:38.971Z",
+        "gitCommitSha": "0afa92f6f4558cf2eeb9c4730f7f146a544cf999"
+      }
+    ]
+  }
+}$ ls $CLAUDE_CONFIG_DIR/plugins/cache/jbit-local/jbit/
+1.2.0
+2.0.0
+$ grep version cache/.../2.0.0/.claude-plugin/plugin.json
+  "version": "2.0.0",

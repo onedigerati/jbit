@@ -1,0 +1,15 @@
+# Reading of the runs against 0.18.1's gate (plugins/jbit/hooks/register.ts, at 0afa92f)
+- The stage-close gate runs before a Bash call that commits. It diffs what the commit would carry (pendingChanges),
+  finds stages whose box turns [ ] -> [x] in the plan (closedStages, ~line 1683), and denies with checksDenial
+  (~line 1723) when the session saw that stage's checks unticked in `## Now` (s.openChecks, kept by sync on each call).
+- Runs A, A2 and B2 wrote the plan and committed in ONE Bash call (python3 heredoc then git add/commit). The plan was
+  still unchanged on disk when the gate ran, so the pending diff closed no stage and the gate had nothing to judge.
+  Runs A and A2 got through for that reason, not because the gate passed them.
+- Run B2 shows the consequence: same plan as B (one check unticked), same prompt, and the stage closed (commit d76c1b9).
+- The guard against a one-line write+commit (planWriteDenial, ~line 2491) applies only `if (plan && drives)`, which is
+  under autopilot. These runs were attended (no Mode line), so it didn't apply.
+- Run A3 (Edit tool, then a separate commit call) is the one where the gate saw the closing diff and let it through.
+  Runs B and B3 (Edit, then a separate commit) were refused with checksDenial's message.
+- No notices about holds, Agents or Models appeared in any run. The only JBIT output was the session-start context
+  (quoted by the model in run A3), the status line, and the denial in runs B and B3. After the denial the status line
+  read "1/2 done" because it reads the edited (uncommitted) plan on disk.

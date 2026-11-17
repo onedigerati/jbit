@@ -1,0 +1,22 @@
+# Adder plan
+
+## Goal
+A tiny `add` module with tests, then a subtract module. Done when both are exported with tests passing.
+
+## Baseline
+2026-11-17 · tests: 0 (`npm test`)
+
+## Now
+Stage 1 of 2 · Add
+Risk: UI only
+Checks:
+- [x] `add(2, 3)` returns 5 (proof: test run)
+- [x] `npm test` passes (proof: test run)
+Open: none
+
+## Stages
+- [ ] 1. Add — `src/add.mjs` with a test
+- [ ] 2. Subtract — `src/sub.mjs` with a test
+
+## Decisions
+- 2026-11-17 · (pm) Node's built-in test runner. Why: no dependencies.

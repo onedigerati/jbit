@@ -4,6 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -765,4 +766,72 @@ test('the research-role, research-batches and models-my-default eval cases exist
 
 test('plan\'s description says to load it before any research for a plan, so its batch rule applies', () => {
   assert.match(description('plan'), /before any research for a plan/)
+})
+
+test('the plugin README has a ## Moving from 1.x section after the keel one, saying what changes for a 1.x user', () => {
+  const text = readmes.plugin
+  const keel = text.indexOf('\n## Moving over from keel\n')
+  const start = text.indexOf('\n## Moving from 1.x\n')
+  assert.ok(keel !== -1 && start > keel, 'no ## Moving from 1.x section after ## Moving over from keel')
+  const end = text.indexOf('\n## ', start + 1)
+  const section = text.slice(start, end === -1 ? undefined : end)
+  for (const phrase of [
+    'no Mode, Agents or Models line', '`balanced` with no Models line',
+    '`.claude/agents/<role>.md`', 'goes unused',
+    'no longer read', '`Agents: lean`',
+    '`JBIT models build', 'Models line',
+    '`/jbit:approve`', 'held',
+    'a check in `## Now` is unticked', '`docs/evidence/stage-<n>/report.md` lacks a row per check',
+    'A plan edit and commit in one shell command is caught only under autopilot',
+    'outside autopilot edit the plan and commit in separate steps',
+    '20 lines at most', 'no overflow file', "`review.md`",
+    'full table under `## Report`', 'the main session writes `report.md`',
+  ]) assert.ok(section.includes(phrase), `the Moving from 1.x section doesn't say ${phrase}`)
+})
+
+test('verify: a verifier agent hands back its table under ## Report and the main session writes report.md before any fix; a re-verify goes to a fresh one', () => {
+  const text = skill('verify')
+  for (const phrase of [
+    'then its full table under `## Report`',
+    'Never brief it to write `report.md`: Claude Code refuses a subagent\'s report file, so the main session writes `report.md` itself, from its rows as they came, in the report\'s format, before any fix',
+    'If you were spawned to verify, run it yourself, and hand the table back under `## Report` instead of writing `report.md`',
+    'after a verifier agent, with a fresh one, and its table replaces the report',
+    'It must exist before you name its path.',
+    'Models line\'s `verify` setting', 'Under `lean`, verify stays in the main session',
+  ]) assert.ok(text.includes(phrase), `verify doesn't say: ${phrase}`)
+  assert.ok(!text.includes('the table lives in `report.md`'), 'verify still says the agent\'s table lives in report.md')
+})
+
+// docs/decisions.md: 0.18.1's decisions stand again, 1.x's are struck under ## Retired in 2.0.0, none deleted.
+const decisions = read(join(repo, 'docs', 'decisions.md'))
+const datedLines = text => text.split('\n').filter(l => /^- (?:~~)?(?:\*\*)?\d{4}-\d{2}-\d{2}/.test(l))
+const DECISIONS_AT_2_0_0 = 122
+/** The dated decisions in the last commit's docs/decisions.md, or null where git or the file isn't there (the eval sandbox). */
+const datedAtHead = (() => {
+  try { return datedLines(execFileSync('git', ['show', 'HEAD:docs/decisions.md'], { cwd: repo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).length } catch { return null }
+})()
+
+test('docs/decisions.md: 0.18.1\'s decisions stand again, and 1.x\'s are struck under ## Retired in 2.0.0 with a line saying why', () => {
+  const retired1 = decisions.indexOf('\n## Retired in 1.0.0\n')
+  const m = /\n## Retired in 2\.0\.0\n\n([^\n]+)\n/.exec(decisions)
+  assert.ok(m, 'no ## Retired in 2.0.0 heading followed by a paragraph')
+  assert.doesNotMatch(m[1], /^- /, 'the line under the heading is a decision, not the why')
+  assert.match(m[1], /stopped holding/i, 'the line under the heading doesn\'t say why')
+  if (retired1 !== -1) assert.deepEqual(datedLines(decisions.slice(retired1, m.index)), [], 'a decision still stands retired under ## Retired in 1.0.0')
+  const retired2 = datedLines(decisions.slice(m.index))
+  assert.ok(retired2.length > 0, 'nothing is retired under ## Retired in 2.0.0')
+  for (const l of retired2) {
+    assert.match(l, /^- ~~\d{4}-\d{2}-\d{2} .*~~ — \*Retired in 2\.0\.0: .+\*$/, `not struck with a reason: ${l.slice(0, 80)}`)
+  }
+  const standing = datedLines(decisions.slice(0, retired1 === -1 ? m.index : retired1)).filter(l => !l.startsWith('- ~~'))
+  for (const gone of [/role agent files|from agent files/, /fan-out limit as skill text/, /review\.md/, /hook keeps only the `## Now` section/]) {
+    assert.ok(!standing.some(l => gone.test(l)), `a standing decision still says ${gone}`)
+  }
+})
+
+test('no dated decision was deleted at 2.0.0, or since the last commit', () => {
+  // retiring a decision strikes it and moves it under a heading; the count only grows as decisions are added
+  const count = datedLines(decisions).length
+  assert.ok(count >= DECISIONS_AT_2_0_0, `docs/decisions.md has ${count} dated decisions, fewer than the ${DECISIONS_AT_2_0_0} at 2.0.0`)
+  if (datedAtHead !== null) assert.ok(count >= datedAtHead, `docs/decisions.md has ${count} dated decisions, fewer than the ${datedAtHead} at HEAD`)
 })

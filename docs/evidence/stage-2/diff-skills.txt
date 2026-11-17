@@ -1,0 +1,32 @@
+git diff 0afa92f -- plugins/jbit/skills
+diff --git a/plugins/jbit/skills/verify/SKILL.md b/plugins/jbit/skills/verify/SKILL.md
+index 66a1fc6..baed7ff 100644
+--- a/plugins/jbit/skills/verify/SKILL.md
++++ b/plugins/jbit/skills/verify/SKILL.md
+@@ -7,7 +7,7 @@ description: Verify work against the running product and the project's own check
+ 
+ A clean type check proves the code compiles. Verification proves it does what the plan says, in the running product.
+ 
+-Who runs it follows the plan's Agents line (`jbit:plan`). Under an `Agents: wide` the hook honours (one it isn't honouring yet counts as balanced), a plan stage's verify goes to a fresh agent that built nothing, briefed with the stage number and this skill, and asked for a short handoff report: what changed or was found, how it was checked, 20 lines at most, no diffs or file dumps (the table lives in `report.md`); under `lean`, the main session runs it with no other agent running. No line (`balanced`): either. A fresh verifier agent gets the plan's Models line's `verify` setting: pass the line's model and effort for the role on the Agent call, and leave out a half it doesn't set (with no `verify` setting, name neither). Never choose an effort yourself. Under `lean`, verify stays in the main session, on the session's model, whatever the line sets. If you were spawned to verify, run it yourself.
++Who runs it follows the plan's Agents line (`jbit:plan`). Under an `Agents: wide` the hook honours (one it isn't honouring yet counts as balanced), a plan stage's verify goes to a fresh agent that built nothing, briefed with the stage number and this skill, and asked for a short handoff report: what changed or was found, how it was checked, 20 lines at most, no diffs or file dumps, and then its full table under `## Report`. Never brief it to write `report.md`: Claude Code refuses a subagent's report file, so the main session writes `report.md` itself, from its rows as they came, in the report's format, before any fix. Under `lean`, the main session runs it with no other agent running. No line (`balanced`): either. A fresh verifier agent gets the plan's Models line's `verify` setting: pass the line's model and effort for the role on the Agent call, and leave out a half it doesn't set (with no `verify` setting, name neither). Never choose an effort yourself. Under `lean`, verify stays in the main session, on the session's model, whatever the line sets. If you were spawned to verify, run it yourself, and hand the table back under `## Report` instead of writing `report.md`.
+ 
+ ## 1. The project's own checks
+ 
+@@ -67,7 +67,7 @@ Before saving anything, mask secrets and personal data in it: tokens, API keys,
+ 
+ ## 5. Report
+ 
+-For a plan stage, write `docs/evidence/stage-<n>/report.md`, even when asked only to report: it is the record, not a fix.
++For a plan stage, write `docs/evidence/stage-<n>/report.md` (after a verifier agent, its `## Report` rows as they came, in this format, before any fix), even when asked only to report: it is the record, not a fix. It must exist before you name its path.
+ 
+ ```
+ # Stage <n> · <name> — evidence
+@@ -93,7 +93,7 @@ Audit: `npm audit --omit=dev`: 0 high, 0 critical
+ - Link every file you saved. Mark each one git ignores as `(local)`: `git check-ignore -q <file>` succeeds for those.
+ - Re-verifying a stage overwrites its report and output files. Keep earlier failures and their fixes as one line each under History; leave History out if nothing ever failed.
+ 
+-Then, if the stage verified is the one in `## Now`, tick each check there that passed (`- [x]`). In the reply, give the table, the project checks and audit in one line each, the report's path, and the evidence files written, including a newly created `.gitignore`. If anything failed, fix it, re-verify the affected checks, and report both the failure and the fix, unless the user asked only for a report: then report the failure and leave it. Only when everything passes, re-runs included, is the stage verified.
++Then, if the stage verified is the one in `## Now`, tick each check there that passed (`- [x]`). In the reply, give the table, the project checks and audit in one line each, the report's path, and the evidence files written, including a newly created `.gitignore`. If anything failed, fix it, re-verify the affected checks (after a verifier agent, with a fresh one, and its table replaces the report), and report both the failure and the fix, unless the user asked only for a report: then report the failure and leave it. Only when everything passes, re-runs included, is the stage verified.
+ 
+ ## Closing a milestone
+ 

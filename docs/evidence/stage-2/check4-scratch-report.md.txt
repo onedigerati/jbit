@@ -1,0 +1,9 @@
+# Stage 1 · Add — evidence
+Verified 2026-11-17 · written by the main session
+
+| Check | Result | Evidence |
+|---|---|---|
+| `add(2, 3)` returns 5 (proof: test run) | pass | [test.txt](test.txt) |
+| `npm test` passes (proof: test run) | pass | [test.txt](test.txt) |
+
+Project checks: tests 1/1

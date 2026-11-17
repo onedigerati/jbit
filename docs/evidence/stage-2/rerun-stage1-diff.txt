@@ -1,0 +1,7 @@
+$ git diff --stat bdd4c76 -- plugins/jbit README.md .claude-plugin docs/field-guide.html docs/assets
+ docs/field-guide.html                   |  4 +-
+ plugins/jbit/.claude-plugin/plugin.json |  2 +-
+ plugins/jbit/README.md                  | 11 +++++
+ plugins/jbit/skills/verify/SKILL.md     |  6 +--
+ plugins/jbit/tests/docs.check.mjs       | 77 +++++++++++++++++++++++++++++++--
+ 5 files changed, 90 insertions(+), 10 deletions(-)

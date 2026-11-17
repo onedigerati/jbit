@@ -1,0 +1,43 @@
+$ node seq.mjs check4-run-A3.jsonl.txt; node seq.mjs check4-run-B3.jsonl.txt  # tool calls and results, re-read from the saved transcripts (seq.mjs: a call/result printer in the scratchpad)
+== run A3
+STATUS jbit · 0/2 done · next: 1. Add
+CALL Read id=u_[id]: /tmp/jbit-verify-s2/scratchA3/docs/PLAN.md
+RESULT u_[id]: 1	# Adder plan ⏎ 2	 ⏎ 3	## Goal ⏎ 4	A tiny `add` module with tests, then a subtract module. Done when both are exported with tests passing. ⏎ 5	 ⏎ 6	## Baseline ⏎ 7	2026-11-17 · tests: 0 (`npm test`) ⏎ 8	 ⏎ 9	## Now ⏎ 10	Stage 1 of 2 · Add ⏎ 11	Risk: UI only ⏎ 12	Checks: ⏎ 13	- [x] `add(2, 3)` returns 5 (proof: test run) ⏎ 14	- [x] `npm test` passes (proof: test run) ⏎ 15	Open: none ⏎ 16	 ⏎ 17	## Stages ⏎ 18	- [ ] 1. Add — `src/ad
+CALL Bash id=u_[id]: ls /tmp/jbit-verify-s2/scratchA3/docs/evidence/stage-1/
+RESULT u_[id]: report.md ⏎ test.txt
+CALL Edit id=u_[id]: /tmp/jbit-verify-s2/scratchA3/docs/PLAN.md
+RESULT u_[id]: The file /tmp/jbit-verify-s2/scratchA3/docs/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)
+CALL Bash id=u_[id]: git add docs/PLAN.md && git commit -m "Close stage 1 (Add); move Now to stage 2 (Subtract) ⏎  ⏎ Co-Authored-By: Claude Opus 5.5 <noreply@anthrop
+RESULT u_[id]: [main 3a7125e] Close stage 1 (Add); move Now to stage 2 (Subtract) ⏎  1 file changed, 4 insertions(+), 4 deletions(-)
+FINAL: Stage 1 is closed and the plan change is committed as `3a7125e`. The commit went through without being refused. ⏎  ⏎ **What changed in `docs/PLAN.md`:** ⏎ - **`## Stages`:** stage 1 is ticked, with today's date (2026-11-17) and a link to [evidence](docs/evidence/stage-1/report.md). ⏎ - **`## Now`:** it now 
+STATUS jbit · 1/2 done · next: 2. Subtract
+== run B3
+STATUS jbit · 0/2 done · next: 1. Add
+CALL Read id=u_[id]: /tmp/jbit-verify-s2/scratchB3/docs/PLAN.md
+RESULT u_[id]: 1	# Adder plan ⏎ 2	 ⏎ 3	## Goal ⏎ 4	A tiny `add` module with tests, then a subtract module. Done when both are exported with tests passing. ⏎ 5	 ⏎ 6	## Baseline ⏎ 7	2026-11-17 · tests: 0 (`npm test`) ⏎ 8	 ⏎ 9	## Now ⏎ 10	Stage 1 of 2 · Add ⏎ 11	Risk: UI only ⏎ 12	Checks: ⏎ 13	- [x] `add(2, 3)` returns 5 (proof: test run) ⏎ 14	- [ ] `npm test` passes (proof: test run) ⏎ 15	Open: none ⏎ 16	 ⏎ 17	## Stages ⏎ 18	- [ ] 1. Add — `src/ad
+CALL Read id=u_[id]: /tmp/jbit-verify-s2/scratchB3/docs/evidence/stage-1/report.md
+RESULT u_[id]: 1	# Stage 1 · Add — evidence ⏎ 2	Verified 2026-11-17 · written by the main session ⏎ 3	 ⏎ 4	| Check | Result | Evidence | ⏎ 5	|---|---|---| ⏎ 6	| `add(2, 3)` returns 5 (proof: test run) | pass | [test.txt](test.txt) | ⏎ 7	| `npm test` passes (proof: test run) | pass | [test.txt](test.txt) | ⏎ 8	 ⏎ 9	Project checks: tests 1/1 ⏎ 10	
+CALL Edit id=u_[id]: /tmp/jbit-verify-s2/scratchB3/docs/PLAN.md
+RESULT u_[id]: The file /tmp/jbit-verify-s2/scratchB3/docs/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)
+CALL Bash id=u_[id]: git add docs/PLAN.md && git commit -m "Close stage 1 (Add); move Now to stage 2 (Subtract) ⏎  ⏎ Co-Authored-By: Claude Opus 5.5 <noreply@anthrop
+RESULT u_[id] ERROR: <tool_use_error>JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`: ⏎   - `npm test` passes (proof: test run) ⏎ Prove them (jbit:verify). If they pass, put stage 1's checks back in `## Now` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from `## Now` first.</tool_use_error>
+FINAL: The commit was refused, so stage 1 is not closed in git. As you asked, I stopped and didn't try to get around it. ⏎  ⏎ **What happened:** ⏎ 1. I edited `docs/PLAN.md` with the Edit tool. Stage 1 is now ticked in `## Stages` as `· 2026-11-17 · [evidence](evidence/stage-1/report.md)`. `## Now` moved to "Sta
+STATUS jbit · 1/2 done · next: 2. Subtract
+
+$ git diff --stat bdd4c76 HEAD -- plugins/jbit/hooks; git status --short plugins/jbit/hooks  # hook is 0.18.1s
+(no output: the hook is unchanged from 0.18.1 at HEAD and in the working tree)
+$ sed -n 2491,2495p plugins/jbit/hooks/register.ts
+    // under autopilot, a line that writes the plan and commits would close a stage the gates below never see ticked
+    if (plan && drives) {
+      const writer = commands.slice(0, commits[commits.length - 1]).find(c => namesPlan(c, plan.path, root))
+      if (writer) return { deny: planWriteDenial(plan.path, writer) }
+    }
+$ grep -c "A plan edit and commit in one shell command is caught only under autopilot" plugins/jbit/README.md
+1
+
+# Judgment against the reworded check 4
+- Scratch plan (check4-scratch-plan.md.txt): no Mode, Agents or Models line, both checks ticked in ## Now; report.md has a row per check, "written by the main session".
+- Closing passes: run A3 edits the plan (Edit), then commits in its own Bash call; the commit lands as 3a7125e, no denial (git log in check4-git-log.txt). Runs A and A2 also landed.
+- Unticked check refused: run B3 (one check unticked) edits the plan, then commits in its own call; the result is the hook denial "JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`" and git log shows no close commit. Run B is the same.
+- One-command edit and commit: run B2 wrote the plan and committed in one Bash call outside autopilot and got through (d76c1b9); the hook guard above applies only under autopilot (plan && drives), as in 0.18.1, and the README says so.
+- Note: check4-gate-notes.txt lists A2 among one-call runs, but check4-commands.txt shows A2 used Edit then a separate commit; this does not change the verdict.

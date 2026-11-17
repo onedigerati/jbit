@@ -1,0 +1,15 @@
+$ sha256sum plugins/jbit/README.md  # before
+0bfcbb62d4db82476ab618f79f2ca8d8012317fdef838d40688a2386dea1d11e  plugins/jbit/README.md
+$ sed -i "s/is caught only under autopilot/is always caught/" plugins/jbit/README.md  # mutation
+$ node --test plugins/jbit/tests/docs.check.mjs  # with the section broken
+not ok 48 - the plugin README has a \#\# Moving from 1.x section after the keel one, saying what changes for a 1.x user
+  error: "the Moving from 1.x section doesn't say A plan edit and commit in one shell command is caught only under autopilot"
+# pass 50
+# fail 1
+$ cp README.bak plugins/jbit/README.md  # restore
+$ sha256sum plugins/jbit/README.md; git diff --stat plugins/jbit/README.md  # after restore
+0bfcbb62d4db82476ab618f79f2ca8d8012317fdef838d40688a2386dea1d11e  plugins/jbit/README.md
+identical-to-backup
+$ node --test plugins/jbit/tests/docs.check.mjs  # restored
+# pass 51
+# fail 0

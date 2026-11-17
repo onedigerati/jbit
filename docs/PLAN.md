@@ -7,18 +7,11 @@ Release 0.18.1's plugin, unchanged in behaviour, as JBIT 2.0.0. The user chose t
 2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 561 tests and 47 docs checks passing.
 
 ## Now
-Stage 2 of 2 · Moving from 1.x
-Risk: secrets, user input (only if a compatibility fix to the restored hook turns out to be needed); otherwise docs
-Checks:
-- [ ] The plugin README has a "Moving from 1.x" section saying what changes for a 1.x user: role agents and their override files, the `CLAUDE.md` fan-out limit (now the Agents line), the Models line, holds for risky stages and `/jbit:approve`, the commit gates, and the handoff rules; the docs check asserts it (proof: docs check)
-- [ ] `docs/decisions.md` has 0.18.1's decisions standing again and 1.x's under a "Retired in 2.0.0" heading, struck through and none deleted; the docs check's no-deleted-decision test passes (proof: docs check)
-- [ ] In an isolated config dir (`CLAUDE_CONFIG_DIR`), a marketplace pointing at a local clone installs JBIT 1.2.0, and after the clone moves to 2.0.0, `claude plugin update` moves the install to 2.0.0 (proof: saved run, a test can't drive the CLI's update)
-- [ ] In a scratch repo with a 1.x plan mid-stage (no Mode, Agents or Models line, checks ticked in `## Now`, a `report.md` with a row per check written by the main session), a headless 2.0.0 session closes the stage with a commit the hook lets through, and a plan with an unticked check is refused with the hook's message (proof: saved run)
-Open: none
+All stages done: the goal is met. Next: push `main` and update the installed plugin to 2.0.0, which waits for the user's go; then a new plan (`jbit:plan`) if more is wanted.
 
 ## Stages
 - [x] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md)
-- [ ] 2. Moving from 1.x — README "Moving from 1.x" note; decisions restored and 1.x's retired; isolated 1.2.0 → 2.0.0 update; headless proof that a 1.x plan mid-stage closes under 2.0.0
+- [x] 2. Moving from 1.x — README "Moving from 1.x" note; decisions restored and 1.x's retired; isolated 1.2.0 → 2.0.0 update; headless proof that a 1.x plan mid-stage closes under 2.0.0; 1.2.0's verifier handback ported to `verify` · 2026-11-17 · evidence: [docs/evidence/stage-2/report.md](evidence/stage-2/report.md) (the stage-1 re-run row fails only because of stage 2's planned changes)
 
 ## Decisions
 - 2026-11-17 · Release 0.18.1's code as 2.0.0, not as 0.18.1 — the user's choice. Why: a version below the installed 1.2.0 might never reach users through `claude plugin update`; 2.0.0 is a clean forward update, and a major number marks the change of approach.
@@ -31,6 +24,11 @@ Open: none
 - 2026-11-17 · The field guide goes back to 0.18.1's at 2.0.0, and the user's uncommitted edits to it are dropped (the user's choice).
 - 2026-11-17 · (autopilot) Check 3 corrected from 477 to 561 tests, plus 47 docs checks. Why: 477 was my count of `test(` lines, not the suite's recorded count; 0.18.1's own plan and the 1.0.0 plan's Baseline both record 561 and 47.
 - 2026-11-17 · (autopilot) Stage 1 review: I read the version-only diff in full (8 lines) and found nothing. `/code-review` didn't run over the restored code, which is 0.18.1's as shipped (see the stage-1 review decision above).
+- 2026-11-17 · The commit gate stays as 0.18.1 had it: a plan edit and commit in one shell command is guarded only under autopilot. Check 4 and the README were reworded to say so — the user's choice, after a headless run closed a stage with an unticked check that way outside autopilot. This is 0.18.1's accepted "a guardrail, not a sandbox" design.
+- 2026-11-17 · 2.0.0 carries 1.2.0's verify fix: a verifier agent hands back its table under `## Report`, and the main session writes `report.md` — the user's choice, since Claude Code refuses a subagent's report file. This is the one rule in which 2.0.0 differs from 0.18.1; check 5 covers it.
+- 2026-11-17 · (autopilot) decisions.md's restored lines use 0.18.1's wording, without the "Retired" notes 1.0.0 added to six of them; those notes stay in git history (`65e4047`). Why: they claimed things 2.0.0 contradicts. The dated-line count is unchanged (122).
+
+- 2026-11-17 · (autopilot) At the last stage, the re-run of stage 1's diff check fails against stage 1's own wording, because the diff now includes stage 2's planned changes: the migration note, the ported verify rule and their docs-check tests. It's recorded as fail in the stage 2 report, with the reason, not rounded up.
 
 ## Open questions
 - What users lose (they get 0.18.1's behaviour):

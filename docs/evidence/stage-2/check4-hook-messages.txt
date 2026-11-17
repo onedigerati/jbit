@@ -1,0 +1,65 @@
+# JBIT hook output seen per run: denials (tool_use_error), the plugin status line, and the model's own account of notices (run 3 asked it to quote all).
+# Hook lifecycle events were requested (--include-hook-events) in runs 2 and 3; none appeared in the stream, since JBIT's hook isn't a settings hook.
+
+## run A
+  status line: jbit · 0/2 done · next: 1. Add
+  status line: jbit · 1/2 done · next: 2. Subtract
+  no denial
+
+## run B
+  status line: jbit · 0/2 done · next: 1. Add
+  DENIED tool call:
+    JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`:
+      - `npm test` passes (proof: test run)
+    Prove them (jbit:verify). If they pass, put stage 1's checks back in `## Now` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from `## Now` first.
+  status line: jbit · 1/2 done · next: 2. Subtract
+
+## run A2
+  status line: jbit · 0/2 done · next: 1. Add
+  status line: jbit · 1/2 done · next: 2. Subtract
+  no denial
+
+## run B2
+  status line: jbit · 0/2 done · next: 1. Add
+  status line: jbit · 1/2 done · next: 2. Subtract
+  no denial
+
+## run A3
+  status line: jbit · 0/2 done · next: 1. Add
+  status line: jbit · 1/2 done · next: 2. Subtract
+  no denial
+
+## run B3
+  status line: jbit · 0/2 done · next: 1. Add
+  DENIED tool call:
+    JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`:
+      - `npm test` passes (proof: test run)
+    Prove them (jbit:verify). If they pass, put stage 1's checks back in `## Now` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from `## Now` first.
+  status line: jbit · 1/2 done · next: 2. Subtract
+
+## run A3, model's quote of JBIT messages (from its final result):
+  **Messages from the JBIT plugin or its hook:** none of my tool calls got a hook message (no notices, reminders or denials). The only JBIT text I received was the context section given at session start. Here it is word for word:
+  
+  > # JBIT
+  > This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.
+  >
+  > Current position (from the plan):
+  > Stage 1 of 2 · Add
+  > Risk: UI only
+  > Checks:
+  > - [x] `add(2, 3)` returns 5 (proof: test run)
+  > - [x] `npm test` passes (proof: test run)
+  > Open: none
+  >
+  > Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.
+
+## run B3, model's quote of JBIT messages:
+  **Messages from the JBIT plugin or its hook this session:** only the commit refusal quoted above. There were no other JBIT notes, reminders or notices.
+
+## grep of all six transcripts for Agents/Models/hold/approve notices outside the init event:
+  run A: 0 lines
+  run B: 0 lines
+  run A2: 0 lines
+  run B2: 0 lines
+  run A3: 0 lines
+  run B3: 0 lines

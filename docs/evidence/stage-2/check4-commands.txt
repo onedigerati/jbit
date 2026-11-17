@@ -1,0 +1,81 @@
+# Tool calls per headless run (claude -p --plugin-dir <repo>/plugins/jbit, claude 2.1.326). A = all checks ticked, B = one check unticked. Runs 1 and 2 used prompt-runs-1-2 (same prompt each time); run 3 used prompt-run-3 (Edit tool, then commit in a separate Bash call).
+
+## run A
+  Bash: cat docs/PLAN.md && ls -R docs/evidence && git log --oneline | head
+  Bash: cat docs/evidence/stage-1/report.md; ls -a; ls .claude 2>/dev/null; cat .git/hooks/pre-commit 2>/dev/null | head -30
+  Bash: python3 - <<'EOF'
+p='docs/PLAN.md'
+s=open(p).read()
+s=s.replace("""Stage 1 of 2 · Add
+Risk: UI only
+Checks:
+- [x] `add(2, 3)` returns 5 (proof: test run)
+- [x] `npm test` passes (proof: test run)
+Open: none""","""Stage 2 of 2 · Subtract
+Risk: UI only
+Checks:
+- [ ] `sub(5, 3)` returns 2 (proof: test run)
+- [ ] `npm test` passes (proof: test run)
+Open: none""")
+s=s.replace("- [ ] 1. Add — `src/add.mjs` with a test","- [x] 1. Add — `src/add.mjs` with a test · 2026-11-17 · [evidence](evidence/stage-1/report.md)")
+open(p,'w').write(s)
+EOF
+git diff && git add docs/PLAN.md && git commit -q -m "Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" ; echo "exit=$?"; git log --oneline | head -2; git status --short
+
+## run B
+  Read: /tmp/jbit-verify-s2/scratchB/docs/PLAN.md
+  Bash: ls -R docs/evidence; cat docs/evidence/stage-1/report.md; git log --stat -3
+  Edit: /tmp/jbit-verify-s2/scratchB/docs/PLAN.md
+  Bash: git add docs/PLAN.md && git commit -q -m "Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" ; echo "exit=$?"; git log --oneline -1
+
+## run A2
+  Read: /tmp/jbit-verify-s2/scratchA2/docs/PLAN.md
+  Bash: ls docs/evidence/stage-1/ && git log --oneline -3
+  Edit: /tmp/jbit-verify-s2/scratchA2/docs/PLAN.md
+  Bash: git add docs/PLAN.md && git commit -m "Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" && git log --oneline -2 && git status --short
+
+## run B2
+  Read: /tmp/jbit-verify-s2/scratchB2/docs/PLAN.md
+  Bash: ls docs/evidence/stage-1 && cat docs/evidence/stage-1/report.md
+  Bash: python3 - <<'EOF'
+p='docs/PLAN.md'
+s=open(p).read()
+old_now=s[s.index('## Now'):s.index('## Stages')]
+new_now="""## Now
+Stage 2 of 2 · Subtract
+Risk: UI only
+Checks:
+- [ ] `sub(5, 3)` returns 2 (proof: test run)
+- [ ] `npm test` passes (proof: test run)
+Open: none
+
+"""
+s=s.replace(old_now,new_now)
+s=s.replace("- [ ] 1. Add — `src/add.mjs` with a test","- [x] 1. Add — `src/add.mjs` with a test · 2026-11-17 · [evidence](evidence/stage-1/report.md)")
+open(p,'w').write(s)
+EOF
+git diff && git add docs/PLAN.md && git commit -q -m "Close stage 1 (Add); start stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"; echo "exit=$?"; git log --oneline -1
+
+## run A3
+  Read: /tmp/jbit-verify-s2/scratchA3/docs/PLAN.md
+  Bash: ls /tmp/jbit-verify-s2/scratchA3/docs/evidence/stage-1/
+  Edit: /tmp/jbit-verify-s2/scratchA3/docs/PLAN.md
+  Bash: git add docs/PLAN.md && git commit -m "Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+
+## run B3
+  Read: /tmp/jbit-verify-s2/scratchB3/docs/PLAN.md
+  Read: /tmp/jbit-verify-s2/scratchB3/docs/evidence/stage-1/report.md
+  Edit: /tmp/jbit-verify-s2/scratchB3/docs/PLAN.md
+  Bash: git add docs/PLAN.md && git commit -m "Close stage 1 (Add); move Now to stage 2 (Subtract)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"

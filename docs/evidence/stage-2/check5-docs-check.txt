@@ -1,0 +1,21 @@
+$ grep -nF <phrase> plugins/jbit/skills/verify/SKILL.md; sed -n 792,804p plugins/jbit/tests/docs.check.mjs
+-- then its full table under `## Report`: line 10
+-- Never brief it to write `report.md`: Claude Code refuses a subagent: line 10
+-- the main session writes `report.md` itself, from its rows as they came: line 10
+-- If you were spawned to verify, run it yourself, and hand the table back under `## Report` instead of writing `report.md`: line 10
+-- It must exist before you name its path.: line 70
+test('verify: a verifier agent hands back its table under ## Report and the main session writes report.md before any fix; a re-verify goes to a fresh one', () => {
+  const text = skill('verify')
+  for (const phrase of [
+    'then its full table under `## Report`',
+    'Never brief it to write `report.md`: Claude Code refuses a subagent\'s report file, so the main session writes `report.md` itself, from its rows as they came, in the report\'s format, before any fix',
+    'If you were spawned to verify, run it yourself, and hand the table back under `## Report` instead of writing `report.md`',
+    'after a verifier agent, with a fresh one, and its table replaces the report',
+    'It must exist before you name its path.',
+    'Models line\'s `verify` setting', 'Under `lean`, verify stays in the main session',
+  ]) assert.ok(text.includes(phrase), `verify doesn't say: ${phrase}`)
+  assert.ok(!text.includes('the table lives in `report.md`'), 'verify still says the agent\'s table lives in report.md')
+})
+
+$ node --test plugins/jbit/tests/docs.check.mjs | grep verify:
+ok 49 - verify: a verifier agent hands back its table under \#\# Report and the main session writes report.md before any fix; a re-verify goes to a fresh one

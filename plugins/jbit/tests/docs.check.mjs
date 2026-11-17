@@ -30,19 +30,6 @@ const guideProse = guide
 /** Markdown as prose: fenced blocks and code spans dropped. */
 const markdownProse = text => text.replace(/```[\s\S]*?```/g, '').replace(/`[^`\n]*`/g, '')
 
-/** The hook's command words (`COMMAND_VOCABULARY`), read from its source. */
-const vocabulary = (() => {
-  const m = /const COMMAND_VOCABULARY = new Set\(\[([\s\S]*?)\]\)/.exec(hook)
-  assert.ok(m, 'COMMAND_VOCABULARY not found in register.ts')
-  return [...m[1].matchAll(/'([a-z]+)'/g)].map(w => w[1])
-})()
-
-/** A doc's list of command words, "The command words are a, b, … and z": the words in order. */
-const listedWords = text => {
-  const m = /The command words are ([a-z, ]+?) and ([a-z]+)[,.]/.exec(text)
-  return m ? [...m[1].split(/,\s*/), m[2]] : undefined
-}
-
 /** Phrases of the old opt-in design (2026-11-13): only the typed `unattended` word armed, a plain command ended it. */
 const OLD_RULE = [
   /only `\/jbit:autopilot unattended`/i,
@@ -70,10 +57,6 @@ test('no skill, README or hook text describes the old opt-in arming rule', () =>
 test('every skill says "JBIT <command>" triggers it', () => {
   for (const name of skills)
     assert.ok(description(name).includes(`opens with "JBIT ${name}"`), `${name}'s description lacks "JBIT ${name}"`)
-})
-
-test('the command words the plugin README lists are the hook\'s COMMAND_VOCABULARY', () => {
-  assert.deepEqual(listedWords(readmes.plugin), vocabulary, 'plugin README\'s command words differ from COMMAND_VOCABULARY')
 })
 
 test('the plugin README describes "JBIT approve" as releasing the hold', () => {
@@ -326,12 +309,6 @@ test('the research and progress eval cases exist with a case.yaml, scaffold and 
   assert.ok(read(join(plugin, 'evals', 'progress-note', 'case.yaml')).includes('prompt: "JBIT, just build it. Autopilot, lean."'), 'progress-note runs under the JBIT command, whose rules ride beside the prompt headless')
 })
 
-test('the hook\'s armed-autopilot rules carry the progress note, in both the unattended and attended texts', () => {
-  assert.ok(hook.includes("export const PROGRESS_NOTE =\n  \"When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`"), 'register.ts lacks PROGRESS_NOTE')
-  assert.ok(hook.includes('are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE}'), 'attended autopilot rules lack PROGRESS_NOTE')
-  assert.ok(hook.includes('    outward,\n    PROGRESS_NOTE,\n  ].join'), 'unattended rules lack PROGRESS_NOTE')
-})
-
 test('READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can\'t be set, and that only the user sets effort', () => {
   const phrases = {
     root: [
@@ -387,8 +364,6 @@ test('READMEs and the field guide give the research-fetch rule: a read-only curl
   const texts = { ...readmes, 'field-guide.html': guide }
   for (const [name, list] of Object.entries(phrases))
     for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
-  // the hold's own text still carries the pointer the docs promise
-  assert.ok(hook.includes('To read a web page, use WebFetch (or WebSearch to find one)'), 'the hook\'s outward denial lacks the WebFetch pointer')
 })
 
 test('the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them', () => {
@@ -517,4 +492,36 @@ test('the plugin README says how to set a role agent\'s model and effort for one
   assert.ok(m, 'plugin README lacks a ### Role agents section')
   for (const words of ['.claude/agents/', '~/.claude/agents/', 'model:', 'effort:'])
     assert.ok(m[1].includes(words), `Role agents section lacks ${words}`)
+})
+
+// 1.0.0 stage 3: the hook only adds the plan's `## Now`, the working rules, a compaction note, the status line and the commit secret guard.
+const hooks = join(plugin, 'hooks')
+const shell = read(join(hooks, 'shell.ts'))
+const WORKING_RULES = "Working rules: build in stages; a stage is done when its checks pass against the running product and the suite is green; save each stage's evidence to `docs/evidence/stage-<n>/`; risky stages get `/code-review` and `/security-review`; commit per stage. The JBIT skills (plan, charter, stage, verify, autopilot, resume) hold the details."
+
+test('hooks/ has no project.ts or models.ts', () => {
+  for (const gone of ['project.ts', 'models.ts']) assert.ok(!existsSync(join(hooks, gone)), `hooks/${gone} still exists`)
+})
+
+test('register.ts registers exactly prompt.compose, session.compact and a Bash-scoped tool.call', () => {
+  const calls = [...hook.matchAll(/\bon\('([^']+)'(?:,\s*(\{[^}]*\}))?/g)].map(m => (m[2] ? `${m[1]} ${m[2].replace(/\s+/g, ' ')}` : m[1]))
+  assert.deepEqual(calls.sort(), ['prompt.compose', 'session.compact', "tool.call { tool: 'Bash' }"])
+  for (const gone of ['turn.complete', "{ tool: 'Agent' }", "{ tool: 'Skill' }"]) assert.ok(!hook.includes(gone), `register.ts still has ${gone}`)
+})
+
+test('register.ts has no text for removed features', () => {
+  for (const gone of [/unattended/i, /COMMAND_VOCABULARY/, /PROGRESS_NOTE/, /\bModels:/, /\bAgents:/, /approve/i])
+    assert.doesNotMatch(hook, gone, `register.ts still has ${gone}`)
+})
+
+test('the working-rules line names the six skills, and neither fix nor review as a skill', () => {
+  assert.ok(hook.includes(WORKING_RULES), 'register.ts lacks the working-rules line')
+  const named = /The JBIT skills \(([^)]*)\)/.exec(WORKING_RULES)[1].split(/,\s*/)
+  assert.deepEqual([...named].sort(), ['autopilot', 'charter', 'plan', 'resume', 'stage', 'verify'])
+  assert.doesNotMatch(hook, /jbit:(?:fix|review)\b/, 'register.ts names jbit:fix or jbit:review')
+})
+
+test('shell.ts has no outward code', () => {
+  for (const gone of [/outward/i, /OUTWARD_TOOLS/, /\bnetworkReason\b/, /\brunnerless\b/, /\bSENDS\b/, /\bFEEDS\b/, /\bWRITES_CONFIG\b/])
+    assert.doesNotMatch(shell, gone, `shell.ts still has ${gone}`)
 })

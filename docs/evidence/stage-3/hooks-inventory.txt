@@ -1,0 +1,27 @@
+$ ls hooks/
+hooks.json
+register.ts
+secrets.ts
+shell.ts
+
+$ grep -n "on('" hooks/register.ts
+192:  on('prompt.compose', async ($, e, next) => {
+207:  on('session.compact', async ($, e, next) => {
+213:  on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+
+$ grep -nE "^import" hooks/register.ts hooks/shell.ts hooks/secrets.ts
+hooks/register.ts:1:import type { EngineInterface, Register } from 'claude-code'
+hooks/register.ts:2:import { findSecrets, type Finding } from './secrets.ts'
+hooks/register.ts:3:import { addScope, commitScope, gitCall, joinPath, parseCommands, type Command } from './shell.ts'
+
+$ grep -nEi "unattended|approv|level|hold|'Agent'|outward|stageClose|\$\.store|Models:|wide" hooks/register.ts   # only hits: working-rules 'hold the details' and the allow-marker text
+14:/** The one fixed line beside the plan's `## Now`: how stages run, with the skills holding the details. */
+16:  "Working rules: build in stages; a stage is done when its checks pass against the running product and the suite is green; save each stage's evidence to `docs/evidence/stage-<n>/`; risky stages get `/code-review` and `/security-review`; commit per stage. The JBIT skills (plan, charter, stage, verify, autopilot, resume) hold the details."
+182:      `If a line is a placeholder or a false positive, add the comment \`jbit:allow-secret\` on that line and commit again.`,
+(exit 0)
+
+$ git status --short hooks
+D  hooks/models.ts
+D  hooks/project.ts
+ M hooks/register.ts
+ M hooks/shell.ts

@@ -1,16 +1,19 @@
 /**
- * Just enough shell parsing to tell which `git commit` (and `git add`) calls a Bash command line runs, and where:
+ * Just enough shell parsing to tell what a Bash command line will do to git and the outside world:
  * words with quotes and escapes, command separators, `cd`, substitutions, heredoc bodies and redirections.
  *
- * It is a guardrail against committing a secret by mistake, not a sandbox against an agent set on hiding a commit: a
- * commit from inside a script or an interpreter is out of its sight.
+ * It is a guardrail against an agent pushing by mistake, not a sandbox against one set on hiding it: where the
+ * parser can't be sure what runs, it leans toward reporting a command, but a push from inside a script or an
+ * interpreter is out of its sight.
  */
 
 /**
  * One simple command: its words, and the directory it runs in (relative to the session's, `null` if unknowable).
  * `opaque` marks a command the parser can't see into (nested past its depth, a script read from standard input, a
  * command read from input or built at run time where it matters), which nothing can vouch for; `why` says which.
- * `dynamic` marks a command whose name, or `eval`/`-c` string, is built at run time (`$c`, `$(…) commit`).
+ * `dynamic` marks a command whose name, or `eval`/`-c` string, is built at run time (`$c`, `$(…) push`): it counts only
+ * when the line names an outward command somewhere other than as a plain command's name, and `mentions` lists those
+ * names (bare words of the line, less one per plain command head).
  */
 export interface Command {
   words: string[]
@@ -18,8 +21,25 @@ export interface Command {
   opaque?: true
   why?: string
   dynamic?: true
+  mentions?: string[]
+  /** The files its output redirections name (`> out.txt`, `>> docs/PLAN.md`, `&> log`, `<> f`), as written; `< in` is a read and isn't one. */
+  targets?: string[]
   /** The text a heredoc or here-string feeds it, when it is the command the redirection was written on. */
   input?: string
+  /** Its standard input is the previous command's output (`a | b`, `a |& b`). */
+  fed?: true
+  /**
+   * Its words that may split or change before it runs: an unquoted variable expansion (`$URL`, `x${A}`), or an unquoted
+   * glob or brace (`*`, `?`, `[`, `{a,b}`) in a word not led by a literal `http(s)://`. Each may become several words, flags among them.
+   */
+  unquoted?: string[]
+  /** The line sets, before it or on it, a variable that changes where curl or wget read their config or which proxy they use (`HOME=.`, `https_proxy=…`). */
+  configEnv?: true
+  /**
+   * Variables the line assigns, before it or on it, other than a literal http(s) URL: `text` (`X=-T/etc/passwd`), or
+   * `computed` from a substitution, another variable or input (`S=$(cat f)`, `read -r x`).
+   */
+  assigned?: Record<string, 'text' | 'computed'>
 }
 
 /** How deep `bash -c`, `eval`, `watch` and `$(…)` strings are followed; past it a command is `opaque`. */
@@ -31,6 +51,7 @@ export const DEEP = 'a command nested too deep to check'
 export const BUILT = 'a command built at run time'
 export const STDIN = 'a shell reading its script from standard input'
 export const FROM_INPUT = 'a command read from input'
+export const ALIAS = 'a git alias set on the command line'
 
 /**
  * Splits a command line into simple commands, following `cd` so each knows where it runs. Shell grouping and
@@ -41,25 +62,73 @@ export const FROM_INPUT = 'a command read from input'
  * guard that sees an extra command pauses, one that misses a command lets it through.
  */
 export function parseCommands(line: string): Command[] {
-  return parseLine(line, '.', 0)
+  const commands = parseLine(line, '.', 0)
+  if (commands.some(c => c.dynamic)) {
+    const mentions = mentionsOf(line, commands)
+    for (const c of commands) if (c.dynamic) c.mentions = mentions
+  }
+  return commands
+}
+
+/** The bare names a line holds beyond its plain commands' heads: each word's last path part, less one per head. */
+function mentionsOf(line: string, commands: Command[]): string[] {
+  const count = new Map<string, number>()
+  for (const token of line.match(/[^\s'"`;&|()<>$={}\\,]+/g) ?? []) {
+    const name = bare(token)
+    count.set(name, (count.get(name) ?? 0) + 1)
+  }
+  // each distinct command once: a substitution `eval` reads twice still names its head once
+  const seen = new Set<string>()
+  for (const c of commands) {
+    if (c.dynamic || c.opaque || !c.words.length) continue
+    const key = `${c.dir}\0${c.words.join('\0')}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    const name = bare(c.words[0] ?? '')
+    const n = count.get(name)
+    if (n !== undefined) count.set(name, n - 1)
+  }
+  return [...count].filter(([, n]) => n > 0).map(([name]) => name)
 }
 
 function parseLine(line: string, start: string | null, depth: number): Command[] {
-  return parseRecords(scanList(line, 0, false, 0, { dyn: new Set() }).recs, start, depth)
+  return parseRecords(scanList(line, 0, false, 0, { dyn: new Set(), bare: new Set() }).recs, start, depth)
 }
 
 function parseRecords(recs: Rec[], start: string | null, depth: number): Command[] {
   const commands: Command[] = []
   let dir: string | null = start
+  // once the line assigns a config or proxy variable (`HOME=.`, `export https_proxy=…`, `env CURL_HOME=.`), every command from there on may see it
+  let configEnv = false
+  const assigned: Record<string, 'text' | 'computed'> = {}
   for (const rec of recs) {
+    configEnv ||= rec.words.some(w => CONFIG_ENV.test(w))
+    for (const w of rec.words) {
+      const m = /^([A-Za-z_][A-Za-z0-9_]*)\+?=(.*)$/s.exec(w)
+      if (!m) continue
+      const value = m[2] ?? ''
+      if (/[$`]/.test(value)) assigned[m[1] ?? ''] = 'computed'
+      else if (!/^https?:\/\//i.test(value)) assigned[m[1] ?? ''] = 'text'
+      else delete assigned[m[1] ?? '']
+    }
+    // `read x`, `mapfile a`: a value from input
+    const head = stripLeading(rec.words)
+    if (['read', 'mapfile', 'readarray'].includes(head[0] ?? ''))
+      for (const w of head.slice(1)) if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(w)) assigned[w] = 'computed'
     if (rec.opaque) {
       commands.push({ words: rec.words, dir, opaque: true, why: DEEP })
       continue
     }
     for (const sub of rec.subs) commands.push(...nestedRecs(sub, rec.words, dir, depth))
     for (const cmd of expand(rec.words, dir, depth, rec)) {
+      if (rec.targets) cmd.targets = rec.targets
       // a heredoc's text belongs to the command it was written on, not to the commands a shell reading it runs
       if (rec.stdin !== undefined && cmd.words.every(w => rec.words.includes(w))) cmd.input = rec.stdin
+      if (rec.fed) cmd.fed = true
+      const loose = rec.bare?.size ? cmd.words.filter(w => rec.bare?.has(w)) : []
+      if (loose.length) cmd.unquoted = loose
+      if (configEnv) cmd.configEnv = true
+      if (Object.keys(assigned).length) cmd.assigned = { ...assigned }
       const w = cmd.words
       if (!cmd.opaque && !cmd.dynamic && (w[0] === 'cd' || w[0] === 'pushd')) {
         const target = w.slice(1).find(a => !a.startsWith('-'))
@@ -99,6 +168,9 @@ export function joinPath(base: string, rel: string): string {
 }
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*\+?=/
+
+/** Variables that move curl's or wget's config file or route their requests through a proxy. */
+const CONFIG_ENV = /^(?:CURL_HOME|XDG_CONFIG_HOME|HOME|WGETRC|SYSTEM_WGETRC|[A-Za-z0-9]*_proxy)\+?=/i
 
 /** Shell keywords and grouping that can lead a simple command without being it. */
 const KEYWORDS = new Set(['{', '}', '!', 'if', 'then', 'elif', 'else', 'fi', 'do', 'done', 'while', 'until', 'in', 'esac'])
@@ -342,6 +414,15 @@ const bare = (w: string) => w.split('/').pop() ?? w
 /** A table's own entry for a command name (never `constructor` or another inherited property). */
 const own = <T>(table: Record<string, T>, name: string): T | undefined => (Object.hasOwn(table, name) ? table[name] : undefined)
 
+/** Tools whose subcommand word decides whether they reach outside (`git push`, `npm publish`): a subcommand built at run time or read from input isn't checkable. */
+const SUB_TOOLS = new Set([
+  'git', 'gh', 'npm', 'pnpm', 'yarn', 'bun', 'cargo', 'twine', 'gem', 'poetry', 'uv', 'docker', 'podman', 'vercel', 'netlify',
+  'fly', 'flyctl', 'firebase', 'serverless', 'sls', 'wrangler', 'railway', 'cdk', 'terraform', 'tofu', 'pulumi', 'kubectl', 'helm',
+])
+
+/** Every command the built-in check knows by name: a line that names one beside a command built at run time is held. */
+export const OUTWARD_TOOLS = new Set([...SUB_TOOLS, 'gcloud', 'az', 'aws', 'curl', 'wget'])
+
 const FIND_EXEC = new Set(['-exec', '-execdir', '-ok', '-okdir'])
 
 /** The commands one split command runs, looking through keywords, wrappers and shells (both readings of an unsure wrapper). */
@@ -429,6 +510,13 @@ function expand(words: string[], dir: string | null, depth: number, rec: Rec): C
     }
     w = read.split !== undefined ? [...read.split.split(/\s+/).filter(Boolean), ...rest] : rest
   }
+  // a tool whose subcommand decides, with that subcommand built at run time or taken from input
+  if (SUB_TOOLS.has(bare(w[0] ?? ''))) {
+    // past options, and past a word right after an option, which may be its value (`kubectl -n "$NS" get`)
+    const sub = bare(w[0] ?? '') === 'git' ? gitCall({ words: w, dir })?.sub : w.slice(1).find((a, k) => !a.startsWith('-') && !/^-[A-Za-z]$|^--[^=]+$/.test(w[k] ?? ''))
+    if (input !== undefined && (sub === undefined || sub.includes(input))) return [opaque(w, dir, FROM_INPUT), ...out]
+    if (isDyn(sub)) return [opaque(w, dir, BUILT), ...out]
+  }
   return [{ words: w, dir }, ...out]
 }
 
@@ -442,14 +530,22 @@ interface Rec {
   words: string[]
   subs: Rec[][]
   stdin?: string
+  /** The targets of its redirections. */
+  targets?: string[]
   dyn: Set<string>
   opaque?: true
   /** A heredoc of this command's body is still to be read. */
   waiting?: true
+  /** Its standard input is the previous command's output. */
+  fed?: true
+  /** The words that had an unquoted expansion in them (shared like `dyn`). */
+  bare?: Set<string>
 }
 
 interface Scan {
   dyn: Set<string>
+  /** Words with an unquoted `$VAR` or `${…}` in them. */
+  bare?: Set<string>
 }
 
 /** The commands in the `$(…)` or `<(…)` body starting at `i`, and where it ends (after its `)`); too deep, the rest is opaque. */
@@ -559,13 +655,19 @@ function bodySubs(body: string, level: number, scan: Scan): Rec[][] {
  */
 function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan): { recs: Rec[]; end: number } {
   const recs: Rec[] = []
-  const fresh = (): Rec => ({ words: [], subs: [], dyn: scan.dyn })
+  const fresh = (): Rec => ({ words: [], subs: [], dyn: scan.dyn, bare: scan.bare })
   let rec = fresh()
   let word = ''
   let inWord = false
   let dynWord = false
+  // the word has an unquoted variable expansion, so it may split into several
+  let bareWord = false
+  // the word has an unquoted glob or brace, so it may become several, unless a literal `http(s)://` leads it
+  let globWord = false
   // the next word is a redirection's target, or a here-string's text
   let drop = false
+  // the redirection being read writes (`>`, `>>`, `&>`, `<>`), so its target is kept
+  let writes = false
   let here = false
   let parens = 0
   const heredocs: { tag: string; strip: boolean; quoted: boolean; rec: Rec }[] = []
@@ -581,6 +683,7 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
         rec.stdin = word
         here = false
       } else if (drop) {
+        if (writes) rec.targets = [...(rec.targets ?? []), word]
         drop = false
       } else {
         const top = cases.length - 1
@@ -589,11 +692,14 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
         rec.words.push(word)
         leading &&= KEYWORDS.has(word)
         if (dynWord) scan.dyn.add(word)
+        if (bareWord || (globWord && !/^https?:\/\//i.test(word))) scan.bare?.add(word)
         if (cases[top] === 'subject' && word === 'in') {
           cases[top] = 'pattern'
           inWord = false
           word = ''
           dynWord = false
+          bareWord = false
+          globWord = false
           endCommand()
           return
         }
@@ -602,12 +708,17 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
     word = ''
     inWord = false
     dynWord = false
+    bareWord = false
+    globWord = false
   }
   const endCommand = () => {
     endWord()
     const kept = rec.words.length || rec.subs.length || rec.waiting
     if (kept) recs.push(rec)
+    // a pipe's reader may start past a newline or an opening parenthesis (`a |\n b`, `a | (b)`)
+    const fed = !kept && rec.fed
     rec = fresh()
+    if (fed) rec.fed = true
     leading = true
   }
   const take = (r: { recs: Rec[]; end: number }, from: number) => {
@@ -694,6 +805,7 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
       i += 2
       if (s[i] === '>') i++
       drop = true
+      writes = true
       continue
     }
     if (c === ';' || c === '&' || c === '|' || c === '(' || c === ')') {
@@ -705,11 +817,14 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
         }
         parens = Math.max(0, parens - 1)
       }
-      // `|&` is one operator: a pipe (not `||`) that feeds standard error too
+      // a pipe (not `||`) feeds the next command this one's output; `|&` feeds it standard error too
       const pipe = c === '|' && s[i + 1] !== '|' && s[i - 1] !== '|'
       endCommand()
       i++
-      if (pipe && s[i] === '&') i++
+      if (pipe) {
+        rec.fed = true
+        if (s[i] === '&') i++
+      }
       continue
     }
     if (c === '<' && s[i + 1] === '<' && s[i + 2] === '<') {
@@ -749,8 +864,10 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
         word = ''
         inWord = false
       } else endWord()
+      const from = i
       i++
       while (s[i] === '>' || s[i] === '<' || s[i] === '|') i++
+      writes = s.slice(from, i).includes('>')
       if (s[i] === '&') {
         i++
         while (/\d|-/.test(s[i] ?? '')) i++
@@ -814,6 +931,7 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
       const end = braces(s, i, false, level, scan, rec.subs)
       word += s.slice(i, end)
       dynWord = true
+      bareWord = true
       i = end
       continue
     }
@@ -821,7 +939,8 @@ function scanList(s: string, i: number, stop: boolean, level: number, scan: Scan
       i = take(backtick(s, i, level, scan), i)
       continue
     }
-    if (c === '$' && /[A-Za-z0-9_@*#?!$-]/.test(s[i + 1] ?? '')) dynWord = true
+    if (c === '$' && /[A-Za-z0-9_@*#?!$-]/.test(s[i + 1] ?? '')) dynWord = bareWord = true
+    if (c === '*' || c === '?' || c === '[' || c === '{') globWord = true
     word += c
     i++
   }
@@ -942,4 +1061,383 @@ export function addScope(call: GitCall): AddScope | undefined {
   if (!scope.paths.length && every) scope.paths.push('.')
   if (scope.paths.includes('--pathspec-from-file')) scope.paths = ['.']
   return scope.paths.length ? scope : undefined
+}
+
+const LOCAL_HOST = /^(?:https?:\/\/)?(?:localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\]|[\w-]+\.localhost)(?::\d+)?(?:\/|$)/i
+
+/** Package runners whose next word is the command: `npx [opts]`, `bunx`, `pnpm dlx|exec`, `yarn dlx|exec`, `npm exec|x [--]`. */
+export function runnerless(words: string[]): string[] {
+  const name = bare(words[0] ?? '')
+  let i: number
+  if (name === 'npx' || name === 'bunx') i = 1
+  else if ((name === 'pnpm' || name === 'yarn') && (words[1] === 'dlx' || words[1] === 'exec')) i = 2
+  else if (name === 'npm' && (words[1] === 'exec' || words[1] === 'x')) i = 2
+  else return words
+  while (i < words.length) {
+    const a = words[i] ?? ''
+    if (a === '--') {
+      i++
+      break
+    }
+    if (!a.startsWith('-')) break
+    if (/^(?:-p|--package|-w|--workspace)$/.test(a)) i++
+    i++
+  }
+  return i < words.length ? words.slice(i) : words
+}
+
+/** Package-manager options that take the next word as their value (`npm --registry x publish`, `pnpm -C dir publish`). */
+const PM_VALUE = new Set([
+  '--registry', '-w', '--workspace', '--prefix', '--userconfig', '--globalconfig', '-C', '--dir', '--cwd', '--filter', '-F',
+  '--loglevel', '--cache', '--otp', '--tag', '--access', '--scope', '--reporter',
+])
+
+/**
+ * A package manager's subcommand, read both ways where an unknown long option might take a value (`npm --foo x
+ * publish`): either reading names it. `yarn npm publish` is `npm publish`.
+ */
+function pmSubs(args: string[]): string[] {
+  const subs = new Set<string>()
+  for (const greedy of [false, true]) {
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i] ?? ''
+      if (a === '--') {
+        if (args[i + 1] !== undefined) subs.add(args[i + 1] ?? '')
+        break
+      }
+      if (!a.startsWith('-') || a === '-') {
+        subs.add(a)
+        break
+      }
+      if (!a.includes('=') && (PM_VALUE.has(a) || (greedy && a.startsWith('--')))) i++
+    }
+  }
+  return [...subs]
+}
+
+export const SENDS = 'a request that sends data to an outside service'
+export const FEEDS = "another command's output sent to an outside service"
+export const WRITES_CONFIG = 'a download that writes a config file or git hook'
+
+/** Commands that talk to another machine: one fed a pipe, or given a substitution's output, sends that output. */
+const NET_TOOLS = new Set(['curl', 'wget', 'nc', 'ncat', 'netcat', 'socat', 'telnet', 'ssh', 'sftp', 'ftp', 'http', 'https', 'xh'])
+
+/** Whether a reason is one of the network ones, where a read could go through WebFetch instead. */
+export const networkReason = (reason: string) => reason === SENDS || reason === FEEDS || reason === WRITES_CONFIG
+
+/** A word holding a command substitution: its output is part of what the command sends. */
+const SUBSTITUTED = /\$\(|`/
+
+/** Header names that carry credentials or a session: an auth, cookie, token, key, secret, session or password header. */
+const SECRET_HEADER = /auth|cookie|token|key|secret|session|passw|credential|signature/i
+
+/**
+ * The options a read-only fetch may use: `short` flags and `long` ones that take no value, `shortValue` and
+ * `longValue` ones that take one (the value checked by `check` where it matters). Anything else, a body, an upload,
+ * a method, credentials, cookies, a config file, a proxy, is a send.
+ */
+interface FetchOptions {
+  short: string
+  shortValue: string
+  long: Set<string>
+  longValue: Set<string>
+  /** Whole words that look like a cluster but aren't one (`wget -nv`). */
+  words?: Set<string>
+  /** Options that send, and take a value: known only so their value isn't read as a URL (`curl -d '{}' localhost`). */
+  sendShort: string
+  sendLong: Set<string>
+  /** Options that send the request somewhere other than its URL, or add URLs unseen: a call with one is never local. */
+  rerouteShort: string
+  reroute: RegExp
+  /** Options whose value is a file the tool writes. */
+  outShort: string
+  outLong: Set<string>
+}
+
+const CURL: FetchOptions = {
+  short: 'sSLfiIOkgGvN#46R',
+  shortValue: 'oAmwHrDCzYyX',
+  long: new Set([
+    'silent', 'show-error', 'location', 'fail', 'fail-with-body', 'fail-early', 'include', 'head', 'remote-name', 'remote-name-all',
+    'remote-time', 'insecure', 'globoff', 'get', 'verbose', 'no-buffer', 'progress-bar', 'no-progress-meter',
+    'ipv4', 'ipv6', 'compressed', 'http1.0', 'http1.1', 'http2', 'http2-prior-knowledge', 'http3', 'create-dirs', 'raw',
+    'tr-encoding', 'path-as-is', 'no-keepalive', 'parallel', 'parallel-immediate', 'retry-all-errors', 'retry-connrefused', 'version',
+    'tlsv1', 'tlsv1.0', 'tlsv1.1', 'tlsv1.2', 'tlsv1.3', 'ssl-reqd',
+  ]),
+  longValue: new Set([
+    'output', 'user-agent', 'max-time', 'connect-timeout', 'retry', 'retry-delay', 'retry-max-time', 'write-out', 'header', 'range',
+    'max-redirs', 'max-filesize', 'time-cond', 'output-dir', 'dump-header', 'limit-rate', 'continue-at', 'speed-limit', 'speed-time',
+    'stderr', 'trace', 'trace-ascii', 'request', 'url', 'parallel-max', 'keepalive-time', 'proto', 'proto-redir', 'tls-max',
+  ]),
+  sendShort: 'dFTuUbcKxeEQtP',
+  sendLong: new Set([
+    'data', 'data-raw', 'data-binary', 'data-urlencode', 'data-ascii', 'json', 'form', 'form-string', 'upload-file', 'user',
+    'proxy-user', 'cookie', 'cookie-jar', 'config', 'proxy', 'referer', 'cert', 'key', 'cacert', 'oauth2-bearer', 'resolve',
+    'connect-to', 'unix-socket', 'abstract-unix-socket', 'url-query', 'aws-sigv4', 'netrc-file', 'preproxy', 'interface',
+    'variable', 'expand-data', 'proxy-header', 'header-file', 'mail-from', 'mail-rcpt', 'quote', 'request-target', 'login-options',
+  ]),
+  rerouteShort: 'xK:',
+  reroute: /^(?:proxy|proxy1\.0|preproxy|socks.*|connect-to|resolve|config|next|doh-url)$/,
+  outShort: 'oD',
+  outLong: new Set(['output', 'dump-header', 'output-dir', 'trace', 'trace-ascii', 'stderr']),
+}
+
+const WGET: FetchOptions = {
+  short: 'qvSNckEK46xV',
+  shortValue: 'OoaPUTtwQ',
+  long: new Set([
+    'quiet', 'verbose', 'no-verbose', 'server-response', 'spider', 'timestamping', 'continue', 'no-check-certificate', 'convert-links',
+    'adjust-extension', 'inet4-only', 'inet6-only', 'no-clobber', 'no-directories', 'no-host-directories', 'force-directories',
+    'show-progress', 'no-cache', 'version', 'no-dns-cache', 'https-only', 'retry-connrefused', 'random-wait',
+    'no-use-server-timestamps',
+  ]),
+  longValue: new Set([
+    'output-document', 'output-file', 'append-output', 'directory-prefix', 'user-agent', 'timeout', 'tries', 'wait', 'waitretry',
+    'read-timeout', 'connect-timeout', 'dns-timeout', 'limit-rate', 'quota', 'max-redirect', 'header', 'compression', 'progress',
+    'retry-on-http-error',
+  ]),
+  words: new Set(['-nv', '-nc', '-nd', '-nH']),
+  sendShort: 'eiBlI',
+  sendLong: new Set([
+    'post-data', 'post-file', 'body-data', 'body-file', 'method', 'user', 'password', 'http-user', 'http-password', 'proxy-user',
+    'proxy-password', 'load-cookies', 'save-cookies', 'execute', 'config', 'input-file', 'base', 'certificate', 'private-key',
+    'bind-address', 'referer',
+  ]),
+  rerouteShort: 'eiB',
+  reroute: /^(?:execute|config|input-file|base)$/,
+  outShort: 'OoaP',
+  outLong: new Set(['output-document', 'output-file', 'append-output', 'directory-prefix']),
+}
+
+/** A path curl or wget would read as its config, or git would run or read: writing one is no read. */
+const CONFIG_PATH = /(?:^|\/)(?:[._]curlrc|\.wgetrc)$|(?:^|\/)\.git\/+(?:hooks|config)(?:\/|$)/i
+
+/** Whether one option's value keeps a fetch a read: a method of GET or HEAD, a header that carries no credentials or file. */
+function harmlessValue(name: string, value: string): boolean {
+  // a value from a variable may be anything; only the URL itself may be one
+  if (value.includes('$')) return false
+  if (name === 'X' || name === 'request') return /^(?:GET|HEAD)$/i.test(value)
+  if (name === 'H' || name === 'header') return !value.startsWith('@') && !SECRET_HEADER.test(value.split(':')[0] ?? '')
+  return true
+}
+
+/** curl's options whose values `-G` puts in the query string (`--url-query` puts its own there without it). */
+const CURL_DATA = new Set(['data', 'data-ascii', 'data-raw', 'data-urlencode', 'url-query'])
+
+/** Whether a data value reads a file: `@file` for `-d`, `@file` or `name@file` for `--data-urlencode` and `--url-query`. */
+function readsFile(name: string, value: string): boolean {
+  if (name === 'data-raw') return false
+  if (name === 'data' || name === 'data-ascii') return value.startsWith('@')
+  // `@file`, `name@file`, and `=@…` too, to be safe
+  return /^=?[^=]*@/.test(name === 'url-query' ? value.replace(/^\+/, '') : value)
+}
+
+/** An http(s) URL with no user or password in it; any other scheme, or none, isn't a plain read. */
+const READ_URL = /^https?:\/\/[^/?#@]+(?:[/?#]|$)/i
+/** A word that is one variable expansion and nothing else (`"$URL"`, `"${ROUTES[i]}"`), read as a URL when quoted. */
+const WHOLE_EXPANSION = /^\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]@*`]+\])?\})$/
+
+/**
+ * Why a `curl` or `wget` call counts as outward, or undefined. A call to local hosts only is never outward, unless an
+ * option or a variable on the line sends it elsewhere or adds URLs unseen (a proxy, `--connect-to`, `--resolve`, a
+ * config file, `--next`, `wget -i`, `-e`, `-B`, `https_proxy=…`). A variable that moves the config file or sets a
+ * proxy (`HOME`, `CURL_HOME`, `XDG_CONFIG_HOME`, `WGETRC`, `*_proxy`) is a send anywhere, and so is a download written
+ * to a curl or wget config file or into `.git/hooks` or `.git/config`. Elsewhere, a read passes: every option is on
+ * the tool's list of harmless ones (combined short flags read one by one), no option's value holds a `$`, every URL
+ * is http(s) with no credentials in it, no word holds a command substitution or may split (an unquoted expansion,
+ * glob or brace), and it isn't fed a pipe. Anything else, a body, an upload, another method, credentials, an auth or
+ * cookie header, a config file, an unknown option, is a send. A query string passes, though it can carry data, and
+ * so do curl's data options under `-G` (and `--url-query`), which put their values in it, when none reads a file or
+ * holds a `$`; and so does a URL in a double-quoted variable (`"$URL"`, `"${ROUTES[i]}"`,
+ * `"https://en.wikipedia.org/wiki/$PAGE"`, never an operator, `!` or `[@]`), though it too can carry data, or even
+ * hold a flag: the check is a guardrail, not a sandbox.
+ */
+function fetchReason(tool: 'curl' | 'wget', cmd: Command, args: string[]): string | undefined {
+  const spec = tool === 'curl' ? CURL : WGET
+  const urls: string[] = []
+  const outputs: string[] = [...(cmd.targets ?? [])]
+  let read = true
+  // an option that sends the request elsewhere or adds URLs unseen: the call is no longer local
+  let rerouted = false
+  // curl's data options: a send, unless `-G` puts them in the query string (`--url-query` always does)
+  let get = false
+  let data = false
+  const datum = (name: string, value: string | undefined) => {
+    if (value === undefined || value.includes('$') || readsFile(name, value)) read = false
+    if (name !== 'url-query') data = true
+  }
+  const valued = (name: string, value: string | undefined, out: boolean) => {
+    if (value === undefined || !harmlessValue(name, value)) read = false
+    if (out && value !== undefined) outputs.push(value)
+  }
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i] ?? ''
+    if (a === '--') {
+      urls.push(...args.slice(i + 1))
+      break
+    }
+    if (!a.startsWith('-') || a === '-') {
+      urls.push(a)
+      continue
+    }
+    if (spec.words?.has(a)) continue
+    if (a.startsWith('--')) {
+      const eq = a.indexOf('=')
+      const name = a.slice(2, eq < 0 ? undefined : eq)
+      if (spec.reroute.test(name)) rerouted = true
+      if (tool === 'curl' && name === 'get' && eq < 0) get = true
+      if (tool === 'curl' && CURL_DATA.has(name)) datum(name, eq < 0 ? args[++i] : undefined)
+      else if (spec.longValue.has(name)) {
+        // curl takes no `--name=value`: that word is an unknown option
+        const value = eq < 0 ? args[++i] : tool === 'wget' ? a.slice(eq + 1) : undefined
+        valued(name, value, spec.outLong.has(name))
+        if (name === 'url' && value !== undefined) urls.push(value)
+      } else {
+        if (eq < 0 && spec.sendLong.has(name)) i++
+        if (eq >= 0 || !spec.long.has(name)) read = false
+      }
+      continue
+    }
+    for (let j = 1; j < a.length; j++) {
+      const c = a[j] ?? ''
+      if (spec.rerouteShort.includes(c)) rerouted = true
+      if (tool === 'curl' && c === 'G') get = true
+      if (tool === 'curl' && c === 'd') {
+        datum('data', j < a.length - 1 ? a.slice(j + 1) : args[++i])
+        break
+      }
+      if (spec.shortValue.includes(c)) {
+        valued(c, j < a.length - 1 ? a.slice(j + 1) : args[++i], spec.outShort.includes(c))
+        break
+      }
+      if (!spec.short.includes(c)) {
+        read = false
+        if (spec.sendShort.includes(c) && j === a.length - 1) i++
+        break
+      }
+    }
+  }
+  // a file it writes, named or taken from the URL, that curl, wget or git would read back as config or run
+  const named = urls.map(u => u.replace(/[?#].*$/, ''))
+  if ([...outputs, ...named].some(p => CONFIG_PATH.test(p))) return WRITES_CONFIG
+  if (cmd.configEnv) return SENDS
+  if (!rerouted && urls.length && urls.every(u => LOCAL_HOST.test(u))) return undefined
+  if (data && !get) read = false
+  const unquoted = cmd.unquoted ?? []
+  // a quoted variable is a URL only when the line gave it no other value (`X=-T/etc/passwd; curl "$X"` uploads), and
+  // one inside a URL only when the line didn't fill it from a file, a command or input (`S=$(cat f); curl "…?q=$S"`)
+  const kind = (name: string) => (cmd.assigned && Object.hasOwn(cmd.assigned, name) ? cmd.assigned[name] : undefined)
+  const names = (u: string) => [...u.matchAll(/\$\{?([A-Za-z_][A-Za-z0-9_]*)/g)].map(m => m[1] ?? '')
+  const goodUrl = (u: string) =>
+    (READ_URL.test(u) && names(u).every(n => kind(n) !== 'computed')) || (WHOLE_EXPANSION.test(u) && names(u).every(n => !kind(n)))
+  if (cmd.fed || args.some(a => SUBSTITUTED.test(a) || unquoted.includes(a)) || !urls.every(goodUrl)) read = false
+  return read ? undefined : SENDS
+}
+
+/** Why a command reaches outside the machine or is hard to undo, or undefined. Not exhaustive: the common publish, deploy and push paths. */
+export function outwardReason(cmd: Command): string | undefined {
+  if (cmd.opaque) return cmd.why ?? DEEP
+  // a command built at run time counts only when the line names an outward command it could be
+  if (cmd.dynamic) return cmd.mentions?.some(m => OUTWARD_TOOLS.has(m)) ? BUILT : undefined
+  // a package runner's command is checked as itself (`npx npm publish`, `npm exec -- npm publish`)
+  const inner = runnerless(cmd.words)
+  if (inner !== cmd.words) {
+    const reason = outwardReason({ ...cmd, words: inner })
+    if (reason) return reason
+  }
+  const [head = '', ...args] = cmd.words
+  const tool = head.split('/').pop() ?? head
+  const sub = args.find(a => !a.startsWith('-'))
+  const has = (...words: string[]) => args.some(a => words.includes(a))
+
+  // a network command fed a pipe or a substitution's output sends it (`curl … | nc host 80`); curl and wget are read below
+  const substituted = args.some(a => SUBSTITUTED.test(a)) || SUBSTITUTED.test(cmd.input ?? '')
+  if (NET_TOOLS.has(tool) && tool !== 'curl' && tool !== 'wget' && (cmd.fed || substituted)) return FEEDS
+
+  const git = gitCall(cmd)
+  if (git?.alias) return ALIAS
+  if (git?.sub === 'push') return 'git push'
+  if (git?.sub === 'send-email') return 'git send-email'
+  if ((git?.sub === 'subtree' || git?.sub === 'lfs') && git.args.includes('push')) return `git ${git.sub} push`
+
+  switch (tool) {
+    case 'gh': {
+      const [noun, verb] = args.filter(a => !a.startsWith('-'))
+      if (noun === 'api') {
+        const method = args.find((a, i) => args[i - 1] === '-X' || args[i - 1] === '--method') ?? (has('-f', '-F', '--field', '--raw-field', '--input') ? 'POST' : 'GET')
+        return method.toUpperCase() === 'GET' ? undefined : `gh api ${method.toUpperCase()}`
+      }
+      const writes: Record<string, string[]> = {
+        pr: ['create', 'merge', 'close', 'comment', 'review', 'edit', 'ready', 'reopen'],
+        issue: ['create', 'comment', 'close', 'edit', 'delete', 'reopen', 'transfer'],
+        release: ['create', 'upload', 'delete', 'edit'],
+        repo: ['create', 'delete', 'edit', 'rename', 'archive', 'fork'],
+        workflow: ['run', 'enable', 'disable'],
+        secret: ['set', 'delete'],
+        variable: ['set', 'delete'],
+      }
+      return noun && verb && writes[noun]?.includes(verb) ? `gh ${noun} ${verb}` : undefined
+    }
+    case 'npm':
+    case 'pnpm':
+    case 'yarn':
+    case 'bun': {
+      for (const s of pmSubs(args)) {
+        if (s === 'publish' || s === 'unpublish' || s === 'deprecate') return `${tool} ${s}`
+        if (s === 'npm' && tool === 'yarn') {
+          const reason = outwardReason({ ...cmd, words: ['npm', ...args.slice(args.indexOf('npm') + 1)] })
+          if (reason) return `yarn ${reason}`
+        }
+      }
+      return undefined
+    }
+    case 'cargo':
+      return sub === 'publish' || sub === 'yank' ? `cargo ${sub}` : undefined
+    case 'twine':
+      return sub === 'upload' ? 'twine upload' : undefined
+    case 'gem':
+      return sub === 'push' ? 'gem push' : undefined
+    case 'poetry':
+    case 'uv':
+      return sub === 'publish' ? `${tool} publish` : undefined
+    case 'docker':
+    case 'podman':
+      return sub === 'push' ? `${tool} push` : undefined
+    case 'vercel': {
+      const local = ['dev', 'env', 'login', 'logout', 'link', 'pull', 'build', 'whoami', 'ls', 'list', 'inspect', 'logs', 'help']
+      return !sub || sub === 'deploy' || has('--prod') || !local.includes(sub) ? 'vercel deploy' : undefined
+    }
+    case 'netlify':
+    case 'fly':
+    case 'flyctl':
+    case 'firebase':
+    case 'serverless':
+    case 'sls':
+      return sub === 'deploy' ? `${tool} deploy` : undefined
+    case 'wrangler':
+      return sub === 'deploy' || sub === 'publish' ? `wrangler ${sub}` : undefined
+    case 'railway':
+      return sub === 'up' ? 'railway up' : undefined
+    case 'cdk':
+      return sub === 'deploy' || sub === 'destroy' ? `cdk ${sub}` : undefined
+    case 'terraform':
+    case 'tofu':
+      return sub === 'apply' || sub === 'destroy' || sub === 'import' ? `${tool} ${sub}` : undefined
+    case 'pulumi':
+      return sub === 'up' || sub === 'destroy' || sub === 'update' ? `pulumi ${sub}` : undefined
+    case 'kubectl':
+      return sub && ['apply', 'delete', 'create', 'replace', 'patch', 'scale', 'rollout', 'set', 'edit', 'drain'].includes(sub) ? `kubectl ${sub}` : undefined
+    case 'helm':
+      return sub && ['install', 'upgrade', 'uninstall', 'delete', 'rollback'].includes(sub) ? `helm ${sub}` : undefined
+    case 'gcloud':
+    case 'az':
+      return has('deploy', 'delete') ? `${tool} ${args.includes('deploy') ? 'deploy' : 'delete'}` : undefined
+    case 'aws':
+      if (args[0] === 's3' && ['cp', 'sync', 'mv', 'rm', 'rb'].includes(args[1] ?? '')) return `aws s3 ${args[1]}`
+      return args.some(a => /^(deploy|delete-|update-function-code|put-|create-|terminate-)/.test(a)) ? 'aws write' : undefined
+    case 'curl':
+    case 'wget':
+      return fetchReason(tool, cmd, args)
+  }
+  return undefined
 }

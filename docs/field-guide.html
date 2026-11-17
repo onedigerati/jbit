@@ -192,7 +192,7 @@ nav.top .brand{font-family:var(--f-display);font-weight:800;color:var(--ink);mar
 .pause h3{font-size:1rem;margin-bottom:4px}
 .pause p{font-size:.9rem;color:var(--muted)}
 
-/* role agents */
+/* agents level */
 .fan{margin-top:20px;display:grid;grid-template-columns:1fr 1.3fr;gap:24px;align-items:start}
 .fan > *{min-width:0}
 .fan svg{width:100%;height:auto;max-width:100%;display:block}
@@ -266,8 +266,8 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 1.2.0</span>
-  <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Role agents</a><a href="#guards">The hook</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
+  <span class="brand">JBIT 2.0.0</span>
+  <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#models">Models</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
 <header class="hero">
@@ -278,16 +278,16 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <p class="promise">Plans it. Proves it. Sees it through.</p>
     <p class="lede">Say the goal and approve the plan, then say the line. JBIT keeps the project in one plan file and git, builds it in stages, proves each one against the running product before it's committed, and logs the calls it makes for you. It stops before anything it can't take back.</p>
   </div>
-  <div class="term" id="heroTerm" role="img" aria-label="A Claude Code session: the user types 'JBIT, just build it.' and JBIT runs the plan stage after stage, proving and committing each one">
-    <div class="tl cmd"><span class="p">&gt;</span><span class="u" id="heroCmd">JBIT, just build it.</span></div>
+  <div class="term" id="heroTerm" role="img" aria-label="A Claude Code session: the user types 'JBIT, just build it. Autopilot, lean.' and JBIT runs the plan unattended, proving and committing each stage">
+    <div class="tl cmd"><span class="p">&gt;</span><span class="u" id="heroCmd">JBIT, just build it. Autopilot, lean.</span></div>
     <div class="tl" data-step><span class="k"></span><span class="dim">plan · docs/PLAN.md · 4 stages, 8 checks</span></div>
     <div class="tl" data-step><span class="k">✓</span><span>stage 1 · Plot map</span><span class="s dim">proven · committed</span></div>
     <div class="tl" data-step><span class="k">✓</span><span>stage 2 · Booking</span><span class="s dim">proven · committed</span></div>
     <div class="tl" data-step><span class="k">✓</span><span>stage 3 · Member login</span><span class="s dim">security-reviewed · committed</span></div>
     <div class="tl" data-step><span class="k dim">…</span><span>stage 4 · Season dates<span class="caret" aria-hidden="true"></span></span></div>
-    <div class="st" id="heroSt"><span>jbit · stage 4 of 4</span> <span>· Season dates</span></div>
+    <div class="st" id="heroSt"><span>jbit · autopilot unattended</span> <span>· lean · 3/4 done</span> <span>· next: 4. Season dates</span></div>
   </div>
-  <p class="hero-note">Autopilot runs every stage in a row and logs the calls it makes for you as dated <code>(autopilot)</code> decisions. Stage 3 touches auth, so it gets <code>/code-review</code> and <code>/security-review</code> before its commit. It stops for what's stuck or yours to decide, and before anything outward or hard to undo (<a href="#stops">when it stops</a>).</p>
+  <p class="hero-note">The command opens with the name, so it runs <b>unattended</b>: stage 3 touches auth and is built without a hold, the call logged as an <code>(unattended)</code> decision. <code>lean</code> goes to the plan's Agents line. Without the name, "just build it" never sets the level: it runs at the one that stands, attended unless your own command set one for this plan (<a href="#autopilot">how autopilot is armed</a>).</p>
 </header>
 
 <!-- MEMORY -->
@@ -319,8 +319,8 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
         <li><code>CLAUDE.md</code> holds how to run and test the project, and locked product decisions.</li>
         <li>git holds one commit per stage, so the history reads as the plan.</li>
       </ul>
-      <div style="margin-top:14px" class="statusline" id="statusline">jbit · stage 3 of 5 · Share mode</div>
-      <p style="font-size:.8rem;color:var(--muted);margin-top:6px">The status band, set by the hook from the plan.</p>
+      <div style="margin-top:14px" class="statusline" id="statusline">jbit · 2/5 done · next: 3. Share mode</div>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:6px">The status line, kept current by the hook.</p>
     </div>
   </div>
   <div class="row" style="margin-top:16px">
@@ -351,31 +351,46 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">The project manager</span>
     <h2>Autopilot: you approve the plan, Claude runs it</h2>
-    <p>Approve the plan and say <code>JBIT, just build it.</code> (or "take it from here", or type <code>/jbit:autopilot</code>), and the main session becomes the project manager. It doesn't write the code. Builder agents write it, a fresh verifier proves it, <code>/code-review</code> and <code>/security-review</code> review the risky stages, and the manager commits and keeps the plan current, stage after stage, without stopping in between. It works in a headless run (<code>claude -p</code>) too.</p>
+    <p>Approve the plan and say <code>JBIT, just build it.</code> (or type <code>/jbit:autopilot</code>), and the main session becomes the project manager. It doesn't write the code. Builder subagents write it, a fresh agent verifies it, another reviews it, and the manager commits and keeps the plan current. The JBIT hook keeps the run going between turns and enforces the stops. Your command works in a headless run (<code>claude -p</code>) and on a session's first turn too: the hook attaches the run's working rules beside that prompt. A headless run leaves the progress note between stages to the final report, which covers each stage. An Agents level in the same sentence (<code>JBIT, just build it. Autopilot, lean.</code>) is written to the plan's Agents line.</p>
   </div>
   <div class="arm">
     <div class="arm-card un">
-      <span class="tag">start</span>
-      <h3>Hand it the plan</h3>
-      <p>Autopilot runs a plan you've seen and approved. With no plan, or one you haven't seen, it plans first and waits for your yes. Any of these hands it over:</p>
-      <p class="says"><code>JBIT, just build it.</code> <code>JBIT autopilot</code> <code>take it from here</code> <code>/jbit:autopilot</code></p>
+      <span class="tag">unattended</span>
+      <h3>Your own command</h3>
+      <p>A typed <code>/jbit:autopilot</code>, or a whole message that opens with "JBIT" (any case, then a space, comma or colon) and holds nothing but command words on one line:</p>
+      <p class="says"><code>JBIT autopilot lean</code> <code>JBit, take it from here</code> <code>JBIT, just build it. Autopilot, lean.</code></p>
+      <p>Claude builds risky stages and settles open decisions itself, logging each as a dated <code>(unattended)</code> decision, listed first in its final report.</p>
     </div>
     <div class="arm-card at">
-      <span class="tag">decide</span>
-      <h3>Calls it makes for you</h3>
-      <p>Calls inside the plan's intent are the manager's: a library, a name, an edge case the plan didn't spell out. Each is logged in the plan's decisions, dated and marked <code>(autopilot)</code> with a one-line reason, and listed first in the final report so you can overrule it.</p>
+      <span class="tag">attended</span>
+      <h3>Plain words, or anything else</h3>
+      <p>Words without the name never set the level: they start autopilot at the one that stands, attended unless your own command set one for this plan. Your own plain reply approves a stage it's holding:</p>
+      <p class="says"><code>just build it</code> <code>take it from here</code> <code>just build it, autopilot lean</code></p>
+      <p>Claude starting autopilot, a plugin's prompt or a file never sets the level or approves a stage, and a Mode line left from an earlier session doesn't start a run. A question or a second line makes a JBIT message talk, not a command.</p>
     </div>
   </div>
   <div class="col stack" style="margin-top:20px">
-    <p>Outward safety is Claude Code's job: its permission modes and sandbox decide what may push, publish or deploy. The manager also stops before those steps itself.</p>
-    <p>You hear from the run as it goes. When someone reads along, the manager gives a short progress note after each stage's commit: concerns first, or "No concerns."; what the stage delivered and how it was proven, linking its evidence report; its <code>(autopilot)</code> decisions; and what's left. A headless run leaves the note to the final report. A concern (a check failing after the second fix round, a must-fix review finding, a risk line that grows) is told in one line when it happens, and the run carries on.</p>
-    <p>The simulation below runs a sample four-stage plan for a garden-plot booking app. Stage 3 touches auth, so it gets a security review as well as a code review, and the run stops before the push at the end.</p>
+    <p>Words in your command change the level: <code>attended</code> brings back every stop and wins over everything else; <code>outward</code> also lets push, publish and deploy through; <code>unattended</code> changes nothing, since it's the default. The level lasts until your next command or a new plan goal, through pauses, stops and resumes.</p>
+    <p>You hear from the run as it goes. Each commit that closes a stage sends a notification (<code>Stage 2 of 4 done: … Next: …</code>), and, when someone reads along, the manager gives a short progress note before going on: concerns first, or "No concerns."; what the stage delivered and how it was proven, linking its evidence report; the calls it made unattended; and what's left. A headless run leaves the note to the final report. A concern (a check failing again, a review finding being fixed, a risk line that grows) is told in one line when it happens, and the run carries on.</p>
+    <p>The simulation below runs a sample four-stage plan for a garden-plot booking app. Stage 3 touches auth. Pick what you say: in plain words, with no command of yours for this plan yet, the run is attended and stage 3 is held until you approve it; with the name it's built without a hold.</p>
   </div>
+
 
   <div class="sim" id="simJBIT">
     <div class="sim-bar">
       <button class="btn sig" id="sPlay">▶ Start autopilot</button>
       <button class="btn ghost" id="sReset">Reset</button>
+      <span class="seg-label">You say</span>
+      <div class="seg" id="segSay">
+        <button data-v="plain" aria-pressed="true">Take it from here.</button>
+        <button data-v="jbit" aria-pressed="false">JBIT, just build it.</button>
+      </div>
+      <span class="seg-label">Agents</span>
+      <div class="seg" id="segAgents">
+        <button data-v="lean" aria-pressed="false">lean</button>
+        <button data-v="balanced" aria-pressed="true">balanced</button>
+        <button data-v="wide" aria-pressed="false">wide</button>
+      </div>
       <span class="seg-label">Speed</span>
       <div class="seg" id="segSpeed">
         <button data-v="1" aria-pressed="true">1×</button>
@@ -389,9 +404,19 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
         <div class="lane"><div class="lane-name">Builders<small>subagents</small></div><div class="lane-chips" id="L-bld"></div></div>
         <div class="lane"><div class="lane-name">Verifier<small>built nothing</small></div><div class="lane-chips" id="L-ver"></div></div>
         <div class="lane"><div class="lane-name">Reviewer<small>fresh eyes</small></div><div class="lane-chips" id="L-rev"></div></div>
-        <div class="lane"><div class="lane-name">JBIT hook<small>## Now, secret guard</small></div><div class="lane-chips" id="L-hook"></div></div>
-        <div class="gauge-wrap"><span>Context</span><div class="gauge" title="Claude Code compacts the context as it fills"><i id="gauge" style="width:12%"></i><b></b></div><span class="mono" id="gaugeN">12%</span></div>
+        <div class="lane"><div class="lane-name">JBIT hook<small>enforces</small></div><div class="lane-chips" id="L-hook"></div></div>
+        <div class="gauge-wrap"><span>Context</span><div class="gauge" title="Compaction threshold at 65%"><i id="gauge" style="width:12%"></i><b></b></div><span class="mono" id="gaugeN">12%</span></div>
         <div class="log" id="log" aria-live="polite"></div>
+        <div class="reply" id="reply">
+          <p><b>Autopilot paused.</b> Stage 3's risk line names <b>auth</b> and <b>personal data</b>. The hook blocks file edits outside the plan and its <code>docs/research/</code> notes, and builder agents, until you approve. Pick a reply:</p>
+          <div class="row">
+            <button class="btn ghost" data-r="status">what's the status?</button>
+            <button class="btn ghost" data-r="q">go?</button>
+            <button class="btn ghost" data-r="words">approve the auth stage</button>
+            <button class="btn ghost" data-r="yes">yes, go ahead</button>
+            <button class="btn" data-r="jbi">Just build it.</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="sim-foot" id="simFoot">This is an illustration of the flow. Timings are compressed and the agent output is made up.</div>
@@ -403,32 +428,57 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">When the manager calls you</span>
     <h2>Autopilot stops for these, and only these</h2>
-    <p>Between stages the manager doesn't wait. It stops for five things. To stop, it commits what is finished and verified (never half a stage), then tells you in a few lines what it needs and what it recommends.</p>
+    <p>An attended run stops for all six. An unattended one, armed by your own command, decides the first three itself and still stops for the last three.</p>
+    <p>To pause, the manager commits finished work (never half a stage), writes <code>Mode: paused — &lt;reason&gt;</code> into <code>## Now</code> and tells you what it needs, with a recommendation. The hook stops prompting and sends you a notification.</p>
   </div>
   <div class="grid2">
-    <div class="pause"><h3><span class="tag">stuck</span>A check keeps failing</h3><p>A check still fails after three fix rounds. You hear about it as a concern after the second.</p></div>
-    <div class="pause"><h3><span class="tag">stuck</span>Report and evidence disagree</h3><p>A builder says it's done, the evidence says otherwise, and the manager can't settle it.</p></div>
-    <div class="pause"><h3><span class="tag">yours</span>The plan is wrong</h3><p>A finished stage needs redoing, or the Goal or scope would have to change. Small calls inside the plan's intent are logged as <code>(autopilot)</code> decisions instead.</p></div>
-    <div class="pause"><h3><span class="tag">yours</span>Outward or hard to undo</h3><p>Push, publish, deploy, sending data out, migrating or deleting real data, spending money. Claude Code's permission modes and sandbox gate these as well.</p></div>
-    <div class="pause"><h3><span class="tag">yours</span>A new plan</h3><p>With a roadmap: after closing a milestone and cutting the next plan, it waits for your yes. It never builds a plan you haven't seen.</p></div>
+    <div class="pause"><h3><span class="tag">attended</span>A risky stage</h3><p>The risk line names auth, money, personal data or one of your <code>JBIT risk:</code> words. It pauses before building, or before closing a stage whose corrected risk line names them. Reply "yes", "go" or "just build it", or type <code>/jbit:approve</code>, to release it; a question leaves it held.</p></div>
+    <div class="pause"><h3><span class="tag">attended</span>A decision only you can make</h3><p>Scope, a product choice, or a trade-off the plan doesn't settle. Small decisions inside the plan's intent are logged with a date and made without asking.</p></div>
+    <div class="pause"><h3><span class="tag">attended</span>The plan is wrong</h3><p>A finished stage needs redoing, the scope has to grow, or a decision no longer holds.</p></div>
+    <div class="pause"><h3><span class="tag">every run</span>Stuck</h3><p>A check still fails after three fix rounds, or a builder's report contradicts the evidence.</p></div>
+    <div class="pause"><h3><span class="tag">every run</span>Outward-facing steps</h3><p>Push, deploy, publish, sending data to an outside service: the hook blocks these while autopilot is armed, unless your command said <code>outward</code>. Migrating or deleting real data and spending money pause always.</p></div>
+    <div class="pause"><h3><span class="tag">every run</span>A new plan</h3><p>With a roadmap: after closing a milestone and cutting the next plan, it waits for your yes. It never builds a plan you haven't seen, and a new plan's goal runs attended until you give it a command.</p></div>
+  </div>
+  <div class="col stack" style="margin-top:22px">
+    <h3>Unattended: fewer waits, the same checks</h3>
+    <p>Unattended is the default for your own command: <code>JBIT, just build it.</code>, <code>JBIT autopilot</code> or a typed <code>/jbit:autopilot</code>. The run doesn't wait on a risky stage, an open decision or a plan that turns out wrong. Claude picks what it would recommend and logs each call as a dated <code>(unattended)</code> decision, listed first in its final report. Verification, the commit gates, the secret guard, the security review of risky stages and the <code>lean</code> cap all stay.</p>
+    <p>Add <code>attended</code> to the command to keep the stops (<code>JBIT autopilot attended</code>), or <code>outward</code> to let push, publish and deploy through (<code>JBIT autopilot outward</code>). The level holds until your next command or a new plan goal; talk, an approval, a pause or a stop and resume leave it as it is. Nothing but your own command sets it: plain words, Claude starting autopilot, a Mode line, a plugin's prompt or a file run at the level that stands, attended unless your own command set one for this plan.</p>
+    <p>A subagent's tool calls never move the main session's state: a builder can't change the Goal, the Mode, the autopilot level, approvals or ticked checks. Holds, outward checks and the <code>lean</code> cap judge its calls by the main session's plan, so an older plan in a builder's worktree changes nothing. Only when the main plan can't be read do they use the subagent's own copy, and a copy with a different Goal counts as attended.</p>
   </div>
 </section>
 
 <!-- AGENTS -->
 <section id="agents">
   <div class="col stack">
-    <span class="eyebrow">Who does the work</span>
-    <h2>Role agents: builder, verifier, reviewer, researcher</h2>
-    <p>The skills hand delegated work to four role agents in the plugin's <code>agents/</code> folder. A <b>builder</b> builds one stage or one independent part of it. A <b>verifier</b>, which built nothing, proves the checks against the running product. A <b>reviewer</b> reads the work with fresh eyes. A <b>researcher</b> answers the questions a plan turns on outside the repo. Planning and project management stay in the main session, on the session's model.</p>
-    <p>Every agent stays small. A fan-out, research or build, gives each agent a few items at most, and every brief asks it to read narrowly, stop when its brief is done and hand back a short report, 20 lines at most with no diffs or dumps. An agent's cost grows with its turns and context, so small agents spend less. Builders on independent leaves work in their own git worktrees; those start from the remote's default branch unless Claude Code's <code>worktree.baseRef</code> is <code>"head"</code>.</p>
-    <p><b>Model and effort per role.</b> The plugin's files set none, so each role runs as the session. A same-named agent file of your own takes over: <code>.claude/agents/builder.md</code> for one project, <code>~/.claude/agents/builder.md</code> for every repo, with <code>model: sonnet</code> and <code>effort: medium</code> (or whatever you choose) in its frontmatter. Start from a copy of the plugin's file, since yours replaces the whole definition. The skills never pass a model or effort themselves.</p>
+    <span class="eyebrow">Fan-out</span>
+    <h2>Agents level: spending tokens to save time</h2>
+    <p>One line in <code>## Now</code> sets how widely work fans out to subagents. <code>/jbit:plan</code> asks once, and every skill follows the answer.</p>
+    <p>At every level the agents stay small. A fan-out, research or build, gives each agent a few items at most (a nine-item research list goes to agents of at most three each), and every brief asks the agent to read narrowly, stop when its brief is done and hand back a short report, 20 lines at most with no diffs or dumps. An agent's cost grows with its turns and context, so small agents spend less. The rule adds no agent: under <code>lean</code> the batches go one after another.</p>
+    <p>Worktree agents start from the remote's default branch, not your local <code>HEAD</code>, unless Claude Code's <code>worktree.baseRef</code> is <code>"head"</code>, so commits you haven't pushed, the plan included, aren't in their worktree. The first time the main session starts a worktree agent in a session with the setting unset or <code>fresh</code>, JBIT tells you once, with a toast and a line from Claude. To change it, add <code>"worktree": {"baseRef": "head"}</code> to <code>~/.claude/settings.json</code> (or the project's <code>.claude/settings.json</code>). With <code>"baseRef": "head"</code>, nothing is said.</p>
   </div>
   <div class="fan">
     <div class="stack">
+      <div class="seg" id="segFan" style="align-self:flex-start">
+        <button data-v="lean" aria-pressed="false">lean</button>
+        <button data-v="balanced" aria-pressed="true">balanced</button>
+        <button data-v="wide" aria-pressed="false">wide</button>
+      </div>
       <p id="fanText"></p>
       <p style="font-size:.86rem;color:var(--muted)" id="fanNote"></p>
     </div>
-    <div class="panel" style="padding:12px"><svg id="fanSvg" viewBox="0 0 460 250" role="img" aria-label="How a stage's work is split across role agents"></svg></div>
+    <div class="panel" style="padding:12px"><svg id="fanSvg" viewBox="0 0 460 250" role="img" aria-label="How a stage's work is split across agents"></svg></div>
+  </div>
+</section>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="col stack">
+    <span class="eyebrow">Spend</span>
+    <h2>Models: which model, and how hard, each role works</h2>
+    <p>One more line in <code>## Now</code> sets the model and effort each delegated role's agents start on: <code>Models: build sonnet/medium · review opus/high · verify sonnet/medium</code>. The roles are <code>build</code>, <code>research</code>, <code>review</code> and <code>verify</code>, each written <code>model/effort</code>, either half optional. Research agents get the <code>research</code> setting, so research can run on a cheaper model than the session's. A role the line leaves out takes your own default (or a confirmed project default) when there is one, else runs as the session.</p>
+    <p>Only you set it: in your own words, or with your own command, <code>JBIT models build sonnet/medium</code>. <code>JBIT models default</code> goes back to the project default, a <code>JBIT models:</code> line in <code>CLAUDE.md</code>, and <code>JBIT models none</code> removes the line. A project default waits for your word: it counts only once you confirm it in the session, by naming its settings or typing <code>JBIT models default</code>, so a cloned repo's committed default never raises spend unasked. The status line shows the roles set, and the hook denies an agent started with a setting no role has, so Claude retries with the right one. A line that changes mid-session without your command waits until your own message names its settings.</p>
+    <p>Your own default follows you to every repo: <code>JBIT models build sonnet/medium · research sonnet/high — my default</code> sets the line and also saves those settings in JBIT's per-user store, outside every repo, and a new plan in any repo starts from it. Only your own typed command saves it; <code>JBIT models clear my default</code> removes it. Per role, the plan's line wins, then a confirmed project default, then your own default, then the session; <code>JBIT models</code> alone shows each role's setting and where it comes from.</p>
+    <p>Planning and project management run in the main session, so JBIT can't set them: they stay on the session's model, set in Claude Code with <code>/model</code>. Only you set effort: Claude passes the effort the line names and never picks one itself, even for a stage that looks hard. Under <code>lean</code>, a <code>build</code> setting hands the building to one builder agent so it applies, and verify stays in the main session.</p>
   </div>
 </section>
 
@@ -436,13 +486,16 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 <section id="guards">
   <div class="col stack">
     <span class="eyebrow">The hook</span>
-    <h2>A small hook with two jobs</h2>
-    <p>The skills tell Claude what to do. The hook (<code>hooks/register.ts</code>) does two things in code, so they hold even if Claude forgets. Everything else that used to be a gate is now the skills' habit or Claude Code's own setting.</p>
+    <h2>Guardrails in code as well as in the instructions</h2>
+    <p>The skills tell Claude what to do. The hook (<code>hooks/register.ts</code>) refuses certain commits and commands, so a few rules hold even if Claude forgets them.</p>
   </div>
   <div class="guards">
-    <div class="guard"><h3>## Now in every request</h3><p>The plan's <code>## Now</code> goes into Claude's context on every request, with the plan's path and its working rules, and the status band shows the current stage. When the context is compacted, the summarizer is told to keep the stage state.</p><div class="eg" style="background:var(--sea-soft);color:var(--sea)">jbit · stage 3 of 4 · Member login</div></div>
+    <div class="guard"><h3>Evidence gate</h3><p>A commit that ticks stage <i>n</i> is refused unless <code>docs/evidence/stage-&lt;n&gt;/report.md</code> has a row for each of the stage's checks. Under autopilot, a line that writes the plan and commits is refused before it runs. A close found only after a line ran is checked against its commit and, if it fails, flagged to reopen.</p><div class="eg">refused: stage 2 has 3 checks, report has 2 rows</div></div>
+    <div class="guard"><h3>Ticked-checks gate</h3><p>A stage can't be closed if its <code>## Now</code> checks were never seen ticked.</p><div class="eg">refused: stage 3 checks never ticked</div></div>
+    <div class="guard"><h3>Risky-stage hold</h3><p>While autopilot is armed, a stage that names auth, money or personal data gets no file edits outside the plan and its <code>docs/research/</code> notes, and no builders, until you type the approval yourself ("yes", "go", "just build it" or <code>/jbit:approve</code>). Claude can't approve its own stage. Your own JBIT or <code>/jbit:autopilot</code> command runs unattended and lifts the hold, unless it says <code>attended</code>.</p><div class="eg">held: "go?" is a question, not an approval</div></div>
+    <div class="guard"><h3>Outward block</h3><p>While autopilot is armed, <code>git push</code>, publishes, deploys and <code>gh</code> writes are blocked, along with your own <code>JBIT outward:</code> commands. It sees through <code>sudo</code>, <code>sh -c</code>, <code>eval</code> and similar wrappers. Only your own autopilot command with <code>outward</code> in it lifts it. It covers shell commands, not web searches: research queries go out at any level, briefed to carry only the domain question. Reading isn't held: a read-only <code>curl</code> or <code>wget</code> GET passes, while a send (a body, an upload, credentials, an auth or cookie header) waits, and the hold points to WebFetch and WebSearch for reading pages.</p><div class="eg">blocked: git push (outward-facing)</div></div>
     <div class="guard"><h3>Secret guard</h3><p>Every commit is scanned for keys, tokens, JWTs, database URLs with passwords and <code>.env</code> files. Credential headers in evidence must be masked.</p><div class="eg">blocked: src/db.ts:12 database URL with password</div></div>
-    <div class="guard"><h3>Outward steps: Claude Code</h3><p>Push, publish, deploy and sending data out are gated by Claude Code's permission modes and sandbox, not by JBIT. Autopilot also stops before them on its own.</p><div class="eg">ask: git push origin main</div></div>
+    <div class="guard"><h3>Run keeper</h3><p>When a turn ends with stages left, the hook compacts the context once it's past 65% full, keeping the plan state, then prompts the manager to carry on. It gives up after three turns that leave the plan unchanged.</p><div class="eg" style="background:var(--sea-soft);color:var(--sea)">continue: stage 3 of 4</div></div>
   </div>
 </section>
 
@@ -462,10 +515,10 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="road-steps">
     <div><b>Tag</b>Each check names the requirements it proves: <code>(req: PLT-02)</code>.</div>
     <div><b>Fill</b>When a plan is archived, a requirement counts as covered only if a stage report has a passing row tagged with its ID.</div>
-    <div><b>Close</b>A milestone closes on the full suite, a coverage check, a fresh agent's spot check of evidence, and a review, recorded in <code>milestone-&lt;ID&gt;.md</code>.</div>
-    <div><b>Cut</b>The next plan is cut from the next milestone, then autopilot waits for your yes.</div>
+    <div><b>Close</b>A milestone closes on the full suite, a coverage check, a fresh agent's spot check of evidence, and a review. The hook refuses the tick without <code>milestone-&lt;ID&gt;.md</code>.</div>
+    <div><b>Cut</b>The next plan is cut from the next milestone, then autopilot waits for your yes. A new goal runs attended until you give it a command.</div>
   </div>
-  <div class="statusline" style="margin-top:18px">jbit · stage 3 of 5 · Booking calendar</div>
+  <div class="statusline" style="margin-top:18px">jbit · M2 10/31 · 2/5 done · next: 3. Booking calendar</div>
 </section>
 
 <!-- NEXT PLAN -->
@@ -512,7 +565,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">Along the way</span>
     <h2>Small changes skip the stage machinery</h2>
-    <p><code>/jbit:stage</code> has a quick-fix path for a small change that's already decided and low-risk: UI only or with no runtime behaviour, undone by one revert. It's built in the main session with no agents, checked in proportion (type check, lint, tests, plus one look at the app when the change shows there), logged as one line under <code>## Fixes</code> and committed alone. Anything that could be quietly wrong becomes a stage. Pick a request:</p>
+    <p><code>/jbit:fix</code> handles a small change that's already decided and low-risk. It's built in the main session with no agents, checked with the test suite (plus one look at the app when the change is visible), logged as one line under <code>## Fixes</code> and committed alone. Anything that could be quietly wrong goes through a plan. Pick a request:</p>
   </div>
   <div class="triage">
     <div class="reqs" id="reqs"></div>
@@ -525,23 +578,25 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   <div class="col stack">
     <span class="eyebrow">Reference</span>
     <h2>The commands</h2>
-    <p>Each one also works by name at the start of a message, in any case and with a space, comma or colon after it: "JBIT plan a CSV tool", "JBit, resume" and "jbit: verify" are <code>/jbit:plan</code>, <code>/jbit:resume</code> and <code>/jbit:verify</code>. Claude also runs these on its own when they fit.</p>
+    <p>Each one also works by name at the start of a message, in any case and with a space, comma or colon after it: "JBIT plan a CSV tool", "JBit, resume" and "jbit: verify" are <code>/jbit:plan</code>, <code>/jbit:resume</code> and <code>/jbit:verify</code>. Claude also runs these on its own when they fit, except <code>/jbit:approve</code>, which only you can type.</p>
   </div>
   <div class="tbl"><table>
     <thead><tr><th>Command</th><th>Role</th><th>What it does</th></tr></thead>
     <tbody>
       <tr><td><code>/jbit:plan</code></td><td>Planner</td><td>Writes <code>docs/PLAN.md</code>: goal, stages with checks and a risk line, decisions. Surveys existing code and records a test baseline. Researches what the goal turns on outside the repo into sourced notes in <code>docs/research/</code>, and turns a question paper can't settle into a spike stage. Archives a finished plan and starts the next one.</td></tr>
       <tr><td><code>/jbit:charter</code></td><td>Cartographer</td><td>Turns a large PRD into <code>docs/ROADMAP.md</code> with milestones and a requirement ledger, and proposes locked decisions for <code>CLAUDE.md</code>.</td></tr>
-      <tr><td><code>/jbit:stage</code></td><td>Builder loop</td><td>Runs the next stage end to end (scope, build, verify, review, commit), then stops for you. A small, decided, low-risk change takes its quick-fix path instead: one line under <code>## Fixes</code> and a commit of its own.</td></tr>
-      <tr><td><code>/jbit:autopilot</code></td><td>Project manager</td><td>Runs every remaining stage in a row by delegating the work to role agents, logging the calls it makes as <code>(autopilot)</code> decisions. Stops after three failed fix rounds, when a builder's report and the evidence disagree, when the Goal or scope would change, and before anything outward or hard to undo. After each stage it gives a progress note when someone reads along (concerns, proof, what's left); a headless run leaves it to the final report.</td></tr>
+      <tr><td><code>/jbit:stage</code></td><td>Builder loop</td><td>Runs the next stage end to end (scope, build, verify, review, commit), then stops for you.</td></tr>
+      <tr><td><code>/jbit:autopilot</code></td><td>Project manager</td><td>Runs every remaining stage by delegating the work. Your own command (<code>/jbit:autopilot</code> or <code>JBIT, just build it.</code>) runs it unattended, logging the calls it makes; <code>attended</code> keeps the stops for risky stages and your decisions, and <code>outward</code> lets push, publish and deploy through. Plain "just build it" never sets the level: it runs at the one that stands, attended unless your command set one for this plan. After each stage it gives a progress note when someone reads along (concerns, proof, what's left); a headless run leaves it to the final report.</td></tr>
+      <tr><td><code>/jbit:approve</code></td><td>You</td><td>Releases a held risky stage. Only you can type it; a reply of "yes", "go" or "just build it" does the same.</td></tr>
       <tr><td><code>/jbit:verify</code></td><td>Inspector</td><td>Runs type check, lint, tests, build and a dependency audit, then proves each check against the running product and saves the evidence.</td></tr>
-      <tr><td><code>/code-review</code>, <code>/security-review</code></td><td>Second pair of eyes</td><td>Claude Code's own review commands. JBIT runs <code>/code-review</code> on a stage whose risk line names more than UI, and <code>/security-review</code> as well when it touches user input, auth, money, personal data, secrets or external services. Findings are sorted into fix, defer or reject.</td></tr>
+      <tr><td><code>/jbit:review</code></td><td>Second pair of eyes</td><td>An agent that didn't write the code reviews it, with a security pass for risky stages, and checks it against the research notes the stage relies on. Findings are sorted into fix, defer or reject.</td></tr>
       <tr><td><code>/jbit:resume</code></td><td>Navigator</td><td>After a break or a reset, reads the plan and git, then tells you where things stand and what's next.</td></tr>
+      <tr><td><code>/jbit:fix</code></td><td>Quick fix</td><td>Makes a small, low-risk change without a stage, logs one line and commits it.</td></tr>
     </tbody>
   </table></div>
 </section>
 
-<footer>JBIT 1.2.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 2.0.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>
@@ -556,19 +611,19 @@ const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[
   const cmd=$('#heroCmd'), stl=$('#heroSt'); if(reduce||!cmd) return;
   const full=cmd.textContent, endSt=stl.innerHTML, rows=[...document.querySelectorAll('#heroTerm [data-step]')];
   const ticks=rows.map(r=>r.querySelector('.k')), marks=ticks.map(k=>k.textContent);
-  rows.forEach(r=>r.classList.add('hid')); cmd.textContent=''; stl.innerHTML='<span>jbit · stage 1 of 4</span> <span>· Plot map</span>';
+  rows.forEach(r=>r.classList.add('hid')); cmd.textContent=''; stl.innerHTML='<span>jbit · 0/4 done</span> <span>· next: 1. Plot map</span>';
   const later=ms=>new Promise(r=>setTimeout(r,ms));
   (async()=>{
     await later(500);
     for(let i=1;i<=full.length;i++){cmd.textContent=full.slice(0,i);await later(full[i-1]===' '?70:45)}
-    await later(450);
+    await later(450); stl.innerHTML='<span>jbit · autopilot unattended</span> <span>· lean · 0/4 done</span> <span>· next: 1. Plot map</span>';
     for(let i=0;i<rows.length;i++){
       const tick=i>0&&i<rows.length-1;
       const done=rows[i].querySelector('.s');
       if(tick){ticks[i].textContent='…';ticks[i].classList.add('dim');if(done)done.style.visibility='hidden'}
       rows[i].classList.remove('hid');
       if(tick){await later(650);ticks[i].textContent=marks[i];ticks[i].classList.remove('dim');if(done)done.style.visibility='';
-        stl.innerHTML='<span>jbit · stage '+(i+1)+' of 4</span> <span>· '+['Booking','Member login','Season dates'][i-1]+'</span>'}
+        stl.innerHTML='<span>jbit · autopilot unattended</span> <span>· lean · '+i+'/4 done</span> <span>· next: '+(i+1)+'. '+['Booking','Member login','Season dates'][i-1]+'</span>'}
       else await later(380);
     }
     stl.innerHTML=endSt;
@@ -603,30 +658,46 @@ renderMem();
 /* ---------- STAGE LOOP ---------- */
 const STEPS=[
  {t:'Scope',d:'<p>Write <code>## Now</code> for the stage: what it covers, a <b>risk line</b> (UI only? user input? auth? money?), and acceptance checks that each name a proof. A test is used wherever one can cover the check, otherwise the check says why not.</p><p class="mono" style="color:var(--muted)">- [ ] A booked plot can\'t be double-booked (proof: test)</p>'},
- {t:'Build',d:'<p>Build the foundation first in the main tree. Independent leaves then go to builder agents in their own <b>git worktrees</b> so they can\'t collide, and the manager merges each branch back after checking it. Untested code gets a test of its current behaviour before it changes.</p>'},
+ {t:'Build',d:'<p>Build the foundation first in the main tree. Independent leaves then go to subagents in their own <b>git worktrees</b> so they can\'t collide, and the manager merges each branch back after checking it. Untested code gets a test of its current behaviour before it changes.</p>'},
  {t:'Verify',d:'<p><code>jbit:verify</code> runs type check, lint, tests, build and a dependency audit, then proves every check against the <b>running product</b> with real requests, CLI runs or screenshots. The result is saved to <code>docs/evidence/stage-&lt;n&gt;/report.md</code>, with secrets masked. On the plan\'s last stage it also re-runs earlier checks that weren\'t proven by a test, so a regression shows up.</p>'},
- {t:'Review',d:'<p>First the risk line is checked against what the diff actually touches. A "UI only" stage that reads user input gets its risk line corrected. When it names more than UI, Claude Code\'s <code>/code-review</code> runs, plus <code>/security-review</code> when the stage touches input, auth, money, personal data, secrets or external services. Findings are checked and sorted into <b>fix</b>, <b>defer</b> or <b>reject</b>.</p>'},
- {t:'Commit',d:'<p>Tick the proven checks, update the plan, and commit the stage <b>with its evidence</b>. The hook\'s secret guard refuses the commit if a secret is in the diff.</p>'},
+ {t:'Review',d:'<p>First the risk line is checked against what the diff actually touches. A "UI only" stage that reads user input gets its risk line corrected. Then an agent that <b>didn\'t write the code</b> reviews it, with a security pass when the stage touches input, auth, money, personal data, secrets or external services. Findings are checked and sorted into <b>fix</b>, <b>defer</b> or <b>reject</b>.</p>'},
+ {t:'Commit',d:'<p>Tick the proven checks, update the plan, and commit the stage <b>with its evidence</b>. The hook\'s gates refuse the commit if the report is missing a row, a check was never ticked, or a secret is in the diff.</p>'},
  {t:'Stop',stop:true,d:'<p><code>/jbit:stage</code> stops here and reports to you, linking the evidence. <b>Under autopilot it doesn\'t stop.</b> The manager notes one line for the final report and moves to the next stage.</p>'},
 ];
 const loop=$('#loop');
 STEPS.forEach((s,i)=>{const b=document.createElement('button');b.className='step'+(s.stop?' stop':'');b.setAttribute('aria-pressed',i===0);b.innerHTML='<span class="n">'+String(i+1).padStart(2,'0')+'</span><span class="t">'+s.t+'</span>';b.onclick=()=>{[...loop.children].forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');$('#stepDetail').innerHTML=s.d};loop.appendChild(b)});
 $('#stepDetail').innerHTML=STEPS[0].d;
 
-/* ---------- ROLE AGENTS ---------- */
-const FAN={t:'<b>One stage, four roles.</b> The manager builds the foundation brief first, independent leaves go to <b>builder</b> agents in their own worktrees, a <b>verifier</b> that built nothing proves the checks, and a risky stage gets <code>/code-review</code> and <code>/security-review</code>. A <b>researcher</b> answers outside questions at plan time.',n:'Each role runs on the model and effort its agent file sets, or as the session when no file of yours overrides the plugin\'s.'};
-function drawFan(){
+/* ---------- AGENTS FAN ---------- */
+const FAN={
+ lean:{t:'<b>lean.</b> Work is built and verified in the main session, one agent at a time. Autopilot still delegates building, but to one builder at a time. Review always keeps one fresh reviewer.',n:'Lowest token spend. The hook refuses a second concurrent agent.'},
+ balanced:{t:'<b>balanced</b> (no line). Independent leaves go to subagents when that helps. This is the default.',n:'Written as no Agents line at all.'},
+ wide:{t:'<b>wide.</b> Every independent leaf gets its own agent and worktree, a fresh agent verifies, and correctness and security reviewers run in parallel.',n:'Raises spend, so it only takes effect after you confirm it in the session. A wide line inherited from an old session or a cloned repo counts as balanced until you say yes.'}
+};
+function drawFan(v){
   const svg=$('#fanSvg');const box=(x,y,w,h,label,sub,col)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="7" fill="var(--sheet)" stroke="${col||'var(--rule)'}" stroke-width="1.5"/><text x="${x+w/2}" y="${y+h/2-(sub?3:-4)}" text-anchor="middle">${label}</text>${sub?`<text class="sm" x="${x+w/2}" y="${y+h/2+12}" text-anchor="middle">${sub}</text>`:''}`;
   const line=(x1,y1,x2,y2)=>`<path d="M${x1} ${y1} C ${x1} ${(y1+y2)/2}, ${x2} ${(y1+y2)/2}, ${x2} ${y2}" fill="none" stroke="var(--muted)" stroke-width="1.2"/>`;
   let s=box(170,8,120,40,'Manager','main session','var(--sea)');
-  s+=line(230,48,60,90)+line(230,48,175,90)+line(230,48,290,90)+line(230,48,400,90);
-  s+=box(10,90,100,40,'Builder','foundation')+box(125,90,100,40,'Builder','leaf A · worktree')+box(240,90,100,40,'Builder','leaf B · worktree')+box(350,90,100,40,'Researcher','plan time');
-  s+=line(175,130,80,190)+line(230,130,230,190)+line(290,130,380,190);
-  s+=box(15,190,130,40,'Verifier','built nothing','var(--signal)')+box(165,190,130,40,'/code-review','risky stages','var(--signal)')+box(315,190,130,40,'/security-review','auth, money, data…','var(--signal)');
-  svg.innerHTML=s; $('#fanText').innerHTML=FAN.t; $('#fanNote').textContent=FAN.n;
+  if(v==='lean'){
+    s+=line(230,48,230,78)+box(150,78,160,40,'Builder (one at a time)','main tree');
+    s+=`<text class="sm" x="230" y="134" text-anchor="middle">foundation → leaf A → leaf B</text>`;
+    s+=line(230,140,130,190)+line(230,140,330,190);
+    s+=box(60,190,140,40,'Verify','in main session')+box(260,190,140,40,'1 Reviewer','fresh agent','var(--signal)');
+  } else if(v==='balanced'){
+    s+=line(230,48,100,90)+line(230,48,360,90);
+    s+=box(30,90,140,40,'Foundation','main tree')+box(290,90,140,40,'Leaves in parallel','worktrees, when it helps');
+    s+=line(100,130,230,190)+line(360,130,230,190);
+    s+=box(150,190,160,40,'Verify + review','fresh reviewer','var(--signal)');
+  } else {
+    s+=line(230,48,60,90)+line(230,48,175,90)+line(230,48,290,90)+line(230,48,400,90);
+    s+=box(10,90,100,40,'Foundation','main tree')+box(125,90,100,40,'Leaf A','worktree')+box(240,90,100,40,'Leaf B','worktree')+box(350,90,100,40,'Leaf C','worktree');
+    s+=line(230,130,80,190)+line(230,130,230,190)+line(230,130,380,190);
+    s+=box(15,190,130,40,'Fresh verifier','built nothing','var(--signal)')+box(165,190,130,40,'Correctness','reviewer','var(--signal)')+box(315,190,130,40,'Security','reviewer','var(--signal)');
+  }
+  svg.innerHTML=s; $('#fanText').innerHTML=FAN[v].t; $('#fanNote').textContent=FAN[v].n;
 }
 function seg(el,cb){el.querySelectorAll('button').forEach(b=>b.onclick=()=>{el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');cb(b.dataset.v)})}
-drawFan();
+seg($('#segFan'),drawFan);drawFan('balanced');
 
 /* ---------- QUICK FIX TRIAGE ---------- */
 const REQS=[
@@ -641,7 +712,7 @@ const REQS=[
 ];
 const reqs=$('#reqs');
 function showReq(i){const r=REQS[i];[...reqs.children].forEach((b,j)=>b.setAttribute('aria-pressed',j===i));
-  $('#verdict').innerHTML='<span class="eyebrow">Route</span><div class="route '+r[1]+'">'+(r[1]==='fix'?'/jbit:stage · quick fix':'/jbit:plan')+'</div><p>'+r[2]+'</p>'+(r[1]==='fix'?'<p class="mono" style="margin-top:12px;color:var(--muted);font-size:.78rem">## Fixes<br>- 2026-11-10 · '+esc(r[0])+'</p>':'<p style="margin-top:12px;color:var(--muted);font-size:.86rem">The plan gets a stage with a risk line and checks. If a quick fix grows past the bar while it\'s being made, jbit:stage stops, leaves it uncommitted and offers to stage it.</p>');}
+  $('#verdict').innerHTML='<span class="eyebrow">Route</span><div class="route '+r[1]+'">'+(r[1]==='fix'?'/jbit:fix':'/jbit:plan')+'</div><p>'+r[2]+'</p>'+(r[1]==='fix'?'<p class="mono" style="margin-top:12px;color:var(--muted);font-size:.78rem">## Fixes<br>- 2026-11-10 · '+esc(r[0])+'</p>':'<p style="margin-top:12px;color:var(--muted);font-size:.86rem">The plan gets a stage with a risk line and checks. If a fix grows past the bar while it\'s being made, jbit:fix stops and offers jbit:plan.</p>');}
 REQS.forEach((r,i)=>{const b=document.createElement('button');b.textContent=r[0];b.onclick=()=>showReq(i);reqs.appendChild(b)});
 showReq(0);
 
@@ -649,23 +720,25 @@ showReq(0);
 const STAGES=[
  {n:1,name:'Plot map',risk:'UI only',checks:['Map shows every plot with its status (proof: test)','Map fits at phone width (proof: screenshot)'],found:'plot model + map shell',leaves:['map grid','status legend'],review:false},
  {n:2,name:'Booking',risk:'logic (booking rules)',checks:['Booking a free plot marks it booked (proof: test)','A booked plot can\'t be double-booked (proof: test)'],found:'bookings table + API route',leaves:['booking API','booking form'],review:true,failOnce:1},
- {n:3,name:'Member login',risk:'auth, personal data',checks:['A member logs in with email and password (proof: test)','A wrong password is refused and rate-limited (proof: test)'],found:'session store',leaves:['login page','password reset'],review:true,security:true},
+ {n:3,name:'Member login',risk:'auth, personal data',checks:['A member logs in with email and password (proof: test)','A wrong password is refused and rate-limited (proof: test)'],found:'session store',leaves:['login page','password reset'],review:true,security:true,held:true},
  {n:4,name:'Season dates',risk:'logic (dates)',checks:['Booking closes at season end (proof: test)','Season dates show in the member\'s timezone (proof: test)'],found:'season config',leaves:['calendar view','closing job'],review:true,last:true},
 ];
-let st, runId=0, playing=false, speed=1;
+let st, runId=0, playing=false, speed=1, level='balanced', say='plain', approvalResolve=null;
 function initState(){st={mode:null,stageIdx:-1,status:STAGES.map(()=>'todo'),ticks:[],decisions:[],evidence:[],ctx:12,fixes:0}}
 function renderPlan(flash){
   const s=st, cur=STAGES[s.stageIdx];
   let h='<div class="fn"><span>docs/PLAN.md</span><span>'+(s.mode?'':'')+'</span></div>';
   h+='<div class="ln"># Plotline plan</div><h4>## Goal</h4><div class="ln">Members can see the plot map, book a plot for the season and log in.</div>';
   h+='<h4>## Now</h4>';
+  if(s.mode) h+='<div class="ln mode'+(s.mode.startsWith('paused')?' paused':'')+(flash==='mode'?' flash':'')+'">Mode: '+esc(s.mode)+'</div>';
+  if(level!=='balanced') h+='<div class="ln">Agents: '+level+(level==='wide'?' — confirmed 2026-11-10 09:14':'')+'</div>';
   if(s.stageIdx===STAGES.length) h+='<div class="ln chk done">All stages done.</div>';
   else if(cur){
     h+='<div class="ln">Stage '+cur.n+'. '+esc(cur.name)+'</div><div class="ln">Risk: '+esc(cur.risk)+'</div>';
     cur.checks.forEach((c,i)=>{const d=s.ticks[i];h+='<div class="ln chk'+(d?' done':'')+(flash==='t'+i?' flash':'')+'">- ['+(d?'x':' ')+'] '+esc(c)+'</div>'});
   } else h+='<div class="ln" style="color:var(--muted)">Plan approved. Waiting for autopilot.</div>';
   h+='<h4>## Stages</h4>';
-  STAGES.forEach((g,i)=>{const stt=s.status[i];h+='<div class="ln stage-row '+stt+'">- ['+(stt==='done'?'x':' ')+'] '+g.n+'. '+esc(g.name)+(stt==='active'?'  ←':'')+'</div>'});
+  STAGES.forEach((g,i)=>{const stt=s.status[i];h+='<div class="ln stage-row '+stt+'">- ['+(stt==='done'?'x':' ')+'] '+g.n+'. '+esc(g.name)+(stt==='active'?'  ←':'')+(stt==='held'?'  (held)':'')+'</div>'});
   h+='<h4>## Decisions</h4>';
   if(!s.decisions.length) h+='<div class="ln" style="color:var(--muted)">—</div>';
   s.decisions.forEach((d,i)=>h+='<div class="ln'+(flash==='dec'&&i===s.decisions.length-1?' flash':'')+'">- 2026-11-10 · '+esc(d)+'</div>');
@@ -690,27 +763,43 @@ async function runStage(i){
   log('manager','Scoping stage '+g.n+' ('+esc(g.name)+'). Risk: <b>'+esc(g.risk)+'</b>.');
   await wait(1100);setChip(m,'done');ctxAdd(3);
 
-  if(g.security){
-    log('manager','Stage 3 names auth and personal data. Inside the plan\'s intent, so I\'m building it and it gets a security review before its commit.');
-    st.decisions.push('(autopilot) Stage 3: bcrypt with a per-account rate limit, as the plan suggests; security review still runs');renderPlan('dec');
-    log('manager','Logged the call as an <code>(autopilot)</code> decision. It goes first in the final report.');
+  if(g.held&&say==='jbit'){
+    chip('hook','no hold: unattended','done');
+    log('hook','Stage 3 names auth and personal data, but you armed this run with your own JBIT command, so it\'s unattended and the stage isn\'t held. Notification sent once: <i>stage 3 is being built without a hold</i>.','hook');
+    st.decisions.push('(unattended) Stage 3 built without a hold: bcrypt with a per-account rate limit, as the plan suggests; security review still runs');renderPlan('dec');
+    log('manager','Logged the call as an <code>(unattended)</code> decision. It goes first in the final report.');
     await wait(900);
+  } else if(g.held){
+    st.status[i]='held';st.mode='paused — stage 3 names auth, personal data; waiting for approval';renderPlan('mode');
+    chip('hook','hold: no edits, no builders','hold');
+    log('hook','Stage 3 is held. File edits outside the plan and builder agents are blocked. Notification sent: <i>reply "yes", "go", "approve", "just build it" or /jbit:approve</i>.','hook');
+    log('manager','Paused. Stage 3 adds login and stores emails and password hashes. I recommend bcrypt with a per-account rate limit. Reply <b>yes</b> or <b>just build it</b> to build it.');
+    $('#reply').classList.add('on');
+    await new Promise(res=>{approvalResolve=res});
+    $('#reply').classList.remove('on');
+    st.status[i]='active';st.mode='autopilot';st.decisions.push('Stage 3 (auth) approved by the user; security review still runs');renderPlan('dec');
+    $('#L-hook').innerHTML='';chip('hook','hold released','done');
+    await wait(800);
   }
 
   // build
   const fb=chip('bld','Foundation: '+g.found,'run','main tree');
   log('manager','Briefing a builder on the foundation, with the stage\'s checks quoted from the plan.');
   await wait(1300);setChip(fb,'done');ctxAdd(2);
-  {
+  if(level==='lean'){
+    for(const l of g.leaves){const c=chip('bld',l,'run','main tree');await wait(1000);setChip(c,'done');ctxAdd(1.5)}
+    log('manager','Leaves built one at a time (lean).');
+  } else {
     const cs=g.leaves.map(l=>chip('bld',l,'run','worktree'));
+    if(level==='wide'){cs.push(chip('bld','tests for '+g.leaves[0],'run','worktree'))}
     log('manager','Leaves fanned out in parallel, each in its own worktree.');
     await wait(1400);cs.forEach(c=>setChip(c,'done'));ctxAdd(2);
     log('manager','Merged each builder branch after checking it.');
   }
   // verify
-  const verLane='ver';
-  let v=chip(verLane,'jbit:verify','run');
-  log('verifier','Running type check, lint, tests and build, then each check against the running app.');
+  const verLane=level==='lean'?'mgr':'ver';
+  let v=chip(verLane,'jbit:verify'+(level==='lean'?' (main session)':''),'run');
+  log(level==='lean'?'manager':'verifier','Running type check, lint, tests and build, then each check against the running app.');
   await wait(1400);ctxAdd(3);
   if(g.failOnce){
     setChip(v,'fail','check 2 failed');
@@ -724,12 +813,12 @@ async function runStage(i){
   setChip(v,'done','verify: all checks pass');
   for(let k=0;k<g.checks.length;k++){st.ticks[k]=true;renderPlan('t'+k);await wait(350)}
   st.evidence.push('stage-'+g.n+'/report.md');renderPlan('ev');
-  log('verifier','Evidence saved to <code>docs/evidence/stage-'+g.n+'/</code>.'+(g.last?' Re-ran stage 1\'s screenshot check (not test-proven): still passes.':''));
+  log(level==='lean'?'manager':'verifier','Evidence saved to <code>docs/evidence/stage-'+g.n+'/</code>.'+(g.last?' Re-ran stage 1\'s screenshot check (not test-proven): still passes.':''));
   // review
   if(g.review){
-    if(g.security){
-      const a=chip('rev','/code-review'),b=chip('rev','/security-review');await wait(1400);setChip(a,'done');setChip(b,'done');
-    } else {const r=chip('rev','/code-review');await wait(1300);setChip(r,'done')}
+    if(g.security&&level==='wide'){
+      const a=chip('rev','correctness review'),b=chip('rev','security review');await wait(1400);setChip(a,'done');setChip(b,'done');
+    } else {const r=chip('rev',g.security?'review + security pass':'fresh-eyes review');await wait(1300);setChip(r,'done')}
     ctxAdd(3);
     if(g.security) log('reviewer','Security pass found the reset token wasn\'t single-use. Marked <b>fix</b>, fixed by a builder and re-verified.');
     else if(g.n===2) log('reviewer','2 findings: <b>fix</b> missing index on bookings.plot_id; <b>defer</b> waitlist idea (added to open questions).');
@@ -738,42 +827,59 @@ async function runStage(i){
   } else log('manager','Risk line checked against the diff: still UI only. No review needed.');
   // commit
   const sg=chip('hook','secret guard');await wait(500);setChip(sg,'done','secret guard ✓');
+  const eg=chip('hook','evidence gate');await wait(500);setChip(eg,'done','evidence gate: '+g.checks.length+'/'+g.checks.length+' rows ✓');
   st.status[i]='done';renderPlan();
   const hash=['a41c9e2','7be0d13','c93f5a8','e1d2047'][i];
   log('manager','Committed <code>'+hash+'</code> "Stage '+g.n+': '+esc(g.name)+'" with its evidence. Going straight to the next stage.');
   await wait(700);
-  // context
-  if(!g.last&&st.ctx>65){
-    const c=chip('hook','keep stage state');log('hook','Claude Code is compacting the context. The hook tells the summarizer to keep the stage state, and <code>## Now</code> is back in front of Claude on the next request.','hook');
-    await wait(1000);st.ctx=18;setGauge();setChip(c,'done','compacted → 18%');
+  // turn end
+  if(!g.last){
+    if(st.ctx>65){
+      const c=chip('hook','compacting at '+Math.round(st.ctx)+'%');log('hook','Turn ended with stages left. Context is past 65%, so compacting and keeping the plan state.','hook');
+      await wait(1000);st.ctx=18;setGauge();setChip(c,'done','compacted → 18%');
+    }
+    const c2=chip('hook','prompt: carry on');log('hook','Prompting the manager to continue with stage '+(g.n+1)+'.','hook');await wait(700);setChip(c2,'done');
   }
 }
 async function run(){
   const id=++runId;playing=true;
   try{
-    st.mode='autopilot';renderPlan();
-    log('you','"JBIT, just build it."','you');
-    log('manager','Taking over. 4 stages left. I\'ll log the calls I make as <code>(autopilot)</code> decisions and stop if something is stuck, the plan proves wrong, or the next step is outward.');
+    const un=say==='jbit';
+    st.mode=un?'autopilot — unattended':'autopilot';renderPlan('mode');
+    log('you',un?'"JBIT, just build it."':'"Take it from here."','you');
+    if(un){log('hook','The message opens with "JBIT" and holds only command words, so it\'s your command: the run is <b>unattended</b> until your next command or a new goal.','hook');
+      log('manager','Taking over, unattended. 4 stages left. I\'ll build stage 3 (auth, personal data) without a hold and log the calls I make. I\'ll still stop before anything outward-facing.')}
+    else{log('hook','Plain words without the name set no level, and you gave no command for this plan, so autopilot starts <b>attended</b>.','hook');
+      log('manager','Taking over. 4 stages left. I\'ll stop before stage 3 (auth, personal data) and before anything outward-facing. Say "JBIT autopilot" to run it unattended.')}
     await wait(1000);
     for(let i=0;i<STAGES.length;i++){if(id!==runId)return;await runStage(i)}
     st.mode=null;st.stageIdx=STAGES.length;renderPlan();clearLanes();
     chip('mgr','final report','done');
-    log('manager','<b>All stages done.</b> Report: my <code>(autopilot)</code> call first, then one line per stage, each linking its evidence, plus the decisions I made and 1 deferred question.');
+    log('manager','<b>All stages done.</b> The Mode line is removed. Report: '+(say==='jbit'?'my <code>(unattended)</code> call first, then ':'')+'one line per stage, each linking its evidence, plus the decisions I made and 1 deferred question.');
     await wait(700);
-    chip('mgr','stop: push is yours','hold');
-    log('manager','Stopping before <code>git push</code>: it\'s outward-facing, so it\'s your call. Claude Code\'s permission mode would ask too.');
+    const p=chip('hook','git push blocked','fail');
+    log('hook','<code>git push</code> is blocked while autopilot is armed. Pushing is outward-facing, so it\'s your call'+(say==='jbit'?' (a command with <code>outward</code> would have let it through)':'')+'.','hook');
     $('#sPlay').textContent='✓ Done';$('#sPlay').disabled=true;
   }catch(e){if(e!=='abort')throw e}
 }
-function reset(){runId++;playing=false;initState();clearLanes();$('#log').innerHTML='';renderPlan();setGauge();
+function reset(){runId++;playing=false;approvalResolve=null;initState();clearLanes();$('#log').innerHTML='';$('#reply').classList.remove('on');renderPlan();setGauge();
   $('#sPlay').textContent='▶ Start autopilot';$('#sPlay').disabled=false;
-  log('you','You approved a 4-stage plan. Press <b>Start autopilot</b> to hand it to the manager.','you')}
+  log('you','You approved a 4-stage plan. Pick what you say, then press <b>Start autopilot</b> to hand it to the manager.','you')}
 $('#sPlay').onclick=()=>{
   if(st.mode===null&&st.stageIdx===-1){run();$('#sPlay').textContent='❚❚ Pause';return}
   playing=!playing;$('#sPlay').textContent=playing?'❚❚ Pause':'▶ Resume';
 };
 $('#sReset').onclick=reset;
+seg($('#segAgents'),v=>{level=v;reset();if(v==='wide')log('you','"Yes, go wide." Confirmed in this session, so the hook stamps it. An unstamped wide line would count as balanced.','you')});
 seg($('#segSpeed'),v=>{speed=+v});
+seg($('#segSay'),v=>{say=v;reset()});
+$('#reply').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  const r=b.dataset.r;log('you','"'+esc(b.textContent)+'"','you');
+  if(r==='yes'||r==='jbi'){log('hook',(r==='yes'?'The message opens with "yes" followed by a comma':'"Just build it." with nothing after but a full stop')+', so it counts as an approval. Hold released and the approval logged as a dated decision. The run stays attended.','hook');if(approvalResolve){const f=approvalResolve;approvalResolve=null;f()}}
+  else if(r==='q') log('hook','"go?" ends with a question mark, so it\'s a question. The stage stays held.','hook');
+  else if(r==='words') log('hook','"approve" is followed by more words on the same line, so it reads as a request rather than an approval. The stage stays held.','hook');
+  else {log('hook','Not an approval. Still held.','hook');log('manager','Stages 1 and 2 are committed with evidence. Stage 3 is waiting on your approval, and the only question I\'m asking is whether to build it.')}
+});
 initState();renderPlan();setGauge();reset();
 
 })();

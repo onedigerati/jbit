@@ -2,7 +2,7 @@ schema_version: "1.0"
 name: quick-fix
 description: >-
   With the plan's goal met, a one-line, already-decided output tweak that touches no money logic goes through
-  jbit:stage's quick-fix path: built in the main session with no agents, checked with the suite, logged as one line under `## Fixes`
+  jbit:fix: built in the main session with no agents, checked with the suite, logged as one line under `## Fixes`
   and committed alone, with no archived plan, new plan or evidence folder.
 tags: [fix, outcome]
 context:
@@ -15,9 +15,9 @@ execution:
   allowed_tools: [Read, Glob, Grep, Bash, Write, Edit, Skill, Agent]
 graders:
   - type: tool_used
-    name: loads-stage
+    name: loads-fix
     tool: Skill
-    input_match: '"skill":\s*"(jbit:)?stage"'
+    input_match: '"skill":\s*"(jbit:)?fix"'
     min: 1
     arm: with-only
   - type: tool_used

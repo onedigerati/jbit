@@ -1,0 +1,40 @@
+$ git diff bdd4c76 -- README.md .claude-plugin/marketplace.json docs/field-guide.html docs/assets/jbit-hero-*
+diff --git a/docs/field-guide.html b/docs/field-guide.html
+index 7c93bd1..a95dde6 100644
+--- a/docs/field-guide.html
++++ b/docs/field-guide.html
+@@ -266,7 +266,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
+ 
+ <div class="wrap">
+ <nav class="top" aria-label="Sections">
+-  <span class="brand">JBIT 0.18.1</span>
++  <span class="brand">JBIT 2.0.0</span>
+   <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#models">Models</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
+ </nav>
+ 
+@@ -596,7 +596,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
+   </table></div>
+ </section>
+ 
+-<footer>JBIT 0.18.1 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
++<footer>JBIT 2.0.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+ </div>
+ 
+ <script>
+--- exit 0
+
+$ git diff --stat bdd4c76 -- (same paths)
+ docs/field-guide.html | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+$ sha256 of hero images, bdd4c76 vs working tree
+docs/assets/jbit-hero-dark.png bcde16fb5f43c8b1 bcde16fb5f43c8b1 same
+docs/assets/jbit-hero-dark.webp f0f1f481652d54f0 f0f1f481652d54f0 same
+docs/assets/jbit-hero-light.png f672d5ae66e53398 f672d5ae66e53398 same
+docs/assets/jbit-hero-light.webp 9e580cb71112a1aa 9e580cb71112a1aa same
+
+$ ls docs/assets/jbit-hero-* (working tree)
+docs/assets/jbit-hero-dark.png
+docs/assets/jbit-hero-dark.webp
+docs/assets/jbit-hero-light.png
+docs/assets/jbit-hero-light.webp

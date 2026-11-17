@@ -87,8 +87,8 @@ graders:
     name: stops-after-cutting-m2
     focus: trace
     criteria: >-
-      No M2 stage is built: no report code, no M2 tests, no M2 stage run, and no autopilot run started on the freshly
-      cut plan. If M1 closed, the agent cut the next plan from M2 (its Goal names M2 and RPT-01/RPT-02, checks tagged
+      No M2 stage is built: no report code, no M2 tests, no M2 stage run, and never `Mode: autopilot` in a freshly cut
+      plan. If M1 closed, the agent cut the next plan from M2 (its Goal names M2 and RPT-01/RPT-02, checks tagged
       after the proof like `(proof: test) (req: RPT-01)`) and stopped to ask whether to start. If the close failed,
       the new plan's stages fix what failed (for M1, not M2) and the agent stops to ask before building them.
   - type: regex

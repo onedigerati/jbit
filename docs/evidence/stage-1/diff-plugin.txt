@@ -1,0 +1,47 @@
+$ git diff bdd4c76 -- plugins/jbit
+diff --git a/plugins/jbit/.claude-plugin/plugin.json b/plugins/jbit/.claude-plugin/plugin.json
+index 58dc147..5e5cf8a 100644
+--- a/plugins/jbit/.claude-plugin/plugin.json
++++ b/plugins/jbit/.claude-plugin/plugin.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "jbit",
+-  "version": "0.18.1",
++  "version": "2.0.0",
+   "description": "Just build it. Plans it. Proves it. Sees it through. JBIT (jay-bit, for Just Build It) turns a goal into one plan file of stages with acceptance checks; builds each stage, verifies it against the running product with evidence kept in the repo, has fresh eyes review it and commits it. Your own command, /jbit:autopilot or a message opening with \"JBIT\" such as \"JBIT, just build it. Autopilot, lean.\", sees the plan through unattended, logging the calls it makes for you; say attended to keep the stops for risky stages and your decisions, and outward to let push, publish and deploy through. Plain words without the name never set the level: they run at the one that stands, attended unless your own command set one for this plan. Also a roadmap of milestones for projects too big for one plan, a quick-fix path for small low-risk changes, a choice of how widely work fans out to agents, and a secret guard on commits.",
+   "author": {
+     "name": "jonah"
+diff --git a/plugins/jbit/tests/docs.check.mjs b/plugins/jbit/tests/docs.check.mjs
+index 2a7758f..1a59d81 100644
+--- a/plugins/jbit/tests/docs.check.mjs
++++ b/plugins/jbit/tests/docs.check.mjs
+@@ -61,10 +61,10 @@ const OLD_RULE = [
+   /Only your own typed (?:message|command) arms/i,
+ ]
+ 
+-test('plugin.json and the field guide are version 0.18.1', () => {
+-  assert.equal(manifest.version, '0.18.1')
+-  assert.ok(guide.includes('<span class="brand">JBIT 0.18.1</span>'), 'field guide header lacks JBIT 0.18.1')
+-  assert.ok(guide.includes('<footer>JBIT 0.18.1 ·'), 'field guide footer lacks JBIT 0.18.1')
++test('plugin.json and the field guide are version 2.0.0', () => {
++  assert.equal(manifest.version, '2.0.0')
++  assert.ok(guide.includes('<span class="brand">JBIT 2.0.0</span>'), 'field guide header lacks JBIT 2.0.0')
++  assert.ok(guide.includes('<footer>JBIT 2.0.0 ·'), 'field guide footer lacks JBIT 2.0.0')
+   assert.doesNotMatch(guide, /JBIT 0\.(?:1[0-7]\.\d|18\.0)\b/, 'field guide still names an older version')
+ })
+ 
+--- exit 0
+
+$ test -e plugins/jbit/agents; ls -d plugins/jbit/skills/{approve,fix,review}
+agents absent
+plugins/jbit/skills/approve
+plugins/jbit/skills/fix
+plugins/jbit/skills/review
+
+$ diff <(git ls-tree -r --name-only bdd4c76 -- plugins/jbit) <(git ls-files --cached --others --exclude-standard plugins/jbit | grep -v ^plugins/jbit/evals-ablation/ | sort)
+listings identical (103 files)
+
+$ git diff --stat bdd4c76 -- plugins/jbit
+ plugins/jbit/.claude-plugin/plugin.json | 2 +-
+ plugins/jbit/tests/docs.check.mjs       | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)

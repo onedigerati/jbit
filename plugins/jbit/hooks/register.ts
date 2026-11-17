@@ -1,30 +1,158 @@
 import type { EngineInterface, Register } from 'claude-code'
+import type { JbitStore } from '../types/index.d.ts'
+import { keptRules, loadProjectRules, mergeRules, NO_RULES, projectOutward, projectRisky, type ProjectRules } from './project.ts'
 import { findSecrets, type Finding } from './secrets.ts'
-import { addScope, commitScope, gitCall, joinPath, parseCommands, type Command } from './shell.ts'
+import { MODEL_ROLES, MODELS_FORM, modelsText, modelsValues, parseModels, settingText, type ModelRole, type Models } from './models.ts'
+import { addScope, commitScope, gitCall, joinPath, networkReason, outwardReason, parseCommands, type Command } from './shell.ts'
 
 /** Where a project's plan can live; the first that exists wins. */
 const PLAN_PATHS = ['docs/PLAN.md', 'PLAN.md', 'docs/BUILD_PLAN.md']
 
+/** Where jbit:plan's research notes live, from the repo root, whichever plan path the project keeps. */
+const RESEARCH_DIR = 'docs/research'
+
 /** The most of the plan's "Now" section that rides in every request. */
 const NOW_MAX_LINES = 40
 
-/** Where standing decisions live, when the project keeps them apart from the plan. */
-const DECISIONS_PATH = 'docs/decisions.md'
+/** Context fill, in percent, past which autopilot compacts before carrying on. */
+const COMPACT_AT = 65
 
-/** The one fixed line beside the plan's `## Now`: how stages run, with the skills holding the details. */
-export const WORKING_RULES =
-  "Working rules: build in stages; a stage is done when its checks pass against the running product and the suite is green; save each stage's evidence to `docs/evidence/stage-<n>/`; risky stages get `/code-review` and `/security-review`; commit per stage. The JBIT skills (plan, charter, stage, verify, autopilot, resume) hold the details."
+/** Turns in a row that may end with the plan unchanged before autopilot stops prompting. */
+const MAX_STALLED_TURNS = 3
+
+/** How long after a turn ends autopilot waits, so the session is idle when it acts. */
+const SETTLE_MS = 1000
+
+/** What a risk line names that autopilot must not build until the user approves the stage. */
+const RISKY = /\b(auth\w*|log-?ins?|passwords?|money|payments?|billing|personal data|pii)\b/gi
+
+/** Prompts a person sent, as against a plugin, a background task or another session. */
+const USER_ORIGINS = new Set(['composer', 'bridge', 'sdk'])
+
+/** The `Mode:` line in `## Now`: `autopilot` while jbit:autopilot is in charge, `paused — <reason>` while it waits. */
+type Mode = { kind: 'autopilot' } | { kind: 'paused'; reason: string }
+
+/** The `Agents:` line in `## Now`: how widely work fans out to subagents. No line means `balanced`. */
+export type AgentsLevel = 'lean' | 'balanced' | 'wide'
+
+export { MODEL_ROLES, modelsText, modelsValues, parseModels, type ModelRole, type Models, type RoleSetting } from './models.ts'
+
+interface Stage {
+  /** The first line of `## Now`, e.g. `Stage 3 of 5 · Accounts`. */
+  key: string
+  number: string | undefined
+  /** What the risk line names that holds autopilot, e.g. `auth, personal data`; empty when nothing does. */
+  risky: string[]
+  /** The risk line's text after `Risk:`, for the project's own hold words; empty without one. */
+  riskLine: string
+  checks: { text: string; done: boolean }[]
+}
 
 interface Plan {
   path: string
-  /** The `## Now` section as written (its first `NOW_MAX_LINES` lines, trimmed); undefined without one. */
+  /** The `## Goal` paragraph: when it changes, the plan is for a new feature. */
+  goal: string | undefined
   now: string | undefined
-  stages: { number: string; name: string; done: boolean }[]
+  mode: Mode | undefined
+  /** The level the `Agents:` line names; undefined with no line or an unknown value. */
+  agents: AgentsLevel | undefined
+  /** The `Agents:` line as written (trimmed), present even when its level is unknown. */
+  agentsLine: string | undefined
+  /** The date and optional time after `confirmed` on the Agents line, as digits (`202611081405`); undefined without one. */
+  agentsStamp: string | undefined
+  /** The roles the `Models:` line sets (`parseModels`); undefined with no line or no role it sets. */
+  models: Models | undefined
+  /** Whether `## Now` has a `Models:` line at all, understood or not. */
+  hasModelsLine: boolean
+  stage: Stage | undefined
+  done: number
+  total: number
+  current: string | undefined
+}
+
+/** The plan as written, without the project's own hold words: for hooks that don't look at what a stage risks. */
+async function readPlan($: EngineInterface, root?: string): Promise<Plan | undefined> {
+  for (const path of PLAN_PATHS) {
+    // under another root the file is read there, and keeps its repo path as its name
+    const file = root ? `${root.replace(/\/+$/, '')}/${path}` : path
+    if (!(await $.fs.exists(file))) continue
+    return parsePlan(path, await $.fs.read(file))
+  }
+  return undefined
+}
+
+/** The plan with the project's hold words added; `rules` is the hook call's own reader, so `CLAUDE.md` is read once a call. */
+async function loadPlan($: EngineInterface, rules = sessionRules($), root?: string): Promise<Plan | undefined> {
+  const plan = await readPlan($, root)
+  return plan && withProjectRisk(plan, rules)
+}
+
+/** The last directory `mainRoot` resolved, and the repository top it found there. */
+let mainTop: { cwd: string; top: string } | undefined
+
+/**
+ * Where the main session's plan is (`MAIN_ROOT`): the top of the repository the main session last looked from, so a
+ * `cd` into a subfolder doesn't move it, else that directory itself; undefined before it has looked.
+ */
+async function mainRoot($: EngineInterface): Promise<string | undefined> {
+  const cwd = (await $.state.get(MAIN_ROOT)).value
+  if (typeof cwd !== 'string' || !cwd) return undefined
+  if (mainTop?.cwd === cwd) return mainTop.top
+  const out = (await git($, ['rev-parse', '--show-toplevel'], cwd).catch(() => '')).trim()
+  // one absolute path, or the directory as recorded
+  if (!out || out.includes('\n') || !/^(?:\/|[A-Za-z]:[\\/])/.test(out)) return cwd
+  mainTop = { cwd, top: out }
+  return out
+}
+
+/**
+ * The plan as the main session sees it. A subagent's paths resolve against its own directory, a worktree branched from
+ * an older commit say, so its call reads the plan where the main session last looked (`MAIN_ROOT`); before the main
+ * session has looked, or when no plan can be read there, its own copy, which `sync` judges read-only and attended when its
+ * Goal differs.
+ */
+async function viewedPlan(
+  $: EngineInterface,
+  agentId: string | undefined,
+  read: (root?: string) => Promise<Plan | undefined> = (rules => (root?: string) => loadPlan($, rules, root))(sessionRules($)),
+): Promise<Plan | undefined> {
+  if (!agentId) return read()
+  return (await mainPlan($, read)) ?? read()
+}
+
+/** The plan at the main session's root (`mainRoot`), for a subagent's call; undefined when there is none or it can't be read. */
+async function mainPlan($: EngineInterface, read: (root?: string) => Promise<Plan | undefined>): Promise<Plan | undefined> {
+  const root = await mainRoot($).catch(() => undefined)
+  return root ? read(root).catch(() => undefined) : undefined
+}
+
+/**
+ * The plan with the project's own hold words (`JBIT risk:` in `CLAUDE.md`) added after the built-in ones its risk line
+ * names: the built-in `RISKY` match stays as parsed, so the project can only add. Read only when it could matter, a
+ * Mode line and a non-empty risk line, so a plan without them never touches `CLAUDE.md`.
+ */
+async function withProjectRisk(plan: Plan, read: () => Promise<ProjectRules>): Promise<Plan> {
+  const stage = plan.stage
+  if (!plan.mode || !stage?.riskLine.trim()) return plan
+  const rules = await read()
+  const added = projectRisky(stage.riskLine, rules.risk).filter(w => !stage.risky.includes(w))
+  return added.length ? { ...plan, stage: { ...stage, risky: [...stage.risky, ...added] } } : plan
+}
+
+/**
+ * The confirmation stamp on an Agents line, whatever its level (so a typo fixed later can't bring in a new stamp):
+ * the first date after `confirmed`, with an optional time, as zero-padded digits (`2026-11-08 9:05` is
+ * `202611080905`). Separators and anything after the stamp don't count, so only a new date or time is a new stamp.
+ */
+export function stampIn(line: string): string | undefined {
+  const m = line.match(/\bconfirmed\b\D*?(\d{4})\D?(\d{1,2})\D?(\d{1,2})(?:[^\p{L}\d]{1,3}(\d{1,2})\D?(\d{2}))?/iu)
+  if (!m) return undefined
+  return m.slice(1).filter(p => p !== undefined).map(p => p.padStart(2, '0')).join('')
 }
 
 /**
  * A `## ` heading's text, exactly what `/^##\s+(.+?)\s*$/` captures, in linear time: that lazy pattern backtracks
- * quadratically on a heading padded with spaces, and the plan is read on every request.
+ * quadratically on a heading padded with spaces, and the plan and roadmap are parsed on every request.
  * The text runs to the first line terminator (as `.` does), and only whitespace (a CRLF file's `\r`, say) may follow it.
  */
 function headingText(line: string): string | undefined {
@@ -36,78 +164,1439 @@ function headingText(line: string): string | undefined {
   return text.trimEnd() || text[0]
 }
 
-/** The `## Now` section, as written: nothing in it is parsed, so old Mode, Agents or Models lines are only text. */
-export function nowSection(text: string): string | undefined {
-  const lines: string[] = []
-  let inNow = false
-  for (const line of text.split('\n')) {
-    const h = headingText(line)
-    if (h !== undefined) {
-      if (inNow) break
-      inNow = h.toLowerCase() === 'now'
-      continue
-    }
-    if (inNow) lines.push(line)
-  }
-  return lines.join('\n').trim() ? lines.slice(0, NOW_MAX_LINES).join('\n').trim() : undefined
-}
-
-/** The `## Stages` checklist: each line's number, its name (the part before ` — `) and whether it's ticked. */
-export function stageList(text: string): { number: string; name: string; done: boolean }[] {
-  const list: { number: string; name: string; done: boolean }[] = []
+/** Reads the `## Now` section and the checklist under the first `## …Stages…` heading. */
+export function parsePlan(path: string, text: string): Plan {
+  const sections = new Map<string, string[]>()
   let heading = ''
   for (const line of text.split('\n')) {
     const h = headingText(line)
-    if (h !== undefined) {
-      // the first heading naming stages is the checklist
-      if (heading.includes('stage')) break
-      heading = h.toLowerCase()
+    if (h !== undefined) heading = h.toLowerCase()
+    else if (heading) sections.set(heading, [...(sections.get(heading) ?? []), line])
+  }
+
+  const nowLines = sections.get('now')
+  const now = nowLines?.join('\n').trim() ? nowLines.slice(0, NOW_MAX_LINES).join('\n').trim() : undefined
+  const modeLine = nowLines?.map(l => l.match(/^Mode:\s*(autopilot|paused)\b\s*[—–:-]?\s*(.*)$/i)).find(Boolean)
+  const mode: Mode | undefined = !modeLine
+    ? undefined
+    : modeLine[1]?.toLowerCase() === 'autopilot'
+      ? { kind: 'autopilot' }
+      : { kind: 'paused', reason: modeLine[2]?.trim() || 'waiting on the user' }
+  const agentsLine = nowLines?.map(l => l.trim()).find(l => /^Agents:/i.test(l))
+  const agents = agentsLine?.match(/^Agents:\s*(lean|balanced|wide)\b/i)?.[1]?.toLowerCase() as AgentsLevel | undefined
+  const agentsStamp = agentsLine === undefined ? undefined : stampIn(agentsLine)
+  const modelsLine = nowLines?.map(l => l.trim()).find(l => /^Models:/i.test(l))
+  const models = modelsLine === undefined ? undefined : parseModels(modelsLine)
+
+  let stage: Stage | undefined
+  if (now && nowLines) {
+    // the stage line is the first line of `## Now` that isn't the Mode, Agents or Models line, which may sit above it
+    // (a pause reason can itself name a stage, so Mode lines never count)
+    const lines = now.split('\n').map(l => l.trim()).filter(l => l && !/^(Mode|Agents|Models):/i.test(l))
+    const key = lines.find(l => /\bstage\s+\d+/i.test(l) && !/^[-*]\s+\[/.test(l)) ?? lines[0] ?? ''
+    const risk = nowLines.map(l => l.match(/^Risk:\s*(.*)$/i)?.[1]).find(r => r !== undefined) ?? ''
+    const risky = [...new Set([...risk.matchAll(RISKY)].map(m => (m[1] ?? '').toLowerCase()))]
+    const checks = nowLines
+      .map(l => l.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/))
+      .filter(m => m !== null)
+      .map(m => ({ text: (m[2] ?? '').trim(), done: m[1] !== ' ' }))
+    stage = { key, number: key.match(/\bstage\s+(\d+)/i)?.[1], risky, riskLine: risk, checks }
+  }
+
+  const stageKey = [...sections.keys()].find(k => k.includes('stage'))
+  const stages = (sections.get(stageKey ?? '') ?? []).filter(l => /^[-*]\s+\[[ xX]\]/.test(l))
+  const open = stages.find(l => /^[-*]\s+\[ \]/.test(l))
+  const current = open
+    ?.replace(/^[-*]\s+\[ \]\s*/, '')
+    .replace(/\*\*/g, '')
+    .split(/\s+[—–-]\s+/)[0]
+    ?.trim()
+
+  const done = stages.length - stages.filter(l => /\[ \]/.test(l)).length
+  const goal = sections.get('goal')?.join('\n').trim() || undefined
+  return { path, goal, now, mode, agents, agentsLine, agentsStamp, models, hasModelsLine: modelsLine !== undefined, stage, done, total: stages.length, current }
+}
+
+// ---- the roadmap: a large project's milestones and requirement ledger, read only when docs/ROADMAP.md exists ----
+
+const ROADMAP_PATH = 'docs/ROADMAP.md'
+
+/** The largest roadmap file read at all, in bytes: anything bigger, or anything but a regular file, is no roadmap. */
+const ROADMAP_MAX_BYTES = 1024 * 1024
+
+/** The most of the roadmap read, in characters and lines: it is parsed on every request, and a ledger past this is undercounted rather than slow. */
+const ROADMAP_MAX_CHARS = 256_000
+const ROADMAP_MAX_LINES = 4_000
+
+/** Each line is cut to this many characters before any pattern runs on it. */
+const ROADMAP_LINE_MAX = 2_000
+
+/** The longest milestone name shown; longer ones are cut with an ellipsis. */
+const MILESTONE_NAME_MAX = 60
+
+interface Roadmap {
+  /** The current milestone's ID, e.g. `M1`. */
+  id: string
+  /** Its name, flattened to one line of plain text; may be empty. */
+  name: string
+  covered: number
+  total: number
+}
+
+/**
+ * One line of printable text: control, format (bidi, zero-width), surrogate (a pair split by a cut), private-use, unassigned,
+ * line or paragraph separator and default-ignorable characters (fillers such as U+3164, U+034F, variation selectors), and the
+ * blank braille cell, become spaces, so a name can't add lines to the context, reorder it, or hide text in it.
+ */
+const oneLine = (text: string) =>
+  text
+    .replace(/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}\p{Default_Ignorable_Code_Point}\u2800]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+/** The section a roadmap heading opens, by its leading word, so `## Requirements (46)` is the requirements. */
+const roadmapSection = (heading: string) => {
+  const h = heading.toLowerCase()
+  return /^milestones\b/.test(h) ? 'milestones' : /^requirements\b/.test(h) ? 'requirements' : h
+}
+
+/** A table row's cells, split on unescaped pipes; only the one leading and one trailing pipe are dropped, so an empty last cell stays a cell. */
+function rowCells(line: string): string[] | undefined {
+  const t = line.trim()
+  const cells = t.split(/(?<!\\)\|/)
+  if (cells.length < 2) return undefined
+  if (t.startsWith('|')) cells.shift()
+  if (t.endsWith('|') && !t.endsWith('\\|')) cells.pop()
+  return cells
+}
+
+/** A trailing `(needs: …)` taken off, as `/\s*\(needs:[^)]*\)\s*$/i` would, without its quadratic backtracking on a run of `(needs:`. */
+function withoutNeeds(text: string): string {
+  const close = text.lastIndexOf(')')
+  if (close < 0 || text.slice(close + 1).trim()) return text
+  // the earliest `(needs:` with no `)` between it and the closing one
+  const from = text.lastIndexOf(')', close - 1) + 1
+  const needs = /\(needs:/gi
+  needs.lastIndex = from
+  const m = needs.exec(text)
+  return m && m.index < close ? text.slice(0, m.index).trimEnd() : text
+}
+
+/**
+ * The current milestone and requirement coverage from `docs/ROADMAP.md`, or undefined when there is nothing sound to show:
+ * no `## Milestones` checklist, no `## Requirements` table with Milestone and Covered by columns, or every milestone ticked.
+ * The current milestone is the first unticked `- [ ] M1. <Name> — <scope>`; checklist lines without an `M<n>.` ID are not milestones.
+ * Total counts the table's rows except those whose Milestone cell starts with `dropped`; covered counts those whose Covered by
+ * cell holds anything but blanks or dashes. A row with more or fewer cells than the header is skipped, and fenced code is ignored.
+ */
+export function parseRoadmap(text: string): Roadmap | undefined {
+  const sections = roadmapSections(text)
+  const milestones = (sections.get('milestones') ?? [])
+    .map(l => oneLine(l).match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/))
+    .filter(m => m !== null)
+    .map(m => ({ done: m[1] !== ' ', head: (m[2] ?? '').replace(/\*\*/g, '').match(/^\s*(M\d{1,4})\.\s*(.*)$/) }))
+    .filter(m => m.head !== null)
+  // every milestone ticked: the roadmap is finished and has no current milestone to steer by, so it adds nothing
+  // (starting the next body of work is jbit:plan's call, and the plan line already says when its stages are done)
+  const head = milestones.find(m => !m.done)?.head
+  if (!head) return undefined
+  const id = head[1] ?? ''
+  const raw = withoutNeeds((head[2] ?? '').split(/\s+[—–-]\s+/)[0] ?? '')
+  // cut by code point, so an emoji or other astral character is never split in half
+  const chars = [...raw]
+  const name = chars.length > MILESTONE_NAME_MAX ? `${chars.slice(0, MILESTONE_NAME_MAX - 1).join('').trimEnd()}…` : raw
+
+  const table = ledgerTable(sections)
+  if (!table) return undefined
+  const milestoneAt = table.header.indexOf('milestone')
+  const coveredAt = table.header.indexOf('covered by')
+  let total = 0
+  let covered = 0
+  for (const cells of table.rows) {
+    if (dropped(cells[milestoneAt])) continue
+    total++
+    // a dash is how an empty cell is often written
+    if (!/^[\s—–-]*$/.test(cells[coveredAt] ?? '')) covered++
+  }
+  return { id, name, covered, total }
+}
+
+/** The roadmap's lines by section (bounded as `ROADMAP_MAX_*` say), fenced code left out. */
+function roadmapSections(text: string): Map<string, string[]> {
+  const lines = text
+    .slice(0, ROADMAP_MAX_CHARS)
+    .split('\n', ROADMAP_MAX_LINES)
+    .map(l => l.slice(0, ROADMAP_LINE_MAX).replace(/\r$/, ''))
+  const sections = new Map<string, string[]>()
+  let heading = ''
+  let fence: string | undefined
+  for (const line of lines) {
+    const f = line.match(/^ {0,3}(`{3,}|~{3,})/)?.[1]
+    if (fence) {
+      // a closing fence is the opening one's character, at least as long, with nothing after it
+      if (f && f[0] === fence[0] && f.length >= fence.length && /^ {0,3}[`~]+\s*$/.test(line)) fence = undefined
       continue
     }
-    if (!heading.includes('stage')) continue
-    const m = line.match(/^[-*]\s+\[([ xX])\]\s+(?:\*\*)?(?:stage\s+)?(\d+)[.:]?\s*(.*)$/i)
-    if (!m) continue
-    const name = (m[3] ?? '').replace(/\*\*/g, '').split(/\s+[—–-]\s+/)[0]?.trim() ?? ''
-    list.push({ number: m[2] ?? '', name, done: m[1] !== ' ' })
+    if (f) {
+      fence = f
+      continue
+    }
+    const h = headingText(line)
+    if (h !== undefined) {
+      heading = roadmapSection(h)
+      if (!sections.has(heading)) sections.set(heading, [])
+    } else sections.get(heading)?.push(line)
   }
-  return list
+  return sections
 }
 
-async function readPlan($: EngineInterface): Promise<Plan | undefined> {
-  for (const path of PLAN_PATHS) {
-    if (!(await $.fs.exists(path))) continue
-    const text = await $.fs.read(path)
-    return { path, now: nowSection(text), stages: stageList(text) }
+/** A Milestone cell that marks its row dropped (`dropped 2026-11-05`). */
+const dropped = (cell: string | undefined) => (cell ?? '').replace(/[*_~`]/g, '').trim().toLowerCase().startsWith('dropped')
+
+/**
+ * The `## Requirements` table: its lower-cased header (which has Milestone and Covered by columns) and the cells of each row
+ * with as many cells as the header; a row an unescaped `|` shifted can't be read soundly and is skipped. Undefined without one.
+ */
+function ledgerTable(sections: Map<string, string[]>): { header: string[]; rows: string[][] } | undefined {
+  const lines = sections.get('requirements') ?? []
+  const separator = (cells: string[]) => cells.every(c => /^\s*:?-+:?\s*$/.test(c))
+  const at = lines.findIndex(l => {
+    const cells = rowCells(l)?.map(c => c.trim().toLowerCase())
+    return !!cells?.includes('milestone') && !!cells.includes('covered by')
+  })
+  const header = at < 0 ? undefined : rowCells(lines[at] ?? '')?.map(c => c.trim().toLowerCase())
+  const sep = rowCells(lines[at + 1] ?? '')
+  if (!header || !sep || !separator(sep)) return undefined
+  const rows: string[][] = []
+  for (const line of lines.slice(at + 2)) {
+    const cells = rowCells(line)
+    if (!cells) break
+    if (separator(cells)) continue
+    if (cells.length !== header.length) continue
+    rows.push(cells)
   }
-  return undefined
+  return { header, rows }
 }
 
-/** The status band: the current stage, or that every stage is done; the plan's path when it lists no stages. */
-export function statusText(plan: Pick<Plan, 'path' | 'stages'>): string {
-  if (!plan.stages.length) return `jbit · ${plan.path}`
-  const open = plan.stages.find(s => !s.done)
-  return open ? `jbit · stage ${open.number} of ${plan.stages.length} · ${open.name}` : 'jbit · all stages done'
+/** A cell's plain text: markdown emphasis and code marks taken off, trimmed. */
+const plainCell = (cell: string | undefined) => (cell ?? '').replace(/[*_~`]/g, '').trim()
+
+/**
+ * The IDs of milestone `id`'s requirements that aren't dropped, in ledger order: rows of the `## Requirements` table whose
+ * Milestone cell is that ID (case ignored). Undefined when the ledger has no sound table with ID and Milestone columns.
+ */
+export function milestoneRequirements(text: string, id: string): string[] | undefined {
+  const table = ledgerTable(roadmapSections(text))
+  if (!table) return undefined
+  const idAt = table.header.indexOf('id')
+  const milestoneAt = table.header.indexOf('milestone')
+  if (idAt < 0) return undefined
+  const want = id.toLowerCase()
+  return table.rows.filter(c => !dropped(c[milestoneAt]) && plainCell(c[milestoneAt]).toLowerCase() === want).map(c => plainCell(c[idAt])).filter(Boolean)
 }
 
-/** The system prompt's JBIT section: where the plan is, its `## Now` as written, and the working rules. */
-export function planSection(plan: Pick<Plan, 'path' | 'now'>, decisionsFile: boolean): string {
+/**
+ * The roadmap, only when `docs/ROADMAP.md` exists and is a regular file no larger than `ROADMAP_MAX_BYTES` (a FIFO, device or
+ * directory is none); a roadmap that can't be read or parsed is the same as none, and never blocks a request.
+ */
+async function loadRoadmap($: EngineInterface): Promise<Roadmap | undefined> {
+  const text = await roadmapText($)
+  return text === undefined ? undefined : parseRoadmap(text)
+}
+
+/** `docs/ROADMAP.md`'s text, under the same rules as `loadRoadmap`: undefined when missing, not a regular file, too big or unreadable. */
+async function roadmapText($: EngineInterface): Promise<string | undefined> {
+  try {
+    if (!(await $.fs.exists(ROADMAP_PATH))) return undefined
+    const stat = await $.fs.stat(ROADMAP_PATH)
+    if (stat.kind !== 'file' || !(stat.size <= ROADMAP_MAX_BYTES)) return undefined
+    const text = await $.fs.read(ROADMAP_PATH)
+    return typeof text === 'string' ? text : undefined
+  } catch {
+    return undefined
+  }
+}
+
+// ---- session state: what this session, not the repo, says about autopilot ----
+
+const ARMED = { plugin: 'jbit', key: 'armed' } as const
+const SEEN_MODE = { plugin: 'jbit', key: 'seenMode' } as const
+const CLEARED = { plugin: 'jbit', key: 'cleared' } as const
+const OPEN_CHECKS = { plugin: 'jbit', key: 'openChecks' } as const
+const GOAL = { plugin: 'jbit', key: 'goal' } as const
+/** The main session's working directory at its last look (`sync`): its repository's top is where a subagent's hooks read the plan (`mainRoot`). */
+const MAIN_ROOT = { plugin: 'jbit', key: 'mainRoot' } as const
+const CHECK_COUNTS = { plugin: 'jbit', key: 'checkCounts' } as const
+const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
+/** The Models line this session honours, as `modelsText` writes it (`''` for none): see `syncModels`. */
+const MODELS_HONOURED = { plugin: 'jbit', key: 'modelsHonoured' } as const
+/** The models, efforts and roles the latest prompt named, when it was the user's own (`namedModels`, `namedRoles`); empty otherwise. */
+const MODELS_NAMED = { plugin: 'jbit', key: 'modelsNamed' } as const
+/** The project's default Models line (`JBIT models:` in CLAUDE.md) as the session first read it, as `modelsText` writes it (`''` for none). */
+const MODELS_DEFAULT = { plugin: 'jbit', key: 'modelsDefault' } as const
+/** The honoured Models line was set by the user's `JBIT models` command and the plan doesn't carry it yet (`modelsInEffect`). */
+const MODELS_PENDING = { plugin: 'jbit', key: 'modelsPending' } as const
+/** The user's `JBIT models` command set the honoured Models line this session: the defaults fill in nothing more (`fallbackModels`). */
+const MODELS_CHOSEN = { plugin: 'jbit', key: 'modelsChosen' } as const
+/** The user has been told this session that worktree agents start from the remote's default branch, not local `HEAD` (`WORKTREE_NOTE`). */
+const WORKTREE_NOTICE = { plugin: 'jbit', key: 'worktreeNotice' } as const
+/** Why a worktree agent may lack this session's commits, and how the user changes it: Claude Code's `worktree.baseRef` defaults to `fresh`. */
+const WORKTREE_NOTE =
+  "JBIT: this agent's worktree starts from the remote's default branch, not local `HEAD`, since Claude Code's `worktree.baseRef` is `fresh` (its default): commits not yet pushed, the plan included, aren't in it. JBIT still judges the agent's calls by this session's plan. Tell the user this once, in a line, with how to change it: add `\"worktree\": {\"baseRef\": \"head\"}` to `~/.claude/settings.json` (or the project's `.claude/settings.json`)."
+/** The user confirmed the project's default this session (`syncModels`, or `JBIT models default`): only then is it honoured. */
+const MODELS_DEFAULT_CONFIRMED = { plugin: 'jbit', key: 'modelsDefaultConfirmed' } as const
+/** The user's own Models default (`userModels`) as the session first read it from the store (`''` for none). */
+const MODELS_MINE = { plugin: 'jbit', key: 'modelsMine' } as const
+/** Where the user's own Models default lives in the plugin's store (`JbitStore`): per user, outside every repo. */
+const STORE_MODELS: keyof JbitStore = 'models'
+const PROJECT_RULES = { plugin: 'jbit', key: 'projectRules' } as const
+const UNATTENDED = { plugin: 'jbit', key: 'unattended' } as const
+
+/** What this Goal's progress notices have told the user: stage numbers, and `all` once every stage is done. */
+const ANNOUNCED = { plugin: 'jbit', key: 'announced' } as const
+
+/**
+ * Stages this Goal whose close a commit landed without passing the stage gates (found after the line ran): told to
+ * reopen, never announced, and checked again at each later commit until one closes them passing or unticks them.
+ */
+const REOPEN = { plugin: 'jbit', key: 'reopen' } as const
+
+/**
+ * Set once the session's first look found no plan, so the first plan it then reads is a new Goal; kept apart from
+ * `GOAL`, so no Goal text can pass for it.
+ */
+const NO_PLAN_SEEN = { plugin: 'jbit', key: 'noPlanSeen' } as const
+
+/**
+ * How unattended this session's autopilot runs: `off` (attended: risky stages held for the user's approval); `on`,
+ * which lifts the risky-stage hold and lets Claude settle judgment calls itself; or `outward`, which also lets
+ * outward-facing commands through. One rule sets it (decided 2026-11-14, the fifth review's simplification): only the
+ * user's own autopilot command (`autopilotAsk`) — the typed `/jbit:autopilot`, or a message opening with "JBIT" made of
+ * nothing but command words — and it is unattended by default. The level holds until the user's next command or a new
+ * plan Goal (see `sync`): talk, a "yes", the Mode line pausing, going or coming back, and Claude starting the skill
+ * leave it as it is. Plain words without the name, the Skill tool's args, a plugin's prompt, a file or the Mode line
+ * never set it, since Claude or a file could write those; autopilot started from them runs at the level that stands,
+ * `off` unless the user's command set one for this Goal.
+ */
+export type Unattended = 'off' | 'on' | 'outward'
+
+const UNATTENDED_LEVELS: readonly Unattended[] = ['off', 'on', 'outward']
+
+/**
+ * Characters that hide inside a word (every format character: soft hyphen, zero-width space and joiners, direction
+ * marks, invisible operators, byte-order mark, …) and Unicode spaces, which `normalised` drops and turns into a plain
+ * space, so "at­tended" reads as `attended`.
+ */
+const INVISIBLE = /\p{Cf}/gu
+const ODD_SPACE = /[   -   　]/g
+
+/** A prompt as the readers below see it: invisible characters dropped, Unicode spaces as plain spaces. */
+export const normalised = (text: string): string => text.replace(INVISIBLE, '').replace(ODD_SPACE, ' ')
+
+/**
+ * The only words an autopilot command's words may be. It has no negation, question word or verb like stop, off or
+ * explain, so a message that talks about autopilot, rather than asking for it, always has a word outside it.
+ */
+const COMMAND_VOCABULARY = new Set([
+  'please', 'ok', 'okay', 'go', 'and', 'then', 'just', 'build', 'it', 'run', 'put', 'this', 'the', 'plan', 'on', 'take',
+  'from', 'here', 'see', 'through', 'now', 'autopilot', 'lean', 'balanced', 'wide', 'unattended', 'attended', 'outward',
+])
+
+/** The most words an autopilot command may hold. */
+const COMMAND_MAX_WORDS = 16
+
+/**
+ * The words of `text` when it is one line of command words: only letters, spaces, tabs and `,` `;` `.` `!` (so no
+ * line break, question mark, digit, quote or dash), at most 16 words, all in `COMMAND_VOCABULARY` (lowercased).
+ * Undefined otherwise.
+ */
+function vocabularyWords(text: string): string[] | undefined {
+  if (text.length > 300 || !/^[a-z \t,;.!]*$/i.test(text)) return undefined
+  const words = text.toLowerCase().split(/[ \t,;.!]+/).filter(Boolean)
+  return words.length <= COMMAND_MAX_WORDS && words.every(w => COMMAND_VOCABULARY.has(w)) ? words : undefined
+}
+
+/**
+ * The level a command's words give: `attended` anywhere gives `off` and beats every other word, since it only adds
+ * stops; else `outward` gives `outward`; else `on`, the default. `unattended` and the Agents levels change nothing.
+ */
+const levelOf = (words: string[]): Unattended => (words.includes('attended') ? 'off' : words.includes('outward') ? 'outward' : 'on')
+
+/** The typed `/jbit:autopilot` opening a message, as a whole command name. */
+const SLASH_AUTOPILOT = /^\s*\/jbit:autopilot(?![\w:-])/i
+
+/**
+ * The level a typed `/jbit:autopilot …` sets: always a command, since it is typed. When everything after it, trailing
+ * whitespace aside, is one line of command words (`vocabularyWords`, possibly none), the level is theirs (`levelOf`);
+ * anything else — another line, a question, a word outside the vocabulary — runs attended (`off`), failing closed
+ * ("/jbit:autopilot outward is a bad idea", "/jbit:autopilot аttended" with a Cyrillic а). A message that doesn't
+ * open with the command gives `off`. `/jbit:autopilot unattended [outward]` reads as it always has.
+ */
+export function unattendedOf(text: string): Unattended {
+  const t = normalised(text)
+  const m = SLASH_AUTOPILOT.exec(t)
+  const words = m ? vocabularyWords(t.slice(m[0].length).trimEnd()) : undefined
+  return words ? levelOf(words) : 'off'
+}
+
+/**
+ * `JBIT autopilot` or `JBIT approve` opening a message (decided 2026-11-14): `jbit` in any case as the message's first
+ * word, then spaces, tabs or commas and an optional colon (at least one of them, all on the first line), then the
+ * command as a whole word — followed by the end, whitespace, a comma or `.` `!` `;` `:` `…`. `isApproval` reads
+ * `JBIT approve` from it; an autopilot command opening with the name is `namedAutopilot`'s. A message with a question
+ * mark anywhere (`?` `？` `¿` `؟` `‽` `﹖` `︖`) isn't one ("JBIT approve?" asks).
+ */
+const NAMED = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)(autopilot|approve)(?=$|[\s,.!;:…])/i
+
+/** Question marks, lookalikes included: one anywhere in a message makes it no named command. */
+const QUESTION_MARK = /[?？¿؟‽﹖︖]/
+
+/** `JBIT autopilot …` or `JBIT approve …` opening the message, with the text after the command; else undefined. */
+export function namedCommand(text: string): { command: 'autopilot' | 'approve'; rest: string } | undefined {
+  const t = normalised(text)
+  if (QUESTION_MARK.test(t)) return undefined
+  const m = NAMED.exec(t)
+  return m ? { command: m[1]!.toLowerCase() as 'autopilot' | 'approve', rest: t.slice(m[0].length) } : undefined
+}
+
+/**
+ * What may follow `JBIT approve` for it to approve, as for the other approval words: the end of the message, a line
+ * break (spaces or tabs before it allowed), or punctuation other than a question mark — not a dash or more words on
+ * the line ("JBIT approve the auth stage later", "JBIT approve — what does that do" stay held).
+ */
+const NAMED_APPROVE_END = /^(?:$|[.,!;:…。，！；]|[ \t]*[\r\n])/
+
+/** The name opening a message, then a separator, as `NAMED` reads it. */
+const NAME_PREFIX = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)(?=[a-z])/i
+
+/**
+ * JBIT's other commands: "JBIT plan, then autopilot" or "JBIT please plan it, then autopilot" asks for the plan command
+ * too, Claude's to route, so it is no autopilot command. Of these only `plan` is in `COMMAND_VOCABULARY`, and it names
+ * the plan, not the command, right after `the` or `this` ("JBIT run the plan on autopilot").
+ */
+const OTHER_COMMANDS = new Set(['plan', 'charter', 'stage', 'fix', 'verify', 'review', 'resume'])
+
+/** A word of the command that asks for another JBIT command (see `OTHER_COMMANDS`). */
+const otherCommand = (words: string[]) => words.some((w, i) => OTHER_COMMANDS.has(w) && !(w === 'plan' && (words[i - 1] === 'the' || words[i - 1] === 'this')))
+
+/**
+ * The level an autopilot command opening with the name sets (decided 2026-11-14, option B+), or undefined when the
+ * message isn't one. The whole message, leading whitespace and trailing whitespace set aside, must be nothing but the
+ * command:
+ * - the name (`NAME_PREFIX`: "JBIT", "JBit,", "jbit:"), and no word asking for another JBIT command (`otherCommand`);
+ * - then one line of command words (`vocabularyWords`): a second line, even of command words, a question mark or any
+ *   word outside the vocabulary means it isn't one ("JBIT autopilot outward" then "not now");
+ * - an autopilot request among them: the word `autopilot`, or "just build it", "take it from here" or "see it
+ *   through" as consecutive words.
+ * So "JBIT autopilot lean", "JBit, Autopilot", "JBIT, just build it. Autopilot, lean." and "JBIT take it from here"
+ * are commands. Its level is `levelOf`'s. Fail closed: anything else is talk, and costs the user one retype at most.
+ */
+function namedAutopilot(text: string): Unattended | undefined {
+  const t = normalised(text).trimEnd()
+  const name = NAME_PREFIX.exec(t)
+  if (!name) return undefined
+  const words = vocabularyWords(t.slice(name[0].length))
+  if (!words || otherCommand(words)) return undefined
+  const spaced = ` ${words.join(' ')} `
+  const request = words.includes('autopilot') || [' just build it ', ' take it from here ', ' see it through '].some(p => spaced.includes(p))
+  return request ? levelOf(words) : undefined
+}
+
+/**
+ * The unattended level a user's prompt sets as their autopilot command, or undefined when it isn't one (and so sets
+ * nothing). Two forms, read only from the user's own prompt in `prompt.submit`: the typed `/jbit:autopilot …`
+ * (`unattendedOf`), and a message opening with "JBIT" made of nothing but command words (`namedAutopilot`). Plain
+ * words without the name ("just build it, autopilot lean") are no command here: Claude may start the skill from them,
+ * which runs at the level that stands.
+ */
+export function autopilotAsk(text: string): Unattended | undefined {
+  const t = normalised(text)
+  return SLASH_AUTOPILOT.test(t) ? unattendedOf(t) : namedAutopilot(t)
+}
+
+/**
+ * `JBIT models` opening a message, as `NAMED` reads the name: then a colon (spaces or none before or after it), or the
+ * end, a space or tab, or `.` `!` `,` `;` right after the word.
+ */
+const NAMED_MODELS = /^\s*jbit(?:[ \t,]+(?::[ \t,]*)?|:[ \t,]*)models(?:[ \t]*:|(?=$|[ \t.!,;]))/i
+
+/** The most a `JBIT models` command may hold: every role's settings with room to spare. Longer is refused, not read. */
+const MODELS_COMMAND_MAX = 400
+
+/** Roles that run in the main session: JBIT can't set them, and points to `/model`. */
+const SESSION_ROLES = new Set(['plan', 'planning', 'planner', 'lead', 'manager', 'pm', 'main', 'session'])
+
+/** The words that drop a role, or with nothing else the whole line: agents run as the session. */
+const NONE_WORDS = new Set(['none', 'off'])
+
+/**
+ * What the user's `JBIT models …` command asks: back to the project default (`default`), no line (`none`), roles set,
+ * taken from the project default (`defaulted`) or dropped (`cleared`), or nothing JBIT can do, and why.
+ */
+export type ModelsAsk =
+  | { kind: 'default' }
+  | { kind: 'none' }
+  | { kind: 'set'; set: Models; defaulted: ModelRole[]; cleared: ModelRole[]; mine?: true }
+  | { kind: 'show' }
+  | { kind: 'clearMine' }
+  | { kind: 'refused'; why: string }
+
+/** `— my default` closing a `JBIT models` command (after an em or en dash, a hyphen or a comma): save it as the user's own default too. */
+const MY_DEFAULT = /\s*(?:[—–-]|,)\s*my default$/
+
+const VALID_SETTINGS =
+  'Roles are build, research, review and verify; models sonnet, opus, haiku or fable; efforts low, medium, high, xhigh or max, written `JBIT models <role> <model>/<effort>` (either half optional; `<role> default` for the project default\'s setting, `<role> none` to drop one role), `JBIT models default` to go back to the project default (`JBIT models:` in CLAUDE.md), or `JBIT models none` to remove the line. `— my default` after the settings also saves them as your own default for every repo; `JBIT models clear my default` removes it; `JBIT models` alone shows each role\'s setting and where it comes from.'
+
+/**
+ * The user's own `JBIT models …` command (decided 2026-11-15), or undefined when the message isn't one. The whole
+ * message, trimmed, is one line with no question mark (else it's talk): the name (as `NAMED` reads it), `models` and an
+ * optional colon, then `default` (back to the project default), `none` or `off` (no line), or entries in the Models
+ * line's form (`build sonnet/medium · review: opus/high`, split on `·` `•` `—` `–` `,` `;` `|` or the word `and`), each
+ * a role and a value: `model/effort` (either half), `default` (the project default's setting for that role, or none)
+ * or `none`/`off` (drop the role). A trailing `.` or `!` is fine. Every entry must be sound or the whole command is
+ * refused, listing what's valid, so the line is never half-changed: a session role (`plan`, `lead`, …) points to
+ * `/model`; an unknown role or value, a role named twice or a message too long lists the valid ones. Nothing after the
+ * name shows each role's setting and source (`show`); `clear my default` removes the user's own default (`clearMine`);
+ * entries closed by `— my default` (or `- my default`, `, my default`) are also saved as the user's own default
+ * (`mine`, decided 2026-11-16), and then must all be settings: `default` or `none`, for a role or the line, is refused.
+ */
+export function modelsCommand(text: string): ModelsAsk | undefined {
+  const t = normalised(text).trim()
+  if (/[\r\n]/.test(t) || QUESTION_MARK.test(t)) return undefined
+  const m = NAMED_MODELS.exec(t)
+  if (!m) return undefined
+  if (t.length > MODELS_COMMAND_MAX) return { kind: 'refused', why: `It's longer than a Models line could be. ${VALID_SETTINGS}` }
+  let body = t.slice(m[0].length).replace(/^[\s,;:]+/, '').replace(/[\s.!]+$/, '').toLowerCase()
+  if (!body) return { kind: 'show' }
+  if (body === 'clear my default') return { kind: 'clearMine' }
+  const mine = MY_DEFAULT.test(body)
+  if (mine) {
+    body = body.replace(MY_DEFAULT, '')
+    const ask = modelsCommand(`JBIT models ${body}`)
+    if (ask?.kind === 'refused') return ask
+    if (ask?.kind !== 'set' || ask.defaulted.length || ask.cleared.length)
+      return { kind: 'refused', why: `\`— my default\` saves settings only: name each role's model and effort (\`JBIT models build sonnet/medium · review opus/high — my default\`); \`JBIT models clear my default\` removes your default. ${VALID_SETTINGS}` }
+    return { ...ask, mine: true }
+  }
+  if (body === 'default') return { kind: 'default' }
+  if (NONE_WORDS.has(body)) return { kind: 'none' }
+  const entries = body.split(/[·•—–,;|]|\band\b/).map(e => e.trim()).filter(Boolean)
+  if (!entries.length) return { kind: 'refused', why: `It names no role. ${VALID_SETTINGS}` }
+  const set: Models = {}
+  const defaulted: ModelRole[] = []
+  const cleared: ModelRole[] = []
+  for (const entry of entries) {
+    const e = entry.match(/^([a-z]+)(?:\s*:\s*|\s+)([a-z]+(?:\s*\/\s*[a-z]+)?|\/\s*[a-z]+)$/)
+    const role = (e?.[1] ?? entry.match(/^[a-z]+/)?.[0] ?? '') as ModelRole
+    if (SESSION_ROLES.has(role))
+      return {
+        kind: 'refused',
+        why: `\`${role}\` runs in the main session, on the model and effort set in Claude Code: change them with \`/model\` (and its effort setting). JBIT sets only the agents it starts: build, research, review and verify.`,
+      }
+    if (!e) return { kind: 'refused', why: `\`${entry}\` isn't a role and a setting. ${VALID_SETTINGS}` }
+    if (!MODEL_ROLES.includes(role)) return { kind: 'refused', why: `\`${role}\` isn't a role JBIT can set. ${VALID_SETTINGS}` }
+    if (set[role] || defaulted.includes(role) || cleared.includes(role)) return { kind: 'refused', why: `It names ${role} twice. ${VALID_SETTINGS}` }
+    const value = (e[2] ?? '').replace(/\s+/g, '')
+    if (value === 'default') defaulted.push(role)
+    else if (NONE_WORDS.has(value)) cleared.push(role)
+    else {
+      const setting = parseModels(`Models: ${role} ${value}`)?.[role]
+      if (!setting) return { kind: 'refused', why: `\`${value}\` isn't a model and effort JBIT knows. ${VALID_SETTINGS}` }
+      set[role] = setting
+    }
+  }
+  return { kind: 'set', set, defaulted, cleared }
+}
+
+/**
+ * The roles a `JBIT models` command leaves (`''` for no line), as `modelsText` writes them. `inEffect` is what agents
+ * start on now (`modelsInEffect`: the plan's line when the session honours it, none when the plan has no line or one
+ * it ignores), never a stored value the plan no longer carries, so a role removed by hand stays removed. `dflt` is the
+ * project default (`JBIT models:` in CLAUDE.md, `''` or undefined for none). `default` is the project default, `none`
+ * no line; a set keeps the roles it doesn't name as they stand, a role's `default` takes the project default's setting
+ * for it (dropped when that sets none), and `none` drops it.
+ */
+export function modelsAfter(inEffect: Models | undefined, ask: Extract<ModelsAsk, { kind: 'default' | 'none' | 'set' }>, dflt: string | undefined): string {
+  const project = dflt ? parseModels(`Models: ${dflt}`) : undefined
+  if (ask.kind === 'default') return modelsText(project)
+  if (ask.kind === 'none') return ''
+  const now: Models = { ...inEffect }
+  for (const r of ask.cleared) delete now[r]
+  for (const r of ask.defaulted) {
+    if (project?.[r]) now[r] = project[r]
+    else delete now[r]
+  }
+  return modelsText({ ...now, ...ask.set })
+}
+
+/**
+ * What rides beside the user's `JBIT models` command, for this turn: what Claude writes in the plan, or why nothing.
+ * `line` is the new line's settings (`''` to remove it), undefined on a refusal; `plan` the plan's path, if there is one;
+ * `inEffect` the line agents start on now, for a refusal to name.
+ */
+export function modelsContext(
+  ask: Exclude<ModelsAsk, { kind: 'show' | 'clearMine' }>,
+  line: string | undefined,
+  plan: string | undefined,
+  inEffect: string | undefined,
+): string {
+  if (ask.kind === 'refused')
+    return `JBIT: the user's \`JBIT models\` command was refused, and the Models line is left as it is${inEffect ? ` (\`Models: ${inEffect}\`)` : ''}. ${ask.why} Tell the user this in a line, and don't change the plan's Models line.`
+  const toDefault = ask.kind === 'default'
+  if (!plan)
+    return line
+      ? `JBIT: the user's \`JBIT models\` command sets \`Models: ${line}\`${toDefault ? ', the project default' : ''}, but there's no plan to write it to. Tell the user so in a line; when jbit:plan writes a plan, put that line in its \`## Now\`, beside the Agents line.`
+      : `JBIT: the user's \`JBIT models\` command asks for agents to run as the session${toDefault ? ' (there is no project default in CLAUDE.md)' : ''}, and there's no plan, so no Models line to remove. Tell the user so in a line.`
+  if (!line)
+    return `JBIT: the user's own \`JBIT models\` command leaves no role set${toDefault ? ' (it asks for the project default, and CLAUDE.md has no `JBIT models:` line)' : ''}: remove the \`Models:\` line from \`## Now\` in \`${plan}\`, so agents run as the session, and log it as a dated decision ("Models line removed by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line.`
+  return `JBIT: the user's own \`JBIT models\` command sets the Models line${toDefault ? ' back to the project default (`JBIT models:` in CLAUDE.md)' : ''}, honoured from now on. Write exactly this line in \`## Now\` in \`${plan}\`, beside the Agents line, in place of any Models line there: \`Models: ${line}\`. Log it as a dated decision ("Models: ${line}, set by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line. Agents for these roles start with these settings from now on.`
+}
+
+/**
+ * The project's rules for one hook call, read on first use and at most once: `CLAUDE.md`'s rules now, joined with every
+ * rule seen earlier this session (kept in session state, within the same caps). So an edit adds a rule at once, but a
+ * rule removed mid-session (by the agent under autopilot, say) still holds until a new session. Never throws.
+ */
+function sessionRules($: EngineInterface): () => Promise<ProjectRules> {
+  let rules: Promise<ProjectRules> | undefined
+  return () => (rules ??= stickyRules($))
+}
+
+async function stickyRules($: EngineInterface): Promise<ProjectRules> {
+  const [fresh, kept] = await Promise.all([
+    loadProjectRules($).catch(() => NO_RULES),
+    $.state.get(PROJECT_RULES).then(
+      r => keptRules(r.value),
+      () => NO_RULES,
+    ),
+  ])
+  const all = mergeRules([kept, fresh])
+  // the models default is read fresh each time and kept apart (`projectModels`), never with the hold words
+  const { models: _models, ...guards } = all
+  if (all.risk.length > kept.risk.length || all.outward.length > kept.outward.length) await $.state.set(PROJECT_RULES, guards).catch(() => undefined)
+  return all
+}
+
+interface Session {
+  armed: boolean
+  /** Set by the user's autopilot command alone, and held until their next one or a new Goal; it lifts nothing unless autopilot is also armed. */
+  unattended: Unattended
+  cleared: string[]
+  openChecks: Record<string, string[]>
+  /** For each stage number, how many checks `## Now` listed when last seen there. */
+  checkCounts: Record<string, number>
+  /** The Agents line as this session first read it; undefined until the session has looked. */
+  firstAgents: FirstAgents | undefined
+  /** The time (ms) at the last sync, read only while the plan asks for wide; undefined when the clock can't be read. */
+  now: number | undefined
+  /** The Models line this session honours (`modelsText`, `''` for none); undefined until the session has looked. */
+  modelsHonoured: string | undefined
+  /** The project's default Models line (`projectModels`, `''` for none); undefined until the session has read it. */
+  modelsDefault: string | undefined
+  /** The honoured line came from the user's `JBIT models` command and the plan doesn't carry it yet. */
+  modelsPending: boolean
+  /** The user's `JBIT models` command set the honoured line this session, so the defaults fill in nothing more. */
+  modelsChosen: boolean
+  /** The user confirmed the project's default this session. */
+  modelsDefaultConfirmed: boolean
+  /** The user's own Models default (`userModels`, `''` for none); undefined until the session has read it. */
+  modelsMine: string | undefined
+}
+
+async function readSession($: EngineInterface): Promise<Session> {
+  const [armed, unattended, cleared, openChecks, checkCounts, firstAgents, modelsHonoured, modelsDefault, modelsPending, modelsChosen, modelsDefaultConfirmed, modelsMine] = await Promise.all([
+    $.state.get(ARMED),
+    $.state.get(UNATTENDED),
+    $.state.get(CLEARED),
+    $.state.get(OPEN_CHECKS),
+    $.state.get(CHECK_COUNTS),
+    $.state.get(FIRST_AGENTS),
+    $.state.get(MODELS_HONOURED),
+    $.state.get(MODELS_DEFAULT),
+    $.state.get(MODELS_PENDING),
+    $.state.get(MODELS_CHOSEN),
+    $.state.get(MODELS_DEFAULT_CONFIRMED),
+    $.state.get(MODELS_MINE),
+  ])
+  return {
+    armed: armed.value ?? false,
+    unattended: UNATTENDED_LEVELS.includes(unattended.value as Unattended) ? (unattended.value as Unattended) : 'off',
+    cleared: cleared.value ?? [],
+    openChecks: openChecks.value ?? {},
+    checkCounts: checkCounts.value ?? {},
+    firstAgents: typeof firstAgents.value === 'object' ? firstAgents.value : undefined,
+    now: undefined,
+    modelsHonoured: typeof modelsHonoured.value === 'string' ? modelsHonoured.value : undefined,
+    modelsDefault: typeof modelsDefault.value === 'string' ? modelsDefault.value : undefined,
+    modelsPending: modelsPending.value === true,
+    modelsChosen: modelsChosen.value === true,
+    modelsDefaultConfirmed: modelsDefaultConfirmed.value === true,
+    modelsMine: typeof modelsMine.value === 'string' ? modelsMine.value : undefined,
+  }
+}
+
+/** A model or effort named as a word in a prompt. */
+const MODEL_WORDS = /\b(sonnet|opus|haiku|fable|low|medium|high|xhigh|max)\b/gi
+
+/** The models and efforts a prompt names as words, lowercased, each once (`MODEL_WORDS`). */
+export function namedModels(text: string): string[] {
+  return [...new Set([...normalised(text).matchAll(MODEL_WORDS)].map(m => (m[1] ?? '').toLowerCase()))]
+}
+
+/** A delegated role named as a word in a prompt (`MODEL_ROLES`). */
+const ROLE_WORDS = new RegExp(`\\b(${MODEL_ROLES.join('|')})\\b`, 'gi')
+
+/** The roles a prompt names as words, lowercased, each once (`ROLE_WORDS`): "reviewer" or "builds" names none. */
+export function namedRoles(text: string): string[] {
+  return [...new Set([...normalised(text).matchAll(ROLE_WORDS)].map(m => (m[1] ?? '').toLowerCase()))]
+}
+
+/** The roles `current` adds or sets differently from `honoured` (both as `modelsText` writes them); a role removed is none. */
+function changedRoles(current: Models, honoured: string): ModelRole[] {
+  const before = parseModels(`Models: ${honoured}`) ?? {}
+  return MODEL_ROLES.filter(r => current[r] && (!before[r] || settingText(before[r]!) !== settingText(current[r]!)))
+}
+
+/**
+ * Keeps the Models line the session honours (decided 2026-11-15: only the user sets model and effort, and a changed line
+ * is confirmed only by their naming its settings). The line as the session first reads a plan is the approved plan's and
+ * is honoured; a look that finds no plan (or can't read it) records nothing, so the first look that reads one sets the
+ * baseline. A line that later appears or changes is honoured only when the latest prompt was the user's own and named,
+ * as words, every model and effort the line sets and every role it adds or sets differently from the honoured line
+ * (`MODELS_NAMED`): "build sonnet/medium, review opus/high" confirms `build sonnet/medium · review opus/high`; a plain
+ * "yes", or "fix the high priority bug", doesn't, and nor does "keep build on sonnet medium and review on opus high"
+ * when the change adds `research opus/high`, since it never says "research". Then it becomes the
+ * honoured one. When the plan had no line, a line equal to the defaults the context gave Claude to write
+ * (`fallbackModels`: a confirmed project default over the user's own) is honoured unnamed too, but never after the
+ * user's `JBIT models` command (`MODELS_CHOSEN`), so the defaults never undo their choice. The project default
+ * (`JBIT models:` in CLAUDE.md) is confirmed here too (decided 2026-11-16, replacing the 2026-11-15 rule that a line
+ * matching it was the user's own): once the user's own latest prompt names, as words, every model, effort and role it
+ * sets, as a changed line needs. The user's `JBIT models` command sets the honoured
+ * line itself (`prompt.submit`); once the plan carries it, `MODELS_PENDING` clears. Otherwise the whole line is ignored, as if there were none, and the working rules say so in one line
+ * until the user confirms (or the line goes back to the honoured one). A line removed is simply no line; the honoured
+ * one stays, so restoring it needs nothing. Edges left: any prompt (a background agent's report, say) clears what was
+ * named, so a line Claude writes after one needs the user again; a prompt that names each changed role and, anywhere,
+ * the values still confirms, as words are not paired with roles ("research and review, opus high" confirms a line
+ * setting both); and a line that changes in git (a checkout) is a change like any other.
+ */
+async function syncModels($: EngineInterface, plan: Plan | undefined, s: Session): Promise<void> {
+  if (!s.modelsDefaultConfirmed && s.modelsDefault && !s.modelsChosen) {
+    const dflt = parseModels(`Models: ${s.modelsDefault}`)
+    const named = (await $.state.get(MODELS_NAMED)).value
+    if (dflt && Array.isArray(named) && namesAll(dflt, named, MODEL_ROLES.filter(r => dflt[r]))) {
+      await $.state.set(MODELS_DEFAULT_CONFIRMED, true)
+      s.modelsDefaultConfirmed = true
+    }
+  }
+  const current = modelsText(plan?.models)
+  if (s.modelsHonoured === undefined) {
+    // no plan file at all is a look that found none: a plan written later is a change from no line, so its line needs
+    // the user's words (or matches their defaults); a plan that couldn't be read records nothing yet
+    if (!plan && !(await noPlanFile($))) return
+    await $.state.set(MODELS_HONOURED, current)
+    s.modelsHonoured = current
+    return
+  }
+  if (current === s.modelsHonoured) {
+    // the plan now carries the line the user's command set
+    if (s.modelsPending) {
+      await $.state.set(MODELS_PENDING, false)
+      s.modelsPending = false
+    }
+    return
+  }
+  if (!current) return
+  // a plan with no line takes the defaults the context told Claude to write (the user's own and a confirmed project
+  // default), until the user's `JBIT models` command: then a line matching them is a change like any other
+  const byDefault = s.modelsHonoured === '' && current === modelsText(fallbackModels(s))
+  if (!byDefault) {
+    const named = (await $.state.get(MODELS_NAMED)).value
+    // every value, and every role the change adds or sets differently: values alone may be other roles'
+    if (!Array.isArray(named) || !namesAll(plan!.models!, named, changedRoles(plan!.models!, s.modelsHonoured))) return
+  }
+  await $.state.set(MODELS_HONOURED, current)
+  s.modelsHonoured = current
+  if (s.modelsPending) await $.state.set(MODELS_PENDING, false)
+  s.modelsPending = false
+}
+
+/** No plan file exists at any of `PLAN_PATHS`; false when that can't be told (a check that throws). */
+async function noPlanFile($: EngineInterface): Promise<boolean> {
+  try {
+    for (const path of PLAN_PATHS) if (await $.fs.exists(path)) return false
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** The user's words (`MODELS_NAMED`) name every model and effort `models` sets, and each of `roles`. */
+const namesAll = (models: Models, named: unknown[], roles: readonly ModelRole[]) =>
+  modelsValues(models).every(v => named.includes(v)) && roles.every(r => named.includes(r))
+
+/**
+ * The user's own Models default as the store holds it (`JbitStore.models`), as `modelsText` writes it, or `''` when it
+ * isn't one: not a string, too long, or not exactly the canonical line a `— my default` command saves (so a value
+ * edited by hand into something that half parses is ignored whole, never read in part).
+ */
+export function storedModels(value: unknown): string {
+  if (typeof value !== 'string' || value.length > MODELS_COMMAND_MAX) return ''
+  const text = modelsText(parseModels(`Models: ${value}`))
+  return text === value ? text : ''
+}
+
+/**
+ * The user's own Models default (decided 2026-11-16: per user, in the plugin's own `$.store`, outside every repo, and
+ * written only by their `JBIT models … — my default` command), read once a session and kept, like the project default.
+ * A store that can't be read is no default: `failed` says why, on that one read only, so the context says so once.
+ */
+async function userModels($: EngineInterface): Promise<{ text: string; failed?: string }> {
+  const kept = (await $.state.get(MODELS_MINE)).value
+  if (typeof kept === 'string') return { text: kept }
+  let text = ''
+  let failed: string | undefined
+  try {
+    text = storedModels(await $.store.get(STORE_MODELS))
+  } catch (err) {
+    failed = storeError(err)
+  }
+  await $.state.set(MODELS_MINE, text)
+  return { text, failed }
+}
+
+/** The user's own default as the store holds it now, read fresh (not the session's kept copy); `failed` when it can't be read. */
+async function storedMine($: EngineInterface): Promise<{ text: string; failed?: string }> {
+  try {
+    return { text: storedModels(await $.store.get(STORE_MODELS)) }
+  } catch (err) {
+    return { text: '', failed: storeError(err) }
+  }
+}
+
+/** Why a store call failed, in one short line. */
+const storeError = (err: unknown) => cutAt(oneLine(err instanceof Error ? err.message : String(err)), 120) || 'unknown error'
+
+/**
+ * What rides beside the user's bare `JBIT models`: each role's setting and where it comes from (the plan's line, the
+ * project default in CLAUDE.md once confirmed, the user's own default, or the session), and the defaults that apply to
+ * no role now. Changes nothing.
+ */
+export function modelsShown(plan: Pick<Plan, 'models'> | undefined, s: Session): string {
+  const inEffect = modelsInEffect(plan, s) ?? {}
+  const own = effectiveModels(plan, s.modelsHonoured) ?? (s.modelsPending && s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined) ?? {}
+  const rows = MODEL_ROLES.map(r => {
+    const set = inEffect[r]
+    if (!set) return `${r}: as the session (session)`
+    const source = own[r] ? (s.modelsPending ? 'plan, set by `JBIT models`, not yet written' : 'plan') : fallbackSource(s, r)
+    return `${r}: ${settingText(set)} (${source})`
+  })
+  const extra = [
+    s.modelsDefault && !s.modelsDefaultConfirmed && !s.modelsChosen
+      ? `The project default in CLAUDE.md, \`Models: ${s.modelsDefault}\`, is waiting for their word: it applies once they name its settings in their own message or type \`JBIT models default\`.`
+      : '',
+    s.modelsMine ? `Their own default is \`Models: ${s.modelsMine}\`${s.modelsChosen ? ', not used in this session since their `JBIT models` command set the line' : ''}.` : 'They have no own default saved (`JBIT models … — my default` saves one).',
+  ].filter(Boolean)
+  return `JBIT: the user's \`JBIT models\` asks what each role's agents start on. Show them exactly these lines, one per role: ${rows.map(r => `\`${r}\``).join(', ')}. ${extra.join(' ')} Change nothing in the plan.`
+}
+
+/** The context's word on a store read that failed. */
+const mineReadNote = (why: string) =>
+  `JBIT couldn't read the user's own Models default (\`JBIT models … — my default\`) from its store (${why}), so none applies this session. Tell the user so in a line.`
+
+/**
+ * What agents start on for roles the plan's line leaves out, by precedence per role (decided 2026-11-16: plan line >
+ * confirmed project default > the user's own default > session): the project default (`JBIT models:` in CLAUDE.md)
+ * once the user confirmed it this session, over the user's own default. None once the user's `JBIT models` command set
+ * the line (`MODELS_CHOSEN`): that line already holds every role they kept, and a role they dropped stays dropped.
+ */
+export function fallbackModels(
+  s: Pick<Session, 'modelsChosen' | 'modelsDefault' | 'modelsDefaultConfirmed' | 'modelsMine'>,
+): Models | undefined {
+  if (s.modelsChosen) return undefined
+  const mine = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+  const merged: Models = { ...mine, ...project }
+  return Object.keys(merged).length ? merged : undefined
+}
+
+/** Where each role's setting in `fallbackModels` comes from: `CLAUDE.md` or `my default`. */
+function fallbackSource(s: Pick<Session, 'modelsDefault' | 'modelsDefaultConfirmed'>, role: ModelRole): 'CLAUDE.md' | 'my default' {
+  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+  return project?.[role] ? 'CLAUDE.md' : 'my default'
+}
+
+/** `build sonnet/medium (my default), review opus/high (CLAUDE.md)`: the fallback's roles with their sources. */
+const sourcedText = (models: Models, s: Session) =>
+  MODEL_ROLES.filter(r => models[r])
+    .map(r => `${r} ${settingText(models[r]!)} (${fallbackSource(s, r) === 'my default' ? "the user's own default" : 'CLAUDE.md, confirmed'})`)
+    .join(', ')
+
+/**
+ * The project's default Models line (`JBIT models:` in `CLAUDE.md` or `.claude/CLAUDE.md`), as `modelsText` writes it
+ * (`''` for none or one that sets no role). It is read once, at the session's first compose (or its first `JBIT models`
+ * command), and kept for the session; an edit to `CLAUDE.md` mid-session (by the agent, say) changes nothing until a new
+ * session. A file that can't be read is no default. It is honoured only once the user confirms it this session
+ * (`MODELS_DEFAULT_CONFIRMED`, decided 2026-11-16): a cloned repo's committed default never raises spend unasked.
+ */
+async function projectModels($: EngineInterface, rules: () => Promise<ProjectRules>): Promise<string> {
+  const kept = (await $.state.get(MODELS_DEFAULT)).value
+  if (typeof kept === 'string') return kept
+  // `parseProjectRules` already wrote it as `modelsText` does, from the first line that sets a role
+  const text = (await rules()).models ?? ''
+  await $.state.set(MODELS_DEFAULT, text)
+  return text
+}
+
+/** The roles the plan's Models line sets, when this session honours it; undefined otherwise. */
+export const effectiveModels = (plan: Pick<Plan, 'models'> | undefined, honoured: string | undefined): Models | undefined =>
+  plan?.models && modelsText(plan.models) === honoured ? plan.models : undefined
+
+/**
+ * The roles agents start on now. The plan's line when the session honours it; and while the user's `JBIT models`
+ * command waits for Claude to write its line (`modelsPending`), the line that command set, at once (decided in the
+ * stage 2 review): the user's command is the setting, and the plan only records it, so an Agent call between the
+ * command and the edit carries the new setting, never the replaced one. A role the honoured line leaves out (or every
+ * role, with no line or one ignored) takes the defaults (`fallbackModels`). Undefined otherwise: agents run as the session.
+ */
+export function modelsInEffect(
+  plan: Pick<Plan, 'models'> | undefined,
+  s: Pick<Session, 'modelsHonoured' | 'modelsPending' | 'modelsChosen' | 'modelsDefault' | 'modelsDefaultConfirmed' | 'modelsMine'>,
+): Models | undefined {
+  const honoured = effectiveModels(plan, s.modelsHonoured)
+  const fallback = fallbackModels(s)
+  if (honoured) return fallback ? { ...fallback, ...honoured } : honoured
+  if (s.modelsPending) return s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined
+  return fallback
+}
+
+/** The plan has a Models line this session doesn't honour (it changed without the user's words), and no command of theirs waits to be written. */
+const ignoredModels = (plan: Plan, s: Session) => !s.modelsPending && !!plan.models && !effectiveModels(plan, s.modelsHonoured)
+
+/**
+ * Why an Agent call from the main loop breaks the honoured Models line, or undefined when it keeps it (decided
+ * 2026-11-15, stage 1 review). A call naming neither model nor effort runs as the session, whatever the line sets: it
+ * may be a role the line leaves out or an agent that is no role (Explore), which the hook can't tell from a
+ * builder. A call naming either must match one role's setting exactly, a half the role leaves unset absent from the
+ * call, so Claude never picks it. A fork runs on the session's model and effort whatever it names, so one naming
+ * either is refused. `withDefaults`: some roles come from the defaults (`fallbackModels`), not the plan's line.
+ */
+export function modelsDenial(
+  models: Models,
+  call: { model?: unknown; effort?: unknown; subagent_type?: unknown },
+  withDefaults = false,
+): string | undefined {
+  const model = typeof call.model === 'string' ? call.model.toLowerCase() : undefined
+  const effort = typeof call.effort === 'string' ? call.effort.toLowerCase() : undefined
+  if (!model && !effort) return undefined
+  const sets = withDefaults
+    ? `JBIT: the Models settings in effect (the plan's line, then the user's defaults) set ${modelsText(models)}.`
+    : `JBIT: the plan's Models line sets ${modelsText(models)}.`
+  const neither = ' An agent for none of these roles names neither, and runs as the session.'
+  if (call.subagent_type === 'fork')
+    return `${sets} A fork runs on your own model and effort whatever the call names: start a named agent type with the setting for its role instead.${neither}`
+  const matches = MODEL_ROLES.some(r => {
+    const set = models[r]
+    return !!set && set.model === model && set.effort === effort
+  })
+  return matches
+    ? undefined
+    : `${sets} Start this agent with exactly the setting for its role (its model and effort, and nothing the line leaves out for it).${neither}`
+}
+
+/**
+ * The Agents line as a session first reads it: its level (`none` without a line, `unknown` for a line whose
+ * value isn't a level, which may be a disguised `wide`) and its confirmation stamp.
+ */
+export interface FirstAgents {
+  level: AgentsLevel | 'none' | 'unknown'
+  stamp?: string
+  /** When the session first read the line (ms); a confirmation must be stamped no earlier than that minute. */
+  at?: number
+}
+
+/** `at`: the time of the read, left out when the clock couldn't be read (then no stamp can confirm). */
+export function firstAgentsOf(plan: Pick<Plan, 'agents' | 'agentsLine' | 'agentsStamp'> | undefined, at?: number): FirstAgents {
+  const level = plan?.agents ?? (plan?.agentsLine ? 'unknown' : 'none')
+  return { level, ...(plan?.agentsStamp ? { stamp: plan.agentsStamp } : {}), ...(at !== undefined ? { at } : {}) }
+}
+
+/** A stamp with its time (`YYYYMMDDHHMM`) as local-time ms; undefined for a date-only or impossible stamp. */
+function stampTime(stamp: string): number | undefined {
+  const m = stamp.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})$/)
+  if (!m) return undefined
+  const [y, mo, d, h, mi] = m.slice(1).map(Number) as [number, number, number, number, number]
+  const t = new Date(y, mo - 1, d, h, mi)
+  const same = t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d && t.getHours() === h && t.getMinutes() === mi
+  return same ? t.getTime() : undefined
+}
+
+const MINUTE = 60_000
+
+/**
+ * The level this session works at. `lean` and `balanced` are honoured as found, since they only lower the spend,
+ * so they need no session state (`first` may be undefined). `wide` is honoured when the session first read no line
+ * or a lean or balanced one, or when the line now carries a confirmation stamp that has a time, differs from the
+ * one first read, and falls between the minute of the first read and a minute past `now` (local time, as
+ * `stampOf` writes it): a `wide` (or unknown) line already there at the start counts as `balanced` until the user
+ * confirms and the line is restamped. So a planted stamp, kept, reformatted, stripped of its time or set in the
+ * future, confirms nothing, and nor does any stamp when the clock couldn't be read. Fields are compared, not text,
+ * so rewriting the line in another case or spacing confirms nothing. Undefined when the plan has no Agents line,
+ * or its value is unknown.
+ */
+export function effectiveAgents(
+  plan: Pick<Plan, 'agents' | 'agentsStamp'> | undefined,
+  first: FirstAgents | undefined,
+  now?: number,
+): AgentsLevel | undefined {
+  const level = plan?.agents
+  if (level !== 'wide') return level
+  if (!first) return 'balanced'
+  if (first.level !== 'wide' && first.level !== 'unknown') return 'wide'
+  const stamp = plan?.agentsStamp
+  if (stamp === undefined || stamp === first.stamp || first.at === undefined || now === undefined) return 'balanced'
+  const t = stampTime(stamp)
+  return t !== undefined && t >= Math.floor(first.at / MINUTE) * MINUTE && t <= now + MINUTE ? 'wide' : 'balanced'
+}
+
+/** Whether the plan asks for `wide` and this session doesn't yet honour it. */
+const unconfirmedWide = (plan: Plan, s: Session) => plan.agents === 'wide' && effectiveAgents(plan, s.firstAgents, s.now) !== 'wide'
+
+/** The clock's time in ms, or undefined when it can't be read. */
+const clockNow = ($: EngineInterface) =>
+  $.clock.now().then(
+    t => (typeof t === 'number' && Number.isFinite(t) ? t : undefined),
+    () => undefined,
+  )
+
+/** A local `YYYY-MM-DD HH:MM` for the confirmation stamp. */
+export function stampOf(ms: number): string {
+  const d = new Date(ms)
+  const two = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}:${two(d.getMinutes())}`
+}
+
+/**
+ * Brings the session's view up to date with the plan. Autopilot arms when the Mode line turns to autopilot
+ * during this session, and disarms when the line goes; a plan that already said autopilot when the session
+ * first looked stays unarmed, so a repo can never start a run by itself. Also notes which checks are unticked,
+ * and the Agents line as first read, so a `wide` the session didn't see set isn't honoured unasked.
+ */
+async function sync($: EngineInterface, plan: Plan | undefined, agentId?: string): Promise<Session> {
+  if (agentId) return agentView($, plan)
+  // where the main session looks, so a subagent's call reads the same plan (`viewedPlan`)
+  const [root, stored] = await Promise.all([$.session.cwd().catch(() => undefined), $.state.get(MAIN_ROOT)])
+  if (typeof root === 'string' && root && stored.value !== root) await $.state.set(MAIN_ROOT, root)
+  const mode = plan?.mode?.kind ?? 'none'
+  const [seen, seenGoal, noPlan, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), $.state.get(NO_PLAN_SEEN), readSession($)])
+  // a new Goal is a new feature: its stages restart at 1, so the last feature's per-stage records go
+  const goal = plan?.goal ?? ''
+  const noPlanSeen = noPlan.value === true
+  if (seenGoal.value !== goal || (noPlanSeen && plan)) {
+    if (noPlanSeen && plan) {
+      // the first plan the session reads after finding none is one it didn't see when the user gave their command (one
+      // Claude wrote, say), so it runs attended; the per-stage records are left, since nothing was kept for it
+      session.unattended = 'off'
+      await $.state.set(UNATTENDED, 'off')
+    } else if (seenGoal.value !== undefined && plan) {
+      session.openChecks = {}
+      session.cleared = []
+      session.checkCounts = {}
+      // a new Goal is a plan the user gave no command for (one Claude cut, say), so it runs attended until they do: the
+      // hold and outward check come back
+      session.unattended = 'off'
+      await $.state.set(UNATTENDED, 'off')
+      await $.state.set(OPEN_CHECKS, {})
+      await $.state.set(CLEARED, [])
+      await $.state.set(CHECK_COUNTS, {})
+      await $.state.set(ANNOUNCED, [])
+      await $.state.set(REOPEN, [])
+    }
+    if (plan) {
+      await $.state.set(GOAL, goal)
+      if (noPlanSeen) await $.state.set(NO_PLAN_SEEN, false)
+    } else if (seenGoal.value === undefined && !noPlanSeen) await $.state.set(NO_PLAN_SEEN, true)
+  }
+  if (seen.value !== mode) {
+    if (seen.value !== undefined && mode === 'autopilot') session.armed = true
+    // the Mode line pausing, going or coming back arms or disarms, and leaves the level as the user's command set it
+    if (mode === 'none') session.armed = false
+    await $.state.set(SEEN_MODE, mode)
+    await $.state.set(ARMED, session.armed)
+  }
+  if (session.firstAgents === undefined) {
+    session.firstAgents = firstAgentsOf(plan, await clockNow($))
+    await $.state.set(FIRST_AGENTS, session.firstAgents)
+  }
+  await syncModels($, plan, session)
+  // a wide line's stamp is checked against the time, so read it only then
+  if (plan?.agents === 'wide') session.now = await clockNow($)
+  const stage = plan?.stage
+  if (stage?.number && stage.checks.length) {
+    const open = stage.checks.filter(c => !c.done).map(c => c.text)
+    if (JSON.stringify(session.openChecks[stage.number] ?? null) !== JSON.stringify(open)) {
+      session.openChecks = { ...session.openChecks, [stage.number]: open }
+      await $.state.set(OPEN_CHECKS, session.openChecks)
+    }
+    if (session.checkCounts[stage.number] !== stage.checks.length) {
+      session.checkCounts = { ...session.checkCounts, [stage.number]: stage.checks.length }
+      await $.state.set(CHECK_COUNTS, session.checkCounts)
+    }
+  }
+  return session
+}
+
+/**
+ * A subagent's look at the plan: the session as the main session left it, written nowhere. A subagent's call never moves
+ * the Goal, the Mode line's arming, the level, approvals or the per-stage records. A plan whose Goal isn't the one the
+ * main session saw (a worktree's older copy, read before the main session looked) is judged attended and unapproved,
+ * and a Mode line the main session didn't see change can disarm this view but never arm it: a subagent's view only ever
+ * holds more. The stage's checks are noted in this view alone, so the commit gates judge the plan the commit carries.
+ */
+async function agentView($: EngineInterface, plan: Plan | undefined): Promise<Session> {
+  const mode = plan?.mode?.kind ?? 'none'
+  const [seen, seenGoal, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), readSession($)])
+  if (plan && seenGoal.value !== (plan.goal ?? '')) {
+    session.unattended = 'off'
+    session.cleared = []
+    session.openChecks = {}
+    session.checkCounts = {}
+  }
+  if (seen.value !== mode && mode === 'none') session.armed = false
+  if (session.firstAgents === undefined) session.firstAgents = firstAgentsOf(plan, await clockNow($))
+  if (plan?.agents === 'wide') session.now = await clockNow($)
+  const stage = plan?.stage
+  if (stage?.number && stage.checks.length) {
+    session.openChecks = { ...session.openChecks, [stage.number]: stage.checks.filter(c => !c.done).map(c => c.text) }
+    session.checkCounts = { ...session.checkCounts, [stage.number]: stage.checks.length }
+  }
+  return session
+}
+
+/** What an armed session's build call is told when the plan it would be judged by can't be read. */
+const UNREADABLE_HOLD =
+  "JBIT autopilot couldn't read the plan, so it can't tell whether the current stage is held: nothing is built until it can. Check that the plan file is readable, or ask the user."
+
+/** The exact reply that releases a held stage, as every held message spells it out. */
+const APPROVAL_REPLY =
+  '"yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve")'
+
+/** The short form the notifications give. */
+const APPROVAL_NOTE = 'Reply "approve" (or /jbit:approve) to build it.'
+
+/**
+ * The approval rule (decided 2026-11-09, with "just build it" added 2026-11-14): the trimmed message, in any case,
+ * opens with yes, yep, go, approve, approved, proceed, build it or just build it, followed by the end of the message or punctuation — `.` `,` `!` `;` `:`, their full-width forms
+ * `。` `，` `！` `；`, an ellipsis `…`, or a dash: `—` or `–`
+ * with or without a space before it, or ` -` — or a line break, spaces or tabs before it allowed (`yes\nmore`); or
+ * it opens with `/jbit:approve` as a whole word, or with `JBIT approve` followed by what `NAMED_APPROVE_END` allows
+ * (and no question mark ending the message). A `?` is not punctuation here ("go?" and "just build it?" ask), and a word followed by a space or tab and more
+ * text on the same line is not an approval ("go ahead and tell me…", "go\tahead", "just build it after lunch", and so
+ * "approve the auth stage" too): the hook can't read intent, so it keeps to a narrow, stated rule.
+ */
+const APPROVAL = /^(?:(?:yes|yep|go|approved?|proceed|(?:just\s+)?build\s+it)(?:$|[.,!;:…。，！；]|\s*[—–]|\s+-|[ \t]*[\r\n])|\/jbit:approve(?![\w:-]))/i
+
+/** Whether a message from the user approves the held stage (see `APPROVAL` and `NAMED_APPROVE_END`). */
+export function isApproval(text: string): boolean {
+  if (APPROVAL.test(normalised(text).trim())) return true
+  const named = namedCommand(text)
+  return named?.command === 'approve' && NAMED_APPROVE_END.test(named.rest.trimEnd())
+}
+
+const driving = (plan: Plan | undefined, s: Session) => plan?.mode?.kind === 'autopilot' && s.armed
+
+/** The plan's Mode line puts a risky current stage under autopilot's rule: driving or paused, armed or not. */
+const underAutopilot = (plan: Plan | undefined) => plan?.mode?.kind === 'autopilot' || plan?.mode?.kind === 'paused'
+
+/** The user armed this session's autopilot unattended, with or without `outward`. */
+const unattended = (s: Session) => s.unattended !== 'off'
+
+/**
+ * The current stage needs the user's approval: autopilot is armed in this session and driving or paused, the stage's
+ * risk line names auth, money or personal data (or a project hold word), and the user hasn't approved it — only their
+ * own prompt that `isApproval` accepts clears it (see `prompt.submit`).
+ */
+const unapprovedRisky = (plan: Plan | undefined, s: Session) =>
+  s.armed && underAutopilot(plan) && !!plan?.stage?.risky.length && !s.cleared.includes(plan.stage.key)
+
+/**
+ * Autopilot is holding the current stage: it is risky and unapproved, and the user didn't arm this run unattended (an
+ * unattended run builds it without a hold, and says so once). A pause doesn't lift the hold: autopilot pauses on a
+ * risky stage by its own procedure, so the pause is where the hold matters most.
+ */
+const held = (plan: Plan | undefined, s: Session) => unapprovedRisky(plan, s) && !unattended(s)
+
+/** An unattended run is building a risky, unapproved stage that would otherwise be held. */
+const unheld = (plan: Plan | undefined, s: Session) => unapprovedRisky(plan, s) && unattended(s)
+
+// ---- what rides in the system prompt ----
+
+function statusLine(plan: Plan, s: Session, roadmap?: Roadmap): string {
+  // the roadmap sits right after `jbit`: it is the wider frame the plan's own progress sits in
+  const milestone = roadmap ? ` · ${roadmap.id} ${roadmap.covered}/${roadmap.total}` : ''
+  if (plan.total === 0) return `jbit${milestone} · ${plan.path}`
+  if (!plan.current) return `jbit${milestone} · all ${plan.total} stages done · next feature: jbit:plan`
+  const level = s.unattended === 'outward' ? 'unattended outward' : 'unattended'
+  const mode = !plan.mode
+    ? ''
+    : plan.mode.kind === 'paused'
+      ? held(plan, s)
+        ? ' · paused · held'
+        : s.armed && unattended(s)
+          ? ` · paused · ${level}`
+          : ' · paused'
+      : !s.armed
+        ? ' · autopilot (not armed)'
+        : held(plan, s)
+          ? ' · autopilot held'
+          : unattended(s)
+            ? ` · autopilot ${level}`
+            : ' · autopilot'
+  const fanOut = effectiveAgents(plan, s.firstAgents, s.now)
+  const agents = fanOut === 'lean' || fanOut === 'wide' ? ` · ${fanOut}` : ''
+  const set = modelsInEffect(plan, s)
+  const models = set ? ` · ${modelsText(set, true)}` : ''
+  return `jbit${mode}${agents}${models}${milestone} · ${plan.done}/${plan.total} done · next: ${plan.current}`
+}
+
+/** What the Agents line asks of this session, or `''` with no line. */
+function agentsRule(plan: Plan, s: Session, now: string | undefined): string {
+  if (!plan.agents) return ''
+  const level = effectiveAgents(plan, s.firstAgents, s.now)
+  if (unconfirmedWide(plan, s))
+    return `Agents: the plan's Agents line asks for wide, but it was set before this session, so work at balanced until the user confirms: ask whether to fan out wide (under jbit:stage, before building; under autopilot, carry on at balanced meanwhile), and on their yes restamp the line as \`Agents: wide — confirmed ${now ?? '<YYYY-MM-DD HH:MM>'}\`${now ? '' : ', the current date and time'}.`
+  if (level === 'lean')
+    return 'Agents: lean — build and verify in the main session and run at most one agent at a time; under jbit:autopilot, still delegate building, one builder at a time; review still uses one fresh reviewer.'
+  if (level === 'wide')
+    return 'Agents: wide — fan out every independent leaf to its own agent in its own worktree, have a fresh agent verify, and when the security lens applies (risk beyond UI), run the correctness and security reviewers in parallel.'
+  return 'Agents: balanced — fan independent leaves out to subagents when it helps.'
+}
+
+function workingRules(plan: Plan, s: Session, now: string | undefined): string {
+  return [baseRules(plan, s), agentsRule(plan, s, now), modelsRule(plan, s)].filter(Boolean).join(' ')
+}
+
+/** What the Models line asks of this session, or `''` with no line; and the project's default, when it has one. */
+function modelsRule(plan: Plan, s: Session): string {
+  return [lineRule(plan, s), defaultNote(s)].filter(Boolean).join(' ')
+}
+
+/**
+ * The context's word on the project's default Models line (`''` without one): honoured once the user confirms it this
+ * session, and until then waiting for their word (decided 2026-11-16).
+ */
+function defaultNote(s: Session): string {
+  if (!s.modelsDefault) return ''
+  const dflt = `The project default (\`JBIT models:\` in CLAUDE.md) is \`Models: ${s.modelsDefault}\``
+  if (s.modelsChosen) return `${dflt}; the user's \`JBIT models\` command set the line this session, so it fills in nothing (\`JBIT models default\` goes back to it).`
+  if (s.modelsDefaultConfirmed) return `${dflt}, confirmed by the user this session: it sets the roles a plan's line leaves out, over the user's own default, and new plans start from it.`
+  const named = MODEL_ROLES.filter(r => parseModels(`Models: ${s.modelsDefault}`)?.[r])
+    .map(r => `${r} ${settingText(parseModels(`Models: ${s.modelsDefault}`)![r]!)}`)
+    .join(', ')
+  return `${dflt}, waiting for the user's word: a default committed to the repo isn't honoured until the user's own message names its settings (e.g. "${named}") or they type \`JBIT models default\`. Until then don't start agents on it or write it into a plan; you may ask them once whether to use it.`
+}
+
+/** What the context says about models with no plan yet (`''` for nothing): the defaults the plan jbit:plan writes starts from. */
+function noPlanModels(s: Session): string {
+  const fallback = fallbackModels(s)
+  const start = fallback
+    ? `A new plan starts from the user's defaults: write \`Models: ${modelsText(fallback)}\` as its Models line (${sourcedText(fallback, s)}).`
+    : ''
+  return [start, defaultNote(s)].filter(Boolean).join(' ')
+}
+
+function lineRule(plan: Plan, s: Session): string {
+  // the user's command waits to be written: say what to write, not that the old line changed
+  if (s.modelsPending && modelsText(plan.models) !== s.modelsHonoured) {
+    if (!s.modelsHonoured)
+      return `Models: the user removed the Models line with \`JBIT models\`: remove the \`Models:\` line from \`## Now\` and log it as a dated decision. Agents run as the session already: start them naming no model or effort.`
+    return `Models: the user set \`Models: ${s.modelsHonoured}\` with \`JBIT models\`: write exactly that line in \`## Now\`, in place of any Models line there, and log it as a dated decision. It applies already. ${passRule(parseModels(`Models: ${s.modelsHonoured}`)!)}`
+  }
+  if (plan.hasModelsLine && !plan.models)
+    return `Models: the plan's Models line is not understood, so agents start as if there were none; the form is ${MODELS_FORM}.`
+  if (ignoredModels(plan, s)) {
+    const named = MODEL_ROLES.filter(r => plan.models![r]).map(r => `${r} ${settingText(plan.models![r]!)}`).join(', ')
+    return `Models: the plan's Models line (${modelsText(plan.models)}) changed without the user naming its settings, so it is ignored until they confirm: ask them to confirm by naming the settings (e.g. "${named}"); a plain yes won't do. Start agents as if there were no line meanwhile.`
+  }
+  const set = effectiveModels(plan, s.modelsHonoured)
+  const fallback = s.modelsPending ? undefined : fallbackModels(s)
+  if (!set) {
+    if (!fallback) return ''
+    // a plan with no line (or one not honoured) starts on the defaults; with no line at all, Claude writes them in
+    const write = plan.hasModelsLine
+      ? ''
+      : ` Write \`Models: ${modelsText(fallback)}\` in \`## Now\`, beside the Agents line, as the plan's Models line, and log it as a dated decision ("Models: ${modelsText(fallback)}, from the user's defaults").`
+    return `Models: agents start on the user's defaults: ${sourcedText(fallback, s)}.${write} ${passRule(fallback)}`
+  }
+  const filled = MODEL_ROLES.filter(r => !set[r] && fallback?.[r])
+  if (!filled.length) return `Models: the plan's Models line sets ${modelsText(set)}. ${passRule(set)}`
+  const from: Models = Object.fromEntries(filled.map(r => [r, fallback![r]]))
+  return `Models: the plan's Models line sets ${modelsText(set)}; the roles it leaves out start on the user's defaults: ${sourcedText(from, s)}. ${passRule({ ...from, ...set })}`
+}
+
+/** How to start each role's agent under `set`. */
+function passRule(set: Models): string {
+  const unset = MODEL_ROLES.filter(r => !set[r])
+  const leftOut = unset.length ? ` A role it leaves out (${unset.join(', ')}) gets neither, as usual.` : ''
+  const research = set.research
+    ? ` Research agents (web or domain lookups, a research fan-out) are the \`research\` role: pass ${settingText(set.research)} on them.`
+    : ''
+  return `When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${research}${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
+}
+
+function baseRules(plan: Plan, s: Session): string {
+  const base =
+    'Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix\'s bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone;'
+  const skills = 'The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.'
+  if (plan.mode?.kind === 'autopilot' && !s.armed)
+    return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. Resumed that way it runs attended, risky stages held for their approval; their own autopilot command (the typed \`/jbit:autopilot\`, or a message opening with "JBIT" such as "JBIT autopilot lean") runs it unattended, the default. ${skills}`
+  if (plan.mode?.kind === 'paused' && held(plan, s))
+    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${ATTENDED_NOTE} ${skills}`
+  if (held(plan, s))
+    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
+  if (plan.mode?.kind === 'autopilot' && unattended(s)) return `${base} commit per stage. ${unattendedRules(s)} ${skills}`
+  if (plan.mode?.kind === 'autopilot')
+    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE} ${skills}`
+  if (plan.mode?.kind === 'paused')
+    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. ${skills}`
+  return `${base} commit per stage and stop for the user's review. ${skills}`
+}
+
+/**
+ * Autopilot's rules for a run the user armed unattended: what Claude decides itself instead of waiting, and what still
+ * stops it, since unattended removes waiting for the user, not the checks.
+ */
+function unattendedRules(s: Session): string {
+  const outward =
+    s.unattended === 'outward'
+      ? 'Outward-facing commands (push, publish, deploy, sending data out) are allowed this run: the user armed it with `outward`.'
+      : 'Outward-facing commands (push, publish, deploy, sending data out) are still blocked while it runs: only `outward` in the user\'s command lets them through.'
+  return [
+    'Autopilot is on and unattended, the default for the user\'s own autopilot command, which they gave for this plan: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT, just build it. Autopilot, lean." (`unattended` in it changes nothing). Had they said `attended`, risky stages would wait for their approval; plain words without the name ("just build it, autopilot lean") never set the level, and run at the one that stands. The level holds until their next command or a new plan Goal. You are the project manager under jbit:autopilot: go from stage to stage without stopping for review, and delegate the building.',
+    "Don't pause for a risky stage or for a decision the plan doesn't settle: pick the option you'd recommend, log it in the plan as a dated decision marked `(unattended)` with the why, and carry on.",
+    "Risky stages still get jbit:review's security pass.",
+    "Still pause, setting the Mode line to `paused — <reason>`, after three failed fix rounds, when a builder's report and the evidence disagree and you can't settle it, and before building a plan the user hasn't seen.",
+    outward,
+    PROGRESS_NOTE,
+  ].join(' ')
+}
+
+/** What an armed autopilot tells the user as it goes (jbit:autopilot step 5 and its concerns), for when the skill isn't loaded. */
+export const PROGRESS_NOTE =
+  "When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."
+
+/**
+ * Why an armed run is attended, for the rules of one: unattended is the default only for the user's own command, and
+ * its level holds until their next command or a new Goal.
+ */
+const ATTENDED_NOTE =
+  'This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user\'s own command set one for this plan. The level holds until their next command or a new plan Goal.'
+
+/** Where standing decisions move once more than ten would carry forward (jbit:plan). */
+const DECISIONS_PATH = 'docs/decisions.md'
+
+/**
+ * `now`: the current time as a stamp, which the rules hand Claude for confirming a `wide` line.
+ * `decisionsFile`: whether `docs/decisions.md` exists; without it the section reads exactly as before it was known.
+ */
+function planSection(plan: Plan, s: Session, now: string | undefined, roadmap: Roadmap | undefined, decisionsFile: boolean): string {
+  const position = plan.now ?? (plan.current ? `Next stage: ${plan.current}` : 'No open stage in the plan.')
   const standing = decisionsFile ? ` (standing decisions in \`${DECISIONS_PATH}\`)` : ''
+  const milestone = roadmap && `Roadmap: ${[roadmap.id, roadmap.name].filter(Boolean).join(' ')} · ${roadmap.covered}/${roadmap.total} requirements covered (${ROADMAP_PATH})`
   return [
     `# JBIT`,
     `This project keeps its plan in \`${plan.path}\`: the source of truth for goal, decisions and stages${standing}. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.`,
     ``,
-    `Current position (the plan's \`## Now\`, as written):`,
-    plan.now ?? 'The plan has no `## Now` section.',
+    `Current position (from the plan):`,
+    position,
+    ...(milestone ? [milestone] : []),
     ``,
-    WORKING_RULES,
+    workingRules(plan, s, now),
   ].join('\n')
 }
 
 /** What the summarizer must keep, whoever asked for the compaction. */
 const KEEP =
-  "Keep the project-plan state exactly: the plan's `## Now` (the active stage, its acceptance checks and which have passed), decisions made since the plan file was last updated, and any uncommitted work in progress with its file paths."
+  'Keep the project-plan state exactly: the active stage, its acceptance checks and which have passed, decisions made since the plan file was last updated, and any uncommitted work in progress with its file paths. If the user\'s own autopilot command (a "JBIT …" command or a typed `/jbit:autopilot`) armed this run, keep that and its level: unattended, `attended` or `outward`.'
 
-// ---- the commit secret guard ----
+/** The engine's cap on one `prompt.submit` context entry, in characters. */
+const CONTEXT_MAX = 100_000
+
+/** How the user's command set the run, in the words the rules use. */
+const LEVEL_WORDS: Record<Unattended, string> = { on: 'unattended', outward: 'unattended, with `outward`', off: '`attended`' }
+
+/**
+ * What rides beside the user's own autopilot command, for this turn only: the system prompt's JBIT section was composed
+ * before the command (in a headless run it is never composed again), so this carries the section as the run now stands,
+ * the plan treated as Mode autopilot and the session as the command just armed it. `plan` is the one the command was
+ * read against; `rules` the hook call's own reader. Never longer than `CONTEXT_MAX`: a long `## Now` is cut first.
+ */
+async function armedContext($: EngineInterface, plan: Plan, s: Session, rules: () => Promise<ProjectRules>): Promise<string> {
+  const run = await withProjectRisk({ ...plan, mode: { kind: 'autopilot' } }, rules)
+  const now = unconfirmedWide(run, s) && s.now !== undefined ? stampOf(s.now) : undefined
+  const roadmap = await loadRoadmap($)
+  // an exists check that fails drops only the standing-decisions hint, as in the composed section
+  const decisionsFile = await $.fs.exists(DECISIONS_PATH).catch(() => false)
+  const head = `JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, ${LEVEL_WORDS[s.unattended]}. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for \`${plan.path}\`, and follow its rules and the working rules below.`
+  const build = (p: Plan) => {
+    const section = planSection(p, s, now, roadmap, decisionsFile)
+    // a held stage's rules don't name the progress note; the run still gives it
+    return `${head}\n\n${section.includes(PROGRESS_NOTE) ? section : `${section} ${PROGRESS_NOTE}`}`
+  }
+  let text = build(run)
+  if (text.length > CONTEXT_MAX && run.now) text = build({ ...run, now: `${cutAt(run.now, run.now.length - (text.length - CONTEXT_MAX) - 1)}…` })
+  return text.length > CONTEXT_MAX ? `${cutAt(text, CONTEXT_MAX - 1)}…` : text
+}
+
+/** `text` cut to at most `at` UTF-16 units, backing off one where the cut would split a surrogate pair. */
+export function cutAt(text: string, at: number): string {
+  const end = Math.max(0, at)
+  const high = text.charCodeAt(end - 1)
+  return text.slice(0, high >= 0xd800 && high <= 0xdbff ? end - 1 : end)
+}
+
+// ---- the autopilot loop ----
+
+/** Main-loop turns started this load; a turn that starts while autopilot waits means someone else has the floor. */
+let mainTurns = 0
+/** The plan as it stood when the last autopilot turn ended, and how many turns in a row left it so. */
+let lastProgress: string | undefined
+let stalledTurns = 0
+/** The mode the plan had at the last main-loop turn's end, to notice it change. */
+let lastMode: Mode['kind'] | undefined
+/** Whether the latest prompt came from the person. */
+let lastPromptFromUser = false
+/** The held stage the person was last told about, so they hear it once. */
+let heldNoticeFor: string | undefined
+/** The risky stage an unattended run last told the person it is building without a hold, so they hear it once. */
+let unheldNoticeFor: string | undefined
+/** Agent calls from the main loop that have reached the lean cap and not yet settled (allowed, denied or thrown). */
+let agentCallsInFlight = 0
+
+/** Background agents the main loop started that are still working: their notifications will start the next turn. */
+async function backgroundBusy($: EngineInterface): Promise<boolean> {
+  const agents = await $.agent.list().catch(() => [])
+  return agents.some(a => !a.parentId && (a.status === 'pending' || a.status === 'running' || a.status === 'waiting'))
+}
+
+/** Between turns: compact if the context is filling, then prompt the next step, unless a turn started meanwhile. */
+async function carryOn($: EngineInterface, plan: Plan, turn: number) {
+  if (mainTurns !== turn) return
+  const { context } = await $.session.usage()
+  let compacted = false
+  if ((context.percent ?? 0) >= COMPACT_AT) {
+    // a compaction that fails or is vetoed still lets the run go on; the engine's own threshold remains
+    const result = await $.session.compact({ instructions: KEEP }).catch(() => undefined)
+    compacted = result !== undefined && !('skip' in result)
+    if (!result) $.ui.toast('JBIT: autopilot could not compact the context; carrying on')
+  }
+  if (mainTurns !== turn) return
+  const note = compacted ? ' The context was just compacted: reread the plan before acting.' : ''
+  await $.prompt.submit({
+    text: `jbit autopilot: carry on with \`${plan.path}\` under jbit:autopilot. Next: ${plan.current}.${note}`,
+  })
+}
+
+// ---- the commit guard ----
 
 async function git($: EngineInterface, args: string[], cwd: string) {
   const r = await $.process.run(['git', ...args], { cwd })
@@ -164,6 +1653,53 @@ function repoPath(prefix: string, path: string): string {
   return parts.join('/')
 }
 
+/**
+ * Whether a path git reports (repo-relative, maybe from a subdirectory) is `path`. Case is ignored, since on a
+ * case-insensitive filesystem (macOS by default) jbit reads `docs/PLAN.md` from a file git calls `docs/Plan.md`.
+ */
+export function samePath(file: string, path: string): boolean {
+  const f = file.toLowerCase()
+  const p = path.toLowerCase()
+  return f === p || f.endsWith(`/${p}`)
+}
+
+/**
+ * Whether a file a tool writes is a research note: `docs/research/<topic>.md` under the repo root, one level deep, its
+ * name plain (`gdpr-retention.md`). The path is resolved against the root first, so `docs/research/../src/x.ts` or a note
+ * under another root doesn't count, and a backslash anywhere refuses it (Windows reads `..\..\x` as two steps up).
+ * `CLAUDE.md` and `CLAUDE.local.md` are never notes: Claude Code loads them as instructions. Lexical only, as `samePath`
+ * is: a symlink isn't followed. Case is ignored, as `samePath` ignores it. No root, no note.
+ */
+export function researchNote(file: string, root: string | undefined): boolean {
+  if (!root || file.includes('\\')) return false
+  const dir = `${joinPath(root, RESEARCH_DIR).toLowerCase()}/`
+  const path = joinPath(root, file).toLowerCase()
+  if (!path.startsWith(dir)) return false
+  const name = path.slice(dir.length)
+  return /^[a-z0-9][a-z0-9._-]*\.md$/.test(name) && name !== 'claude.md' && name !== 'claude.local.md'
+}
+
+/** Stage numbers whose `[ ]` turns to `[x]` in the plan file's part of a diff. */
+export function closedStages(diff: string, planPath: string): string[] {
+  const ticked = new Set<string>()
+  const unticked = new Set<string>()
+  let inPlan = false
+  for (const raw of diff.split('\n')) {
+    const header = raw.match(/^\+\+\+ (?:b\/)?(.+)$/)
+    if (header) {
+      const file = header[1] ?? ''
+      inPlan = samePath(file, planPath)
+      continue
+    }
+    if (!inPlan) continue
+    const m = raw.match(/^([+-])\s*[-*]\s+\[([ xX])\]\s+(?:\*\*)?(?:stage\s+)?(\d+)\b/i)
+    if (!m) continue
+    if (m[1] === '+' && m[2] !== ' ') ticked.add(m[3] ?? '')
+    if (m[1] === '-' && m[2] === ' ') unticked.add(m[3] ?? '')
+  }
+  return [...ticked].filter(n => unticked.has(n))
+}
+
 function secretDenial(found: Finding[]): string {
   const list = found
     .slice(0, 8)
@@ -184,23 +1720,458 @@ function secretDenial(found: Finding[]): string {
   return lines.join('\n')
 }
 
-/** A line that names git anywhere; only such a line can commit. */
-const PREFILTER = /\bgit\b/
+function checksDenial(stage: string, open: string[]): string {
+  return [
+    `JBIT blocked this commit: it closes stage ${stage}, but these checks were never seen ticked in \`## Now\`:`,
+    ...open.slice(0, 8).map(c => `  - ${c}`),
+    `Prove them (jbit:verify). If they pass, put stage ${stage}'s checks back in \`## Now\` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from \`## Now\` first.`,
+  ].join('\n')
+}
+
+// ---- the evidence gate ----
+
+/**
+ * Where jbit:verify writes stage n's report: `evidence/stage-<n>/report.md` beside the plan file, and under
+ * `docs/` for a plan at the repo root, since verify always writes to `docs/evidence/`. Every plan path jbit
+ * reads (docs/PLAN.md, PLAN.md, docs/BUILD_PLAN.md) so resolves to `docs/evidence/stage-<n>/report.md`.
+ */
+export function evidencePath(planPath: string, stage: string): string {
+  const dir = planPath.includes('/') ? planPath.slice(0, planPath.lastIndexOf('/')) : 'docs'
+  return `${dir}/evidence/stage-${stage}/report.md`
+}
+
+
+/** A file's text when the commit adds it whole: from a new file's hunk in the diff, or an untracked file a `git add` on the line takes. */
+function addedText(diff: string, files: { path: string; text: string }[], path: string): string | undefined {
+  const file = files.find(f => samePath(f.path, path))
+  if (file) return file.text
+  const lines = diff.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const header = lines[i]?.match(/^\+\+\+ (?:b\/)?(.+)$/)
+    if (!header || !samePath(header[1] ?? '', path) || lines[i - 1] !== '--- /dev/null') continue
+    const body: string[] = []
+    for (let j = i + 1; j < lines.length && !lines[j]?.startsWith('diff --git '); j++) {
+      const line = lines[j] ?? ''
+      if (line.startsWith('+')) body.push(line.slice(1))
+    }
+    return body.join('\n')
+  }
+  return undefined
+}
+
+/** Cells of a markdown table row; an escaped `\|` stays inside its cell. Undefined for a line that isn't a row. */
+function tableCells(line: string): string[] | undefined {
+  const cells = line.trim().split(/(?<!\\)\|/)
+  if (cells.length < 2) return undefined
+  if (cells[0]?.trim() === '') cells.shift()
+  if (cells.at(-1)?.trim() === '') cells.pop()
+  return cells
+}
+
+/**
+ * Check rows in the report's first table: its rows after the header and the `---` separator.
+ * A re-run of an earlier stage's check (Check cell `Re-run of stage <k>: …`) isn't one of this stage's checks, so it doesn't count.
+ */
+export function reportRows(text: string): number {
+  const lines = text.split('\n')
+  const separator = (line: string) => !!tableCells(line)?.every(c => /^\s*:?-+:?\s*$/.test(c))
+  for (let i = 0; i + 1 < lines.length; i++) {
+    if (!tableCells(lines[i] ?? '') || !separator(lines[i + 1] ?? '')) continue
+    let rows = 0
+    for (let j = i + 2; j < lines.length; j++) {
+      const cells = tableCells(lines[j] ?? '')
+      if (!cells) break
+      if (!cells[0]?.trim().startsWith('Re-run of stage')) rows++
+    }
+    return rows
+  }
+  return 0
+}
+
+/** Why stage n can't close for want of evidence, or undefined when its report is there with a row per check. */
+async function evidenceDenial(
+  $: EngineInterface,
+  planPath: string,
+  stage: string,
+  checks: number | undefined,
+  pending: { diff: string; files: { path: string; text: string }[] },
+): Promise<string | undefined> {
+  const path = evidencePath(planPath, stage)
+  // a report that can't be read (a directory, a permissions error) counts as missing, never as a pass or a reason to step aside
+  const onDisk = async () => ((await $.fs.exists(path)) ? await $.fs.read(path) : undefined)
+  const text = addedText(pending.diff, pending.files, path) ?? (await onDisk().catch(() => undefined))
+  const backfill = `Run jbit:verify for stage ${stage}, which writes the report; for a stage verified before version 0.5.0, backfill the report in jbit:verify's format from the evidence at hand. Then close the stage again.`
+  if (typeof text !== 'string')
+    return [`JBIT blocked this commit: it closes stage ${stage}, but its evidence report \`${path}\` is neither in the commit nor in the working tree.`, backfill].join('\n')
+  const want = Math.max(checks ?? 0, 1)
+  const rows = reportRows(text)
+  if (rows >= want) return undefined
+  return [
+    `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
+    `Give each check a row in the report's first table.`,
+    backfill,
+  ].join('\n')
+}
+
+// ---- the milestone gate ----
+
+/** Milestone IDs whose `- [ ] M<n>.` turns to `- [x] M<n>.` in the roadmap's part of a diff. */
+export function tickedMilestones(diff: string): string[] {
+  const ticked = new Set<string>()
+  const unticked = new Set<string>()
+  let inRoadmap = false
+  for (const raw of diff.split('\n')) {
+    const header = raw.match(/^\+\+\+ (?:b\/)?(.+)$/)
+    if (header) {
+      inRoadmap = samePath(header[1] ?? '', ROADMAP_PATH)
+      continue
+    }
+    if (!inRoadmap) continue
+    const m = raw.slice(0, ROADMAP_LINE_MAX).match(/^([+-])\s*[-*]\s+\[([ xX])\]\s+(?:\*\*)?(M\d{1,4})\./)
+    if (!m) continue
+    if (m[1] === '+' && m[2] !== ' ') ticked.add(m[3] ?? '')
+    if (m[1] === '-' && m[2] === ' ') unticked.add(m[3] ?? '')
+  }
+  return [...ticked].filter(id => unticked.has(id))
+}
+
+/** Where jbit:verify writes a milestone close's evidence: `docs/evidence/milestone-<ID>.md`, beside the closing plan's stage reports. */
+export function milestoneEvidencePath(id: string): string {
+  return `docs/evidence/milestone-${id}.md`
+}
+
+/** The IDs in the first cell of any table row in a milestone's evidence, upper-cased; read with the roadmap's bounds. */
+export function evidenceIds(text: string): Set<string> {
+  const ids = new Set<string>()
+  for (const line of text.slice(0, ROADMAP_MAX_CHARS).split('\n', ROADMAP_MAX_LINES)) {
+    const cells = rowCells(line.slice(0, ROADMAP_LINE_MAX).replace(/\r$/, ''))
+    const id = plainCell(cells?.[0])
+    if (id && !/^:?-+:?$/.test(id)) ids.add(id.toUpperCase())
+  }
+  return ids
+}
+
+/**
+ * Why a commit can't tick milestone `id`, or undefined when its evidence has a row for each of its requirements that isn't
+ * dropped. The gate only refuses what it can read: with no ledger it steps aside, and a milestone with no live requirements
+ * needs no evidence. An evidence file that can't be read counts as missing, since the tick is the claim the user sees.
+ */
+async function milestoneDenial(
+  $: EngineInterface,
+  id: string,
+  ledger: string | undefined,
+  pending: { diff: string; files: { path: string; text: string }[] },
+): Promise<string | undefined> {
+  const wanted = ledger === undefined ? undefined : milestoneRequirements(ledger, id)
+  if (!wanted?.length) return undefined
+  const path = milestoneEvidencePath(id)
+  const onDisk = async () => ((await $.fs.exists(path)) ? await $.fs.read(path) : undefined)
+  const text = addedText(pending.diff, pending.files, path) ?? (await onDisk().catch(() => undefined))
+  const how = `Close the milestone as jbit:plan's "With a roadmap" says: jbit:verify's "Closing a milestone" writes \`${path}\` with a row per requirement (full suite, coverage, a fresh agent's evidence-fit sample), then jbit:review's milestone review. Tick the box only once all pass.`
+  if (typeof text !== 'string')
+    return [`JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but its evidence \`${path}\` is neither in the commit nor in the working tree.`, how].join('\n')
+  const have = evidenceIds(text)
+  const missing = wanted.filter(r => !have.has(r.toUpperCase()))
+  if (!missing.length) return undefined
+  const list = missing.slice(0, 12).join(', ') + (missing.length > 12 ? `, and ${missing.length - 12} more` : '')
+  return [
+    `JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but \`${path}\` has no row for ${missing.length === 1 ? 'requirement' : 'requirements'} ${list}.`,
+    `Give each of ${id}'s requirements that isn't dropped a row, its ID in the first cell.`,
+    how,
+  ].join('\n')
+}
+
+/**
+ * Stage n's checks as the committed plan lists them, for a session that never saw stage n in `## Now`
+ * (a fresh session after `## Now` moved on): only when HEAD's plan still has stage n in `## Now`.
+ * Undefined when HEAD has no plan, its Now is another stage, or git can't say.
+ */
+async function committedChecks($: EngineInterface, planPath: string, stage: string, dir: string, ref = 'HEAD') {
+  const text = await git($, ['show', `${ref}:${planPath}`], dir).catch(() => undefined)
+  if (typeof text !== 'string') return undefined
+  const now = parsePlan(planPath, text).stage
+  if (now?.number !== stage || !now.checks.length) return undefined
+  return { count: now.checks.length, open: now.checks.filter(c => !c.done).map(c => c.text) }
+}
+
+/** The `## Stages` checklist: each line's number, its name (the part before ` — `) and whether it's ticked. */
+export function stageList(text: string): { number: string; name: string; done: boolean }[] {
+  const list: { number: string; name: string; done: boolean }[] = []
+  let heading = ''
+  for (const line of text.split('\n')) {
+    const h = headingText(line)
+    if (h !== undefined) {
+      // the first heading naming stages is the checklist, as `parsePlan` reads it
+      if (heading.includes('stage')) break
+      heading = h.toLowerCase()
+      continue
+    }
+    if (!heading.includes('stage')) continue
+    const m = line.match(/^[-*]\s+\[([ xX])\]\s+(?:\*\*)?(?:stage\s+)?(\d+)[.:]?\s*(.*)$/i)
+    if (!m) continue
+    const name = (m[3] ?? '').replace(/\*\*/g, '').split(/\s+[—–-]\s+/)[0]?.trim() ?? ''
+    list.push({ number: m[2] ?? '', name, done: m[1] !== ' ' })
+  }
+  return list
+}
+
+/** A stage close told for the first time this Goal, with a stage still left. */
+type Told = { n: string; total: number; name: string; next: { number: string; name: string } }
+
+/**
+ * The reminder the main session reads after the commit that closed a stage with one left: the progress note is due
+ * now, before the next stage's first tool call, when someone reads along (headless, the final report carries it). Undefined when nothing was newly told.
+ */
+function progressReminder(told: readonly Told[]): string | undefined {
+  const last = told[told.length - 1]
+  if (!last) return undefined
+  const note = PROGRESS_NOTE.replace('stage-<n>', `stage-${last.n}`)
+  return `JBIT: stage ${last.n} of ${last.total} (${oneLine(last.name)}) closed with this commit; stage ${last.next.number} (${oneLine(last.next.name)}) is next. Before any tool call for stage ${last.next.number}, write the user its progress note in the chat when someone reads along, then go on without waiting; a headless run (\`claude -p\`) leaves it to the final report. ${note}`
+}
+
+/** Marks these notices told for this Goal; true when one of them wasn't yet, so the caller tells it. */
+async function announce($: EngineInterface, keys: string[]): Promise<boolean> {
+  const told = (await $.state.get(ANNOUNCED)).value ?? []
+  const fresh = keys.filter(k => !told.includes(k))
+  if (!fresh.length) return false
+  await $.state.set(ANNOUNCED, [...told, ...fresh])
+  return true
+}
+
+/**
+ * After a commit that closed stages under autopilot: one notice per stage the commit really landed, read from the plan
+ * at HEAD, so a commit that failed (the stage still open there) tells nothing. A stage, and the all-done notice the
+ * turn's end also sends, is told once per Goal, however many times a retry or an amend closes it again.
+ */
+async function announceClosed($: EngineInterface, planPath: string, closing: { n: string; dir: string }[], told: Told[] = []) {
+  for (const { n, dir } of closing) {
+    const text = await git($, ['show', `HEAD:${planPath}`], dir).catch(() => undefined)
+    if (typeof text !== 'string') continue
+    const list = stageList(text)
+    const stage = list.find(s => s.number === n)
+    if (!stage?.done) continue
+    const next = list.find(s => !s.done)
+    if (next) {
+      if (!(await announce($, [n]))) continue
+      // recorded before the notice goes out, so a notice that fails still leaves the main session its reminder
+      told.push({ n, total: list.length, name: stage.name, next })
+      await $.ui.notify(`Stage ${n} of ${list.length} done: ${oneLine(stage.name)}. Next: ${oneLine(next.name)}.`, { title: 'JBIT' })
+    } else if (await announce($, [n, 'all'])) await $.ui.notify(`All ${list.length} stages done.`, { title: 'JBIT' })
+  }
+}
+
+/** HEAD's commit in `dir`, or undefined in a repo with no commit yet or when git fails. */
+async function headOf($: EngineInterface, dir: string): Promise<string | undefined> {
+  const head = (await git($, ['rev-parse', '--verify', '-q', 'HEAD'], dir).catch(() => '')).trim()
+  return head || undefined
+}
+
+/**
+ * The stages a line's commits closed as it ran, which the pre-run diff can't see when the same line ticks the plan
+ * before committing: open in the plan at each repo's HEAD before the line, done at the HEAD after it. A repo whose HEAD
+ * didn't move, had none before, or lacked the plan then adds nothing.
+ */
+async function landedClosings($: EngineInterface, planPath: string, heads: Map<string, string | undefined>) {
+  const closed: Landed[] = []
+  for (const [dir, before] of heads) {
+    if (!before) continue
+    const after = await headOf($, dir)
+    if (!after || after === before) continue
+    const then = await git($, ['show', `${before}:${planPath}`], dir).catch(() => undefined)
+    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+    if (typeof then !== 'string' || typeof now !== 'string') continue
+    const open = new Set(stageList(then).filter(st => !st.done).map(st => st.number))
+    for (const st of stageList(now)) if (st.done && open.has(st.number) && !closed.some(c => c.n === st.number)) closed.push({ n: st.number, dir, before, after, plan: now })
+  }
+  return closed
+}
+
+/** A stage close found after the line ran: the repo, the commit it landed in, and the plan as that commit holds it. */
+type Landed = { n: string; dir: string; before: string; after: string; plan: string }
+
+/**
+ * Stages flagged to reopen, as each repo's new HEAD holds them once a line moved it: still ticked there (an amend that
+ * added the evidence, say), to check again, or unticked (reopened), to clear.
+ */
+async function flaggedAt($: EngineInterface, planPath: string, heads: Map<string, string | undefined>, flagged: readonly string[]) {
+  const ticked: Landed[] = []
+  const unticked: string[] = []
+  for (const [dir, before] of heads) {
+    if (!before) continue
+    const after = await headOf($, dir)
+    if (!after || after === before) continue
+    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+    if (typeof now !== 'string') continue
+    for (const st of stageList(now)) {
+      if (!flagged.includes(st.number) || ticked.some(c => c.n === st.number) || unticked.includes(st.number)) continue
+      if (st.done) ticked.push({ n: st.number, dir, before, after, plan: now })
+      else unticked.push(st.number)
+    }
+  }
+  return { ticked, unticked }
+}
+
+/**
+ * Why a close found only after the line ran doesn't pass the gates the pre-run check applies, read from the commit it
+ * landed in. Checks: that commit's `## Now` when it still holds the stage, else what this session last saw open there,
+ * else `## Now` at the commit before. Evidence: the report in that commit, with a row per check, as `evidenceDenial`
+ * asks. Undefined when it passes both.
+ */
+async function landedFailure($: EngineInterface, planPath: string, c: Landed, s: Session): Promise<string[] | undefined> {
+  const failed: string[] = []
+  const now = parsePlan(planPath, c.plan).stage
+  let open: string[] | undefined
+  let count: number | undefined
+  if (now?.number === c.n && now.checks.length) {
+    open = now.checks.filter(k => !k.done).map(k => k.text)
+    count = now.checks.length
+  } else if (s.checkCounts[c.n] !== undefined || s.openChecks[c.n] !== undefined) {
+    open = s.openChecks[c.n]
+    count = s.checkCounts[c.n]
+  } else {
+    const committed = await committedChecks($, planPath, c.n, c.dir, c.before).catch(() => undefined)
+    open = committed?.open
+    count = committed?.count
+  }
+  if (open?.length) failed.push(`its checks in \`## Now\` aren't all ticked:\n${open.slice(0, 8).map(k => `  - ${oneLine(k)}`).join('\n')}`)
+  const report = evidencePath(planPath, c.n)
+  // a report git can't find in the commit, or a git that fails, counts as missing
+  const text = await git($, ['show', `${c.after}:${report}`], c.dir).catch(() => undefined)
+  if (typeof text !== 'string') failed.push(`its evidence report \`${report}\` isn't in the commit`)
+  else {
+    const rows = reportRows(text)
+    if (rows < Math.max(count ?? 0, 1))
+      failed.push(
+        `its evidence report \`${report}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${count ? `${count} check${count === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}`,
+      )
+  }
+  return failed.length ? failed : undefined
+}
+
+/**
+ * What Claude reads on the result of a command whose commit closed stage n without passing the gates. A commit that
+ * also dropped the Mode line (closing the last stage does) disarmed the run, so the notice says to put it back.
+ */
+function reopenNotice(planPath: string, c: Landed, failed: string[]): string {
+  const modeGone = parsePlan(planPath, c.plan).mode === undefined
+  return [
+    `JBIT: this command's commit ticks stage ${c.n} done in \`${planPath}\`, but the commit doesn't pass the stage gates, so stage ${c.n} is not closed:`,
+    ...failed.map(f => `- ${f}`),
+    ...(modeGone ? [`The commit also removed the plan's \`Mode: autopilot\` line, which stops the run: put it back in \`## Now\` first.`] : []),
+    `Reopen it: untick stage ${c.n} in \`${planPath}\` and commit that, prove its checks with jbit:verify (which writes \`${evidencePath(planPath, c.n)}\`), tick them in \`## Now\`, then close the stage again — the plan edited with the Edit tool, and \`git commit\` on its own line.`,
+  ].join('\n')
+}
+
+/** Commands that only read the files they name, or (`echo`, `printf`) write only where they're redirected: their arguments write nothing. */
+const READERS = new Set(['cat', 'head', 'tail', 'less', 'more', 'grep', 'egrep', 'fgrep', 'rg', 'wc', 'diff', 'ls', 'stat', 'file', 'test', '[', 'echo', 'printf'])
+
+/**
+ * How a command treats files it's given: `all` when no argument writes (a reader), `operands` when a file it's given
+ * is only read but its script may write elsewhere (`sed` without `-i`, `awk` without `-i inplace`, `prettier --check`),
+ * else undefined.
+ */
+function readsOnly(name: string, args: string[]): 'all' | 'operands' | undefined {
+  if (READERS.has(name)) return 'all'
+  if (name === 'sed') return args.some(a => /^-[A-Za-z]*i/.test(a) || a.startsWith('--in-place')) ? undefined : 'operands'
+  if (/^[gmn]?awk$/.test(name)) {
+    const inPlace = args.some((a, k) => ((a === '-i' || a === '--include') && /^inplace/.test(args[k + 1] ?? '')) || /^(?:-i|--include=)inplace/.test(a))
+    return inPlace ? undefined : 'operands'
+  }
+  if ((name === 'npx' || name === 'bunx') && args[0] === 'prettier') return readsOnly('prettier', args.slice(1))
+  if (name === 'prettier') return args.some(a => /^(?:-c|--check|-l|--list-different)$/.test(a)) && !args.some(a => /^(?:-w|--write)$/.test(a)) ? 'all' : undefined
+  return undefined
+}
+
+/**
+ * Whether a command that isn't git names the plan file: as an argument, an output redirection's target or in the text
+ * its heredoc feeds it; by its path relative to where the command runs (`docs/PLAN.md`, `./docs/PLAN.md`, `PLAN.md`
+ * after `cd docs`, relative to the repo when the directory is unknown), absolute under the session's directory, or
+ * inside a longer word (`--file=docs/PLAN.md`, a script string). Case is ignored, as `samePath` ignores it. A
+ * guardrail on the line as written: a script that writes the plan without naming it is caught after the run.
+ */
+export function namesPlan(cmd: Command, planPath: string, root?: string): boolean {
+  const head = cmd.words[0] ?? ''
+  if (head === 'git' || head.endsWith('/git')) return false
+  const plan = joinPath('.', planPath).toLowerCase()
+  const absolute = root ? joinPath(root, plan).toLowerCase() : undefined
+  const escape = (p: string) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const paths = [plan, ...(absolute ? [absolute] : [])].map(escape).join('|')
+  const inside = new RegExp(`(?:^|[^\\w./-])(?:${paths})(?:$|[^\\w.-])`)
+  const dir = cmd.dir === null ? '.' : cmd.dir.toLowerCase()
+  /** The word is the plan's path, from where the command runs (or the repo, when that's unknown). */
+  const exact = (word: string) => {
+    const at = joinPath(dir, word.toLowerCase())
+    return at === plan || at === absolute
+  }
+  // `./docs/PLAN.md` inside a longer word reads as `docs/PLAN.md`
+  const embedded = (text: string) => inside.test(text.toLowerCase().replace(/(?<![\w.])\.\//g, ''))
+  const hit = (word: string) => exact(word) || embedded(word)
+  const name = head.slice(head.lastIndexOf('/') + 1)
+  const args = cmd.words.slice(1)
+  const reads = readsOnly(name, args)
+  const named = reads === 'all' ? false : reads === 'operands' ? args.some(a => !exact(a) && embedded(a)) : args.some(hit)
+  return named || (cmd.targets ?? []).some(hit) || (reads !== 'all' && cmd.input !== undefined && embedded(cmd.input))
+}
+
+function planWriteDenial(planPath: string, cmd: Command): string {
+  const shown = cutAt(oneLine(cmd.words.join(' ')), 80)
+  return [
+    `JBIT blocked this command: it names the plan file \`${planPath}\` (\`${shown}\`) and commits on the same line, and the commit gates read what a commit closes before the line runs, when the plan isn't written yet.`,
+    `Edit \`${planPath}\` with the Edit tool (or a separate command) first, then run the commit on its own line.`,
+  ].join('\n')
+}
+
+/** What a network command's denial adds: reading a page needs no send, so it needn't wait. */
+const READ_HINT =
+  'To read a web page, use WebFetch (or WebSearch to find one); a plain `curl` or `wget` GET with no body, upload, credentials or auth or cookie header, its output not piped into another network command, is allowed.'
+
+const outwardDenial = (reason: string, network = false) =>
+  `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.${network ? ` ${READ_HINT}` : ''}`
+
+/** Why a project rule holds one of these commands, naming the rule and its file, or undefined. `root` is the repo root, for path rules. */
+function projectReason(rules: ProjectRules, commands: Command[], root?: string): string | undefined {
+  if (!rules.outward.length) return undefined
+  for (const cmd of commands) {
+    const rule = projectOutward(rules, cmd, root)
+    if (rule) return `${rule.words.join(' ')}, a \`JBIT outward:\` rule in ${rule.file}`
+  }
+  return undefined
+}
+
+/** What a Bash line might do that the hook looks at without autopilot: a commit, or a command the built-in check names. */
+const PREFILTER = /\bgit\b|\b(gh|npm|pnpm|yarn|bun|cargo|twine|gem|poetry|uv|docker|podman|vercel|netlify|fly|flyctl|firebase|serverless|sls|wrangler|railway|cdk|terraform|tofu|pulumi|kubectl|helm|gcloud|az|aws|curl|wget)\b/
 
 export const register: Register = on => {
-  // the plan's `## Now` rides in the system prompt, so it survives compaction and long runs
+  // the plan's current position rides in the system prompt, so it survives compaction and long runs
   on('prompt.compose', async ($, e, next) => {
     const composed = await next(e)
-    const plan = await readPlan($).catch(() => undefined)
-    $.ui.status(plan ? statusText(plan) : undefined)
-    if (!plan) return composed
+    const rules = sessionRules($)
+    // the project's default Models line, read once a session, before the plan's line is weighed against it
+    await projectModels($, rules).catch(() => undefined)
+    // and the user's own, from the plugin's store: a read that fails is no default, said once
+    const mine = await userModels($).catch(() => ({ text: '', failed: undefined }))
+    const plan = await loadPlan($, rules).catch(() => undefined)
+    const s = await sync($, plan)
+    const failed = mine.failed ? mineReadNote(mine.failed) : ''
+    // while autopilot drives, each request notes the project's rules before any tool runs, so one removed mid-run still holds
+    if (driving(plan, s)) await rules()
+    // the roadmap rides with the plan: without a plan there is no section to carry it
+    const roadmap = plan ? await loadRoadmap($) : undefined
+    $.ui.status(plan ? statusLine(plan, s, roadmap) : undefined)
+    // with no plan yet, the defaults are all there is to say: the plan jbit:plan writes starts from them
+    if (!plan) {
+      const said = [noPlanModels(s), failed].filter(Boolean).join(' ')
+      return said ? { sections: [...composed.sections, { id: 'jbit:plan', text: `# JBIT\n${said}`, scope: 'session' as const }] } : composed
+    }
+    const now = unconfirmedWide(plan, s) && s.now !== undefined ? stampOf(s.now) : undefined
     let decisionsFile = false
     try {
       decisionsFile = await $.fs.exists(DECISIONS_PATH)
     } catch {
       // an exists check that fails adds nothing
     }
-    return { sections: [...composed.sections, { id: 'jbit:plan', text: planSection(plan, decisionsFile), scope: 'session' as const }] }
+    const text = planSection(plan, s, now, roadmap, decisionsFile)
+    return { sections: [...composed.sections, { id: 'jbit:plan', text: failed ? `${text}\n${failed}` : text, scope: 'session' as const }] }
   })
 
   // tell the summarizer what must survive
@@ -209,22 +2180,403 @@ export const register: Register = on => {
     return next({ ...e, instructions: e.instructions ? `${e.instructions}\n\n${KEEP}` : KEEP })
   }).catch(($, e, next) => next(e))
 
-  // every commit on the line is scanned for secrets before it runs
+  on('turn.start', ($, e, next) => {
+    if (!e.agentId) mainTurns++
+    return next(e)
+  })
+
+  on('prompt.submit', async ($, e, next) => {
+    const fromUser = USER_ORIGINS.has(e.origin.kind)
+    // the user's own `JBIT models …` command sets the honoured line itself, so it names nothing for `syncModels`
+    const modelsAsk = fromUser ? modelsCommand(e.text) : undefined
+    // a changed Models line counts only when the user's own prompt names its settings (`syncModels`)
+    await $.state.set(MODELS_NAMED, fromUser && !modelsAsk ? [...namedModels(e.text), ...namedRoles(e.text)] : [])
+    // the person speaking up gives a stalled autopilot a fresh allowance
+    if (e.origin.kind !== 'plugin') stalledTurns = 0
+    lastPromptFromUser = fromUser
+    if (modelsAsk) {
+      // bring the session's view up to date first, so the honoured line is the one the plan's first look set
+      const rules = sessionRules($)
+      await projectModels($, rules)
+      const mine = await userModels($)
+      const plan = await loadPlan($, rules).catch(() => undefined)
+      const s = await sync($, plan)
+      const inEffect = modelsInEffect(plan, s)
+      const mineModels = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+      const notes = mine.failed ? [mineReadNote(mine.failed)] : []
+      let entry: string
+      if (modelsAsk.kind === 'show') entry = modelsShown(plan, s)
+      else if (modelsAsk.kind === 'clearMine') {
+        // the user's own word removes their default: this session stops using it too
+        // what was stored, read fresh: the session's copy is empty after a failed read, which says nothing of the store
+        const before = s.modelsMine ? { text: s.modelsMine } : await storedMine($)
+        const was = before.text ? ` (\`Models: ${before.text}\`)` : before.failed ? ' (whether one was stored couldn\'t be read)' : ' (none was stored)'
+        try {
+          await $.store.delete(STORE_MODELS)
+          await $.state.set(MODELS_MINE, '')
+          entry = `JBIT: the user's own \`JBIT models clear my default\` removed their own Models default${was}: no repo starts from it now, and agents in this session no longer fall back on it. Tell the user so in a line; change nothing in the plan.`
+        } catch (err) {
+          entry = `JBIT: the user's \`JBIT models clear my default\` failed: the store couldn't be written (${storeError(err)}), so their own default is left as it was. Tell the user so in a line; change nothing in the plan.`
+        }
+      } else {
+        let line: string | undefined
+        if (modelsAsk.kind !== 'refused') {
+          // from what agents start on now, not a stored line the plan no longer carries
+          line = modelsAfter(inEffect, modelsAsk, s.modelsDefault)
+          // honoured at once, so the line Claude writes needs no naming of the roles the command left as they stand; it
+          // applies until then too (`modelsInEffect`), and the user has chosen, so the defaults fill in nothing now
+          await $.state.set(MODELS_HONOURED, line)
+          await $.state.set(MODELS_PENDING, modelsText(plan?.models) !== line)
+          await $.state.set(MODELS_CHOSEN, true)
+          // going back to the project default, for the line or a role, is the user's word on it
+          if (modelsAsk.kind === 'default' || (modelsAsk.kind === 'set' && modelsAsk.defaulted.length)) await $.state.set(MODELS_DEFAULT_CONFIRMED, true)
+        }
+        entry = modelsContext(modelsAsk, line, plan?.path, modelsText(inEffect))
+        // dropping roles holds for this session; the user's own default fills them in again in later ones
+        const dropped = modelsAsk.kind === 'none' ? MODEL_ROLES.filter(r => mineModels?.[r]) : modelsAsk.kind === 'set' ? modelsAsk.cleared.filter(r => mineModels?.[r]) : []
+        if (dropped.length)
+          notes.push(`Their own default (\`Models: ${s.modelsMine}\`) still sets ${dropped.join(', ')}: it fills ${dropped.length > 1 ? 'those roles' : 'that role'} in again in later sessions, in any repo whose plan line leaves ${dropped.length > 1 ? 'them' : 'it'} out, unless they type \`JBIT models clear my default\`. Say so in the same line.`)
+        if (modelsAsk.kind === 'set' && modelsAsk.mine) {
+          // the user's own default, for every repo: the roles the command named replace theirs in the stored default,
+          // the others kept. The store is read fresh, and a read that fails saves nothing, so no stored role is lost unseen
+          const stored = await storedMine($)
+          const kept = stored.text ? parseModels(`Models: ${stored.text}`) : undefined
+          const saved = modelsText({ ...kept, ...modelsAsk.set })
+          try {
+            if (stored.failed) throw new Error(stored.failed)
+            await $.store.set(STORE_MODELS, saved)
+            await $.state.set(MODELS_MINE, saved)
+            notes.push(`It also saved \`Models: ${saved}\` as the user's own default${kept ? ' (the roles this command named replaced theirs in the earlier default, the rest kept)' : ''}: in any repo, a plan with no Models line starts from it (a plan's line, then a project default the user confirms, win over it per role). Say so in the same line.`)
+          } catch (err) {
+            notes.push(`Saving it as the user's own default failed: the store couldn't be ${stored.failed ? 'read' : 'written'} (${storeError(err)}), so no default is saved and this session's line is set all the same. Say so in the same line.`)
+          }
+        }
+      }
+      return next({ ...e, context: [...(e.context ?? []), [entry, ...notes].join(' ')] })
+    }
+    if (fromUser) {
+      // the user's autopilot command, typed or opening with "JBIT" (`autopilotAsk`), comes first: it sets the level,
+      // even over a held stage (an unattended level lifts the hold; `attended` keeps it), and the level holds until
+      // their next command or a new Goal. The level is written first, so a failed later write can't leave an earlier
+      // level armed. Anything else sets no level
+      const level = autopilotAsk(e.text)
+      if (level !== undefined) {
+        // the command is for the plan as it stands now: bring the session's view up to date first, so a Goal that
+        // changed since the last look (edited by hand, checked out, or written in a turn that was then aborted) resets
+        // the old level here, not the user's command at the next look
+        const rules = sessionRules($)
+        const plan = await loadPlan($, rules).catch(() => undefined)
+        const s = await sync($, plan)
+        await $.state.set(UNATTENDED, level)
+        await $.state.set(ARMED, true)
+        // the system prompt was composed before this command: its rules for the run ride beside the prompt instead, only
+        // over a plan that exists now; an entry that can't be built leaves the prompt as typed, the level still set
+        const entry = plan && (await armedContext($, plan, { ...s, unattended: level, armed: true }, rules).catch(() => undefined))
+        if (entry) return next({ ...e, context: [...(e.context ?? []), entry] })
+      } else {
+        const plan = await loadPlan($).catch(() => undefined)
+        const s = await readSession($)
+        const stage = plan?.stage
+        // the person approved a risky stage that was held or paused: only their own prompt opening with an approval
+        // (`isApproval`: an approval word, "just build it", `/jbit:approve` or `JBIT approve`) clears it — never a
+        // question, a plugin's prompt, or a skill Claude can run itself. Armed or not: an unarmed session's
+        // /jbit:approve then arms autopilot through the skill, onto a cleared stage. An approval is that and nothing
+        // more: "just build it, outward" in reply to a hold releases the stage and changes no level
+        const awaiting = !!stage?.risky.length && underAutopilot(plan) && !s.cleared.includes(stage.key)
+        if (awaiting && isApproval(e.text)) await $.state.set(CLEARED, [...s.cleared, stage!.key])
+      }
+    }
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // autopilot: when a turn ends with stages left and nothing waiting on the person, keep the run going
+  on('turn.complete', async ($, e, next) => {
+    const result = await next(e)
+    if (e.agentId || e.reason !== 'answer') return result
+    const plan = await loadPlan($).catch(() => undefined)
+    const s = await sync($, plan)
+    // redraw the band too: a stage closed mid-turn would otherwise show stale progress until the next prompt
+    $.ui.status(plan ? statusLine(plan, s, await loadRoadmap($)) : undefined)
+    const mode = plan?.mode?.kind
+    const was = lastMode
+    lastMode = mode
+    if (!plan || mode !== 'autopilot') {
+      if (was !== 'autopilot') return result
+      if (plan?.mode?.kind === 'paused')
+        await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'JBIT' })
+      // a stage whose close failed the gates after the run isn't done, whatever the plan's ticks say
+      else if (plan && !plan.current && !((await $.state.get(REOPEN)).value ?? []).length && (await announce($, ['all'])))
+        await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
+      return result
+    }
+    // a Mode line left from an earlier session (or shipped in a repo) never drives this one
+    if (!s.armed || !plan.current) return result
+
+    if (held(plan, s)) {
+      if (heldNoticeFor !== plan.stage?.key) {
+        heldNoticeFor = plan.stage?.key
+        await $.ui.notify(`Autopilot (attended) is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'JBIT' })
+      }
+      return result
+    }
+
+    // builders still running in the background will start the next turn when they report
+    if (await backgroundBusy($)) return result
+
+    const progress = `${plan.done}\n${plan.now}`
+    stalledTurns = progress === lastProgress ? stalledTurns + 1 : 0
+    lastProgress = progress
+    if (stalledTurns >= MAX_STALLED_TURNS) {
+      $.ui.toast(`JBIT: autopilot stopped prompting; ${MAX_STALLED_TURNS} turns ended without the plan moving`)
+      if (stalledTurns === MAX_STALLED_TURNS)
+        await $.ui.notify('Autopilot stalled: the plan has not moved in several turns. Say "go" to resume.', { title: 'JBIT' })
+      return result
+    }
+
+    const turn = mainTurns
+    $.clock.after(SETTLE_MS, () => {
+      carryOn($, plan, turn).catch(() => $.ui.toast('JBIT: autopilot could not prompt the next step; say "go" to resume'))
+    })
+    return result
+  }).catch(($, e, next) => next(e))
+
+  // starting jbit:autopilot from the person's own turn arms it, including over a Mode line an earlier session left
+  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+    // it runs at the level that stands: its args never set one
+    if (!e.agentId && lastPromptFromUser && /^(?:jbit:)?autopilot$/.test(e.skill)) await $.state.set(ARMED, true)
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // a held stage, driving or paused: no building until the person approves it
+  on('tool.call', async ($, e, next) => {
+    if (e.tool !== 'Edit' && e.tool !== 'Write' && e.tool !== 'NotebookEdit' && e.tool !== 'Agent') return next(e)
+    // a subagent's call is judged by the main session's plan and state, and moves neither. A plan that can't be read
+    // while autopilot is armed holds the call rather than letting it through
+    let plan: Plan | undefined
+    try {
+      plan = await viewedPlan($, e.agentId)
+    } catch {
+      if ((await $.state.get(ARMED)).value === true) return { deny: UNREADABLE_HOLD }
+      return next(e)
+    }
+    if (!plan) return next(e)
+    const s = await sync($, plan, e.agentId)
+    const target = 'file_path' in e ? String(e.file_path) : 'notebook_path' in e ? String(e.notebook_path) : ''
+    if (target && samePath(target, plan.path)) return next(e)
+    // research runs in the main session while agents are held, so its note goes through: a plainly named markdown file
+    // under docs/research/, which no tool loads as instructions (the name rule keeps CLAUDE.md out); notebooks don't count
+    if (target && e.tool !== 'NotebookEdit' && researchNote(target, await $.session.cwd().catch(() => undefined))) return next(e)
+    // an unattended run builds a risky stage where the hold would have denied it, and the person hears of it once, here
+    // rather than at a turn's end, which a stage closed inside one turn or a turn ending paused would skip
+    if (unheld(plan, s)) {
+      if (unheldNoticeFor !== plan.stage?.key) {
+        unheldNoticeFor = plan.stage?.key
+        await $.ui.notify(`Autopilot (unattended) is building ${plan.stage?.key} without a hold: it touches ${plan.stage?.risky.join(', ')}.`, { title: 'JBIT' })
+      }
+      return next(e)
+    }
+    if (!held(plan, s)) return next(e)
+    const then =
+      plan.mode?.kind === 'paused'
+        ? 'The plan is paused: answer the user, and ask them for that reply.'
+        : "Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply."
+    return {
+      deny: `JBIT autopilot is holding ${plan.stage?.key}: its risk line names ${plan.stage?.risky.join(', ')}, so it isn't built until the user approves it with ${APPROVAL_REPLY}. ${then}`,
+    }
+  }).catch(($, e, next) => next(e))
+
+  // lean runs one agent at a time: the main loop starts no agent while one it started is still working, and an agent starts none of its own.
+  // The Models line governs the main loop's spawns alone: a subagent's own Agent call isn't checked against it
+  on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
+    if (e.agentId) {
+      // the main session's Agents line, not the worktree's copy
+      const plan = await viewedPlan($, e.agentId, root => readPlan($, root))
+      if (effectiveAgents(plan, undefined) !== 'lean') return next(e)
+      // a subagent starting a child would make two running agents
+      return { deny: "JBIT: the plan's Agents line is lean, which allows one agent at a time, and you are that agent: do this work yourself rather than starting another." }
+    }
+    // counted before the first await: parallel calls in one message all find the agent list empty, so the count
+    // of calls already in flight is what tells the second one that the first is starting
+    const before = agentCallsInFlight++
+    // released once: when the call settles, or when its dispatch is abandoned (an interrupt, a hook above settling
+    // first), so a next(e) that never settles can't hold the slot and refuse every later call
+    let held = true
+    const release = () => {
+      if (!held) return
+      held = false
+      agentCallsInFlight--
+      next.signal.removeEventListener('abort', release)
+    }
+    next.signal.addEventListener('abort', release)
+    if (next.signal.aborted) release()
+    try {
+      const plan = await readPlan($)
+      // the Models line the session honours: an Agent call must carry one of its roles' settings
+      const session = await readSession($)
+      await syncModels($, plan, session)
+      const models = modelsInEffect(plan, session)
+      const fromDefaults = !!models && modelsText(models) !== modelsText(effectiveModels(plan, session.modelsHonoured) ?? (session.modelsPending ? models : undefined))
+      const wrong = models && modelsDenial(models, e as { model?: unknown; effort?: unknown; subagent_type?: unknown }, fromDefaults)
+      if (wrong) return { deny: wrong }
+      if (effectiveAgents(plan, undefined) !== 'lean') return await next(e)
+      if (before === 0 && !(await backgroundBusy($))) return await next(e)
+      return {
+        deny: "JBIT: the plan's Agents line is lean, which allows one agent at a time, and one is still running. Wait for it to finish (a background agent's report starts the next turn), or ask the user to change the Agents line.",
+      }
+    } finally {
+      release()
+    }
+  }).catch(($, e, next) => next(e))
+
+  // a worktree agent starts from the remote's default branch unless the user set `worktree.baseRef` to `head`: the main
+  // session tells them once, after the call goes through, since its unpushed commits (the plan too) aren't in the agent's tree
+  on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
+    if (e.agentId || e.isolation !== 'worktree') return next(e)
+    const result = await next(e)
+    if (result.deny) return result
+    try {
+      if ((await $.state.get(WORKTREE_NOTICE)).value === true) return result
+      const settings = (await $.settings.read()) as { worktree?: { baseRef?: unknown } } | undefined
+      if (settings?.worktree?.baseRef === 'head') return result
+      await $.state.set(WORKTREE_NOTICE, true)
+    } catch {
+      // only a notice: settings or state that can't be read say nothing, and leave it for a later call
+      return result
+    }
+    $.ui.toast('JBIT: worktree agents start from the remote default branch, not local HEAD')
+    return { ...result, context: [...(result.context ?? []), WORKTREE_NOTE] }
+  }).catch(($, e, next) => next(e))
+
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
-    if (!PREFILTER.test(e.command)) return next(e)
+    const prefiltered = PREFILTER.test(e.command)
+    // the plan as written: its Mode line says whether autopilot could drive, and only then is CLAUDE.md read
+    const plan = await readPlan($).catch(() => undefined)
+    // a subagent's line is also judged by the main session's plan, whose run it is part of; the plan it reads itself
+    // still feeds the commit gates, since that is the plan its commit carries
+    const main = e.agentId ? await mainPlan($, root => readPlan($, root)) : undefined
+    if (!prefiltered && plan?.mode?.kind !== 'autopilot' && main?.mode?.kind !== 'autopilot') return next(e)
     const commands = parseCommands(e.command)
+    // read before the sync: the last stage's close removes the Mode line, which disarms the session as this commit lands
+    const armedBefore = (await $.state.get(ARMED)).value === true
+    const s = await sync($, plan, e.agentId)
+    const mainView = e.agentId && main ? await sync($, main, e.agentId) : undefined
+    // either view driving counts, so the main session's plan only ever adds checks to a subagent's line
+    const drives = driving(plan, s) || (!!mainView && driving(main, mainView))
+    // the run's level is the main session's: its view alone judges outward steps, the line's own plan only without one
+    const [outPlan, outView] = mainView ? [main, mainView] : [plan, s]
+    // a subagent's plan with another Goal (an older worktree) numbers another feature's stages: its commit leaves this
+    // Goal's records alone
+    const foreign = !!e.agentId && !!plan && (await $.state.get(GOAL)).value !== (plan.goal ?? '')
+
+    // while autopilot drives, outward-facing steps wait for the person: JBIT's own check first, over every command the
+    // line runs whatever words it holds, then the project's only when it found nothing. A run the user armed
+    // `unattended outward` lets them through; the commit gates below hold in every run
+    if (driving(outPlan, outView) && outView.unattended !== 'outward') {
+      const reason = commands.map(outwardReason).find(Boolean)
+      if (reason) return { deny: outwardDenial(reason, networkReason(reason)) }
+      const rules = await sessionRules($)()
+      const root = rules.outward.length ? await $.session.cwd().catch(() => undefined) : undefined
+      const project = projectReason(rules, commands, root)
+      if (project) return { deny: outwardDenial(project) }
+    }
+    if (!prefiltered) return next(e)
+
     const commits = commands.flatMap((c, i) => {
       const call = gitCall(c)
       return call?.sub === 'commit' && !commitScope(call).dryRun ? [i] : []
     })
     if (!commits.length) return next(e)
+
     const root = await $.session.cwd().catch(() => '.')
+    // under autopilot, a line that writes the plan and commits would close a stage the gates below never see ticked
+    if (plan && drives) {
+      const writer = commands.slice(0, commits[commits.length - 1]).find(c => namesPlan(c, plan.path, root))
+      if (writer) return { deny: planWriteDenial(plan.path, writer) }
+    }
+    // every commit on the line is scanned for secrets before any stage gate runs, so nothing a gate does can skip a scan
+    const pendings = []
     for (const at of commits) {
       const pending = await pendingChanges($, root, commands, at)
       const found = findSecrets(pending.diff, pending.files)
       if (found.length) return { deny: secretDenial(found) }
+      pendings.push(pending)
     }
-    return next(e)
+    const closing: { n: string; dir: string }[] = []
+    if (plan)
+      for (const pending of pendings)
+        for (const n of closedStages(pending.diff, plan.path)) {
+          closing.push({ n, dir: pending.dir })
+          // a session that never saw stage n in `## Now` asks the committed plan for its checks
+          const known = s.checkCounts[n] !== undefined || s.openChecks[n] !== undefined
+          const committed = known ? undefined : await committedChecks($, plan.path, n, pending.dir).catch(() => undefined)
+          const open = committed?.open ?? s.openChecks[n]
+          if (open?.length) return { deny: checksDenial(n, open) }
+          const missing = await evidenceDenial($, plan.path, n, committed?.count ?? s.checkCounts[n], pending)
+          if (missing) return { deny: missing }
+        }
+    // a commit that ticks a milestone needs its close's evidence; the ledger is read only when one is ticked
+    for (const pending of pendings) {
+      const ids = tickedMilestones(pending.diff)
+      if (!ids.length) continue
+      const ledger = await roadmapText($)
+      for (const id of ids) {
+        const missing = await milestoneDenial($, id, ledger, pending)
+        if (missing) return { deny: missing }
+      }
+    }
+    // HEAD in each commit's repo before the line runs, so a stage ticked and committed by the same line is still seen; a
+    // stage flagged to reopen is watched even once its close dropped the Mode line and disarmed the session
+    const flagged = plan ? ((await $.state.get(REOPEN)).value ?? []) : []
+    const watch = plan && (armedBefore || s.armed || flagged.length > 0)
+    const heads = new Map<string, string | undefined>()
+    if (watch) for (const { dir } of pendings) if (!heads.has(dir)) heads.set(dir, await headOf($, dir))
+    const result = await next(e)
+    // a close the pre-run diff couldn't see is checked against the commit it landed in, and so is a stage flagged to reopen
+    // that the new HEAD still has ticked (an amend, say): one that fails the gates isn't told (nor marked told, so its real
+    // close later still is), stays flagged, and whoever ran the line, main session or subagent, is told to reopen it
+    const reopen: string[] = []
+    // a close the pre-run gates passed clears its flag
+    const still = new Set(result.deny ? flagged : flagged.filter(n => !closing.some(c => c.n === n)))
+    const passed = new Set<string>()
+    if (plan && watch && !result.deny)
+      try {
+        const check = async (c: Landed) => {
+          const failed = await landedFailure($, plan.path, c, s)
+          if (failed) {
+            reopen.push(reopenNotice(plan.path, c, failed))
+            still.add(c.n)
+          } else {
+            closing.push(c)
+            passed.add(c.n)
+            still.delete(c.n)
+          }
+        }
+        for (const c of await landedClosings($, plan.path, heads)) if (!closing.some(k => k.n === c.n)) await check(c)
+        if (flagged.length) {
+          const at = await flaggedAt($, plan.path, heads, flagged)
+          for (const n of at.unticked) still.delete(n)
+          for (const c of at.ticked) if (!closing.some(k => k.n === c.n)) await check(c)
+        }
+      } catch {
+        // a repo the hook can't read after the run adds nothing
+      }
+    if (plan && !foreign && (still.size !== flagged.length || flagged.some(n => !still.has(n)))) await $.state.set(REOPEN, [...still]).catch(() => undefined)
+    const notes: string[] = [...reopen]
+    // progress for the user, under autopilot only (a flagged stage's passing close was under it too); a notice that can't be sent never touches the commit's result
+    const told = armedBefore || s.armed ? closing : closing.filter(c => passed.has(c.n) && flagged.includes(c.n))
+    if (plan && !foreign && told.length && !result.deny) {
+      const fresh: Told[] = []
+      await announceClosed($, plan.path, told, fresh).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
+      // the main session, which writes the user's progress note, reads it due as the commit's result comes back
+      if (!e.agentId)
+        try {
+          const reminder = progressReminder(fresh)
+          if (reminder) notes.push(reminder)
+        } catch {
+          // a reminder that can't be built leaves the result as it was
+        }
+    }
+    return notes.length ? { ...result, context: [...(result.context ?? []), ...notes] } : result
   }).catch(($, e, next) => {
     if (next.called) return next(e)
     // a guard that cannot read the repository steps aside rather than block every commit

@@ -4,20 +4,20 @@
 Release 0.18.1's plugin, unchanged in behaviour, as JBIT 2.0.0. The user chose this after comparing eval scores: 0.18.1 scored higher (0.88 against 1.0.0's 0.75, single runs) and its hook enforces the commit gates that 1.x only asks for. Anyone on 1.2.0 moves forward with a normal update, since 2.0.0 is above 1.2.0. A plan in progress under 1.x can still close its stage, and the README says what changes for them. Done when `plugins/jbit/` matches 0.18.1 apart from version strings and the migration note, its suite, docs check and validate are green, an isolated install updates from 1.2.0 to 2.0.0, a headless run shows a 1.x plan mid-stage closing under 2.0.0, and `docs/decisions.md` says which decisions stand again. Pushing is a separate step that waits for the user.
 
 ## Baseline
-2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 477 hook tests passing.
+2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 561 tests and 47 docs checks passing.
 
 ## Now
-Stage 1 of 2 · Restore 0.18.1 as 2.0.0
-Risk: secrets, user input (the secret guard and the hook's command parsing come back, unchanged from 0.18.1)
+Stage 2 of 2 · Moving from 1.x
+Risk: secrets, user input (only if a compatibility fix to the restored hook turns out to be needed); otherwise docs
 Checks:
-- [ ] `git diff bdd4c76 -- plugins/jbit` shows only version strings (2.0.0) and the plugin description; `agents/` is gone, and `approve`, `fix` and `review` are back (proof: saved diff)
-- [ ] The root `README.md` and `.claude-plugin/marketplace.json` match 0.18.1 apart from the version and the 2.0.0 wording (proof: saved diff)
-- [ ] `claude plugin test plugins/jbit` passes the same number of tests 0.18.1 recorded (477), and the docs check passes with its version test at 2.0.0 (proof: test run)
-- [ ] `claude plugin validate .` passes (proof: test run)
-Open: the field guide (see Open questions)
+- [ ] The plugin README has a "Moving from 1.x" section saying what changes for a 1.x user: role agents and their override files, the `CLAUDE.md` fan-out limit (now the Agents line), the Models line, holds for risky stages and `/jbit:approve`, the commit gates, and the handoff rules; the docs check asserts it (proof: docs check)
+- [ ] `docs/decisions.md` has 0.18.1's decisions standing again and 1.x's under a "Retired in 2.0.0" heading, struck through and none deleted; the docs check's no-deleted-decision test passes (proof: docs check)
+- [ ] In an isolated config dir (`CLAUDE_CONFIG_DIR`), a marketplace pointing at a local clone installs JBIT 1.2.0, and after the clone moves to 2.0.0, `claude plugin update` moves the install to 2.0.0 (proof: saved run, a test can't drive the CLI's update)
+- [ ] In a scratch repo with a 1.x plan mid-stage (no Mode, Agents or Models line, checks ticked in `## Now`, a `report.md` with a row per check written by the main session), a headless 2.0.0 session closes the stage with a commit the hook lets through, and a plan with an unticked check is refused with the hook's message (proof: saved run)
+Open: none
 
 ## Stages
-- [ ] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green
+- [x] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md)
 - [ ] 2. Moving from 1.x — README "Moving from 1.x" note; decisions restored and 1.x's retired; isolated 1.2.0 → 2.0.0 update; headless proof that a 1.x plan mid-stage closes under 2.0.0
 
 ## Decisions
@@ -28,9 +28,11 @@ Open: the field guide (see Open questions)
 - 2026-11-17 · (pm) Stage 1's diff against 0.18.1 is version strings only, so `/code-review` reviews that diff, not the restored code. Why: the restored code is 0.18.1's, already reviewed and shipped. Stage 2's `/security-review` covers any compatibility fix.
 - 2026-11-17 · (pm) Scale: two stages, one plan. No outside research; the update path is tested directly with an isolated install.
 - 2026-11-17 · The 1.2.0 plan was archived with check 4's report row still fail, as the verifier gave it, and the user's acceptance noted in its Goal line.
+- 2026-11-17 · The field guide goes back to 0.18.1's at 2.0.0, and the user's uncommitted edits to it are dropped (the user's choice).
+- 2026-11-17 · (autopilot) Check 3 corrected from 477 to 561 tests, plus 47 docs checks. Why: 477 was my count of `test(` lines, not the suite's recorded count; 0.18.1's own plan and the 1.0.0 plan's Baseline both record 561 and 47.
+- 2026-11-17 · (autopilot) Stage 1 review: I read the version-only diff in full (8 lines) and found nothing. `/code-review` didn't run over the restored code, which is 0.18.1's as shipped (see the stage-1 review decision above).
 
 ## Open questions
-- `docs/field-guide.html` has your uncommitted edits (a "Slower machines" note for 1.1.0's `CLAUDE.md` fan-out limit, which 2.0.0 drops). The default restores 0.18.1's field guide at 2.0.0 and leaves your edits uncommitted on top, which means they'll conflict. Keep them, drop them, or commit them first? For the user, before stage 1 touches the file.
 - What users lose (they get 0.18.1's behaviour):
   - role agents and any `.claude/agents/<role>.md` overrides
   - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)

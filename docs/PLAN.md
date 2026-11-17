@@ -7,7 +7,7 @@ Release 0.18.1's plugin, unchanged in behaviour, as JBIT 2.0.0. The user chose t
 2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 561 tests and 47 docs checks passing.
 
 ## Now
-All stages done: the goal is met. Next: push `main` and update the installed plugin to 2.0.0, which waits for the user's go; then a new plan (`jbit:plan`) if more is wanted.
+All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is wanted.
 
 ## Stages
 - [x] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md)
@@ -31,6 +31,7 @@ All stages done: the goal is met. Next: push `main` and update the installed plu
 - 2026-11-17 · (autopilot) At the last stage, the re-run of stage 1's diff check fails against stage 1's own wording, because the diff now includes stage 2's planned changes: the migration note, the ported verify rule and their docs-check tests. It's recorded as fail in the stage 2 report, with the reason, not rounded up.
 
 ## Open questions
+- 2026-11-17 · Shipped: `main` pushed (2.0.0) and the installed plugin updated from 1.2.0 to 2.0.0; takes effect after a Claude Code restart.
 - What users lose (they get 0.18.1's behaviour):
   - role agents and any `.claude/agents/<role>.md` overrides
   - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)

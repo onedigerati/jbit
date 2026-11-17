@@ -35,6 +35,7 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 - 2026-11-17 · Restored the words cut from `verify` to fit 1.2.0 under the old cap (opening line, unproven examples, `pyproject.toml`, `govulncheck`, the dev-server aside, "The" in §3's heading, the role agent-file note, "With no plan stage involved"); 1.2.0's three rule changes stay — docs check, plugin tests and validate green; diff against 1.1.0 is only those three lines
 
 ## Open questions
+- 2026-11-17 · Shipped: `main` pushed (1.2.0 and the word-limit fixes) and the installed plugin updated from 1.1.0 to 1.2.0; takes effect after a Claude Code restart.
 - In every headless review the reviewer missed one planted bug (P7, `applyDiscount` returns the discount instead of the total) — review quality, outside this plan.
 - The field guide's role-agent line and `docs/reviews/` archiving (deferred from code review) — for a later plan.
 - `docs/field-guide.html` still has your uncommitted changes; the 1.2.0 commit took only its two version lines — for the user.

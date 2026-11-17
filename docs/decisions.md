@@ -52,6 +52,8 @@
 - 2026-11-17 · Autopilot runs the remaining stages in a row, logs its judgement calls as `(autopilot)` decisions, and stops only after three failed fix rounds, when a builder's report and the evidence disagree, when the Goal or scope would change, or before an outward or hard-to-undo step (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))
 - 2026-11-17 · The six skills stay at most 5,000 words together, none over 1,500 (a docs check holds it) (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))
 - 2026-11-17 · `plan` asks once before charting or writing a too-big plan, and checks each stage's evidence report before archiving, even when told to assume defaults; a failing report is never re-run or rewritten to pass (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))
+- 2026-11-17 · Restore a fan-out limit as skill text read from `CLAUDE.md`, not a plan line or hook — the user's pick ("plan it"), after the 1.0.0 cut left no way to narrow fan-out on slower machines. A machine's limit belongs to the machine, so `~/.claude/CLAUDE.md` is the main place; a project's `CLAUDE.md` works too. It's an instruction Claude follows, not an enforced cap; `permissions.deny: ["Agent"]` is the enforced, blunt fallback. (from [Fan-out limit](plans/2026-11-17-fan-out-limit.md))
+- 2026-11-17 · Plain words, no fixed syntax: the skills follow any clear limit in `CLAUDE.md`, and the README gives example lines. Why: `CLAUDE.md` is read by Claude, not parsed, so a grammar would only add a way to get it wrong. (from [Fan-out limit](plans/2026-11-17-fan-out-limit.md))
 
 ## Retired in 1.0.0
 

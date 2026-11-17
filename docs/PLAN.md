@@ -32,6 +32,7 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 - 2026-11-17 · (autopilot) Code review, deferred: the field guide still says the skills hand work to all four role agents (left alone because the file has the user's uncommitted edits), and `docs/reviews/` isn't carried by archiving. Rejected: "Write is enforced by prompt alone" — the user chose to give the reviewer Write, and check 3 showed it keeps to the review file in the repo.
 ## Fixes
 - 2026-11-17 · Lifted the 5,000-word total on the six skills, then the 1,500-word limit per skill (docs check and standing decision updated) — docs check, plugin tests and validate green
+- 2026-11-17 · Restored the words cut from `verify` to fit 1.2.0 under the old cap (opening line, unproven examples, `pyproject.toml`, `govulncheck`, the dev-server aside, "The" in §3's heading, the role agent-file note, "With no plan stage involved"); 1.2.0's three rule changes stay — docs check, plugin tests and validate green; diff against 1.1.0 is only those three lines
 
 ## Open questions
 - In every headless review the reviewer missed one planted bug (P7, `applyDiscount` returns the discount instead of the total) — review quality, outside this plan.

@@ -5,27 +5,29 @@ description: Verify work against the project's own checks (type check, lint, tes
 
 # Verify
 
-Run it here or in a fresh `verifier` agent that built nothing. Start a role agent by its bare name (`verifier`) when the session's agent list has it, else as `jbit:verifier`, and never pass `model` or `effort` on the Agent call. Give it the stage number and this skill; tell it to read narrowly, stop when the brief is done, and hand back a report of 20 lines at most, then its full table under `## Report`. Never brief it to write `report.md`; Claude Code refuses that, so write it yourself. Started as the verifier, run it yourself.
+Verification proves the work does what the plan says, in the running product.
+
+Run it here or in a fresh `verifier` agent that built nothing. Start a role agent by its bare name (`verifier`) when the session's agent list has it, else as `jbit:verifier`, and never pass `model` or `effort` on the Agent call: the user sets those in the role's agent file. Give it the stage number and this skill; tell it to read narrowly, stop when the brief is done, and hand back a report of 20 lines at most, then its full table under `## Report`. Never brief it to write `report.md`; Claude Code refuses that, so write it yourself. Started as the verifier, run it yourself.
 
 ## Honest gaps
 
-A check that fails is reported as fail. A check you couldn't prove is unproven, with the reason. Never round either up to pass, call a failure "mostly passing", or drop a row. A test that fails then passes on rerun is flaky: say so.
+A check that fails is reported as fail. A check you couldn't prove (app wouldn't start, state unreachable, no tool to drive it) is unproven, with the reason. Never round either up to pass, call a failure "mostly passing", or drop a row. A test that fails then passes on rerun is flaky: say so.
 
 ## 1. The project's own checks
 
-Find how the project checks itself (`package.json` scripts, `Makefile`, CI config) and run whatever exists, in order: type check, lint, tests, build. All must pass, apart from `## Baseline` failures (report those as inherited). Any other failure belongs to this work unless it also fails on the last stage commit.
+Find how the project checks itself (`package.json` scripts, `Makefile`, `pyproject.toml`, CI config) and run whatever exists, in order: type check, lint, tests, build. All must pass, apart from `## Baseline` failures (report those as inherited). Any other failure belongs to this work unless it also fails on the last stage commit.
 
 Never weaken or skip a test or loosen a lint rule to get green; if a test is wrong, say why and fix it openly.
 
 ## 2. Dependency audit
 
-Run the stack's audit tool if available without installing (`npm audit --omit=dev`, `pip-audit`, `cargo audit`). Report high and critical findings in shipped dependencies with the fixed version; propose upgrades, don't make them.
+Run the stack's audit tool if it's available without installing (`npm audit --omit=dev`, `pip-audit`, `cargo audit`, `govulncheck ./...`). Report high and critical findings in shipped dependencies with the fixed version; propose upgrades, don't make them.
 
-## 3. Acceptance checks, in the running product
+## 3. The acceptance checks, in the running product
 
 Prove each check in `## Now` the way it names, against the real app:
 
-- **Web UI**: start the app (reuse a running dev server, or the built-in `run` skill), drive it with Playwright or the project's browser tooling, and screenshot and look at the states the check describes, the console for errors, and phone width when layout matters.
+- **Web UI**: start the app (reuse a running dev server; the built-in `run` skill can launch most projects), drive it with Playwright or the project's browser tooling, and screenshot and look at the states the check describes, the console for errors, and phone width when layout matters.
 - **API or service**: real requests for success and at least one bad input.
 - **CLI**: realistic arguments and a wrong one.
 - **Library or logic**: the tests are the proof; confirm one covers the check and fails when the behaviour breaks (break it briefly if in doubt).
@@ -34,7 +36,7 @@ Prove each check in `## Now` the way it names, against the real app:
 
 ## 4. Evidence
 
-For a plan stage, save each check's proof in `docs/evidence/stage-<n>/` as you go (`<n>` is the stage in `## Now` unless asked about another), even when asked only for a report: raw output as one text file per proof named for what it shows (`tests.txt`, `cli-bad-arg.txt`) with the command on its first line, plus screenshots, traces and videos.
+For a plan stage, save each check's proof in `docs/evidence/stage-<n>/` as you go (`<n>` is the stage in `## Now` unless asked about another), even when asked only for a report: raw output (test run, CLI run, request and response) as one text file per proof named for what it shows (`tests.txt`, `cli-bad-arg.txt`) with the command on its first line, plus screenshots, traces and videos.
 
 If `docs/evidence/.gitignore` is missing, create it:
 
@@ -84,4 +86,4 @@ Then tick each passed check in `## Now`. Reply with the table, the project check
 
 ## Outside a stage
 
-Run the same steps and report the table in chat. Skip the evidence folder unless asked; keep captures in the scratchpad.
+With no plan stage involved, run the same steps and report the table in chat. Skip the evidence folder unless asked; keep captures in the scratchpad.

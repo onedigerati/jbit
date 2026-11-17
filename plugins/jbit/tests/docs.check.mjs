@@ -45,11 +45,12 @@ test('skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no 
   for (const name of skills) assert.doesNotMatch(skill(name), /jbit:(?:approve|fix|review)\b/, `skills/${name} names a removed skill`)
 })
 
-test('the six skills together are at most 5,000 words, none over 1,500', () => {
-  const counts = Object.fromEntries(skills.map(s => [s, words(skill(s))]))
-  for (const [name, n] of Object.entries(counts)) assert.ok(n <= 1500, `skills/${name} is ${n} words, over 1,500`)
-  const total = Object.values(counts).reduce((a, b) => a + b, 0)
-  assert.ok(total <= 5000, `the skills total ${total} words, over 5,000 (${JSON.stringify(counts)})`)
+// The 5,000-word total was lifted on 2026-11-17 (user's call); the per-skill limit stays.
+test('no skill is over 1,500 words', () => {
+  for (const name of skills) {
+    const n = words(skill(name))
+    assert.ok(n <= 1500, `skills/${name} is ${n} words, over 1,500`)
+  }
 })
 
 test('no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text', () => {

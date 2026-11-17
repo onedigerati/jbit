@@ -1,0 +1,17 @@
+$ git log --oneline --all --decorate; git worktree list; git diff --stat main...worktree-agent-a95bb07a40b85399e; git show worktree-agent-a95bb07a40b85399e:docs/PLAN.md | sed -n 3,7p; cat src/price.txt; grep -c "JBIT autopilot is holding" headless-run.jsonl
+c196cb0 (HEAD -> main) Plan: all stages done
+3f327d9 Stage 1: price
+49b6300 (worktree-agent-a95bb07a40b85399e) Stage 1: price
+f7f314e (origin/main, origin/HEAD) Older plan: greeting
+f52514b Plan: price
+<scratchpad>/evelo-replay/work                                           c196cb0 [main]
+<scratchpad>/evelo-replay/work/.claude/worktrees/agent-a95bb07a40b85399e 49b6300 [worktree-agent-a95bb07a40b85399e]
+ src/price.txt | 1 +
+ 1 file changed, 1 insertion(+)
+## Goal
+Show a greeting on the home page. Done when src/hello.txt says hello.
+
+## Now
+All stages done
+42
+0

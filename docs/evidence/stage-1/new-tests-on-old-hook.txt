@@ -1,0 +1,10 @@
+$ claude plugin test <copy of plugins/jbit with hooks/register.ts and types/index.d.ts from HEAD 956f018, new tests kept>
+# Only (fail) lines and totals kept; full run passes the other 540.
+(fail) after JBIT autopilot, a subagent reading a plan with another Goal leaves the run unattended: the next Edit isn't held, the band says unattended [56.65ms]
+(fail) a subagent reading a plan with another Goal leaves the stage's approval and the Goal as they were [42.83ms]
+(fail) a subagent reading a Mode line that changed in its worktree doesn't arm the main session [34.87ms]
+(fail) a subagent reading its worktree's ticked checks leaves the main session's open checks: closing that stage is still refused [39.54ms]
+(fail) attended, a subagent's Edit and Agent calls are held by the main session's risky stage, whatever its worktree's plan says [44.91ms]
+ 540 pass
+ 5 fail
+Ran 545 tests across 1 file. [19.61s]

@@ -71,18 +71,59 @@ interface Plan {
 }
 
 /** The plan as written, without the project's own hold words: for hooks that don't look at what a stage risks. */
-async function readPlan($: EngineInterface): Promise<Plan | undefined> {
+async function readPlan($: EngineInterface, root?: string): Promise<Plan | undefined> {
   for (const path of PLAN_PATHS) {
-    if (!(await $.fs.exists(path))) continue
-    return parsePlan(path, await $.fs.read(path))
+    // under another root the file is read there, and keeps its repo path as its name
+    const file = root ? `${root.replace(/\/+$/, '')}/${path}` : path
+    if (!(await $.fs.exists(file))) continue
+    return parsePlan(path, await $.fs.read(file))
   }
   return undefined
 }
 
 /** The plan with the project's hold words added; `rules` is the hook call's own reader, so `CLAUDE.md` is read once a call. */
-async function loadPlan($: EngineInterface, rules = sessionRules($)): Promise<Plan | undefined> {
-  const plan = await readPlan($)
+async function loadPlan($: EngineInterface, rules = sessionRules($), root?: string): Promise<Plan | undefined> {
+  const plan = await readPlan($, root)
   return plan && withProjectRisk(plan, rules)
+}
+
+/** The last directory `mainRoot` resolved, and the repository top it found there. */
+let mainTop: { cwd: string; top: string } | undefined
+
+/**
+ * Where the main session's plan is (`MAIN_ROOT`): the top of the repository the main session last looked from, so a
+ * `cd` into a subfolder doesn't move it, else that directory itself; undefined before it has looked.
+ */
+async function mainRoot($: EngineInterface): Promise<string | undefined> {
+  const cwd = (await $.state.get(MAIN_ROOT)).value
+  if (typeof cwd !== 'string' || !cwd) return undefined
+  if (mainTop?.cwd === cwd) return mainTop.top
+  const out = (await git($, ['rev-parse', '--show-toplevel'], cwd).catch(() => '')).trim()
+  // one absolute path, or the directory as recorded
+  if (!out || out.includes('\n') || !/^(?:\/|[A-Za-z]:[\\/])/.test(out)) return cwd
+  mainTop = { cwd, top: out }
+  return out
+}
+
+/**
+ * The plan as the main session sees it. A subagent's paths resolve against its own directory, a worktree branched from
+ * an older commit say, so its call reads the plan where the main session last looked (`MAIN_ROOT`); before the main
+ * session has looked, or when no plan can be read there, its own copy, which `sync` judges read-only and attended when its
+ * Goal differs.
+ */
+async function viewedPlan(
+  $: EngineInterface,
+  agentId: string | undefined,
+  read: (root?: string) => Promise<Plan | undefined> = (rules => (root?: string) => loadPlan($, rules, root))(sessionRules($)),
+): Promise<Plan | undefined> {
+  if (!agentId) return read()
+  return (await mainPlan($, read)) ?? read()
+}
+
+/** The plan at the main session's root (`mainRoot`), for a subagent's call; undefined when there is none or it can't be read. */
+async function mainPlan($: EngineInterface, read: (root?: string) => Promise<Plan | undefined>): Promise<Plan | undefined> {
+  const root = await mainRoot($).catch(() => undefined)
+  return root ? read(root).catch(() => undefined) : undefined
 }
 
 /**
@@ -383,6 +424,8 @@ const SEEN_MODE = { plugin: 'jbit', key: 'seenMode' } as const
 const CLEARED = { plugin: 'jbit', key: 'cleared' } as const
 const OPEN_CHECKS = { plugin: 'jbit', key: 'openChecks' } as const
 const GOAL = { plugin: 'jbit', key: 'goal' } as const
+/** The main session's working directory at its last look (`sync`): its repository's top is where a subagent's hooks read the plan (`mainRoot`). */
+const MAIN_ROOT = { plugin: 'jbit', key: 'mainRoot' } as const
 const CHECK_COUNTS = { plugin: 'jbit', key: 'checkCounts' } as const
 const FIRST_AGENTS = { plugin: 'jbit', key: 'firstAgents' } as const
 /** The Models line this session honours, as `modelsText` writes it (`''` for none): see `syncModels`. */
@@ -1133,7 +1176,11 @@ export function stampOf(ms: number): string {
  * first looked stays unarmed, so a repo can never start a run by itself. Also notes which checks are unticked,
  * and the Agents line as first read, so a `wide` the session didn't see set isn't honoured unasked.
  */
-async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session> {
+async function sync($: EngineInterface, plan: Plan | undefined, agentId?: string): Promise<Session> {
+  if (agentId) return agentView($, plan)
+  // where the main session looks, so a subagent's call reads the same plan (`viewedPlan`)
+  const [root, stored] = await Promise.all([$.session.cwd().catch(() => undefined), $.state.get(MAIN_ROOT)])
+  if (typeof root === 'string' && root && stored.value !== root) await $.state.set(MAIN_ROOT, root)
   const mode = plan?.mode?.kind ?? 'none'
   const [seen, seenGoal, noPlan, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), $.state.get(NO_PLAN_SEEN), readSession($)])
   // a new Goal is a new feature: its stages restart at 1, so the last feature's per-stage records go
@@ -1192,6 +1239,37 @@ async function sync($: EngineInterface, plan: Plan | undefined): Promise<Session
   }
   return session
 }
+
+/**
+ * A subagent's look at the plan: the session as the main session left it, written nowhere. A subagent's call never moves
+ * the Goal, the Mode line's arming, the level, approvals or the per-stage records. A plan whose Goal isn't the one the
+ * main session saw (a worktree's older copy, read before the main session looked) is judged attended and unapproved,
+ * and a Mode line the main session didn't see change can disarm this view but never arm it: a subagent's view only ever
+ * holds more. The stage's checks are noted in this view alone, so the commit gates judge the plan the commit carries.
+ */
+async function agentView($: EngineInterface, plan: Plan | undefined): Promise<Session> {
+  const mode = plan?.mode?.kind ?? 'none'
+  const [seen, seenGoal, session] = await Promise.all([$.state.get(SEEN_MODE), $.state.get(GOAL), readSession($)])
+  if (plan && seenGoal.value !== (plan.goal ?? '')) {
+    session.unattended = 'off'
+    session.cleared = []
+    session.openChecks = {}
+    session.checkCounts = {}
+  }
+  if (seen.value !== mode && mode === 'none') session.armed = false
+  if (session.firstAgents === undefined) session.firstAgents = firstAgentsOf(plan, await clockNow($))
+  if (plan?.agents === 'wide') session.now = await clockNow($)
+  const stage = plan?.stage
+  if (stage?.number && stage.checks.length) {
+    session.openChecks = { ...session.openChecks, [stage.number]: stage.checks.filter(c => !c.done).map(c => c.text) }
+    session.checkCounts = { ...session.checkCounts, [stage.number]: stage.checks.length }
+  }
+  return session
+}
+
+/** What an armed session's build call is told when the plan it would be judged by can't be read. */
+const UNREADABLE_HOLD =
+  "JBIT autopilot couldn't read the plan, so it can't tell whether the current stage is held: nothing is built until it can. Check that the plan file is readable, or ask the user."
 
 /** The exact reply that releases a held stage, as every held message spells it out. */
 const APPROVAL_REPLY =
@@ -2267,9 +2345,17 @@ export const register: Register = on => {
   // a held stage, driving or paused: no building until the person approves it
   on('tool.call', async ($, e, next) => {
     if (e.tool !== 'Edit' && e.tool !== 'Write' && e.tool !== 'NotebookEdit' && e.tool !== 'Agent') return next(e)
-    const plan = await loadPlan($)
+    // a subagent's call is judged by the main session's plan and state, and moves neither. A plan that can't be read
+    // while autopilot is armed holds the call rather than letting it through
+    let plan: Plan | undefined
+    try {
+      plan = await viewedPlan($, e.agentId)
+    } catch {
+      if ((await $.state.get(ARMED)).value === true) return { deny: UNREADABLE_HOLD }
+      return next(e)
+    }
     if (!plan) return next(e)
-    const s = await sync($, plan)
+    const s = await sync($, plan, e.agentId)
     const target = 'file_path' in e ? String(e.file_path) : 'notebook_path' in e ? String(e.notebook_path) : ''
     if (target && samePath(target, plan.path)) return next(e)
     // research runs in the main session while agents are held, so its note goes through: a plainly named markdown file
@@ -2298,7 +2384,8 @@ export const register: Register = on => {
   // The Models line governs the main loop's spawns alone: a subagent's own Agent call isn't checked against it
   on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
     if (e.agentId) {
-      const plan = await readPlan($)
+      // the main session's Agents line, not the worktree's copy
+      const plan = await viewedPlan($, e.agentId, root => readPlan($, root))
       if (effectiveAgents(plan, undefined) !== 'lean') return next(e)
       // a subagent starting a child would make two running agents
       return { deny: "JBIT: the plan's Agents line is lean, which allows one agent at a time, and you are that agent: do this work yourself rather than starting another." }
@@ -2340,16 +2427,27 @@ export const register: Register = on => {
     const prefiltered = PREFILTER.test(e.command)
     // the plan as written: its Mode line says whether autopilot could drive, and only then is CLAUDE.md read
     const plan = await readPlan($).catch(() => undefined)
-    if (!prefiltered && plan?.mode?.kind !== 'autopilot') return next(e)
+    // a subagent's line is also judged by the main session's plan, whose run it is part of; the plan it reads itself
+    // still feeds the commit gates, since that is the plan its commit carries
+    const main = e.agentId ? await mainPlan($, root => readPlan($, root)) : undefined
+    if (!prefiltered && plan?.mode?.kind !== 'autopilot' && main?.mode?.kind !== 'autopilot') return next(e)
     const commands = parseCommands(e.command)
     // read before the sync: the last stage's close removes the Mode line, which disarms the session as this commit lands
     const armedBefore = (await $.state.get(ARMED)).value === true
-    const s = await sync($, plan)
+    const s = await sync($, plan, e.agentId)
+    const mainView = e.agentId && main ? await sync($, main, e.agentId) : undefined
+    // either view driving counts, so the main session's plan only ever adds checks to a subagent's line
+    const drives = driving(plan, s) || (!!mainView && driving(main, mainView))
+    // the run's level is the main session's: its view alone judges outward steps, the line's own plan only without one
+    const [outPlan, outView] = mainView ? [main, mainView] : [plan, s]
+    // a subagent's plan with another Goal (an older worktree) numbers another feature's stages: its commit leaves this
+    // Goal's records alone
+    const foreign = !!e.agentId && !!plan && (await $.state.get(GOAL)).value !== (plan.goal ?? '')
 
     // while autopilot drives, outward-facing steps wait for the person: JBIT's own check first, over every command the
     // line runs whatever words it holds, then the project's only when it found nothing. A run the user armed
     // `unattended outward` lets them through; the commit gates below hold in every run
-    if (driving(plan, s) && s.unattended !== 'outward') {
+    if (driving(outPlan, outView) && outView.unattended !== 'outward') {
       const reason = commands.map(outwardReason).find(Boolean)
       if (reason) return { deny: outwardDenial(reason, networkReason(reason)) }
       const rules = await sessionRules($)()
@@ -2367,7 +2465,7 @@ export const register: Register = on => {
 
     const root = await $.session.cwd().catch(() => '.')
     // under autopilot, a line that writes the plan and commits would close a stage the gates below never see ticked
-    if (plan && driving(plan, s)) {
+    if (plan && drives) {
       const writer = commands.slice(0, commits[commits.length - 1]).find(c => namesPlan(c, plan.path, root))
       if (writer) return { deny: planWriteDenial(plan.path, writer) }
     }
@@ -2438,11 +2536,11 @@ export const register: Register = on => {
       } catch {
         // a repo the hook can't read after the run adds nothing
       }
-    if (plan && (still.size !== flagged.length || flagged.some(n => !still.has(n)))) await $.state.set(REOPEN, [...still]).catch(() => undefined)
+    if (plan && !foreign && (still.size !== flagged.length || flagged.some(n => !still.has(n)))) await $.state.set(REOPEN, [...still]).catch(() => undefined)
     const notes: string[] = [...reopen]
     // progress for the user, under autopilot only (a flagged stage's passing close was under it too); a notice that can't be sent never touches the commit's result
     const told = armedBefore || s.armed ? closing : closing.filter(c => passed.has(c.n) && flagged.includes(c.n))
-    if (plan && told.length && !result.deny) {
+    if (plan && !foreign && told.length && !result.deny) {
       const fresh: Told[] = []
       await announceClosed($, plan.path, told, fresh).catch(() => $.ui.toast('JBIT: could not tell the stage closed'))
       // the main session, which writes the user's progress note, reads it due as the commit's result comes back

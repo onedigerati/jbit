@@ -21,6 +21,8 @@ declare module 'claude-code' {
       goal: string
       /** The session's first look found no plan: the first plan it then reads counts as a new Goal. */
       noPlanSeen: boolean
+      /** The main session's working directory, absolute, as its own last look saw it: a subagent's hooks read the plan at the top of its repository, not in the agent's worktree. Written only by the main loop. */
+      mainRoot: string
       /** The plan's `Agents:` line as this session first read it (level and confirmation stamp); a `wide` already there is honoured only once restamped. */
       firstAgents: { level: 'lean' | 'balanced' | 'wide' | 'none' | 'unknown'; stamp?: string; at?: number }
       /** The plan's `Models:` line this session honours, as the hook writes it (`build sonnet/medium · review opus/high`; `''` for none): the line at the session's first look that read a plan, or one changed while the user's own latest prompt named all its models and efforts. */

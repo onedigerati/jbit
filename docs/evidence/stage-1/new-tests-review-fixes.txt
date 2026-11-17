@@ -1,0 +1,109 @@
+$ sed -n 5506,5613p plugins/jbit/tests/jbit.test.ts   # the 9 tests added by the review fixes
+})
+
+test("a subagent whose main session's plan is missing falls back to its own copy: an older Goal's risky stage is still held", async ($, on) => {
+  const { plan, edit } = await armedBy($, on, '/jbit:autopilot attended', { tag: ' w5', risk: 'payments' })
+  expect(await edit()).toContain('JBIT autopilot is holding')
+  plan.missing = ['/repo/docs/PLAN.md']
+  const agent = asAgent($)
+  await inWorktree(plan, olderPlan, async () => {
+    expect(await agent.edit()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+    expect(await agent.agent()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+  })
+})
+
+test("a subagent whose main session's plan can't be read falls back to its own copy, judged attended for an older Goal", async ($, on) => {
+  // the user armed it unattended; the worktree's older Goal is no plan they gave that command for
+  const { plan } = await armedBy($, on, 'JBIT autopilot', { tag: ' w6', risk: 'payments' })
+  plan.unsure = ['/repo/docs/PLAN.md']
+  const agent = asAgent($)
+  await inWorktree(plan, olderPlan, async () => {
+    expect(await agent.edit()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+    expect(await agent.agent()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+  })
+})
+
+test('with no main-session root recorded, a subagent judges its own copy: an older Goal is held, Edit and Agent', async ($, on) => {
+  const { plan, edit } = await armedBy($, on, 'JBIT autopilot', { tag: ' w7', risk: 'payments', cwd: null })
+  expect(await edit()).toBeUndefined()
+  const agent = asAgent($)
+  await inWorktree(plan, olderPlan, async () => {
+    expect(await agent.edit()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+    expect(await agent.agent()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode old')
+  })
+  // and the main session's own run is as the user left it
+  expect(await edit()).toBeUndefined()
+})
+
+test('while armed, a plan that cannot be read holds a build call, from the main session or a subagent', async ($, on) => {
+  const { plan, edit } = await armedBy($, on, 'JBIT autopilot', { tag: ' w8', risk: 'payments' })
+  expect(await edit()).toBeUndefined()
+  plan.broken = ['docs/PLAN.md']
+  expect(await edit()).toContain("JBIT autopilot couldn't read the plan")
+  expect(await asAgent($).edit()).toContain("JBIT autopilot couldn't read the plan")
+  expect(await asAgent($).agent()).toContain("JBIT autopilot couldn't read the plan")
+})
+
+test("a main session working in a subfolder: a subagent reads the plan at the repository's top", async ($, on) => {
+  const tops: (string | undefined)[] = []
+  on('process.run', (_, e) => {
+    const top = e.argv.join(' ') === 'git rev-parse --show-toplevel'
+    if (top) tops.push(e.init?.cwd)
+    return { value: { exitCode: 0, stdout: top ? '/repo\n' : '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  const { plan, edit } = await armedBy($, on, '/jbit:autopilot attended', { tag: ' w9', risk: 'payments', cwd: '/repo/plugins/jbit' })
+  expect(await edit()).toContain('JBIT autopilot is holding')
+  const agent = asAgent($)
+  // the worktree's copy has no risk line: only the plan at /repo/docs/PLAN.md holds the call
+  await inWorktree(plan, planWith('Mode: autopilot', ' w9'), async () => {
+    expect(await agent.edit()).toContain('JBIT autopilot is holding Stage 2 of 3 · Share mode w9')
+  })
+  expect(tops).toEqual(['/repo/plugins/jbit'])
+})
+
+test('under an unattended outward run, a subagent whose worktree plan has an older Goal can push', async ($, on) => {
+  const { plan, bash } = await armedBy($, on, '/jbit:autopilot unattended outward', { tag: ' w10' })
+  expect(await bash('git push origin main')).toBeUndefined()
+  await inWorktree(plan, olderPlan, async () => {
+    expect(await asAgent($).bash('git push origin main')).toBeUndefined()
+  })
+})
+
+test("a lean main plan whose worktree copy says wide: the subagent's own Agent call is still denied", async ($, on) => {
+  const plan = { text: planWith('Agents: lean', ' w11') }
+  engine(on, plan)
+  on('tool.call', () => ({ result: { text: 'ok' } }))
+  await $.turn.complete(ended('t1'))
+  await inWorktree(plan, planWith('Agents: wide — confirmed 2026-11-16', ' w11'), async () => {
+    expect(await asAgent($).agent()).toContain("the plan's Agents line is lean")
+  })
+})
+
+test('a subagent commit from an older Goal leaves the reopen flags and the progress notices alone', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  const sent = engine(on, plan)
+  tickAndCommitGit(on, stage, { after: stage.after.replace('- [x] it works', '- [ ] it works') })
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  const older = ['## Goal', 'An older feature.', stage.before].join('\n')
+  // a close that fails the gates once landed: the agent is told, but this Goal's stage 2 isn't flagged
+  const r = await inWorktree(plan, older, () => $.tool.call({ tool: 'Bash', command: TICK_AND_COMMIT, agentId: 'a0' } as never))
+  expect(r.context).toEqual([reopenFor("- its checks in `## Now` aren't all ticked:\n  - it works")])
+  expect(sent.notes).toEqual([])
+  // the plan finishes: a flagged stage would keep back the all-done notice
+  plan.text = ['## Now', 'All done', '## Stages', '- [x] 1. Foundation — engine', '- [x] 2. Share mode — viewer controls', '- [x] 3. Polish — copy and layout'].join('\n')
+  await $.turn.complete(ended('t2'))
+  expect(sent.notes).toEqual(['All 3 stages done.'])
+})
+
+test("a passing subagent close from an older Goal tells nothing, so this Goal's own close is still told", async ($, on) => {
+  const { sent, plan, stage } = await closingRun($, on)
+  const older = ['## Goal', 'An older feature.', stage.before].join('\n')
+  const r = await inWorktree(plan, older, () => $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"', agentId: 'a0' } as never))
+  expect(r.deny).toBeUndefined()
+  expect(sent.notes).toEqual([])
+  await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })
+  expect(sent.notes).toEqual(['Stage 2 of 3 done: Share mode. Next: Polish.'])
+})
+

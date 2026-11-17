@@ -1,0 +1,16 @@
+$ git log --format="%h %p %d %s" --all; git show 28ea058 --stat --format=; git show 28ea058^:docs/PLAN.md | sed -n 3,7p; cat src/price.txt; echo; grep -c "JBIT autopilot is holding" headless-run-2.jsonl; grep -o "\"isolation\":\"worktree\"" headless-run-2.jsonl | wc -l
+9c4a78e 995c6a1  (HEAD -> main) Stage 1: price — verified and reviewed
+995c6a1 9e8b5eb 28ea058  Merge branch 'worktree-agent-a26ad5bbfc88fed4d'
+28ea058 ca3ca3d  Stage 1: price
+ca3ca3d   (origin/main, origin/HEAD) Older plan: greeting
+9e8b5eb ca3ca3d  Plan: price
+ src/price.txt | 1 +
+ 1 file changed, 1 insertion(+)
+## Goal
+Show a greeting on the home page. Done when src/hello.txt says hello.
+
+## Now
+All stages done
+42
+0
+2

@@ -11,7 +11,7 @@ One file holds the project's state: `docs/PLAN.md`, or a plan the project alread
 
 A small, decided, easily undone change (copy or style tweak, display bug, docs edit) goes to `jbit:stage`'s quick-fix path instead, unless the user wants it planned.
 
-Too big for one plan: over about eight stages after an honest cut, over about fifteen requirements, several releases or phases, or a PRD. When one fires, ask the user before writing: chart it first with `jbit:charter` (milestones, plans cut one at a time), or keep one plan? Say what fired and recommend one. Log the answer; ask again only for a new PRD or a clear size jump. An existing `docs/ROADMAP.md` means it's charted.
+Too big for one plan: over about eight stages after an honest cut, over about fifteen requirements, several releases or phases, or a PRD. When one fires, ask the user before writing, once, even when told to assume defaults or not to ask, since the answer sets the plan's shape; never chart or write the big plan without it: chart it first with `jbit:charter` (milestones, plans cut one at a time), or keep one plan? Say what fired and recommend one. Log the answer; ask again only for a new PRD or a clear size jump. An existing `docs/ROADMAP.md` means it's charted.
 
 ## Creating a plan
 
@@ -90,6 +90,7 @@ Open: <decision for the user, or none>
 
 A plan covers one Goal (a feature, several, or a milestone). Work beyond it while stages are open: ask whether to widen it or wait. Once it's met and new work goes beyond it, start fresh, asking first about open stages (finish, drop, or carry).
 
+0. **Check the evidence first.** Read each stage's `docs/evidence/stage-<n>/report.md`, not the plan's ticks or the user's "done". A check the report marks fail or unproven means the Goal isn't met: say so plainly and stop, even when told to assume defaults. Never re-run, rewrite or "correct" a report to make it pass. With a roadmap, fill `Covered by` only for requirements whose evidence passed, and close the milestone only as `jbit:charter`'s "Closing a milestone" says; a failed requirement leaves it open and the next plan takes the gap, not the next milestone.
 1. **Archive.** `git mv` the plan to `docs/plans/<date>-<slug>.md` and `docs/evidence/` to `docs/plans/<date>-<slug>/evidence/`; add an `Evidence:` link under its Goal.
 2. **Carry forward** binding decisions word for word, dated and linked, into Standing decisions, and still-open questions.
 3. **Record what shipped** under `## Shipped`.

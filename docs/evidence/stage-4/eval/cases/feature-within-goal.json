@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.326",
+  "startedAt": "2026-11-17T15:38:06.195Z",
+  "durationSeconds": 27,
+  "costUsd": 0.18084480000000003,
+  "partial": false,
+  "suite": {
+    "root": "~/src/repos/jbit/plugins/jbit",
+    "ablation": "none",
+    "caseFilter": "feature-within-goal",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "jbit",
+        "version": "1.0.0",
+        "path": "~/src/repos/jbit/plugins/jbit"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "feature-within-goal",
+      "dir": "evals/feature-within-goal",
+      "source": "case_yaml",
+      "promptMarkdown": "One more feature for this: JSON export too, alongside the CSV export, so I can load the data into a notebook. Work it into the plan, but don't build anything yet; assume sensible defaults rather than asking me.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 20,
+      "graders": [
+        {
+          "name": "loads-plan",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "plan",
+            "min": 1,
+            "arm": "with-only"
+          }
+        },
+        {
+          "name": "no-archive",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/plans/*.md",
+            "exists": false
+          }
+        },
+        {
+          "name": "added-to-current-plan",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "This is still the same plan: the Goal still covers totals, reports and exports (it may mention JSON), stage 1 is still ticked, stages 2 to 4 are still there, and the current stage in Now is still Category reports. JSON export is added as a new stage numbered after the existing ones, or folded into the export stage with its scope widened. Stages are not renumbered from 1 and nothing is archived.",
+          "config": {
+            "criteria": "This is still the same plan: the Goal still covers totals, reports and exports (it may mention JSON), stage 1 is still ticked, stages 2 to 4 are still there, and the current stage in Now is still Category reports. JSON export is added as a new stage numbered after the existing ones, or folded into the export stage with its scope widened. Stages are not renumbered from 1 and nothing is archived.",
+            "focus": {
+              "source": "file",
+              "path": "docs/PLAN.md"
+            }
+          }
+        },
+        {
+          "name": "no-source-changes",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "src/",
+            "flags": "",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 1,
+            "passed": true,
+            "turns": 8,
+            "costUsd": 0.18084480000000003,
+            "judgeCostUsd": 0.0006354,
+            "durationSeconds": 27,
+            "startedAt": "2026-11-17T15:38:06.253Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-MLz94Z/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "loads-plan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "no-archive",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/plans/*.md absent as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "added-to-current-plan",
+                "passed": true,
+                "weight": 1,
+                "explanation": "judge votes: PASS PASS PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  true,
+                  true,
+                  true
+                ],
+                "evidence": "# Spend plan\n\n## Goal\nA personal spending CLI for one person: totals from a bank CSV, reports by month and category, and exporting the data for use in other tools. Done: all three work from one `spend` command.\n\n## Now\nStage 2 of 5 · Category reports\nRisk: UI only\nChecks:\n- [ ] `spend report --by category file.csv` prints one row per category with its total (proof: run the CLI)\n- [ ] rows with no category land under \"uncategorized\" (proof: test)\nOpen: none\n\n## Stages\n- [x] 1. Totals — parse the CSV, total in cents, with tests\n- [ ] 2. Category reports — group by category, print a table\n- [ ] 3. Monthly reports — group by month, print a table\n- [ ] 4. CSV export — write the parsed rows back out as clean CSV\n- [ ] 5. JSON export — `--format json` on the same export: the parsed rows as a JSON array, for loading into a notebook\n\n## Decisions\n- 2026-10-01 · Amounts are summed and stored in integer cents — floats drift\n- 2026-11-17 · JSON export is its own stage after CSV export, sharing its command and row model (`spend export --format csv|json`, csv default) — keeps stage 4 small; one export path, two writers\n- 2026-11-17 · JSON shape: one array of row objects (`date` as ISO `YYYY-MM-DD`, `description`, `amount_cents` integer, `category` or `null` when missing), written to stdout — loads directly with `pandas.read_json` / `json.load`; cents per the decision above; `null` stays a true missing value in a notebook\n\n## Open questions\n- none\n"
+              },
+              {
+                "name": "no-source-changes",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 1,
+        "passRate": 1
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 1,
+    "overallScore": 1,
+    "overallPassRate": 1
+  }
+}

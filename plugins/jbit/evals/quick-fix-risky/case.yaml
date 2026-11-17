@@ -1,8 +1,8 @@
 schema_version: "1.0"
 name: quick-fix-risky
 description: >-
-  A request that looks small but changes money logic (how amounts round) misses jbit:fix's bar, so it is not
-  committed on the fix path: the agent says why and plans it (or asks), and makes no source change without a stage.
+  A request that looks small but changes money logic (how amounts round) misses the quick-fix bar in jbit:stage, so it
+  is not committed on the quick-fix path: the agent says why and plans it (or asks), and makes no source change without a stage.
 tags: [fix, outcome]
 context:
   scaffold_script: scaffold.sh

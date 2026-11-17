@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.326",
+  "startedAt": "2026-11-17T15:40:28.820Z",
+  "durationSeconds": 56,
+  "costUsd": 0.3057632,
+  "partial": false,
+  "suite": {
+    "root": "~/src/repos/jbit/plugins/jbit",
+    "ablation": "none",
+    "caseFilter": "regression-caught",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "jbit",
+        "version": "1.0.0",
+        "path": "~/src/repos/jbit/plugins/jbit"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "regression-caught",
+      "dir": "evals/regression-caught",
+      "source": "case_yaml",
+      "promptMarkdown": "Verify stage 2. Just report; don't fix anything.",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 25,
+      "graders": [
+        {
+          "name": "loads-verify",
+          "type": "tool_used",
+          "weight": 1,
+          "config": {
+            "tool": "Skill",
+            "input_match": "verify",
+            "min": 1,
+            "arm": "with-only"
+          }
+        },
+        {
+          "name": "writes-report",
+          "type": "file_exists",
+          "weight": 1,
+          "config": {
+            "path": "docs/evidence/stage-2/report.md",
+            "exists": true
+          }
+        },
+        {
+          "name": "report-reruns-earlier-check",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "The report's table has a row for each of stage 2's two checks, and a further row marked as a re-run of stage 1's check that `node src/cli.js sample.csv` prints 13.89. That re-run row is marked fail, with the actual output (NaN, or whatever the CLI printed instead of 13.89) quoted in the row or linked as a saved file. Stage 1's test-proven check (`sums amounts in cents`) needs no re-run row of its own.",
+          "config": {
+            "criteria": "The report's table has a row for each of stage 2's two checks, and a further row marked as a re-run of stage 1's check that `node src/cli.js sample.csv` prints 13.89. That re-run row is marked fail, with the actual output (NaN, or whatever the CLI printed instead of 13.89) quoted in the row or linked as a saved file. Stage 1's test-proven check (`sums amounts in cents`) needs no re-run row of its own.",
+            "focus": {
+              "source": "file",
+              "path": "docs/evidence/stage-2/report.md"
+            }
+          }
+        },
+        {
+          "name": "reply-not-verified",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "The reply reports that stage 1's CLI check now fails (`node src/cli.js sample.csv` no longer prints 13.89) as a regression or failure, and does not call stage 2 verified, done or passing overall.",
+          "config": {
+            "criteria": "The reply reports that stage 1's CLI check now fails (`node src/cli.js sample.csv` no longer prints 13.89) as a regression or failure, and does not call stage 2 verified, done or passing overall.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "code-untouched",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "src/",
+            "flags": "",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.6,
+            "passed": false,
+            "turns": 15,
+            "costUsd": 0.3057632,
+            "judgeCostUsd": 0.0005878,
+            "durationSeconds": 56,
+            "startedAt": "2026-11-17T15:40:28.870Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-UUEsqZ/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "loads-verify",
+                "passed": true,
+                "weight": 1,
+                "explanation": "Skill called 1x (expected 1..∞)",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "writes-report",
+                "passed": true,
+                "weight": 1,
+                "explanation": "docs/evidence/stage-2/report.md exists as expected",
+                "withOnly": false,
+                "scored": true
+              },
+              {
+                "name": "report-reruns-earlier-check",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL PASS FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  true,
+                  false
+                ],
+                "evidence": "# Stage 2 · Categories — evidence\nVerified 2026-11-17 on 2de140d (+ uncommitted: src/cli.js, src/tally.js, test/tally.test.js, cats.csv)\n\n| Check | Result | Evidence |\n|---|---|---|\n| `byCategory()` totals each category in integer cents (proof: test `totals each category`) | pass | test `totals each category`, `node --test` ([tests.txt](tests.txt)) |\n| `node src/cli.js cats.csv --by category` prints `food 4.39` and `rent 9.50` (proof: run the CLI, a test can't see the printed output) | pass | [cli-by-category.txt](cli-by-category.txt); bad args: [cli-bad-arg.txt](cli-bad-arg.txt) |\n| Re-run of stage 1: `node src/cli.js sample.csv` prints `13.89` | fail | [rerun-stage-1-cli-sample.txt](rerun-stage-1-cli-sample.txt): expected 13.89, got NaN (the new 3-column parser breaks 2-column CSVs) |\n\nProject checks: tests 3/3 (`node --test`; npm not on PATH) · no type check, lint or build configured\nAudit: no dependencies, nothing to audit (npm unavailable to run `npm audit`)\n\n## History\n- 2026-11-17 · Re-run of stage 1 CLI check failed: `sample.csv` now prints NaN. Not fixed (report-only run).\n"
+              },
+              {
+                "name": "reply-not-verified",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL FAIL",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  false
+                ],
+                "evidence": "Stage 2 is not verified: both of its own checks pass, but stage 1's CLI check now fails. `node src/cli.js sample.csv` prints `NaN` instead of `13.89`. You asked for a report only, so I haven't fixed anything.\n\n| Check | Result | Evidence |\n|---|---|---|\n| `byCategory()` totals each category in integer cents (test `totals each category`) | pass | `tests.txt` |\n| `node src/cli.js cats.csv --by category` prints `food 4.39` and `rent 9.50` | pass | `cli-by-category.txt` (prints exactly that, exit 0) |\n| Re-run of stage 1: `node src/cli.js sample.csv` prints `13.89` | **fail** | `rerun-stage-1-cli-sample.txt`: got `NaN` |\n\n**Why stage 1 broke:** the new parser in `src/cli.js` expects three columns (`const [, category, amount] = l.split(',')`). `sample.csv` only has two (`date,amount`), so `amount` comes out undefined and the total is `NaN`. This is the last stage, so this is a regression in the finished CLI.\n\n**Project checks:** all 3 tests pass. I ran them with `node --test` because `npm` isn't installed here; that's the same command the `test` script in `package.json` runs. The project has no type check, lint or build set up.\n\n**Audit:** the project has no dependencies, and `npm audit` couldn't run without `npm`.\n\n**Other problems with bad input** (not part of any check):\n- `--by colour` (an unknown value) is silently ignored and prints the overall total.\n- A missing file crashes with a raw Node stack trace instead of a clear error.\n\nRunning with no arguments correctly prints the usage message and exits with code 2.\n\nTwo files outside the report changed:\n- I ticked the two passing checks in `docs/PLAN.md`, because the verify process says to.\n- I didn't write `docs/evidence/.gitignore`; it already existed.\n\n**Report:** `docs/evidence/stage-2/report.md`"
+              },
+              {
+                "name": "code-untouched",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.6,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.6,
+    "overallPassRate": 0
+  }
+}

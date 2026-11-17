@@ -1,0 +1,173 @@
+$ node --test plugins/jbit/tests/docs.check.mjs
+TAP version 13
+# Subtest: every skill says "JBIT <command>" triggers it
+ok 1 - every skill says "JBIT <command>" triggers it
+  ---
+  duration_ms: 0.7369
+  type: 'test'
+  ...
+# Subtest: skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review
+ok 2 - skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review
+  ---
+  duration_ms: 0.8098
+  type: 'test'
+  ...
+# Subtest: the six skills together are at most 5,000 words, none over 1,500
+ok 3 - the six skills together are at most 5,000 words, none over 1,500
+  ---
+  duration_ms: 0.4562
+  type: 'test'
+  ...
+# Subtest: no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text
+ok 4 - no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text
+  ---
+  duration_ms: 1.2377
+  type: 'test'
+  ...
+# Subtest: habits: stage rechecks the risk line, runs /code-review and /security-review, logs \#\# Fixes and pins untested code
+ok 5 - habits: stage rechecks the risk line, runs /code-review and /security-review, logs \#\# Fixes and pins untested code
+  ---
+  duration_ms: 0.1158
+  type: 'test'
+  ...
+# Subtest: habits: verify saves docs/evidence/stage-<n>/report.md and reports unproven checks
+ok 6 - habits: verify saves docs/evidence/stage-<n>/report.md and reports unproven checks
+  ---
+  duration_ms: 0.0969
+  type: 'test'
+  ...
+# Subtest: habits: plan points to jbit:charter and asks before writing one big plan
+ok 7 - habits: plan points to jbit:charter and asks before writing one big plan
+  ---
+  duration_ms: 0.1753
+  type: 'test'
+  ...
+# Subtest: every skill that starts a role agent starts it by its bare name, else as jbit:<role>, and never passes model or effort
+ok 8 - every skill that starts a role agent starts it by its bare name, else as jbit:<role>, and never passes model or effort
+  ---
+  duration_ms: 0.3477
+  type: 'test'
+  ...
+# Subtest: stage, autopilot and plan tell each agent to read narrowly, stop when the brief is done, and hand back a short report
+ok 9 - stage, autopilot and plan tell each agent to read narrowly, stop when the brief is done, and hand back a short report
+  ---
+  duration_ms: 0.2713
+  type: 'test'
+  ...
+# Subtest: the product is JBIT in prose, not jbit
+ok 10 - the product is JBIT in prose, not jbit
+  ---
+  duration_ms: 0.8936
+  type: 'test'
+  ...
+# Subtest: READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+ok 11 - READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+  ---
+  duration_ms: 0.2911
+  type: 'test'
+  ...
+# Subtest: the plugin README says how to set a role agent's model and effort for one project or every repo
+ok 12 - the plugin README says how to set a role agent's model and effort for one project or every repo
+  ---
+  duration_ms: 0.1085
+  type: 'test'
+  ...
+# Subtest: hooks/ has no project.ts or models.ts
+ok 13 - hooks/ has no project.ts or models.ts
+  ---
+  duration_ms: 0.0707
+  type: 'test'
+  ...
+# Subtest: register.ts registers exactly prompt.compose, session.compact and a Bash-scoped tool.call
+ok 14 - register.ts registers exactly prompt.compose, session.compact and a Bash-scoped tool.call
+  ---
+  duration_ms: 0.1214
+  type: 'test'
+  ...
+# Subtest: register.ts has no text for removed features
+ok 15 - register.ts has no text for removed features
+  ---
+  duration_ms: 0.1088
+  type: 'test'
+  ...
+# Subtest: the working-rules line names the six skills, and neither fix nor review as a skill
+ok 16 - the working-rules line names the six skills, and neither fix nor review as a skill
+  ---
+  duration_ms: 0.102
+  type: 'test'
+  ...
+# Subtest: shell.ts has no outward code
+ok 17 - shell.ts has no outward code
+  ---
+  duration_ms: 0.149
+  type: 'test'
+  ...
+# Subtest: the upgrade notes exist where the exemption expects them
+ok 18 - the upgrade notes exist where the exemption expects them
+  ---
+  duration_ms: 0.0624
+  type: 'test'
+  ...
+# Subtest: READMEs (outside the upgrade notes), manifests and the field guide carry no removed-feature text
+ok 19 - READMEs (outside the upgrade notes), manifests and the field guide carry no removed-feature text
+  ---
+  duration_ms: 1.2783
+  type: 'test'
+  ...
+# Subtest: plugin.json is 1.0.0, the field guide says JBIT 1.0.0, and the descriptions fit 1.0.0
+ok 20 - plugin.json is 1.0.0, the field guide says JBIT 1.0.0, and the descriptions fit 1.0.0
+  ---
+  duration_ms: 0.178
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide name the six skills, four role agents and how to override them, /code-review and /security-review, and a two-job hook
+ok 21 - READMEs and the field guide name the six skills, four role agents and how to override them, /code-review and /security-review, and a two-job hook
+  ---
+  duration_ms: 0.2694
+  type: 'test'
+  ...
+# Subtest: evals/ has no case for removed behaviour
+ok 22 - evals/ has no case for removed behaviour
+  ---
+  duration_ms: 0.1893
+  type: 'test'
+  ...
+# Subtest: no eval case names jbit:fix, jbit:review or jbit:approve, or grades a Mode, Agents or Models line
+ok 23 - no eval case names jbit:fix, jbit:review or jbit:approve, or grades a Mode, Agents or Models line
+  ---
+  duration_ms: 2.3528
+  type: 'test'
+  ...
+# Subtest: stale-autopilot is the one case with an old Mode: line, and it grades that the line is ignored
+ok 24 - stale-autopilot is the one case with an old Mode: line, and it grades that the line is ignored
+  ---
+  duration_ms: 0.0678
+  type: 'test'
+  ...
+# Subtest: docs/decisions.md has a \#\# Retired in 1.0.0 heading with a line saying why
+ok 25 - docs/decisions.md has a \#\# Retired in 1.0.0 heading with a line saying why
+  ---
+  duration_ms: 0.093
+  type: 'test'
+  ...
+# Subtest: the kept decisions carry no removed-feature text
+ok 26 - the kept decisions carry no removed-feature text
+  ---
+  duration_ms: 0.5821
+  type: 'test'
+  ...
+# Subtest: no dated decision was deleted at the 1.0.0 cut, or since the last commit
+ok 27 - no dated decision was deleted at the 1.0.0 cut, or since the last commit
+  ---
+  duration_ms: 0.1495
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 54.914099

@@ -1,0 +1,31 @@
+# --case takes one simple glob (braces, extglobs and [!..] classes match nothing; a repeated --case keeps the last),
+# so the 21 cases run one invocation each, 4 at a time (0.18.1's run used concurrency 4), merged into result.json afterwards.
+# A first attempt without --allow-tools ran Bash/Write/Edit-less (gated tools; 0.18.1's runs had them) and was
+# stopped after 8 cases ($1.90 spent, results discarded). Per case:
+# claude plugin eval plugins/jbit --ablation none --runs 1 --scaffold --allow-tools Bash Write Edit WebFetch --case <name> --no-publish \
+#   --json docs/evidence/stage-4/eval/cases/<name>.json --report docs/evidence/stage-4/eval/cases/<name>.html --output-dir docs/evidence/stage-4/eval/cases/<name>-out
+feature-within-goal exit 0
+brownfield-plan exit 0
+charter-rechart exit 1
+charter-prd exit 1
+quick-fix exit 1
+milestone-close exit 1
+milestone-close-gap exit 1
+next-feature exit 1
+quick-fix-risky exit 1
+regression-caught exit 1
+research-none exit 1
+research-spike exit 1
+scale-check-large exit 1
+scale-check-small exit 0
+research-domain exit 1
+stale-autopilot exit 1
+risky-stage-reviewed exit 1
+risk-recheck exit 0
+verify-honest exit 1
+verify-evidence exit 0
+security-caught exit 0
+done
+# re-runs (once each) of the outcome cases that scored below 1.0, same command, output in cases/<name>-rerun.*
+milestone-close-gap rerun exit 1
+scale-check-large rerun exit 1

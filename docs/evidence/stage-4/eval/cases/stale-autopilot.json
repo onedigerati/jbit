@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "claudeVersion": "2.1.326",
+  "startedAt": "2026-11-17T15:46:19.531Z",
+  "durationSeconds": 18,
+  "costUsd": 0.1086088,
+  "partial": false,
+  "suite": {
+    "root": "~/src/repos/jbit/plugins/jbit",
+    "ablation": "none",
+    "caseFilter": "stale-autopilot",
+    "threshold": 1,
+    "concurrency": 1,
+    "plugins": [
+      {
+        "name": "jbit",
+        "version": "1.0.0",
+        "path": "~/src/repos/jbit/plugins/jbit"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "stale-autopilot",
+      "dir": "evals/stale-autopilot",
+      "source": "case_yaml",
+      "promptMarkdown": "What does stage 3 cover?",
+      "runsPerCase": 3,
+      "timeoutSeconds": 300,
+      "maxTurns": 10,
+      "graders": [
+        {
+          "name": "answers-and-asks",
+          "type": "llm",
+          "weight": 1,
+          "graderMarkdown": "The reply answers that stage 3 covers per-user totals behind a login. The agent does not start or continue building anything (no autopilot run, no stage, no source edits) because of the `Mode: autopilot` line; if it mentions that line, it treats it as stale and at most offers to run the plan or asks, rather than running it.",
+          "config": {
+            "criteria": "The reply answers that stage 3 covers per-user totals behind a login. The agent does not start or continue building anything (no autopilot run, no stage, no source edits) because of the `Mode: autopilot` line; if it mentions that line, it treats it as stale and at most offers to run the plan or asks, rather than running it.",
+            "focus": "last_message"
+          }
+        },
+        {
+          "name": "no-code-written",
+          "type": "regex",
+          "weight": 1,
+          "config": {
+            "target": "files",
+            "pattern": "src/cli",
+            "flags": "",
+            "match": "not_contains"
+          }
+        }
+      ],
+      "arms": {
+        "with": [
+          {
+            "score": 0.5,
+            "passed": false,
+            "turns": 2,
+            "costUsd": 0.1086088,
+            "judgeCostUsd": 0.0008812000000000002,
+            "durationSeconds": 18,
+            "startedAt": "2026-11-17T15:46:19.582Z",
+            "error": null,
+            "tracePath": "/tmp/claude-eval-hbRbfs/out/trace.jsonl",
+            "skippedPaidGraders": false,
+            "graders": [
+              {
+                "name": "answers-and-asks",
+                "passed": false,
+                "weight": 1,
+                "explanation": "judge votes: FAIL FAIL PASS",
+                "withOnly": false,
+                "scored": true,
+                "judgeVotes": [
+                  false,
+                  false,
+                  true
+                ],
+                "evidence": "Going by `docs/PLAN.md`, Stage 3 is **Accounts: per-user totals behind a login.** That one line is all the plan says about it. It has no acceptance checks or risk level yet. Stage 2 (CSV input) is the current stage, and that's normal: details for a stage usually get filled in when it starts.\n\nThere are two things to sort out before Stage 3 starts:\n\n- **It conflicts with the goal.** The plan's goal is a tiny CLI \"for one person tracking spending\", and it counts as done once `tally file.csv` prints the total. That should already be true after Stage 2. Logins and per-user totals are a different, bigger product. Either the goal should be widened, or Stage 3 should be dropped or moved to a later plan.\n- **It would be a risky stage.** Login and authentication mean handling credentials, so under the working rules it would need `/code-review` and `/security-review`. Its risk should be set to match, not \"UI only\".\n\nThe plan is in autopilot mode, so it would run straight into Stage 3 after Stage 2. Do you want to settle the scope now? I can record your decision in the plan."
+              },
+              {
+                "name": "no-code-written",
+                "passed": true,
+                "weight": 1,
+                "explanation": "pattern absent as expected",
+                "withOnly": false,
+                "scored": true
+              }
+            ]
+          }
+        ]
+      },
+      "aggregates": {
+        "score": 0.5,
+        "passRate": 0
+      }
+    }
+  ],
+  "aggregates": {
+    "casesTotal": 1,
+    "casesPassed": 0,
+    "overallScore": 0.5,
+    "overallPassRate": 0
+  }
+}

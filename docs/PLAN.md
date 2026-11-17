@@ -7,15 +7,14 @@ Cut JBIT down to what still earns its place on today's models, and ship it as 1.
 2026-11-17 · tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 47 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-17 08:56
-Stage 4 of 4 · Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run the ablation subset, README and field guide, retire standing decisions for removed features, version 1.0.0
+All stages done.
 
 ## Stages
 - [x] 1. Role agents — `builder`, `reviewer`, `verifier`, `researcher` agent files; prove a project file overrides one; README section
 - [x] 2. Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review on risky stages via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`; no Agents, Models or Mode-level text
 - [x] 3. Small hook — `## Now` section and the secret guard only; delete `project.ts`, `models.ts`, the session state and the outward code in `shell.ts`; tests cut to what's kept; a plan with old Mode, Agents or Models lines is shown, not acted on
-- [ ] 4. Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run the ablation subset, README and field guide, retire standing decisions for removed features, version 1.0.0
+- [x] 4. Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run the ablation subset, README and field guide, retire standing decisions for removed features, version 1.0.0
 
 ## Decisions
 - 2026-11-17 · Cut JBIT down rather than drop it or keep it whole — the user, after the review and ablation in this session ([research](research/jbit-ablation.md)): the plan and evidence discipline helps most on large, multi-session projects like eVelo; the holds, approval grammar, Agents and Models machinery and outward regex cost more than they returned, and the last plan only fixed their clash with worktrees.
@@ -32,6 +31,10 @@ Stage 4 of 4 · Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run 
 - 2026-11-17 · (unattended) "Short" is measured: the six skills at most 5,000 words together, none over 1,500. Why: about a third of 0.18.1's 14,193, and a number a docs check can hold.
 - 2026-11-17 · (unattended) The hook keeps a plain status line (`jbit · stage <n> of <m> · <name>`) and the compaction note: both are part of putting `## Now` in front of Claude, and neither acts on anything. Why: cheap, and the user sees where the plan stands.
 - 2026-11-17 · (unattended) The plan section keeps 0.18.1's 40-line cap on `## Now`: nothing in it is parsed, and a runaway section can't flood the context. Why: same as before, and a stage's `## Now` is far shorter.
+- 2026-11-17 · (unattended) Stage 4 doesn't reinstall the plugin from the local marketplace: `claude plugin eval` and headless runs take the plugin by path, and reinstalling would swap this session's hook mid-run. Reinstalling 1.0.0 is left to the user, in the final report.
+- 2026-11-17 · (unattended) Retired standing decisions move under a `## Retired in 1.0.0` heading in `docs/decisions.md` rather than being deleted, so their history stays readable.
+- 2026-11-17 · (unattended) Stage 4's eval re-run found two outcome habits weakened by the cut (scale-check-large 0.75, milestone-close-gap 0.80 vs 1.0). Fix round 1 restored "ask once even when told to assume defaults" in `plan` and a failed-evidence rule in `charter`'s milestone close; fix round 2 added "Check the evidence first" to `plan`'s archive steps, since a wrap-up prompt loads `plan`, not `charter`. Both now hold in the docs check ([evidence](evidence/stage-4/report.md)).
+- 2026-11-17 · (unattended) Check 5 accepted as "pass (grader artifact noted)": after fix round 2, scale-check-large scores 1.0 on two runs, and milestone-close-gap's two runs behave right in the trace (no tick, no change, gap reported, no next plan) but score 0.60, because its two `focus: files` graders see no `docs/ROADMAP.md` when the run correctly changes nothing. Why: the habit is what the check protects; changing the case's graders mid-check would move the goalpost, so it's an open question instead.
 - 2026-11-17 · Scale: 4 stages, one release, no PRD; no signal fired, one plan.
 - 2026-11-17 · Stage 3's risk is secrets: it rewrites the hook around the secret guard, so it gets a security review (`/security-review`, or `jbit:review` while 0.18.1 is the installed version).
 
@@ -40,7 +43,10 @@ Stage 4 of 4 · Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run 
 - `shell.ts` still exports parser details nothing reads now (`DEEP`, `BUILT`, `STDIN`, `FROM_INPUT`, opaque/dynamic `why`, the git `alias` flag); dead code left from the outward check, safe to trim later.
 - At a plan's last stage, `stage` sets `## Now` to "All stages done", so the committed plan keeps the ticked stage line but not its ticked checks; the checks live on in the stage's evidence report (seen in stage 2's end-to-end run). Same as 0.18.1; left as is unless the user wants the checks kept — for the user.
 - `plugins/jbit/evals-ablation/` (untracked) holds the ablation's case copies and raw results. Delete it once the user has looked, or after stage 4's re-run — for the user.
-- Until 1.0.0 is reinstalled from the local marketplace, this session runs the installed 0.18.1 hook and its commit gate. That's fine for this plan, but stage 4 says to reinstall before re-running the evals.
+- 1.0.0 isn't reinstalled from the local marketplace yet; this session ran the installed 0.18.1 hook. The evals and headless runs used the repo's plugin by path — for the user.
+- milestone-close-gap's `tal-04-stays-blank` and `m1-not-ticked` graders judge changed files only, so a run that rightly changes nothing fails them ([evidence](evidence/stage-4/report.md#fix-round-2)). Give them the roadmap file as evidence, or switch them to the trace — for the next plan.
+- Single-run drops outside the pass condition: charter-prd 0.92 → 0.64, regression-caught 1.0 → 0.60, research-spike 1.0 → 0.75 ([table](evidence/stage-4/report.md)). Worth a two-run check before shipping — for the user.
+- A `/jbit:stage` run in a repo with a project `builder.md` hasn't been shown to pick `builder` over `jbit:builder`; stage 1 proved the override by a direct Agent call only — for the next plan.
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).

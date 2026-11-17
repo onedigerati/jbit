@@ -1,21 +1,19 @@
 schema_version: "1.0"
 name: progress-note
 description: >-
-  Under unattended autopilot run headless (the user's command `JBIT, just build it. Autopilot, lean.`), no one reads
-  along, so the progress note between stages is left to the final report: the run goes from stage 1 to stage 2
-  without stopping, and its final report covers each stage with its concerns or "No concerns.", what it delivered
-  and how it was proven with its evidence report, and says nothing is left.
+  Under autopilot run headless (the user's command `JBIT, just build it.`), no one reads along, so the progress note
+  between stages is left to the final report: the run goes from stage 1 to stage 2 without stopping, and its final
+  report covers each stage with its concerns or "No concerns.", what it delivered and how it was proven with its
+  evidence report, and says nothing is left.
 tags: [progress, autopilot, jbit-command, outcome]
 context:
   scaffold_script: scaffold.sh
 execution:
   # Needs Bash to test and commit; where the eval sandbox can't start or makes .git read-only, run it headless and
   # grade the transcript by hand.
-  # The eval runs headless, so the rules leave the note between stages to the final report (0.16.0): headless runs
-  # in 0.15.0 never wrote it, whatever the rules said; see docs/evidence/stage-3/report.md (archived with that plan).
-  # An interactive run still writes the note between stages; no case covers that yet.
-  # The JBIT wording: since 0.15.0 the hook attaches the run's working rules beside that prompt, so it works headless too.
-  prompt: "JBIT, just build it. Autopilot, lean."
+  # The eval runs headless, so jbit:autopilot leaves the note between stages to the final report. An interactive
+  # run still writes the note between stages; no case covers that yet.
+  prompt: "JBIT, just build it."
   max_turns: 60
   allowed_tools: [Read, Glob, Grep, Bash, Write, Edit, Skill, Agent]
 graders:

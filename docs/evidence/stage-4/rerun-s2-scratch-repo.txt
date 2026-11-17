@@ -1,0 +1,72 @@
+$ git log --stat; git status --short; cat docs/evidence/stage-1/report.md; sed -n '/## Now/,/## Decisions/p' docs/PLAN.md   # in /tmp/jbit-s4-rerun/s2 after the run
+commit d086d418eab6f3b98e2de9e12ddf5bda88ccf452
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:38:27 2026 -0600
+
+    Stage 1: add slugify(text) with node --test suite
+    
+    slugify lowercases, turns every run of non [a-z0-9] characters into one
+    hyphen, and trims hyphens at the ends. Non-ASCII letters are treated as
+    separators (no transliteration) - recorded in the plan's decisions.
+    Verified by a separate verifier agent; evidence in docs/evidence/stage-1/.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/PLAN.md                            | 11 +++------
+ docs/evidence/.gitignore                | 11 +++++++++
+ docs/evidence/stage-1/direct-calls.txt  |  4 ++++
+ docs/evidence/stage-1/report.md         | 21 +++++++++++++++++
+ docs/evidence/stage-1/tests-mutated.txt | 14 +++++++++++
+ docs/evidence/stage-1/tests.txt         | 41 +++++++++++++++++++++++++++++++++
+ slugify.mjs                             |  7 ++++++
+ slugify.test.mjs                        | 23 ++++++++++++++++++
+ 8 files changed, 124 insertions(+), 8 deletions(-)
+
+commit 29b4375d569855e6053911b1439a72d8829afd64
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:10:22 2026 -0600
+
+    Plan slugify
+
+ docs/PLAN.md | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+commit 453f037e26a423d5bffa1be448ea6d05bcd2e5a6
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:10:17 2026 -0600
+
+    Initial commit
+
+ README.md    | 2 ++
+ package.json | 1 +
+ 2 files changed, 3 insertions(+)
+$ git status --short
+(clean)
+# Stage 1 · Slugify — verification report
+
+Verified 2026-11-17 by a verifier agent that built nothing; report written from its evidence by the main session (the agent's tool could not write it).
+
+## Checks
+
+| Check | Result | Proof |
+|---|---|---|
+| `slugify("Hello, World!")` returns `"hello-world"` | pass | test 1 passes ([tests.txt](tests.txt)); direct call → `"hello-world"` ([direct-calls.txt](direct-calls.txt)) |
+| `slugify("  a -- b  ")` returns `"a-b"`, `slugify("")` returns `""` | pass | tests 2 and 3 pass ([tests.txt](tests.txt)); direct calls → `"a-b"`, `""` ([direct-calls.txt](direct-calls.txt)) |
+
+## Project checks
+
+- Tests: `node --test slugify.test.mjs` (what `npm test` runs) — 5/5 pass.
+- Tests catch breakage: against a mutated copy outside the repo (no lowercasing, `+` dropped from the separator regex), tests 1, 2 and 5 fail ([tests-mutated.txt](tests-mutated.txt)).
+- Type check, lint, build: none in this project.
+- Dependency audit: not run; the project has no dependencies and no lockfile.
+
+## History
+
+- 2026-11-17 · first run · all checks pass
+## Now
+Goal met — all stages done. Next: plan the next body of work with `jbit:plan`, if any.
+
+## Stages
+- [x] 1. Slugify — the function and its tests ([evidence](evidence/stage-1/report.md))
+
+## Decisions

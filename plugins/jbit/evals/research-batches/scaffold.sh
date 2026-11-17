@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # A tiny invoice CLI with no plan yet. The requested feature turns on nine outside facts (each country's standard VAT
 # rate and its rate for e-books), so jbit:plan's research step has a nine-item list to split across small agents.
-# No Agents line: balanced, so the batches may run side by side.
+# The research batches may run side by side.
 set -euo pipefail
 mkdir -p src test
 cat > package.json <<'JSON'

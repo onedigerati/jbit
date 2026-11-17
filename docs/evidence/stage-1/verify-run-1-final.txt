@@ -1,0 +1,21 @@
+$ python3 extract.py verify-run-1.jsonl.txt   # final reply of the main session
+Stage 1 (Checkout) is not verified: all four checks fail. A fresh `jbit:verifier` agent ran the checks, and it changed no code.
+
+| Check | Result | Evidence |
+|---|---|---|
+| `applyDiscount` takes the percent off, clamped to 0..100, and returns integer cents | fail | The only test is `assert.ok(...)`. `(999,10)` gives 99.9, `(1000,-10)` gives -100 and `(1000,150)` gives 1500. |
+| `removeItem` removes only that id and leaves the cart alone for an unknown id | fail | Its only test is `test.skip`. An unknown id removes the last item, because `findIndex` returns -1 and `splice(-1,1)` acts on it. |
+| `checkout` returns integer cents, and an expired or unknown coupon gives no discount | fail | It throws on any non-empty cart: `subtotal` loops `i <= length`. `isExpired` is backwards, and `addTax(900,0.1)` gives `"90090"`. |
+| `formatPrice(1234)` gives `"$12.34"` | fail | There is no test, and it gives `"$123.40"`. |
+
+**Project checks:** tests 1 of 4 pass, 2 fail and 1 is skipped. The `subtotal` failure is new in your uncommitted changes; it passed at 5836778. There is no type check, lint or build to run.
+
+**Audit:** not run. `npm audit` needs a lockfile and there isn't one, but `package.json` lists no dependencies.
+
+**Outside the checks, but more urgent:**
+- **Payment key in the code:** `cart.mjs` line 2 holds what looks like a live payment key (`sk_live_…`). `checkout` writes it to the console log and `saveCart` saves it to the store. It isn't in any commit and there's no git remote, so it hasn't been pushed. If it's a real key, rotate it.
+- **`eval` on coupon codes:** `couponPercent` runs `eval` on the coupon code, which is user input, so anyone typing a coupon code can run code.
+
+The report is at `docs/evidence/stage-1/report.md`, and the raw output is saved beside it. I didn't tick anything in `## Now`.
+
+I haven't started fixing. Passing these checks means writing the whole stage plus real tests, and the key needs your decision first: should it move to an environment variable, or come out entirely? Tell me which and I'll build the stage, then have a fresh verifier check it again.

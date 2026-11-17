@@ -1,0 +1,68 @@
+$ python3 compare.py verify-run-1.jsonl.txt scratch-report-1.md   # script below
+verifier agents started: [(6, 'jbit:verifier')]
+subagent Writes/Edits of report.md: none
+handback event 74 (jbit:verifier): has "## Report": True; table rows: 6
+main-session report.md Writes/Edits: [(98, 'Write')]
+main-session edits to cart files (fixes): none
+diff, first verifier table vs first report.md Write: identical (6 rows)
+diff, last verifier table vs final report.md: identical (6 rows)
+final report.md equals the last report.md Write content: True
+first report.md Write at event 98
+  main names report.md at event 6 (Agent) BEFORE the write: {"subagent_type": "jbit:verifier", "description": "Verify stage 1 Checkout", "run_in_background": false, "prompt": "Verify stage 1 (Checkout) of the plan in /tm
+  main names report.md at event 101 (text): Stage 1 (Checkout) is not verified: all four checks fail. A fresh `jbit:verifier` agent ran the checks, and it changed no code.  | Check | Result | Evidence | |
+  main names report.md at event 102 (final reply): names report.md
+note: the event-6 mention is the brief's "Do NOT write docs/evidence/stage-1/report.md", not a pointer to the file
+--- compare.py
+#!/usr/bin/env python3
+"""compare.py <masked run.jsonl> <final report.md copy>: for verify runs.
+Prints: subagent Writes of report.md; whether the handback has '## Report'; the handback's table rows vs the
+main session's first report.md Write rows (diff); last report.md write vs final file; main-session edits to cart files;
+verifier count; and every main-session text or tool input that names report.md, with event numbers, against the first report.md Write."""
+import json, sys, re, difflib
+ev = [json.loads(l) for l in open(sys.argv[1]) if l.startswith('{')]
+final = open(sys.argv[2]).read()
+agents, names = {}, {}
+hand, rwrites, sub_r, main_edits, mentions = [], [], [], [], []
+for i, e in enumerate(ev, 1):
+    p = e.get('parent_tool_use_id')
+    if e.get('type') == 'assistant':
+        for c in e['message'].get('content', []):
+            if c.get('type') == 'text' and not p and 'report.md' in c['text']:
+                mentions.append((i, 'text', c['text'][:160].replace('\n', ' ')))
+            if c.get('type') != 'tool_use': continue
+            n, inp = c['name'], c.get('input', {})
+            if n in ('Agent', 'Task'): agents[c['id']] = (i, inp.get('subagent_type'))
+            fp = inp.get('file_path', '')
+            if n in ('Write', 'Edit') and fp.endswith('report.md'):
+                (sub_r if p else rwrites).append((i, n, inp.get('content') or inp.get('new_string', '')))
+            if not p and n in ('Write', 'Edit') and 'cart' in fp: main_edits.append((i, n, fp))
+            if not p and n == 'Bash' and re.search(r'cart(\.test)?\.mjs', inp.get('command', '')) and re.search(r'sed -i|>\s*cart|cp .*cart', inp.get('command', '')): main_edits.append((i, 'Bash', inp['command'][:120]))
+            if not p and 'report.md' in json.dumps(inp) and not (n in ('Write', 'Edit') and fp.endswith('report.md')):
+                mentions.append((i, n, json.dumps(inp)[:160]))
+    elif e.get('type') == 'user' and isinstance(e['message'].get('content'), list):
+        for c in e['message']['content']:
+            if c.get('type') == 'tool_result' and c.get('tool_use_id') in agents:
+                t = c['content']; t = '\n'.join(x.get('text', '') for x in t) if isinstance(t, list) else t
+                hand.append((i, agents[c['tool_use_id']][1], t))
+    elif e.get('type') == 'result':
+        if 'report.md' in (e.get('result') or ''): mentions.append((i, 'final reply', (e.get('result') or '')[:0] + 'names report.md'))
+rows = lambda s: [l.strip() for l in s.split('\n') if l.strip().startswith('|')]
+after = lambda s: s.split('## Report', 1)[1] if '## Report' in s else ''
+print('verifier agents started:', [(i, t) for i, t in agents.values()])
+print('subagent Writes/Edits of report.md:', [(i, n) for i, n, _ in sub_r] or 'none')
+for i, t, h in hand: print('handback event %d (%s): has "## Report": %s; table rows: %d' % (i, t, '## Report' in h, len(rows(after(h)))))
+print('main-session report.md Writes/Edits:', [(i, n) for i, n, _ in rwrites] or 'none')
+print('main-session edits to cart files (fixes):', main_edits or 'none')
+if hand and rwrites:
+    first_h = rows(after(hand[0][2])); w = rows(rwrites[0][2])
+    d = list(difflib.unified_diff(first_h, w, 'verifier#1 handback ## Report rows', 'main first report.md Write rows', lineterm=''))
+    print('diff, first verifier table vs first report.md Write: %s' % ('identical (%d rows)' % len(w) if not d else 'DIFFERS'))
+    for l in d: print('  ' + l)
+    last_h = rows(after(hand[-1][2])); fin = rows(final)
+    d2 = list(difflib.unified_diff(last_h, fin, 'last verifier handback rows', 'final report.md rows', lineterm=''))
+    print('diff, last verifier table vs final report.md: %s' % ('identical (%d rows)' % len(fin) if not d2 else 'DIFFERS'))
+    for l in d2: print('  ' + l)
+    print('final report.md equals the last report.md Write content:', final.strip() == rwrites[-1][2].strip())
+first = rwrites[0][0] if rwrites else None
+print('first report.md Write at event', first)
+for i, k, s in mentions: print('  main names report.md at event %d (%s)%s: %s' % (i, k, ' BEFORE the write' if first and i < first else '', s))

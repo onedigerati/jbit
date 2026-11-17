@@ -1,0 +1,22 @@
+$ awk: the reviewer's report text in review-run-handback.txt (from the line after the [Subagent hand-back] notice to the line before the harness agentId trailer); wc -l; blank lines; line 1
+lines (blanks counted): 15
+blank lines: 0
+line 1: /tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md
+review.md exists at that path after the run: yes
+final reply lines: 15, identical to handback report: yes
+--- report
+     1	/tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md
+     2	1. cart.mjs:3 has a live payment key (`sk_live_***`) in the code. checkout writes it to the log (:69) and saveCar
+     3	2. cart.mjs:43 builds the coupon code into a string it runs with `eval`. A crafted code ran my own code: it set `
+     4	3. cart.mjs:16 has an off-by-one: `i <= length`. subtotal throws on every cart, so checkout always throws and the
+     5	4. cart.mjs:39 `isExpired` is backwards. SAVE10, which expired, gives 10%, and HALF, which is still valid, gives 
+     6	5. cart.mjs:30 `applyDiscount` doesn't clamp or round. (999,10) gives 99.9, 150% gives 1500 and -10% gives -100.
+     7	6. cart.mjs:47-48 `addTax` joins strings: (1000, 0.1) gives "1000100". It also returns the total after tax, not j
+     8	7. cart.mjs:52 `formatPrice` divides by 10, so 1234 gives "$123.40" instead of "$12.34".
+     9	8. cart.mjs:26-27 `removeItem` with an unknown id gets -1 from the lookup, and `splice(-1)` then deletes the last
+    10	9. cart.mjs:21 `findItem` uses `=` where it should compare, so it overwrites the first item's id.
+    11	10. cart.mjs:4-6 every cart shares one default items array, so carts leak into each other.
+    12	11. cart.test.mjs:12,16,21 the tests prove none of the four checks. Two only check the result isn't empty, the re
+    13	None of the four plan checks is met.
+    14	Defer 4, reject 1: see the file.
+    15	Sound: `addItem` is unchanged, unknown coupon codes give 0, and checkout returns the fields the plan asks for (th

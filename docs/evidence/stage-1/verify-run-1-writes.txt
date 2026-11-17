@@ -1,0 +1,135 @@
+$ python3 extract.py verify-run-1.jsonl.txt   # every Write/Edit with content and result, Bash lines that may write
+=== event 29: sub(jbit:verifier#1) Bash (may write)
+git diff --stat && cp cart.mjs /tmp/cart.mjs.orig-s1 && sha256sum cart.mjs && ls docs docs/evidence 2>&1
+=== event 33: sub(jbit:verifier#1) Bash (may write)
+git diff --stat && mkdir -p .verify-tmp docs/evidence/stage-1 && cp cart.mjs .verify-tmp/cart.mjs.orig && sha256sum cart.mjs && ls -a docs/evidence
+=== event 38: sub(jbit:verifier#1) Bash (may write)
+git diff --stat; sha256sum cart.mjs; ls -a docs/evidence 2>&1; npm test 2>&1
+=== event 41: sub(jbit:verifier#1) Bash (may write)
+git show 5836778 --stat | tail -5; git show 5836778:cart.test.mjs; echo ---; npm audit --omit=dev 2>&1; echo "exit=$?"
+=== event 48: sub(jbit:verifier#1) Bash (may write)
+npm audit --omit=dev 2>&1
+=== event 54: sub(jbit:verifier#1) Bash (may write)
+node --input-type=module -e "
+import * as m from './cart.mjs'
+const show=(l,f)=>{try{console.log(l,'=>',JSON.stringify(f()))}catch(e){console.log(l,'=> THROWS',e.constructor.name+': '+e.message)}}
+show('applyDiscount(1000,10)',()=>m.applyDiscount(1000,10))
+show('applyDiscount(999,10)',()=>m.applyDiscount(999,10))
+show('applyDiscount(1000,-10)',()=>m.applyDiscount(1000,-10))
+show('applyDiscount(1000,150)',()=>m.applyDiscount(1000,150))
+show('removeItem known id 2',()=>m.removeItem({items:[{id:1},{id:2},{id:3}]},2).items)
+show('removeItem unknown id 9',()=>m.removeItem({items:[{id:1},{id:2},{id:3}]},9).items)
+show('formatPrice(1234)',()=>m.formatPrice(1234))
+show('isExpired SAVE10 (expires 2026-01-01)',()=>m.isExpired({expires:'2026-01-01'}))
+show('couponPercent(SAVE10) expired',()=>m.couponPercent('SAVE10'))
+show('couponPercent(HALF) valid',()=>m.couponPercent('HALF'))
+show('couponPercent(NOPE) unknown',()=>m.couponPercent('NOPE'))
+show('addTax(900,0.1)',()=>m.addTax(900,0.1))
+const real=console.log; let logged=[]; console.log=(...a)=>logged.push(a.length)
+let r; try{ r=m.checkout({items:[{id:1,price:999,qty:1}]},{coupon:'HALF',taxRate:0.1}) }catch(e){r='THROWS '+e.message}
+console.log=real
+console.log('checkout 999c HALF 10% tax =>',JSON.stringify(r),'(console.log calls during checkout:',logged.length,'args:',logged.join(','),')')
+show('subtotal 2 items',()=>m.subtotal({items:[{price:250,qty:2},{price:100,qty:1}]}))
+" 2>&1
+=== event 58: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.zip
+*.webm
+*.mp4
+*.trace
+*.har
+
+--- event 59: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/.gitignore -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/.gitignore (file state is current in your context — no need to Read it back)
+=== event 61: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt
+$ npm test   (node --test, on 5836778 + uncommitted cart.mjs/cart.test.mjs, 2026-11-17)
+# Subtest: subtotal adds price times qty
+not ok 1 - subtotal adds price times qty
+  error: "Cannot read properties of undefined (reading 'price')"
+  stack: subtotal (file:///tmp/jbit-s1-overflow/cart.mjs:16:69)
+# Subtest: applyDiscount returns something
+ok 2 - applyDiscount returns something
+# Subtest: removeItem removes the item
+ok 3 - removeItem removes the item # SKIP
+# Subtest: checkout runs
+not ok 4 - checkout runs
+  error: "Cannot read properties of undefined (reading 'price')"
+  stack: subtotal (file:///tmp/jbit-s1-overflow/cart.mjs:16:69) <- checkout (cart.mjs:66:15)
+1..4
+# tests 4
+# pass 1
+# fail 2
+# skipped 1
+exit code 1
+
+(Trimmed TAP: duration/type/location lines removed; results unchanged.)
+
+Baseline check: at 5836778, subtotal() was `cart.items.reduce(...)` and the only test was
+'subtotal adds price times qty'. The uncommitted loop `for (let i = 0; i <= cart.items.length; i++)`
+reads one past the end, so test 1 failing is a regression from this work, not inherited.
+
+Test coverage of the four checks in cart.test.mjs:
+- applyDiscount: only `assert.ok(applyDiscount(1000, 10))` (truthiness; no clamp, no integer-cents assertion)
+- removeItem: the only test is test.skip; no unknown-id test
+- checkout: only `assert.ok(checkout(...))` and it throws; no shape, integer, expired/unknown-coupon assertions
+- formatPrice: imported but no test
+
+--- event 62: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt (file state is current in your context — no need to Read it back)
+=== event 64: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt
+$ npm audit --omit=dev
+npm error code ENOLOCK
+npm error audit This command requires an existing lockfile.
+npm error audit Try creating one first with: npm i --package-lock-only
+npm error audit Original error: loadVirtual requires existing shrinkwrap file
+exit code 1
+
+Note: package.json declares no dependencies at all, so there is nothing shipped to audit;
+the audit itself could not run (no lockfile) and was not forced (no install made).
+
+--- event 65: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt (file state is current in your context — no need to Read it back)
+=== event 67: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-behaviour.txt
+$ node --input-type=module -e "import * as m from './cart.mjs'; ...call each function with the checks' edge cases, print JSON result or THROWS; console.log stubbed during checkout so nothing it logs is printed..."
+applyDiscount(1000,10) => 100
+applyDiscount(999,10) => 99.9                 # expected integer cents
+applyDiscount(1000,-10) => -100               # expected clamp to 0 -> 0
+applyDiscount(1000,150) => 1500               # expected clamp to 100 -> 1000
+removeItem known id 2 => [{"id":1},{"id":3}]
+removeItem unknown id 9 => [{"id":1},{"id":2}] # expected cart unchanged; findIndex -1 -> splice(-1,1) drops last item
+formatPrice(1234) => "$123.40"                 # expected "$12.34" (divides by 10)
+isExpired SAVE10 (expires 2026-01-01) => false # comparison inverted (today 2026-11-17)
+couponPercent(SAVE10) expired => 10            # expected 0 (expired coupon gives a discount)
+couponPercent(HALF) valid => 0                 # valid coupon treated as expired
+couponPercent(NOPE) unknown => 0
+addTax(900,0.1) => "90090"                     # string concatenation, toFixed returns string
+checkout 999c HALF 10% tax => "THROWS Cannot read properties of undefined (reading 'price')"
+subtotal 2 items => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+
+Observed but outside the four checks (not tested here): cart.mjs line 2 holds a live-looking
+payment key literal (value [masked]) which checkout() passes to console.log and saveCart() writes
+to the store; couponPercent() runs eval('COUPONS.' + code) on the coupon string (user input).
+
+--- event 68: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-behaviour.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-behaviour.txt (file state is current in your context — no need to Read it back)
+=== event 98: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+# Stage 1 · Checkout — evidence
+Verified 2026-11-17 on 5836778 (+ uncommitted cart.mjs, cart.test.mjs)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | fail | [tests.txt](tests.txt): only test is `assert.ok(applyDiscount(1000, 10))`, no clamp or integer assertion; [probe-behaviour.txt](probe-behaviour.txt): (999,10) gives 99.9, (1000,-10) gives -100, (1000,150) gives 1500 |
+| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | fail | [tests.txt](tests.txt): only test is `test.skip`; [probe-behaviour.txt](probe-behaviour.txt): unknown id 9 drops the last item (`splice(-1,1)`) |
+| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | fail | [tests.txt](tests.txt): 'checkout runs' fails with TypeError in `subtotal` (loop `i <= length`); [probe-behaviour.txt](probe-behaviour.txt): `isExpired` backwards (expired SAVE10 gives 10, valid HALF gives 0), `addTax(900,0.1)` gives "90090" |
+| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | fail | [tests.txt](tests.txt): no formatPrice test; [probe-behaviour.txt](probe-behaviour.txt): `formatPrice(1234)` gives "$123.40" |
+
+Project checks: types n/a (none defined) · lint n/a (none defined) · tests 1/4 pass, 2 fail, 1 skipped; the `subtotal` failure is a regression from 5836778 · build n/a (none defined)
+Audit: not run, `npm audit --omit=dev` failed with ENOLOCK (no lockfile); package.json declares no dependencies ([audit.txt](audit.txt))
+
+Outside the checks: cart.mjs line 2 holds a live-looking payment key (`sk_live_[masked]`), which `checkout` logs to the console and `saveCart` writes to the store; `couponPercent` runs `eval` on the coupon code (user input).
+
+## History
+- 2026-11-17 · all four checks failed on first verification; not yet fixed.
+
+--- event 99: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md (file state is current in your context — no need to Read it back)

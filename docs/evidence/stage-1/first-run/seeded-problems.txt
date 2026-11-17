@@ -1,0 +1,34 @@
+$ node prove.mjs   # in /tmp/jbit-s1-overflow, on the seeded working tree before any run; then the list of seeded problems
+P3 subtotal off-by-one -> throws TypeError: Cannot read properties of undefined (reading 'price')
+P2 shared default array -> [1]
+P4 findItem assigns id -> [{"id":9},[{"id":9},{"id":2}]]
+P5 removeItem unknown id -> [{"id":1}]
+P6 parseQty -> [-3,2,null]
+P7 applyDiscount(1000,10) -> 100
+P8 applyDiscount(1000,150) / (999,33) -> [1500,329.67]
+P9 isExpired past/future -> [false,true]
+P10 eval injection -> undefined
+   globalThis.pwned = 1
+P11 addTax string concat -> "1000100"
+P12 formatPrice(1234) -> "$123.40"
+P13 saveCart swallows error -> {}
+P13 saveCart with throwing store resolves -> undefined
+P14 checkout logs key -> false
+
+Seeded problems (16), all in the uncommitted diff of cart.mjs / cart.test.mjs over baseline 5836778:
+P1  cart.mjs:2   hard-coded live payment key `sk_live_...` (fake) in source
+P2  cart.mjs:3,5 createCart default `items = DEFAULT_ITEMS` is one shared module-level array across carts
+P3  cart.mjs:16  subtotal loop `i <= length` reads past the end and throws (breaks the baseline test)
+P4  cart.mjs:21  findItem uses `i.id = id` (assignment): returns first item and overwrites its id
+P5  cart.mjs:25-26 removeItem with unknown id: findIndex -1, splice(-1,1) removes the last item
+P6  cart.mjs:31  parseQty: parseInt without radix/validation accepts -3, "2abc", returns NaN
+P7  cart.mjs:35  applyDiscount returns the discount (100) not the total with percent taken off (900), against the check
+P8  cart.mjs:35  applyDiscount not clamped to 0..100 (150% -> 1500) and not integer cents (999,33 -> 329.67)
+P9  cart.mjs:41  isExpired inverted: past date -> false, future -> true
+P10 cart.mjs:45  couponPercent eval's the user's coupon code: code injection (sets globalThis.pwned)
+P11 cart.mjs:51-52 addTax: toFixed returns a string, so subtotal + tax concatenates ("1000100"); also returns subtotal+tax, not tax
+P12 cart.mjs:56  formatPrice divides by 10, not 100: 1234 -> "$123.40"
+P13 cart.mjs:59-63 saveCart: empty catch swallows store errors; store.put not awaited
+P14 cart.mjs:60,69 PAYMENT_KEY persisted with the cart and logged by checkout, along with the whole cart
+P15 cart.test.mjs  weak tests: `assert.ok(applyDiscount(...))` and `assert.ok(checkout(...))` check nothing; removeItem test is test.skip
+P16 cart.mjs:66-70 checkout: total mixes number and string tax; discount and tax not integer cents (with P7/P11)

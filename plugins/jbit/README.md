@@ -65,12 +65,14 @@ Claude also uses them on its own when the moment fits.
 
 ### Role agents
 
-JBIT's skills hand delegated work to four role agents, defined in the plugin's `agents/` folder:
+JBIT has four role agents, defined in the plugin's `agents/` folder. The skills hand delegated work to the builder, verifier and researcher; you start the reviewer when you want a review:
 
 - **`builder`** builds one leaf of a stage: writes the code and its tests, runs them, and reports back.
 - **`reviewer`** reviews work it didn't write, with fresh eyes, against the plan's intent.
 - **`verifier`** checks finished work against the running product and the project's own checks.
 - **`researcher`** looks up a research question (web or domain) for a plan or a stage and reports what it found.
+
+Each role hands back a report of 20 lines at most, with no blank lines. When the detail doesn't fit, the builder and the researcher write all of it to a file, give its full path and say how much they left out: the builder to `docs/evidence/stage-<n>/build-<part>.md`, the researcher to its note. The verifier also hands back its full results table under a `## Report` heading, and the main session writes it to `docs/evidence/stage-<n>/report.md` itself, its rows as they came in the report's format, before any fix; after a fix, a fresh verifier re-checks and its table replaces the report. The reviewer, started when you ask for a review, always saves its full review to `docs/evidence/stage-<n>/review.md` (or `docs/reviews/<date>-<topic>.md` outside a plan stage), fix-now findings first, then defer, then reject, with secrets and personal data masked. Its report starts with the file's full path, then a line per fix-now finding, a line counting the rest and a line on what it found sound. In the repo, that is the only file it writes.
 
 The plugin's files set no model or effort, so each role runs as the session. A same-named agent file of your own takes over: the skills start a role by its bare name (`builder`) when you've defined one, and by the plugin's name (`jbit:builder`) otherwise.
 

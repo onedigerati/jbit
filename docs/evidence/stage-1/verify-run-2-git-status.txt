@@ -1,0 +1,27 @@
+$ cd /tmp/jbit-s1-overflow && git status --short --untracked-files=all; sha256sum cart.mjs cart.test.mjs; git diff --stat HEAD   # before (after reset.sh) and after verify run 2
+before:
+reset:  M cart.mjs  M cart.test.mjs 
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+exit 0
+after:
+ M cart.mjs
+ M cart.test.mjs
+ M docs/PLAN.md
+?? docs/evidence/.gitignore
+?? docs/evidence/stage-1/apply-discount.txt
+?? docs/evidence/stage-1/audit.txt
+?? docs/evidence/stage-1/checkout.txt
+?? docs/evidence/stage-1/coupon-injection.txt
+?? docs/evidence/stage-1/format-price.txt
+?? docs/evidence/stage-1/remove-item.txt
+?? docs/evidence/stage-1/report.md
+?? docs/evidence/stage-1/restore-check.txt
+?? docs/evidence/stage-1/secret-scan.txt
+?? docs/evidence/stage-1/tests.txt
+62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347  cart.mjs
+fdd6dac32c0890d9be81b3dbce894f966d747bd2c085b35c68dd641ff6eff1bc  cart.test.mjs
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ docs/PLAN.md  |  8 +++----
+ 3 files changed, 135 insertions(+), 8 deletions(-)

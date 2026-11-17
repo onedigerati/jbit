@@ -1,0 +1,15 @@
+$ sha256sum plugins/jbit/agents/*.md  (before mutations, then after restore; then git diff --stat of the four files vs the pre-verify working tree is n/a, so compare hashes)
+before:
+da78927dbed705d60e022baeded7642dcf4775c6a59f64eef92b8f821cb13773  plugins/jbit/agents/builder.md
+4b148b79c082e7ab420e0b5940767d6fdf183aa418ea83941fc79850c63ee914  plugins/jbit/agents/researcher.md
+64343b98fa34ca6a53d430877207082d4e8612143e76155e17f6ca0977dc230e  plugins/jbit/agents/reviewer.md
+99f1ee2945fcc9482e0794f1a1d2dbce7a0b8bfa0bafb15e8078e207af4859b0  plugins/jbit/agents/verifier.md
+after:
+da78927dbed705d60e022baeded7642dcf4775c6a59f64eef92b8f821cb13773  plugins/jbit/agents/builder.md
+4b148b79c082e7ab420e0b5940767d6fdf183aa418ea83941fc79850c63ee914  plugins/jbit/agents/researcher.md
+64343b98fa34ca6a53d430877207082d4e8612143e76155e17f6ca0977dc230e  plugins/jbit/agents/reviewer.md
+99f1ee2945fcc9482e0794f1a1d2dbce7a0b8bfa0bafb15e8078e207af4859b0  plugins/jbit/agents/verifier.md
+plugins/jbit/agents/builder.md: OK
+plugins/jbit/agents/researcher.md: OK
+plugins/jbit/agents/reviewer.md: OK
+plugins/jbit/agents/verifier.md: OK

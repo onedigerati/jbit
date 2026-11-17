@@ -106,6 +106,45 @@ test('stage, autopilot and plan tell each agent to read narrowly, stop when the 
     assert.ok(skill(name).includes('read narrowly, stop when the brief is done, and hand back a report of 20 lines at most'), `${name} SKILL.md lacks the brief rule`)
 })
 
+// 1.2.0: a report that can't hold the detail points to a file with all of it and says how much it left out.
+const agent = name => read(join(plugin, 'agents', `${name}.md`))
+test('each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review', () => {
+  for (const role of ['builder', 'verifier', 'reviewer', 'researcher'])
+    for (const words of ['a report of 20 lines at most', 'Use no blank lines; they count toward the 20.'])
+      assert.ok(agent(role).includes(words), `${role}.md lacks: ${words}`)
+  const files = { builder: '`docs/evidence/stage-<n>/build-<part>.md`, where `<part>` is a short name for the part the brief gave you, unique to that brief', researcher: 'the note' }
+  for (const [role, file] of Object.entries(files))
+    for (const words of [`When the detail doesn't fit in 20 lines, write all of it to ${file}`, 'give its full path in the report', 'say how much you left out'])
+      assert.ok(agent(role).includes(words), `${role}.md lacks: ${words}`)
+  // A subagent's Write of report.md is refused, so the verifier hands back the table and the main session saves it.
+  const verifier = agent('verifier')
+  for (const words of ["Don't write `report.md` yourself", 'under a `## Report` heading, hand back your full results table', 'the main session saves it as `report.md`'])
+    assert.ok(verifier.includes(words), `verifier.md lacks: ${words}`)
+  assert.doesNotMatch(verifier, /write all of it to `report\.md`/)
+  for (const words of ['then its full table under `## Report`', "Never brief it to write `report.md`; Claude Code refuses that, so write it yourself.", '(after a verifier, its `## Report` rows as they came, in this format, before any fix). It must exist before you name its path', 're-verify the affected checks (after a verifier, with a fresh one, not here; then rewrite the report from its table)'])
+    assert.ok(skill('verify').includes(words), `verify SKILL.md lacks: ${words}`)
+  // The reviewer's report is the only copy of its findings, so it always saves the full review.
+  const reviewer = agent('reviewer')
+  for (const words of ['Write the full review to `docs/evidence/stage-<n>/review.md`, or `docs/reviews/<date>-<topic>.md` outside a plan stage', 'where `<n>` is the stage the brief names, else the stage of the work under review', 'Mask secrets, tokens and personal data in it.', 'List fix-now findings first, then defer, then reject', 'the first line is the review file\'s full path; then one line per fix-now finding; then one line counting the rest ("defer 3, reject 1: see the file"); then one line on what you found sound', 'list the first ones and say how many more are in the file'])
+    assert.ok(reviewer.includes(words), `reviewer.md lacks: ${words}`)
+})
+
+test('no skill starts the reviewer', () => {
+  for (const name of skills) assert.doesNotMatch(skill(name), /`(?:jbit:)?reviewer`|jbit:reviewer/, `skills/${name} starts the reviewer`)
+})
+
+test('the reviewer has Write, writes only its review file, and is not said to be started by JBIT\'s skills', () => {
+  const text = agent('reviewer')
+  const front = text.split(/\r?\n---\r?\n/)[0]
+  const tools = (/^tools: (.*)$/m.exec(front)?.[1] ?? '').split(/,\s*/)
+  assert.ok(tools.includes('Write'), 'reviewer tools lack Write')
+  assert.ok(text.includes('You edit no project files: in the repo, the only file you write is your review file; probe scripts go outside the repo.'), 'reviewer.md does not limit its writes to the review file')
+  assert.doesNotMatch(text, /You don't edit files/)
+  const desc = /^description: (.*)$/m.exec(front)?.[1] ?? ''
+  assert.doesNotMatch(desc, /skills? start/i, 'reviewer description still says skills start it')
+  assert.match(desc, /when the user asks for a review/)
+})
+
 // 1.1.0: a limit the user writes in CLAUDE.md on agents at once or worktrees is followed; the README says how.
 test('stage, autopilot and plan follow a CLAUDE.md limit on agents at once or worktrees', () => {
   const shared = ['`CLAUDE.md`', 'agents at once or worktrees', 'at most that many agents at a time', 'one after another', 'no `isolation: "worktree"`', 'worktrees off', 'with agents off, the work runs in the main session']
@@ -228,10 +267,10 @@ test('READMEs (outside the upgrade notes), manifests and the field guide carry n
   assert.deepEqual(hits, [])
 })
 
-test('plugin.json is 1.1.0, the field guide says JBIT 1.1.0, and the descriptions fit 1.x', () => {
-  assert.equal(manifest.version, '1.1.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 1.1.0</span>'), 'field guide header lacks JBIT 1.1.0')
-  assert.ok(guide.includes('<footer>JBIT 1.1.0 ·'), 'field guide footer lacks JBIT 1.1.0')
+test('plugin.json is 1.2.0, the field guide says JBIT 1.2.0, and the descriptions fit 1.x', () => {
+  assert.equal(manifest.version, '1.2.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 1.2.0</span>'), 'field guide header lacks JBIT 1.2.0')
+  assert.ok(guide.includes('<footer>JBIT 1.2.0 ·'), 'field guide footer lacks JBIT 1.2.0')
   assert.doesNotMatch(guide, /JBIT 0\.\d+\.\d+/, 'field guide still names a 0.x version')
   for (const [name, text] of Object.entries(manifests)) {
     assert.doesNotMatch(text, /\b0\.\d+\.\d+\b/, `${name} names a 0.x version`)

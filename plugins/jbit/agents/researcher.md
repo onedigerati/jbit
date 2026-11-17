@@ -12,4 +12,4 @@ Read narrowly. Search for what you need and read only the parts that answer it, 
 
 Write one note at `docs/research/<topic>.md`, a plain topic name: the date, the questions, the answers with a source link for each, versions where they matter, and what is still open. Write nothing else.
 
-Stay inside the brief and stop when its questions are answered or shown to be unanswerable. Hand back a report of 20 lines at most: the note's path, the key answers in a line each, and what stays open. No file dumps.
+Stay inside the brief and stop when its questions are answered or shown to be unanswerable. Hand back a report of 20 lines at most: the note's path, the key answers in a line each, and what stays open. No file dumps. When the detail doesn't fit in 20 lines, write all of it to the note, give its full path in the report, and say how much you left out. Use no blank lines; they count toward the 20.

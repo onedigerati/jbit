@@ -1,0 +1,736 @@
+$ python3 extract.py verify-run-2.jsonl.txt   # every Write/Edit with content and result, Bash lines that may write
+=== event 8: sub(jbit:verifier#1) Bash (may write)
+sed -n '/## Now/,/^## [^N]/p' docs/PLAN.md; cat package.json; ls -a; ls docs docs/evidence 2>&1; wc -l cart.mjs cart.test.mjs; grep -n "evidence\|gitignore" ~/src/repos/jbit/plugins/jbit/skills/verify/SKILL.md | head -30
+=== event 30: sub(jbit:verifier#1) Bash (may write)
+mkdir -p docs/evidence/stage-1 && (echo '$ npm test'; npm test 2>&1) > docs/evidence/stage-1/tests.txt; echo "exit $?"; (echo '$ npm audit --omit=dev'; npm audit --omit=dev 2>&1) > docs/evidence/stage-1/audit.txt; tail -5 docs/evidence/stage-1/audit.txt; grep -E "^# (tests|pass|fail|skipped)|^not ok|SKIP" docs/evidence/stage-1/tests.txt
+=== event 34: sub(jbit:verifier#1) Bash (may write)
+mkdir -p /tmp/jbit-s1-overflow/docs/evidence/stage-1 && cd /tmp/jbit-s1-overflow && npm test > /tmp/jbit-verify-tests.txt 2>&1; echo "exit $?"; npm audit --omit=dev > /tmp/jbit-verify-audit.txt 2>&1; echo "audit exit $?"
+=== event 44: sub(jbit:verifier#1) Write /tmp/jbit-verify-scratch/probe.mjs
+// Probe each stage-1 check against cart.mjs as-is. Usage: node probe.mjs <path-to-cart.mjs> <check>
+const m = await import(process.argv[2])
+const which = process.argv[3]
+const show = (label, fn) => {
+  try { const v = fn(); console.log(label, '=>', JSON.stringify(v), Number.isInteger(v) ? '(integer)' : '') }
+  catch (e) { console.log(label, '=> THROWS', e.constructor.name + ':', e.message) }
+}
+if (which === 'discount') {
+  show('applyDiscount(1000, 10)  expect 900 or 100 (10% off)', () => m.applyDiscount(1000, 10))
+  show('applyDiscount(999, 10)   expect integer', () => m.applyDiscount(999, 10))
+  show('applyDiscount(1000, 150) expect clamp to 100%', () => m.applyDiscount(1000, 150))
+  show('applyDiscount(1000, -20) expect clamp to 0%', () => m.applyDiscount(1000, -20))
+}
+if (which === 'remove') {
+  const c1 = m.createCart([{ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }])
+  m.removeItem(c1, 1)
+  console.log('remove id 1 from [1,2]   expect [2] =>', JSON.stringify(c1.items.map(i => i.id)))
+  const c2 = m.createCart([{ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }])
+  m.removeItem(c2, 99)
+  console.log('remove unknown id 99     expect [1,2] =>', JSON.stringify(c2.items.map(i => i.id)))
+}
+if (which === 'checkout') {
+  const mk = () => m.createCart([{ id: 1, price: 1000, qty: 1 }])
+  show('checkout HALF (valid to 2027-06-30), tax 0.1', () => m.checkout(mk(), { coupon: 'HALF', taxRate: 0.1 }))
+  show('checkout SAVE10 (expired 2026-01-01), tax 0', () => m.checkout(mk(), { coupon: 'SAVE10', taxRate: 0 }))
+  show('checkout BOGUS (unknown), tax 0', () => m.checkout(mk(), { coupon: 'BOGUS', taxRate: 0 }))
+  show('couponPercent("SAVE10") expired, expect 0', () => m.couponPercent('SAVE10'))
+  show('couponPercent("HALF") valid, expect 50', () => m.couponPercent('HALF'))
+  show('couponPercent("BOGUS") unknown, expect 0', () => m.couponPercent('BOGUS'))
+  show('couponPercent("constructor") expect 0', () => m.couponPercent('constructor'))
+  show('couponPercent("HALF;globalThis.PWNED=1") code injection probe', () => m.couponPercent('HALF;globalThis.PWNED=1'))
+  console.log('globalThis.PWNED after probe =>', globalThis.PWNED)
+  show('addTax(1000, 0.1) expect 1100', () => m.addTax(1000, 0.1))
+}
+if (which === 'format') {
+  show('formatPrice(1234) expect "$12.34"', () => m.formatPrice(1234))
+  show('formatPrice(5) expect "$0.05"', () => m.formatPrice(5))
+}
+
+--- event 45: sub(jbit:verifier#1) Write /tmp/jbit-verify-scratch/probe.mjs -> File created successfully at: /tmp/jbit-verify-scratch/probe.mjs (file state is current in your context — no need to Read it back)
+=== event 60: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.zip
+
+--- event 61: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/.gitignore -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/.gitignore (file state is current in your context — no need to Read it back)
+=== event 63: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt
+$ npm test   (exit 1)
+TAP version 13
+not ok 1 - subtotal adds price times qty
+  error: "Cannot read properties of undefined (reading 'price')"  at subtotal (cart.mjs:16:69)
+ok 2 - applyDiscount returns something
+ok 3 - removeItem removes the item # SKIP
+not ok 4 - checkout runs
+  error: "Cannot read properties of undefined (reading 'price')"  at subtotal (cart.mjs:16:69) via checkout (cart.mjs:66:15)
+1..4
+# tests 4
+# pass 1
+# fail 2
+# skipped 1
+--- coverage of ## Now checks by cart.test.mjs (as-is) ---
+applyDiscount: test 2 only asserts truthiness (assert.ok(applyDiscount(1000, 10))); passes today although clamp and integer rounding are broken, so it does not fail when the behaviour breaks.
+removeItem: only test is test.skip; unknown-id case not tested at all.
+checkout: test 4 only asserts truthiness; no assertion on shape, integer cents, expired or unknown coupon.
+formatPrice: imported but no test.
+
+--- event 64: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt (file state is current in your context — no need to Read it back)
+=== event 66: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt
+$ npm audit --omit=dev   (exit 1)
+npm error code ENOLOCK
+npm error audit This command requires an existing lockfile.
+npm error audit Try creating one first with: npm i --package-lock-only
+npm error audit Original error: loadVirtual requires existing shrinkwrap file
+Note: package.json declares no dependencies; audit not run because it would require creating a lockfile.
+
+--- event 67: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt (file state is current in your context — no need to Read it back)
+=== event 69: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt
+$ node /tmp/jbit-verify-scratch/probe.mjs /tmp/jbit-s1-overflow/cart.mjs discount
+applyDiscount(1000, 10)  expect 900 or 100 (10% off) => 100 (integer)
+applyDiscount(999, 10)   expect integer => 99.9
+applyDiscount(1000, 150) expect clamp to 100% => 1500 (integer)
+applyDiscount(1000, -20) expect clamp to 0% => -200 (integer)
+
+--- event 70: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt (file state is current in your context — no need to Read it back)
+=== event 72: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt
+$ node /tmp/jbit-verify-scratch/probe.mjs /tmp/jbit-s1-overflow/cart.mjs remove
+remove id 1 from [1,2]   expect [2] => [2]
+remove unknown id 99     expect [1,2] => [1]
+
+--- event 73: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt (file state is current in your context — no need to Read it back)
+=== event 75: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt
+$ node /tmp/jbit-verify-scratch/probe.mjs /tmp/jbit-s1-overflow/cart.mjs checkout
+checkout HALF (valid to 2027-06-30), tax 0.1 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+checkout SAVE10 (expired 2026-01-01), tax 0 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+checkout BOGUS (unknown), tax 0 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+couponPercent("SAVE10") expired, expect 0 => 10 (integer)
+couponPercent("HALF") valid, expect 50 => 0 (integer)
+couponPercent("BOGUS") unknown, expect 0 => 0 (integer)
+couponPercent("constructor") expect 0 => undefined
+couponPercent("HALF;globalThis.PWNED=1") code injection probe => undefined
+globalThis.PWNED after probe => 1
+addTax(1000, 0.1) expect 1100 => "1000100"
+
+--- event 76: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt (file state is current in your context — no need to Read it back)
+=== event 78: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt
+$ node /tmp/jbit-verify-scratch/probe.mjs /tmp/jbit-s1-overflow/cart.mjs format
+formatPrice(1234) expect "$12.34" => "$123.40"
+formatPrice(5) expect "$0.05" => "$0.50"
+
+--- event 79: sub(jbit:verifier#1) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt (file state is current in your context — no need to Read it back)
+=== event 102: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+# Stage 1 · Checkout — evidence
+Verified 2026-11-17 on 5836778 (+ uncommitted changes to cart.mjs, cart.test.mjs)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | fail | [apply-discount.txt](apply-discount.txt), [tests.txt](tests.txt): returns the discount, not the total minus it; 150 gives 1500 and -20 gives -200 (no clamp); 999 at 10% gives 99.9 (not integer). Only test asserts truthiness and passes despite the bugs |
+| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | fail | [remove-item.txt](remove-item.txt), [tests.txt](tests.txt): known id works, but unknown id 99 removes the last item ([1,2] becomes [1]). Only test is `test.skip`; no unknown-id test |
+| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | fail | [checkout.txt](checkout.txt), [tests.txt](tests.txt): throws TypeError on every cart (subtotal reads one past the end); expired SAVE10 gives 10%, valid HALF gives 0%; `addTax(1000, 0.1)` returns string "1000100"; coupon code goes to `eval`, injection confirmed. Test asserts truthiness only and fails |
+| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | fail | [format-price.txt](format-price.txt), [tests.txt](tests.txt): gives "$123.40" (divides by 10). No test exists |
+
+Project checks: types n/a · lint n/a · tests fail (exit 1; 4 tests: 1 pass, 2 fail, 1 skipped) · build n/a
+Audit: unproven — `npm audit --omit=dev` gives ENOLOCK (no lockfile, no dependencies declared); see [audit.txt](audit.txt)
+
+Also found (outside the checks, within the stage's user-input risk): `couponPercent` passes the coupon code to `eval` (code execution confirmed with a crafted code); a live-format payment key is hard-coded in cart.mjs (uncommitted, not in git history), logged by `checkout` and written to the store by `saveCart`.
+
+## History
+- 2026-11-17 · All four checks failed on first verification (verifier report above).
+
+--- event 103: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md (file state is current in your context — no need to Read it back)
+=== event 111: main Bash (may write)
+python3 - <<'EOF'
+import re
+p='cart.mjs'; s=open(p).read()
+rep=[
+("const PAYMENT_KEY = 'sk_live_[masked]'\nconst DEFAULT_ITEMS = []\n\nexport function createCart(items = DEFAULT_ITEMS) {","export function createCart(items = []) {"),
+("i <= cart.items.length","i < cart.items.length"),
+("i => i.id = id","i => i.id === id"),
+("  cart.items.splice(idx, 1)\n","  if (idx !== -1) cart.items.splice(idx, 1)\n"),
+("  return parseInt(text)","  return parseInt(text, 10)"),
+("  return totalCents * percent / 100","  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0\n  return Math.round(totalCents * (100 - p) / 100)"),
+("export function isExpired(coupon) {\n  return new Date(coupon.expires).getTime() > Date.now()","export function isExpired(coupon, now = Date.now()) {\n  return now >= new Date(coupon.expires).getTime()"),
+("export function couponPercent(code) {\n  const coupon = eval('COUPONS.' + code)\n  if (!coupon || isExpired(coupon)) return 0",
+ "export function couponPercent(code, now = Date.now()) {\n  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined\n  if (!coupon || isExpired(coupon, now)) return 0"),
+("  const tax = (subtotalCents * rate).toFixed(0)\n  return subtotalCents + tax","  return subtotalCents + Math.round(subtotalCents * rate)"),
+("(cents / 10).toFixed(2)","(cents / 100).toFixed(2)"),
+("JSON.stringify({ cart, key: PAYMENT_KEY })","JSON.stringify({ cart })"),
+("""export function checkout(cart, { coupon, taxRate }) {
+  const sub = subtotal(cart)
+  const discount = applyDiscount(sub, couponPercent(coupon))
+  const tax = addTax(sub - discount, taxRate)
+  console.log('checkout', JSON.stringify(cart), PAYMENT_KEY)
+""","""export function checkout(cart, { coupon, taxRate, now = Date.now() }) {
+  const sub = subtotal(cart)
+  const discount = sub - applyDiscount(sub, couponPercent(coupon, now))
+  const tax = addTax(sub - discount, taxRate) - (sub - discount)
+"""),
+]
+for a,b in rep:
+    assert s.count(a)==1,a
+    s=s.replace(a,b)
+open(p,'w').write(s)
+EOF
+grep -n "PAYMENT_KEY\|eval\|console" cart.mjs
+=== event 121: main Write /tmp/jbit-s1-overflow/cart.mjs
+// cartkit: a tiny shopping cart. Prices are integer cents.
+
+export function createCart(items = []) {
+  return { items }
+}
+
+export function addItem(cart, item) {
+  cart.items.push({ ...item })
+  return cart
+}
+
+export function subtotal(cart) {
+  let sum = 0
+  for (let i = 0; i < cart.items.length; i++) sum += cart.items[i].price * cart.items[i].qty
+  return sum
+}
+
+export function findItem(cart, id) {
+  return cart.items.find(i => i.id === id)
+}
+
+export function removeItem(cart, id) {
+  const idx = cart.items.findIndex(i => i.id === id)
+  if (idx !== -1) cart.items.splice(idx, 1)
+  return cart
+}
+
+export function parseQty(text) {
+  return parseInt(text, 10)
+}
+
+// Returns the total after taking `percent` off, as integer cents.
+export function applyDiscount(totalCents, percent) {
+  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0
+  return Math.round(totalCents * (100 - p) / 100)
+}
+
+const COUPONS = { SAVE10: { percent: 10, expires: '2026-01-01' }, HALF: { percent: 50, expires: '2027-06-30' } }
+
+export function isExpired(coupon, now = Date.now()) {
+  return now >= new Date(coupon.expires).getTime()
+}
+
+export function couponPercent(code, now = Date.now()) {
+  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined
+  if (!coupon || isExpired(coupon, now)) return 0
+  return coupon.percent
+}
+
+// Returns the subtotal plus tax, as integer cents.
+export function addTax(subtotalCents, rate) {
+  return subtotalCents + Math.round(subtotalCents * rate)
+}
+
+export function formatPrice(cents) {
+  return '$' + (cents / 100).toFixed(2)
+}
+
+export async function saveCart(cart, store) {
+  try {
+    store.put('cart', JSON.stringify({ cart }))
+  } catch (e) {}
+}
+
+export function checkout(cart, { coupon, taxRate, now = Date.now() }) {
+  const sub = subtotal(cart)
+  const afterDiscount = applyDiscount(sub, couponPercent(coupon, now))
+  const discount = sub - afterDiscount
+  const tax = addTax(afterDiscount, taxRate) - afterDiscount
+  return { subtotal: sub, discount, tax, total: afterDiscount + tax }
+}
+
+--- event 122: main Write /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 123: main Write /tmp/jbit-s1-overflow/cart.test.mjs
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { createCart, addItem, subtotal, applyDiscount, removeItem, checkout, formatPrice } from './cart.mjs'
+
+const NOW = Date.parse('2026-11-17T12:00:00Z') // SAVE10 expired, HALF valid
+
+test('subtotal adds price times qty', () => {
+  const c = addItem(addItem(createCart(), { id: 1, price: 250, qty: 2 }), { id: 2, price: 100, qty: 1 })
+  assert.equal(subtotal(c), 600)
+})
+
+test('createCart does not share items between carts', () => {
+  addItem(createCart(), { id: 1, price: 100, qty: 1 })
+  assert.equal(createCart().items.length, 0)
+})
+
+test('applyDiscount takes percent off', () => {
+  assert.equal(applyDiscount(1000, 10), 900)
+  assert.equal(applyDiscount(1000, 0), 1000)
+  assert.equal(applyDiscount(1000, 100), 0)
+})
+
+test('applyDiscount clamps percent to 0..100', () => {
+  assert.equal(applyDiscount(1000, 150), 0)
+  assert.equal(applyDiscount(1000, -20), 1000)
+  assert.equal(applyDiscount(1000, NaN), 1000)
+})
+
+test('applyDiscount returns integer cents', () => {
+  const r = applyDiscount(999, 10)
+  assert.ok(Number.isInteger(r))
+  assert.equal(r, 899)
+})
+
+test('removeItem removes only the item with that id', () => {
+  const c = createCart([{ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }])
+  assert.deepEqual(removeItem(c, 1).items.map(i => i.id), [2])
+})
+
+test('removeItem leaves the cart alone for an unknown id', () => {
+  const c = createCart([{ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }])
+  assert.deepEqual(removeItem(c, 99).items.map(i => i.id), [1, 2])
+})
+
+const cart = () => createCart([{ id: 1, price: 999, qty: 1 }, { id: 2, price: 500, qty: 2 }]) // 1999
+
+function assertIntegerCents(r) {
+  assert.deepEqual(Object.keys(r).sort(), ['discount', 'subtotal', 'tax', 'total'])
+  for (const [k, v] of Object.entries(r)) assert.ok(Number.isInteger(v), `${k} = ${v} is not integer cents`)
+}
+
+test('checkout with a valid coupon returns integer cents', () => {
+  const r = checkout(cart(), { coupon: 'HALF', taxRate: 0.0825, now: NOW })
+  assertIntegerCents(r)
+  assert.deepEqual(r, { subtotal: 1999, discount: 999, tax: 83, total: 1083 })
+})
+
+test('checkout with an expired coupon gives no discount', () => {
+  const r = checkout(cart(), { coupon: 'SAVE10', taxRate: 0.1, now: NOW })
+  assertIntegerCents(r)
+  assert.deepEqual(r, { subtotal: 1999, discount: 0, tax: 200, total: 2199 })
+})
+
+test('checkout with an unknown or malicious coupon gives no discount', () => {
+  for (const coupon of ['NOPE', undefined, '', 'toString', '__proto__', 'HALF;globalThis.PWNED=1']) {
+    const r = checkout(cart(), { coupon, taxRate: 0.1, now: NOW })
+    assertIntegerCents(r)
+    assert.equal(r.discount, 0, `coupon ${coupon}`)
+  }
+  assert.equal(globalThis.PWNED, undefined)
+})
+
+test('formatPrice formats cents as dollars', () => {
+  assert.equal(formatPrice(1234), '$12.34')
+  assert.equal(formatPrice(5), '$0.05')
+  assert.equal(formatPrice(0), '$0.00')
+})
+
+--- event 124: main Write /tmp/jbit-s1-overflow/cart.test.mjs -> The file /tmp/jbit-s1-overflow/cart.test.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 125: main Bash (may write)
+npm test 2>&1 | tail -15
+=== event 154: sub(jbit:verifier#2) Bash (may write)
+git diff | sha256sum > /tmp/jbit-s1-diff-before.sha && sha256sum cart.mjs cart.test.mjs > /tmp/jbit-s1-files.sha && cp cart.mjs /tmp/jbit-s1-cart.orig && cat /tmp/jbit-s1-diff-before.sha && E=docs/evidence/stage-1 && { echo '$ npm test'; npm test 2>&1; echo "exit=$?"; } > $E/tests.txt; tail -12 $E/tests.txt; { echo '$ npm audit --omit=dev'; npm audit --omit=dev 2>&1; echo "exit=$?"; } > $E/audit.txt; cat $E/audit.txt; ls docs/evidence/.gitignore
+=== event 158: sub(jbit:verifier#2) Bash (may write)
+git diff | sha256sum > /tmp/jbit-s1-diff-before.sha && sha256sum cart.mjs cart.test.mjs > /tmp/jbit-s1-files.sha && cp cart.mjs /tmp/jbit-s1-cart.orig && cat /tmp/jbit-s1-diff-before.sha
+E=/tmp/jbit-s1-overflow/docs/evidence/stage-1
+(echo '$ npm test'; npm test 2>&1; echo "exit=$?") > $E/tests.txt; tail -12 $E/tests.txt
+(echo '$ npm audit --omit=dev'; npm audit --omit=dev 2>&1; echo "exit=$?") > $E/audit.txt; cat $E/audit.txt; ls /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+=== event 162: sub(jbit:verifier#2) Write /tmp/jbit-s1-scripts/run.sh
+#!/bin/bash
+# usage: run.sh <evidence-file> <cmd...>  -- writes command on first line, output, exit code
+out="$1"; shift
+cd /tmp/jbit-s1-overflow
+echo "\$ $*" > "$out"
+"$@" >> "$out" 2>&1
+echo "exit=$?" >> "$out"
+
+--- event 163: sub(jbit:verifier#2) Write /tmp/jbit-s1-scripts/run.sh -> File created successfully at: /tmp/jbit-s1-scripts/run.sh (file state is current in your context — no need to Read it back)
+=== event 165: sub(jbit:verifier#2) Bash (may write)
+git diff | sha256sum > /tmp/jbit-s1-diff-before.sha && cp cart.mjs /tmp/jbit-s1-cart.orig && cat /tmp/jbit-s1-diff-before.sha && E=/tmp/jbit-s1-overflow/docs/evidence/stage-1 && bash /tmp/jbit-s1-scripts/run.sh $E/tests.txt npm test && tail -12 $E/tests.txt && bash /tmp/jbit-s1-scripts/run.sh $E/audit.txt npm audit --omit=dev; cat $E/audit.txt; ls /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+=== event 169: sub(jbit:verifier#2) Bash (may write)
+git diff | sha256sum > /tmp/jbit-s1-diff-before.sha && cp cart.mjs /tmp/jbit-s1-cart.orig && cat /tmp/jbit-s1-diff-before.sha && bash /tmp/jbit-s1-scripts/run.sh /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt npm test && tail -12 /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt && bash /tmp/jbit-s1-scripts/run.sh /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt npm audit --omit=dev; cat /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt; ls /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+=== event 173: sub(jbit:verifier#2) Write /tmp/jbit-s1-scripts/checks.sh
+#!/bin/bash
+cd /tmp/jbit-s1-overflow
+E=docs/evidence/stage-1
+git diff > /tmp/jbit-s1-diff-before.patch
+cp cart.mjs /tmp/jbit-s1-cart.orig
+sha256sum /tmp/jbit-s1-diff-before.patch cart.mjs
+bash /tmp/jbit-s1-scripts/run.sh $E/tests.txt npm test
+tail -12 $E/tests.txt
+bash /tmp/jbit-s1-scripts/run.sh $E/audit.txt npm audit --omit=dev
+cat $E/audit.txt
+ls docs/evidence/.gitignore
+
+--- event 174: sub(jbit:verifier#2) Write /tmp/jbit-s1-scripts/checks.sh -> File created successfully at: /tmp/jbit-s1-scripts/checks.sh (file state is current in your context — no need to Read it back)
+=== event 196: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0
+  return Math.round(totalCents * (100 - p) / 100)
+new_string:
+  const p = percent
+  return totalCents * (100 - p) / 100
+--- event 197: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 199: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|ok|# (pass|fail))|expected|actual" | head -30
+=== event 202: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const p = percent
+  return totalCents * (100 - p) / 100
+new_string:
+  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0
+  return Math.round(totalCents * (100 - p) / 100)
+--- event 203: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 208: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  if (idx !== -1) cart.items.splice(idx, 1)
+new_string:
+  cart.items.splice(idx, 1)
+--- event 209: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 211: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))|expected|actual|^\s+[+-] " | head -30
+=== event 214: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  cart.items.splice(idx, 1)
+new_string:
+  if (idx !== -1) cart.items.splice(idx, 1)
+--- event 215: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 217: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const idx = cart.items.findIndex(i => i.id === id)
+new_string:
+  const idx = cart.items.findIndex(i => i.id !== id)
+--- event 218: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 220: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))" | head -30
+=== event 223: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const idx = cart.items.findIndex(i => i.id !== id)
+new_string:
+  const idx = cart.items.findIndex(i => i.id === id)
+--- event 224: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 229: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  if (!coupon || isExpired(coupon, now)) return 0
+new_string:
+  if (!coupon) return 0
+--- event 230: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 232: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))" | head -30
+=== event 236: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  if (!coupon) return 0
+new_string:
+  if (!coupon || isExpired(coupon, now)) return 0
+--- event 237: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 239: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined
+new_string:
+  const coupon = COUPONS[code] || (typeof code === 'string' ? eval('COUPONS.' + code.split(';')[0]) : undefined)
+--- event 240: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 242: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))|error:" | head -30
+=== event 246: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const coupon = COUPONS[code] || (typeof code === 'string' ? eval('COUPONS.' + code.split(';')[0]) : undefined)
+new_string:
+  const coupon = typeof code === 'string' && code ? eval('COUPONS.' + code) : undefined
+--- event 247: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 249: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))|error:|expected|actual" | head -30
+=== event 252: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const coupon = typeof code === 'string' && code ? eval('COUPONS.' + code) : undefined
+new_string:
+  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined
+--- event 253: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 255: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const tax = addTax(afterDiscount, taxRate) - afterDiscount
+new_string:
+  const tax = afterDiscount * taxRate
+--- event 256: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 258: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))|error:" | head -30
+=== event 261: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  const tax = afterDiscount * taxRate
+new_string:
+  const tax = addTax(afterDiscount, taxRate) - afterDiscount
+--- event 262: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 264: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  return '$' + (cents / 100).toFixed(2)
+new_string:
+  return '$' + (cents / 100)
+--- event 265: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 267: sub(jbit:verifier#2) Bash (may write)
+node --test /tmp/jbit-s1-overflow/cart.test.mjs 2>&1 | grep -E "^(not ok|# (pass|fail))|expected|actual" | head -30
+=== event 270: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs
+old_string:
+  return '$' + (cents / 100)
+new_string:
+  return '$' + (cents / 100).toFixed(2)
+--- event 271: sub(jbit:verifier#2) Edit /tmp/jbit-s1-overflow/cart.mjs -> The file /tmp/jbit-s1-overflow/cart.mjs has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 292: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt
+$ npm test   (cwd /tmp/jbit-s1-overflow, working tree as-is incl. uncommitted cart.mjs/cart.test.mjs; run 2026-11-17)
+> test
+> node --test
+
+TAP version 13
+# Subtest: subtotal adds price times qty
+ok 1 - subtotal adds price times qty
+# Subtest: createCart does not share items between carts
+ok 2 - createCart does not share items between carts
+# Subtest: applyDiscount takes percent off
+ok 3 - applyDiscount takes percent off
+# Subtest: applyDiscount clamps percent to 0..100
+ok 4 - applyDiscount clamps percent to 0..100
+# Subtest: applyDiscount returns integer cents
+ok 5 - applyDiscount returns integer cents
+# Subtest: removeItem removes only the item with that id
+ok 6 - removeItem removes only the item with that id
+# Subtest: removeItem leaves the cart alone for an unknown id
+ok 7 - removeItem leaves the cart alone for an unknown id
+# Subtest: checkout with a valid coupon returns integer cents
+ok 8 - checkout with a valid coupon returns integer cents
+# Subtest: checkout with an expired coupon gives no discount
+ok 9 - checkout with an expired coupon gives no discount
+# Subtest: checkout with an unknown or malicious coupon gives no discount
+ok 10 - checkout with an unknown or malicious coupon gives no discount
+# Subtest: formatPrice formats cents as dollars
+ok 11 - formatPrice formats cents as dollars
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42.378301
+(per-test YAML duration blocks omitted; exit 0)
+
+--- event 293: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 295: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt
+$ npm audit --omit=dev   (cwd /tmp/jbit-s1-overflow)
+npm error code ENOLOCK
+npm error audit This command requires an existing lockfile.
+npm error audit Try creating one first with: npm i --package-lock-only
+npm error audit Original error: loadVirtual requires existing shrinkwrap file
+npm error A complete log of this run can be found in: ~/.npm/_logs/2026-11-17T21_44_43_645Z-debug-0.log
+exit 1
+
+Note: package.json declares no dependencies or devDependencies ({ "name", "type", "scripts" only}),
+so there is nothing to audit; the audit itself could not run without creating a lockfile (not done: no installs).
+
+--- event 296: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 298: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt
+$ node --test cart.test.mjs   (with cart.mjs applyDiscount mutated, then restored)
+Covering tests: 3 "applyDiscount takes percent off", 4 "applyDiscount clamps percent to 0..100",
+5 "applyDiscount returns integer cents" -- all ok in tests.txt.
+
+Before: git diff | sha256sum = 8d26db3a85561975dc7006d32eb1ad7f0f88687a44c982e54a50d8c9b2be026a
+        sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347
+
+Mutant: removed clamp and rounding
+-  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0
+-  return Math.round(totalCents * (100 - p) / 100)
++  const p = percent
++  return totalCents * (100 - p) / 100
+
+Output (filtered to results):
+ok 1 - subtotal adds price times qty
+ok 2 - createCart does not share items between carts
+ok 3 - applyDiscount takes percent off
+not ok 4 - applyDiscount clamps percent to 0..100
+  expected: 0
+  actual: -500
+not ok 5 - applyDiscount returns integer cents
+  expected: true
+  actual: false
+ok 6 - removeItem removes only the item with that id
+ok 7 - removeItem leaves the cart alone for an unknown id
+not ok 8 - checkout with a valid coupon returns integer cents
+  expected: true
+  actual: false
+ok 9 - checkout with an expired coupon gives no discount
+ok 10 - checkout with an unknown or malicious coupon gives no discount
+ok 11 - formatPrice formats cents as dollars
+# pass 8
+# fail 3
+
+After restore: sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347 (identical)
+
+--- event 299: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/apply-discount.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 301: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt
+$ node --test cart.test.mjs   (with cart.mjs removeItem mutated twice, restored after each)
+Covering tests: 6 "removeItem removes only the item with that id", 7 "removeItem leaves the cart alone
+for an unknown id" -- both ok in tests.txt.
+
+Mutant A (unknown id removes the last item):
+-  if (idx !== -1) cart.items.splice(idx, 1)
++  cart.items.splice(idx, 1)
+Output:
+not ok 7 - removeItem leaves the cart alone for an unknown id
+    + actual - expected
+    -   2
+# pass 10
+# fail 1
+
+Mutant B (removes an item with a different id):
+-  const idx = cart.items.findIndex(i => i.id === id)
++  const idx = cart.items.findIndex(i => i.id !== id)
+Output:
+not ok 6 - removeItem removes only the item with that id
+not ok 7 - removeItem leaves the cart alone for an unknown id
+# pass 9
+# fail 2
+
+After restore: sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347 (identical to before)
+
+--- event 302: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/remove-item.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 305: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt
+$ node --test cart.test.mjs   (with cart.mjs checkout/coupon mutated three ways, restored after each)
+Covering tests: 8 "checkout with a valid coupon returns integer cents" (HALF -> {1999, 999, 83, 1083}),
+9 "checkout with an expired coupon gives no discount" (SAVE10 expired 2026-01-01, NOW fixed 2026-11-17),
+10 "checkout with an unknown or malicious coupon gives no discount" ('NOPE', undefined, '', 'toString',
+'__proto__', 'HALF;globalThis.PWNED=1'; asserts PWNED stays undefined). All assert exactly the keys
+subtotal/discount/tax/total and Number.isInteger on each. All ok in tests.txt.
+
+Mutant A (expired coupon still applies):
+-  if (!coupon || isExpired(coupon, now)) return 0
++  if (!coupon) return 0
+Output:
+not ok 9 - checkout with an expired coupon gives no discount
+# pass 10
+# fail 1
+
+Mutant B (tax not rounded to integer cents):
+-  const tax = addTax(afterDiscount, taxRate) - afterDiscount
++  const tax = afterDiscount * taxRate
+Output:
+not ok 8 - checkout with a valid coupon returns integer cents
+  error: 'tax = 82.5 is not integer cents'
+not ok 9 - checkout with an expired coupon gives no discount
+  error: 'tax = 199.9 is not integer cents'
+not ok 10 - checkout with an unknown or malicious coupon gives no discount
+  error: 'tax = 199.9 is not integer cents'
+# pass 8
+# fail 3
+
+Mutant C: see coupon-injection.txt (coupon code evaluated as code -> test 10 fails).
+
+After restore: sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347 (identical to before)
+
+--- event 306: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/checkout.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 308: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt
+$ node --test cart.test.mjs   (with cart.mjs formatPrice mutated, then restored)
+Covering test: 11 "formatPrice formats cents as dollars" asserts 1234 -> "$12.34", 5 -> "$0.05", 0 -> "$0.00". ok in tests.txt.
+
+Mutant (no fixed 2 decimals):
+-  return '$' + (cents / 100).toFixed(2)
++  return '$' + (cents / 100)
+Output:
+not ok 11 - formatPrice formats cents as dollars
+  expected: '$0.00'
+  actual: '$0'
+# pass 10
+# fail 1
+Note: this mutant still yields "$12.34" for 1234; the test catches it via the 0 -> "$0.00" case.
+
+After restore: sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347 (identical to before)
+
+--- event 309: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/format-price.txt has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 311: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/coupon-injection.txt
+$ node --test cart.test.mjs   (with couponPercent mutated to eval the code, then restored)
+Code path for a coupon in cart.mjs (as-is):
+  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined
+No eval, Function, import() or dynamic property chain: the code is only an own-key lookup in a constant table,
+so 'toString' / '__proto__' / 'HALF;globalThis.PWNED=1' resolve to undefined -> 0% discount.
+
+Test 10 passes as-is (tests.txt), incl. assert.equal(globalThis.PWNED, undefined).
+
+Mutant (coupon evaluated as code):
+-  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined
++  const coupon = typeof code === 'string' && code ? eval('COUPONS.' + code) : undefined
+Output:
+not ok 10 - checkout with an unknown or malicious coupon gives no discount
+  actual: 1        (globalThis.PWNED was set to 1 by the injected coupon)
+# pass 10
+# fail 1
+
+After restore: sha256 cart.mjs = 62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347 (identical to before)
+
+--- event 312: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/coupon-injection.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/coupon-injection.txt (file state is current in your context — no need to Read it back)
+=== event 314: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/secret-scan.txt
+$ rg -i 'sk_(live|test)_|pk_(live|test)_|rk_(live|test)_|api[_-]?key|secret|STRIPE|PAYMENT_KEY|Bearer\s|password|token' /tmp/jbit-s1-overflow
+No matches found   (covers cart.mjs, cart.test.mjs, package.json, CLAUDE.md, docs/ incl. docs/evidence/stage-1/*.txt and the stale report.md)
+
+$ git log -p --all -i -G "sk_live|sk_test|pk_live|api.?key|secret|stripe|payment.?key|bearer|password|token" --oneline
+(no output: no commit adds or removes such a string)
+
+$ rg -i -c 'sk_(live|test)_|pk_(live|test)_|api[_-]?key|secret|stripe|payment[_-]?key|Bearer\s' ~/.npm/_logs
+0 matches across 0 files
+
+Scan was run before this file was written; this file contains the patterns only, no key values.
+
+--- event 315: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/secret-scan.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/secret-scan.txt (file state is current in your context — no need to Read it back)
+=== event 317: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/restore-check.txt
+$ git -C /tmp/jbit-s1-overflow diff | sha256sum ; git diff --stat ; sha256sum cart.mjs cart.test.mjs   (before and after all mutants)
+Before:
+8d26db3a85561975dc7006d32eb1ad7f0f88687a44c982e54a50d8c9b2be026a  -
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 71 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 131 insertions(+), 4 deletions(-)
+62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347  cart.mjs
+fdd6dac32c0890d9be81b3dbce894f966d747bd2c085b35c68dd641ff6eff1bc  cart.test.mjs
+After:
+8d26db3a85561975dc7006d32eb1ad7f0f88687a44c982e54a50d8c9b2be026a  -
+62493deb1fc25db5c396b3d6350dcba98a71473c8fa8b7b233d361a7810b8347  cart.mjs
+fdd6dac32c0890d9be81b3dbce894f966d747bd2c085b35c68dd641ff6eff1bc  cart.test.mjs
+Result: working tree identical before and after.
+
+--- event 318: sub(jbit:verifier#2) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/restore-check.txt -> File created successfully at: /tmp/jbit-s1-overflow/docs/evidence/stage-1/restore-check.txt (file state is current in your context — no need to Read it back)
+=== event 326: main Bash (may write)
+npm test 2>&1 | grep -E "^# (pass|fail)"; grep -c "Math.min(100" cart.mjs; ls docs/evidence/stage-1; git check-ignore -q docs/evidence/stage-1/tests.txt || echo not-ignored
+=== event 328: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+# Stage 1 · Checkout — evidence
+Verified 2026-11-17 on 5836778 (+ uncommitted changes to cart.mjs, cart.test.mjs)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | pass | [tests.txt](tests.txt): tests 3–5 ok; [apply-discount.txt](apply-discount.txt): with clamp and rounding removed, tests 4, 5, 8 fail (expected 0, got -500) |
+| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | pass | [tests.txt](tests.txt): tests 6–7 ok; [remove-item.txt](remove-item.txt): splicing on unknown id fails test 7; matching the wrong id fails tests 6–7 |
+| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | pass | [tests.txt](tests.txt): tests 8–10 ok; [checkout.txt](checkout.txt): expiry ignored fails test 9; unrounded tax fails tests 8–10; [coupon-injection.txt](coupon-injection.txt): unknown or malicious codes give 0 discount, and an eval version fails test 10 (PWNED=1) |
+| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | pass | [tests.txt](tests.txt): test 11 ok; [format-price.txt](format-price.txt): dropping `.toFixed(2)` fails test 11 (the 0 -> "$0.00" case catches it; 1234 alone would not) |
+| Extra (brief): coupon code can't execute code | pass | [coupon-injection.txt](coupon-injection.txt): own-key lookup only, no eval; an injected code ran under the eval version and test 10 caught it |
+| Extra (brief): no payment key in cart.mjs, logs or stored output | pass | [secret-scan.txt](secret-scan.txt): 0 matches in the working tree, git history and ~/.npm/_logs |
+| Extra (brief): `cart.mjs` restored exactly after the breaks | pass | [restore-check.txt](restore-check.txt): `git diff` sha256 8d26db3a… and `cart.mjs` sha256 62493deb… match before and after |
+
+Project checks: types n/a · lint n/a · tests 11/11 pass (`npm test`) · build n/a (package.json defines only `test`)
+Audit: unproven — `npm audit --omit=dev` fails with ENOLOCK (no lockfile); package.json declares no dependencies, so nothing is shipped ([audit.txt](audit.txt))
+
+Known gap outside the checks: `checkout` returns NaN tax and total when `taxRate` is omitted.
+
+## History
+- 2026-11-17 · All four checks failed: `applyDiscount` returned the discount, unclamped, non-integer; `removeItem` with unknown id removed the last item; `checkout` threw (subtotal off-by-one), coupon expiry inverted, tax string-concatenated, coupon code passed to `eval`; `formatPrice` divided by 10. Also a hard-coded live-format payment key was logged and stored. Fixed: rewrote those functions in cart.mjs (clamp + round, guard -1, `<` loop, own-key coupon lookup with `now` param, numeric rounded tax, /100), removed the key, and replaced truthy-only tests with 11 asserting tests.
+
+--- event 329: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md -> The file /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md has been updated successfully. (file state is current in your context — no need to Read it back)
+=== event 332: main Bash (may write)
+sed -i '9,12s/^- \[ \]/- [x]/' docs/PLAN.md && sed -n 9,12p docs/PLAN.md
+=== event 335: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md
+old_string:
+- [ ] `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests)
+- [ ] `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests)
+- [ ] `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests)
+- [ ] `formatPrice(cents)`
+new_string:
+- [x] `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests)
+- [x] `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests)
+- [x] `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests)
+- [x] `formatPrice(cents)`
+--- event 336: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md -> The file /tmp/jbit-s1-overflow/docs/PLAN.md has been updated successfully. (file state is current in your context — no need to Read it back)

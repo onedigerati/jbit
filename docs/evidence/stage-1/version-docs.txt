@@ -1,0 +1,31 @@
+$ grep version plugin.json; grep -o "JBIT 1\.[0-9.]*" docs/field-guide.html | sort | uniq -c; grep -n -i "20 lines|review.md|overflow|left out" README.md; head -6 agents/reviewer.md; grep -n "only file you write" agents/reviewer.md; grep -n "reviewer" tests/docs.check.mjs
+  "version": "1.2.0",
+      2 JBIT 1.2.0
+75:Each role hands back a report of 20 lines at most, with no blank lines. When the detail doesn't fit, the builder and the researcher write all of it to a file, give its full path and say how much they left out: the builder to `docs/evidence/stage-<n>/build-<part>.md`, the researcher to its note. The verifier also hands back its full results table under a `## Report` heading, and the main session writes it to `docs/evidence/stage-<n>/report.md` itself, as it came and before any fix; after a fix, a fresh verifier re-checks and its table replaces the report. The reviewer, started when you ask for a review, always saves its full review to `docs/evidence/stage-<n>/review.md` (or `docs/reviews/<date>-<topic>.md` outside a plan stage), fix-now findings first, then defer, then reject, with secrets and personal data masked. Its report starts with the file's full path, then a line per fix-now finding, a line counting the rest and a line on what it found sound. In the repo, that is the only file it writes.
+--- reviewer.md frontmatter
+---
+name: reviewer
+description: Reviews recent work with fresh eyes, as an agent that didn't write it. It is started when the user asks for a review.
+tools: Read, Grep, Glob, Bash, Write
+---
+
+15:You edit no project files: in the repo, the only file you write is your review file; probe scripts go outside the repo.
+--- docs check tests naming reviewer
+43:test('skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review', () => {
+72:test('habits: stage rechecks the risk line, runs /code-review and /security-review, logs ## Fixes and pins untested code', () => {
+111:test('each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review', () => {
+112:  for (const role of ['builder', 'verifier', 'reviewer', 'researcher'])
+126:  // The reviewer's report is the only copy of its findings, so it always saves the full review.
+127:  const reviewer = agent('reviewer')
+129:    assert.ok(reviewer.includes(words), `reviewer.md lacks: ${words}`)
+132:test('no skill starts the reviewer', () => {
+133:  for (const name of skills) assert.doesNotMatch(skill(name), /`(?:jbit:)?reviewer`|jbit:reviewer/, `skills/${name} starts the reviewer`)
+136:test('the reviewer has Write, writes only its review file, and is not said to be started by JBIT\'s skills', () => {
+137:  const text = agent('reviewer')
+140:  assert.ok(tools.includes('Write'), 'reviewer tools lack Write')
+141:  assert.ok(text.includes('You edit no project files: in the repo, the only file you write is your review file; probe scripts go outside the repo.'), 'reviewer.md does not limit its writes to the review file')
+144:  assert.doesNotMatch(desc, /skills? start/i, 'reviewer description still says skills start it')
+219:test('the working-rules line names the six skills, and neither fix nor review as a skill', () => {
+281:test('READMEs and the field guide name the six skills, four role agents and how to override them, /code-review and /security-review, and a two-job hook', () => {
+285:    for (const role of ['builder', 'reviewer', 'verifier', 'researcher']) assert.match(text, new RegExp(`\\b${role}\\b`), `${name} lacks the ${role} role agent`)
+303:test('no eval case names jbit:fix, jbit:review or jbit:approve, or grades a Mode, Agents or Models line', () => {

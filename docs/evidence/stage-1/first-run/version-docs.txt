@@ -1,0 +1,5 @@
+$ grep -n version plugins/jbit/.claude-plugin/plugin.json; grep -noE "1\.[0-9]+\.[0-9]+" docs/field-guide.html; grep -n -iE "overflow|review\.md|20 lines|left out" plugins/jbit/README.md
+3:  "version": "1.2.0",
+269:1.2.0
+545:1.2.0
+75:Each role hands back a report of 20 lines at most. When the detail doesn't fit, it writes all of it to a file, gives the path and says how much it left out: the builder to `docs/evidence/stage-<n>/build-<part>.md`, the verifier to `report.md`, the researcher to its note. The reviewer, started when you ask for a review, saves its full review to `docs/evidence/stage-<n>/review.md` (or `docs/reviews/<date>-<topic>.md` outside a plan stage), fix-now findings first, then defer, then reject. That is the only file it writes.

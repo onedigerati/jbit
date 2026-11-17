@@ -1,0 +1,20 @@
+$ map of the 16 seeded problems (second-run/seeded-problems.txt) to findings in scratch-review-1.md and scratch-review-2.md (read by hand)
+Problem | run 1 (scratch-review-1.md) | run 2 (scratch-review-2.md)
+P1  hard-coded live key        | Fix now 1 (says cart.mjs:4; it is line 2) | Fix now 1
+P2  shared default array       | Fix now 9  | Fix now 10
+P3  subtotal off-by-one        | Fix now 4  | Fix now 4
+P4  findItem assigns id        | Fix now 10 | Fix now 9
+P5  removeItem unknown id      | Fix now 8  | Fix now 8
+P6  parseQty                   | Defer 2    | Defer 1
+P7  applyDiscount returns the discount, not the total | MISSED | partly: Fix now 5 says it is unclear whether it should return the discount or the reduced total; "settle which one it is"
+P8  no clamp / not integer     | Fix now 5  | Fix now 5
+P9  isExpired inverted         | Fix now 3  | Fix now 3
+P10 eval injection             | Fix now 2  | Fix now 2
+P11 addTax string / returns sub+tax | Fix now 6 | Fix now 6
+P12 formatPrice /10            | Fix now 7  | Fix now 7
+P13 saveCart swallows, no await | Defer 1   | Fix now 12
+P14 key persisted and logged with cart | Fix now 1 + Defer 3 | Fix now 1
+P15 weak tests / skip          | Fix now 11 | Fix now 11
+P16 checkout total mixes types, not integer cents | Fix now 5, 6 | Fix now 5, 6
+Totals: run 1 found 15/16 (P7 missed); run 2 found 15/16 plus P7 flagged as ambiguous.
+Every finding the handback lists is in the file in both runs. Order in both files: ## Fix now, ## Defer, ## Reject, then sound. No full-length key in either file (see review-run-<n>-git-status.txt).

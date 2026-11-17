@@ -1,0 +1,40 @@
+$ git log --stat; git diff --stat; git status --short --untracked-files=all; cat docs/PLAN.md   # in /tmp/jbit-s1-overflow after all three runs
+commit 5836778afd4572685d6a29e38f34101d8f41ef0d
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 14:57:31 2026 -0600
+
+    Baseline cart and plan
+
+ CLAUDE.md     |  2 ++
+ cart.mjs      | 13 +++++++++++++
+ cart.test.mjs |  8 ++++++++
+ docs/PLAN.md  | 19 +++++++++++++++++++
+ package.json  |  1 +
+ 5 files changed, 43 insertions(+)
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 16 +++++++++++++++
+ 2 files changed, 77 insertions(+), 3 deletions(-)
+ M cart.mjs
+ M cart.test.mjs
+?? docs/evidence/stage-1/formatPrice-direct.txt
+?? docs/evidence/stage-1/review.md
+?? docs/evidence/stage-1/tests.txt
+# Plan: cartkit checkout
+
+Goal: a cart can take discounts, coupons, tax and a checkout, with prices kept in integer cents.
+
+## Now
+Stage 1 of 1 · Checkout
+Risk: money and user input (coupon codes)
+Checks:
+- [ ] `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests)
+- [ ] `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests)
+- [ ] `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests)
+- [ ] `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests)
+Open: none
+
+## Stages
+- [ ] 1. Checkout — discounts, coupons, tax, removeItem, formatPrice, checkout
+
+## Decisions
+- 2026-11-17 · Prices are integer cents everywhere. Why: no float rounding in money.

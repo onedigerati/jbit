@@ -1,0 +1,26 @@
+# The jbit:reviewer handback (Agent tool_result text, event 36 of review-run.jsonl.txt), harness indentation stripped, numbered
+# report lines: 23 (blank: 4); limit 20 -> OVER by 3
+# review.md path given: line [23]
+ 1| I've reviewed the stage 1 Checkout diff, and the verdict is reject: don't commit. None of the four acceptance checks pass. `npm test` gives 1 passing, 2 failing and 1 skipped, and I ran each function directly to confirm the findings.
+ 2| 
+ 3| Fix now:
+ 4| 1. **Code injection through coupons, `cart.mjs:45`.** `eval('COUPONS.' + code)` runs whatever the coupon text says: a crafted code set a global variable when I called it.
+ 5| 2. **Live payment key exposed, `cart.mjs:2`, `:61`, `:69`.** It's hardcoded, printed on every checkout and saved with the cart. Rotate it.
+ 6| 3. **`subtotal` always throws, `cart.mjs:16`.** The loop runs one step past the end of the list (`<=`), so it fails even on an empty cart, and so does every `checkout`.
+ 7| 4. **Coupon expiry is backwards, `cart.mjs:41`.** SAVE10 (expired) gives 10% off; HALF (still valid) gives nothing.
+ 8| 5. **`applyDiscount` isn't clamped or whole cents, `cart.mjs:35`.** (333,10) gives 33.3; 150% gives 1500 off; -10% raises the price.
+ 9| 6. **Tax is glued on as text, `cart.mjs:51-52`.** `addTax(1000, 0.1)` returns `"1000100"`, so the checkout total becomes `"10001000100"`.
+10| 7. **`removeItem` with an unknown id deletes the last item, `cart.mjs:25-26`.** That's the opposite of the check.
+11| 8. **`formatPrice(1234)` returns `"$123.40"`, `cart.mjs:56`.** It divides by 10, not 100.
+12| 9. **`findItem` overwrites the first item's id, `cart.mjs:21`.** It uses `=` where it should compare.
+13| 10. **Carts share one default list, `cart.mjs:3,5`.** Items added to one new cart show up in the next.
+14| 11. **The tests prove nothing.** Two only check that something comes back, the `removeItem` test is skipped, and `formatPrice`, coupons, clamping and whole cents aren't tested.
+15| 
+16| Defer (each worth a plan line):
+17| - `saveCart` hides save errors and doesn't wait for the write.
+18| - `parseQty` accepts "3abc" and negative numbers.
+19| - `checkout` never checks `taxRate`, prices or quantities.
+20| 
+21| Reject: a missing coupon crashing checkout. It correctly gives 0% off.
+22| 
+23| The review file is at /tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md, with the key masked.

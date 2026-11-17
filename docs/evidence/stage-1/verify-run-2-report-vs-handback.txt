@@ -1,0 +1,31 @@
+$ python3 compare.py verify-run-2.jsonl.txt scratch-report-2.md   # script in verify-run-1-report-vs-handback.txt
+verifier agents started: [(3, 'jbit:verifier'), (131, 'jbit:verifier')]
+subagent Writes/Edits of report.md: none
+handback event 84 (jbit:verifier): has "## Report": True; table rows: 6
+handback event 322 (jbit:verifier): has "## Report": True; table rows: 9
+main-session report.md Writes/Edits: [(102, 'Write'), (328, 'Write')]
+main-session edits to cart files (fixes): [(121, 'Write', '/tmp/jbit-s1-overflow/cart.mjs'), (123, 'Write', '/tmp/jbit-s1-overflow/cart.test.mjs')]
+diff, first verifier table vs first report.md Write: DIFFERS
+  --- verifier#1 handback ## Report rows
+  +++ main first report.md Write rows
+  @@ -1,6 +1,6 @@
+   | Check | Result | Evidence |
+   |---|---|---|
+  -| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | fail: returns the discount, not the total minus it; 150 gives 1500 and -20 gives -200 (no clamp); 999 at 10% gives 99.9 (not integer). Only test asserts truthiness and passes despite the bugs | docs/evidence/stage-1/apply-discount.txt, docs/evidence/stage-1/tests.txt |
+  -| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | fail: known id works, but unknown id 99 removes the last item ([1,2] becomes [1]). Only test is `test.skip`; no unknown-id test | docs/evidence/stage-1/remove-item.txt, docs/evidence/stage-1/tests.txt |
+  -| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | fail: throws TypeError on every cart (subtotal reads one past the end); expired SAVE10 gives 10%, valid HALF gives 0%; `addTax(1000, 0.1)` returns string "1000100"; coupon code goes to `eval`, injection confirmed. Test asserts truthiness only and fails | docs/evidence/stage-1/checkout.txt, docs/evidence/stage-1/tests.txt |
+  -| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | fail: gives "$123.40" (divides by 10). No test exists | docs/evidence/stage-1/format-price.txt, docs/evidence/stage-1/tests.txt |
+  +| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | fail | [apply-discount.txt](apply-discount.txt), [tests.txt](tests.txt): returns the discount, not the total minus it; 150 gives 1500 and -20 gives -200 (no clamp); 999 at 10% gives 99.9 (not integer). Only test asserts truthiness and passes despite the bugs |
+  +| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | fail | [remove-item.txt](remove-item.txt), [tests.txt](tests.txt): known id works, but unknown id 99 removes the last item ([1,2] becomes [1]). Only test is `test.skip`; no unknown-id test |
+  +| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | fail | [checkout.txt](checkout.txt), [tests.txt](tests.txt): throws TypeError on every cart (subtotal reads one past the end); expired SAVE10 gives 10%, valid HALF gives 0%; `addTax(1000, 0.1)` returns string "1000100"; coupon code goes to `eval`, injection confirmed. Test asserts truthiness only and fails |
+  +| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | fail | [format-price.txt](format-price.txt), [tests.txt](tests.txt): gives "$123.40" (divides by 10). No test exists |
+diff, last verifier table vs final report.md: identical (9 rows)
+final report.md equals the last report.md Write content: True
+first report.md Write at event 102
+  main names report.md at event 3 (Agent) BEFORE the write: {"description": "Verify stage 1 checkout", "subagent_type": "jbit:verifier", "prompt": "Verify stage 1 (Checkout) of /tmp/jbit-s1-overflow against its plan, doc
+  main names report.md at event 131 (Agent): {"description": "Re-verify stage 1 checkout", "subagent_type": "jbit:verifier", "prompt": "Verify stage 1 (Checkout) of /tmp/jbit-s1-overflow against its plan, 
+  main names report.md at event 340 (text): Stage 1 is now verified and all four checks pass, but only after a fix: the first verifier found every check failing.  **First run (before the fix):** `npm test
+  main names report.md at event 341 (final reply): names report.md
+
+--- verifier note: row by row, the first report.md Write (event 102) keeps every check, every result (fail x4) and every reason word for word, but reshapes the table: the Result cell "fail: <reason>" becomes "fail", the reason moves into the Evidence cell, and plain paths docs/evidence/stage-1/x.txt become relative links [x.txt](x.txt). The table was not written as it came.
+--- main-session steps between the first verifier and the re-verify: event 111-124 fix cart.mjs and cart.test.mjs, event 125 npm test (not written to report.md), event 131 fresh jbit:verifier; event 328 report.md rewritten from verifier#2 table, identical rows (above).

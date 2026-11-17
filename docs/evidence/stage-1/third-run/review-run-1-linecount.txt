@@ -1,0 +1,17 @@
+$ python3 count.py review-run-1-handback.txt   # the reviewer's report lines, numbered
+reviewer's own report (harness frame and agentId/usage trailer removed, 2-space harness indent stripped): 15 lines, 0 blank
+ 1| /tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md
+ 2| Not ready: `npm test` shows 1 pass, 2 fail, 1 skipped, and none of the four plan checks is met. Fix now, worst first:
+ 3| 1. A live payment key is hard-coded in `cart.mjs:4`; `checkout` prints it and `saveCart` stores it. Rotate the key; masked in the file.
+ 4| 2. `couponPercent` runs the coupon code through `eval`: `'HALF;globalThis.PWN=1'` ran injected code, and `'constructor'` turns the discount into NaN.
+ 5| 3. `isExpired` is backwards: expired SAVE10 gives 10% and valid HALF gives 0.
+ 6| 4. `subtotal` loops one past the end (`<=`) and throws on every cart, so `checkout` always throws and the existing subtotal test now fails.
+ 7| 5. `applyDiscount` doesn't clamp or round: (999,10) gives 99.9, (1000,150) gives 1500, (1000,-10) gives -100.
+ 8| 6. `addTax` joins strings instead of adding: (1000, 0.1) gives "1000100", and `checkout` reports the taxed total as `tax`.
+ 9| 7. `formatPrice(1234)` gives "$123.40" because it divides by 10, not 100.
+10| 8. `removeItem` with an unknown id deletes the last item.
+11| 9. Every `createCart()` shares one default array, so items leak between carts.
+12| 10. `findItem` uses `=` instead of `===` and overwrites the first item's id.
+13| 11. The tests prove none of the four checks: two only check for a truthy result, the `removeItem` test is skipped, and `formatPrice`, expired or unknown coupons and clamping have no tests.
+14| defer 3, reject 1: see the file
+15| Sound: `addItem` (unchanged), the coupon table data, and `checkout`'s return shape.

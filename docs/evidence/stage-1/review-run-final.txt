@@ -1,0 +1,16 @@
+$ python3 extract.py review-run.jsonl.txt   # final reply of the main session
+/tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md
+1. cart.mjs:3 has a live payment key (`sk_live_***`) in the code. checkout writes it to the log (:69) and saveCart writes it to storage (:61). Remove it and rotate the key.
+2. cart.mjs:43 builds the coupon code into a string it runs with `eval`. A crafted code ran my own code: it set `globalThis.PWNED` to 1.
+3. cart.mjs:16 has an off-by-one: `i <= length`. subtotal throws on every cart, so checkout always throws and the existing subtotal test now fails.
+4. cart.mjs:39 `isExpired` is backwards. SAVE10, which expired, gives 10%, and HALF, which is still valid, gives 0.
+5. cart.mjs:30 `applyDiscount` doesn't clamp or round. (999,10) gives 99.9, 150% gives 1500 and -10% gives -100.
+6. cart.mjs:47-48 `addTax` joins strings: (1000, 0.1) gives "1000100". It also returns the total after tax, not just the tax, so checkout counts the subtotal twice.
+7. cart.mjs:52 `formatPrice` divides by 10, so 1234 gives "$123.40" instead of "$12.34".
+8. cart.mjs:26-27 `removeItem` with an unknown id gets -1 from the lookup, and `splice(-1)` then deletes the last item.
+9. cart.mjs:21 `findItem` uses `=` where it should compare, so it overwrites the first item's id.
+10. cart.mjs:4-6 every cart shares one default items array, so carts leak into each other.
+11. cart.test.mjs:12,16,21 the tests prove none of the four checks. Two only check the result isn't empty, the removeItem test is skipped, and formatPrice, clamping, rounding and expired or unknown coupons have no tests. `npm test` gives 1 pass, 2 fail, 1 skipped.
+None of the four plan checks is met.
+Defer 4, reject 1: see the file.
+Sound: `addItem` is unchanged, unknown coupon codes give 0, and checkout returns the fields the plan asks for (the values are wrong).

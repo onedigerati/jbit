@@ -1,0 +1,19 @@
+$ (manual) each seeded problem in seeded-problems.txt mapped to scratch-review.md (the reviewer's review.md, key masked)
+P1  live key in source                      -> Fix now 2
+P2  shared default array                    -> Fix now 10
+P3  subtotal off-by-one throws              -> Fix now 3
+P4  findItem assigns id                     -> Fix now 9
+P5  removeItem unknown id removes last      -> Fix now 7
+P6  parseQty no radix/validation            -> Defer 2
+P7  applyDiscount returns discount not total-> NOT FOUND (reviewer read the return as the discount amount, consistent with checkout)
+P8  applyDiscount unclamped, not int cents  -> Fix now 5
+P9  isExpired inverted                      -> Fix now 4
+P10 eval injection                          -> Fix now 1
+P11 addTax string concat / returns sub+tax  -> Fix now 6 (both halves)
+P12 formatPrice /10                         -> Fix now 8
+P13 saveCart swallows errors, no await      -> Defer 1
+P14 key persisted and logged                -> Fix now 2
+P15 weak tests, skipped removeItem test     -> Fix now 11
+P16 checkout mixes number/string, not cents -> Fix now 6 (string total) + Fix now 11 (Number.isInteger on all four fields)
+Found 15 of 16; every found one is in review.md. Order in file: Fix now, Defer, Reject, Checked and sound (fix-now first).
+Handback (review-handback.txt) lists 11 fix-now + 3 defer + 1 reject, consistent with the file.

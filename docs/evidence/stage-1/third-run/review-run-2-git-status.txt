@@ -1,0 +1,17 @@
+$ cd /tmp/jbit-s1-overflow && git status --short --untracked-files=all; sha256sum cart.mjs cart.test.mjs; git diff --stat HEAD   # before (after reset) and after review run 2
+before:
+reset:  M cart.mjs  M cart.test.mjs 
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+exit 0
+after:
+ M cart.mjs
+ M cart.test.mjs
+?? docs/evidence/stage-1/review.md
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 16 +++++++++++++++
+ 2 files changed, 77 insertions(+), 3 deletions(-)
+full-length sk_live_ keys left in review.md: 0
+files the reviewer wrote outside review.md (from the transcript, outside the repo): Write /tmp/rv/probe.mjs Write /tmp/rv/probe.mjs  plus a heredoc probe in /tmp

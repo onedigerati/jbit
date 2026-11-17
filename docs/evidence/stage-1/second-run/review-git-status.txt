@@ -1,0 +1,8 @@
+$ cd /tmp/jbit-s1-overflow && git status --short --untracked-files=all; sha256sum cart.mjs cart.test.mjs; grep -c sk_live_<first 3 chars of the key> docs/evidence/stage-1/review.md   # after the reviewer run
+ M cart.mjs
+ M cart.test.mjs
+?? docs/evidence/stage-1/review.md
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+seeded sha256 before run: aa9249d3...0a24d cart.mjs, eddf8393...ea802 cart.test.mjs
+unmasked key occurrences in review.md: 0

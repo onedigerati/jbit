@@ -1,0 +1,16 @@
+$ git diff --stat -- plugins/jbit/agents; sha256sum -c agents-before.sha   # after all mutations and runs, compared with the snapshot taken before
+ plugins/jbit/agents/builder.md    | 2 +-
+ plugins/jbit/agents/researcher.md | 2 +-
+ plugins/jbit/agents/reviewer.md   | 6 +++---
+ plugins/jbit/agents/verifier.md   | 4 ++--
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+plugins/jbit/agents/builder.md: OK
+plugins/jbit/agents/researcher.md: OK
+plugins/jbit/agents/reviewer.md: OK
+plugins/jbit/agents/verifier.md: OK
+# before:
+ plugins/jbit/agents/builder.md    | 2 +-
+ plugins/jbit/agents/researcher.md | 2 +-
+ plugins/jbit/agents/reviewer.md   | 6 +++---
+ plugins/jbit/agents/verifier.md   | 4 ++--
+ 4 files changed, 7 insertions(+), 7 deletions(-)

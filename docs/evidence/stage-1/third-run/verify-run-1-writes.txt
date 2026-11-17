@@ -1,0 +1,613 @@
+$ every Write/Edit call in the run with its content
+event 24: subagent(jbit:verifier) Write /tmp/jbit-verify-s1/run.sh
+#!/bin/bash
+cd /tmp/jbit-s1-overflow || exit 1
+E=docs/evidence/stage-1
+mkdir -p "$E"
+if [ ! -f docs/evidence/.gitignore ]; then
+  printf '%s\n' '# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.' '*.png' '*.jpg' '*.jpeg' '*.webp' '*.gif' '*.zip' '*.webm' '*.mp4' '*.trace' '*.har' > docs/evidence/.gitignore
+fi
+mask() { sed -E 's/sk_live_[A-Za-z0-9]+/sk_live_[masked]/g'; }
+echo '$ npm test' > "$E/tests.txt"
+npm test 2>&1 | mask >> "$E/tests.txt"
+echo "exit=${PIPESTATUS[0]}" >> "$E/tests.txt"
+echo '$ npm audit --omit=dev' > "$E/audit.txt"
+npm audit --omit=dev >> "$E/audit.txt" 2>&1
+echo "exit=$?" >> "$E/audit.txt"
+
+-----
+event 27: subagent(jbit:verifier) Write /tmp/jbit-verify-s1/probe.mjs
+// Probe each stage-1 check directly against cart.mjs as it is in the working tree.
+import * as m from '/tmp/jbit-s1-overflow/cart.mjs'
+const which = process.argv[2]
+const show = (label, fn) => {
+  try { const v = fn(); console.log(label, '=>', JSON.stringify(v), typeof v === 'number' ? `(integer: ${Number.isInteger(v)})` : '') }
+  catch (e) { console.log(label, '=> THROWS', e.constructor.name + ': ' + e.message) }
+}
+if (which === 'discount') {
+  show('applyDiscount(1000, 10) expect 100', () => m.applyDiscount(1000, 10))
+  show('applyDiscount(999, 10) expect integer', () => m.applyDiscount(999, 10))
+  show('applyDiscount(1000, 150) expect clamp to 1000', () => m.applyDiscount(1000, 150))
+  show('applyDiscount(1000, -20) expect clamp to 0', () => m.applyDiscount(1000, -20))
+}
+if (which === 'remove') {
+  const mk = () => m.createCart([{ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }, { id: 3, price: 300, qty: 1 }])
+  show('removeItem(cart[1,2,3], 2) ids expect [1,3]', () => m.removeItem(mk(), 2).items.map(i => i.id))
+  show('removeItem(cart[1,2,3], 99) ids expect [1,2,3]', () => m.removeItem(mk(), 99).items.map(i => i.id))
+}
+if (which === 'checkout') {
+  const mk = () => m.createCart([{ id: 1, price: 1000, qty: 2 }, { id: 2, price: 333, qty: 1 }])
+  show('checkout(subtotal 2333, HALF, 0.1)', () => m.checkout(mk(), { coupon: 'HALF', taxRate: 0.1 }))
+  show('checkout(subtotal 2333, SAVE10 expired 2026-01-01, 0.1) expect discount 0', () => m.checkout(mk(), { coupon: 'SAVE10', taxRate: 0.1 }))
+  show('checkout(subtotal 2333, NOPE unknown, 0.1) expect discount 0', () => m.checkout(mk(), { coupon: 'NOPE', taxRate: 0.1 }))
+  show('checkout(subtotal 2333, no coupon, 0.1) expect discount 0', () => m.checkout(mk(), { coupon: undefined, taxRate: 0.1 }))
+}
+if (which === 'format') {
+  show('formatPrice(1234) expect "$12.34"', () => m.formatPrice(1234))
+  show('formatPrice(5) expect "$0.05"', () => m.formatPrice(5))
+}
+
+-----
+event 30: subagent(jbit:verifier) Write /tmp/jbit-verify-s1/probes.sh
+#!/bin/bash
+E=/tmp/jbit-s1-overflow/docs/evidence/stage-1
+mask() { sed -E 's/sk_live_[A-Za-z0-9]+/sk_live_[masked]/g'; }
+for c in discount remove checkout format; do
+  f="$E/probe-$c.txt"
+  echo "\$ node probe.mjs $c   # direct calls into working-tree cart.mjs (script kept outside repo)" > "$f"
+  node /tmp/jbit-verify-s1/probe.mjs "$c" 2>&1 | mask >> "$f"
+done
+cd /tmp/jbit-s1-overflow
+f="$E/test-coverage.txt"
+echo '$ grep -nE "^test|assert" cart.test.mjs   # which tests exist per check' > "$f"
+grep -nE '^test|assert' cart.test.mjs >> "$f"
+echo '$ grep -c "formatPrice(" cart.test.mjs' >> "$f"
+grep -c 'formatPrice(' cart.test.mjs >> "$f"
+
+-----
+event 62: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/.gitignore
+# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.zip
+*.webm
+*.mp4
+*.trace
+*.har
+
+-----
+event 65: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt
+$ npm test   (on 5836778 + uncommitted cart.mjs, cart.test.mjs; exit 1)
+> test
+> node --test
+
+TAP version 13
+# Subtest: subtotal adds price times qty
+not ok 1 - subtotal adds price times qty
+  ---
+  duration_ms: 0.294599
+  type: 'test'
+  location: '/tmp/jbit-s1-overflow/cart.test.mjs:5:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'price')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    subtotal (file:///tmp/jbit-s1-overflow/cart.mjs:16:69)
+    TestContext.<anonymous> (file:///tmp/jbit-s1-overflow/cart.test.mjs:7:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: applyDiscount returns something
+ok 2 - applyDiscount returns something
+  ---
+  duration_ms: 0.0979
+  type: 'test'
+  ...
+# Subtest: removeItem removes the item
+ok 3 - removeItem removes the item # SKIP
+  ---
+  duration_ms: 0.0743
+  type: 'test'
+  ...
+# Subtest: checkout runs
+not ok 4 - checkout runs
+  ---
+  duration_ms: 0.071
+  type: 'test'
+  location: '/tmp/jbit-s1-overflow/cart.test.mjs:21:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'price')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    subtotal (file:///tmp/jbit-s1-overflow/cart.mjs:16:69)
+    checkout (file:///tmp/jbit-s1-overflow/cart.mjs:66:15)
+    TestContext.<anonymous> (file:///tmp/jbit-s1-overflow/cart.test.mjs:23:13)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 2
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 35.540993
+
+-----
+event 68: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/audit.txt
+$ npm audit --omit=dev   (exit 1)
+npm error code ENOLOCK
+npm error audit This command requires an existing lockfile.
+npm error audit Try creating one first with: npm i --package-lock-only
+npm error audit Original error: loadVirtual requires existing shrinkwrap file
+Note: package.json declares no dependencies, so there is nothing shipped to audit; not run further (no installing).
+
+-----
+event 71: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-discount.txt
+$ node /tmp/jbit-verify-s1/probe.mjs discount   # direct calls into working-tree cart.mjs
+applyDiscount(1000, 10) expect 100 => 100 (integer: true)
+applyDiscount(999, 10) expect integer => 99.9 (integer: false)
+applyDiscount(1000, 150) expect clamp to 1000 => 1500 (integer: true)
+applyDiscount(1000, -20) expect clamp to 0 => -200 (integer: true)
+Test coverage: cart.test.mjs:12-14 only asserts assert.ok(applyDiscount(1000, 10)) -- no clamp or integer assertion, so it passes with the broken code above.
+
+-----
+event 74: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-remove.txt
+$ node /tmp/jbit-verify-s1/probe.mjs remove   # direct calls into working-tree cart.mjs
+removeItem(cart[1,2,3], 2) ids expect [1,3] => [1,3]
+removeItem(cart[1,2,3], 99) ids expect [1,2,3] => [1,2]
+Unknown id removes the last item (findIndex -1 passed to splice). Test coverage: cart.test.mjs:16 is test.skip and has no unknown-id case.
+
+-----
+event 78: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-checkout.txt
+$ node /tmp/jbit-verify-s1/probe.mjs checkout 2>&1 | sed 's/sk_live_.../sk_live_[masked]/'   # direct calls into working-tree cart.mjs
+checkout(subtotal 2333, HALF, 0.1) => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+checkout(subtotal 2333, SAVE10 expired 2026-01-01, 0.1) expect discount 0 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+checkout(subtotal 2333, NOPE unknown, 0.1) expect discount 0 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+checkout(subtotal 2333, no coupon, 0.1) expect discount 0 => THROWS TypeError: Cannot read properties of undefined (reading 'price')
+Cause: subtotal() loops i <= items.length (cart.mjs:16). Test coverage: cart.test.mjs:21-24 "checkout runs" fails the same way and asserts only truthiness; no expired/unknown coupon or integer-cents case.
+
+-----
+event 81: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/probe-format.txt
+$ node /tmp/jbit-verify-s1/probe.mjs format   # direct calls into working-tree cart.mjs
+formatPrice(1234) expect "$12.34" => "$123.40"
+formatPrice(5) expect "$0.05" => "$0.50"
+Test coverage: no test in cart.test.mjs calls formatPrice (imported at line 10, never used).
+
+-----
+event 122: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "const DEFAULT_ITEMS = []\n\nexport function createCart(items = DEFAULT_ITEMS) {", "new_string": "export function createCart(items = []) {"}
+-----
+event 124: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "i <= cart.items.length", "new_string": "i < cart.items.length"}
+-----
+event 126: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  cart.items.splice(idx, 1)", "new_string": "  if (idx !== -1) cart.items.splice(idx, 1)"}
+-----
+event 128: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  return totalCents * percent / 100", "new_string": "  const p = Math.min(100, Math.max(0, Number(percent) || 0))\n  return totalCents - Math.round(totalCents * p / 100)"}
+-----
+event 130: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "getTime() > Date.now()", "new_string": "getTime() <= Date.now()"}
+-----
+event 132: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  const coupon = eval('COUPONS.' + code)", "new_string": "  const coupon = typeof code === 'string' && Object.hasOwn(COUPONS, code) ? COUPONS[code] : undefined"}
+-----
+event 134: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  const tax = (subtotalCents * rate).toFixed(0)\n  return subtotalCents + tax", "new_string": "  return subtotalCents + Math.round(subtotalCents * rate)"}
+-----
+event 136: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  return '$' + (cents / 10).toFixed(2)", "new_string": "  const sign = cents < 0 ? '-' : ''\n  const abs = Math.abs(Math.round(cents))\n  return sign + '$' + Math.floor(abs / 100) + '.' + String(abs % 100).padStart(2, '0')"}
+-----
+event 138: main Edit /tmp/jbit-s1-overflow/cart.mjs
+{"replace_all": false, "old_string": "  const discount = applyDiscount(sub, couponPercent(coupon))\n  const tax = addTax(sub - discount, taxRate)\n  console.log('checkout', JSON.stringify(cart), PAYMENT_KEY)\n", "new_string": "  const discount = sub - applyDiscount(sub, couponPercent(coupon))\n  const tax = addTax(sub - discount, taxRate) - (sub - discount)\n"}
+-----
+event 144: main Write /tmp/jbit-s1-overflow/cart.test.mjs
+import { test, mock } from 'node:test'
+import assert from 'node:assert/strict'
+import { createCart, addItem, subtotal, applyDiscount, removeItem, checkout, formatPrice } from './cart.mjs'
+
+const cartOf = (...items) => createCart(items.map(i => ({ ...i })))
+
+test('subtotal adds price times qty', () => {
+  const c = addItem(addItem(createCart(), { id: 1, price: 250, qty: 2 }), { id: 2, price: 100, qty: 1 })
+  assert.equal(subtotal(c), 600)
+})
+
+test('createCart() gives each cart its own items', () => {
+  addItem(createCart(), { id: 1, price: 100, qty: 1 })
+  assert.deepEqual(createCart().items, [])
+})
+
+test('applyDiscount takes percent off', () => {
+  assert.equal(applyDiscount(1000, 10), 900)
+  assert.equal(applyDiscount(1000, 0), 1000)
+  assert.equal(applyDiscount(1000, 100), 0)
+})
+
+test('applyDiscount clamps percent to 0..100', () => {
+  assert.equal(applyDiscount(1000, 150), 0)
+  assert.equal(applyDiscount(1000, -20), 1000)
+})
+
+test('applyDiscount returns integer cents', () => {
+  const r = applyDiscount(999, 10)
+  assert.ok(Number.isInteger(r), `${r} is not an integer`)
+  assert.equal(r, 899)
+})
+
+test('removeItem removes only the item with that id', () => {
+  const c = cartOf({ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }, { id: 3, price: 300, qty: 1 })
+  assert.deepEqual(removeItem(c, 2).items.map(i => i.id), [1, 3])
+})
+
+test('removeItem leaves the cart alone for an unknown id', () => {
+  const c = cartOf({ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }, { id: 3, price: 300, qty: 1 })
+  assert.deepEqual(removeItem(c, 99).items.map(i => i.id), [1, 2, 3])
+})
+
+test('checkout', async (t) => {
+  // HALF expires 2027-06-30, SAVE10 expired 2026-01-01; pin the clock so the test doesn't age.
+  t.beforeEach(() => mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-17T12:00:00Z') }))
+  t.afterEach(() => mock.timers.reset())
+  const isIntCents = r => Object.values(r).every(Number.isInteger)
+
+  await t.test('valid coupon gives discount and tax in integer cents', () => {
+    const r = checkout(cartOf({ id: 1, price: 999, qty: 1 }), { coupon: 'HALF', taxRate: 0.0825 })
+    assert.deepEqual(r, { subtotal: 999, discount: 500, tax: 41, total: 540 })
+    assert.ok(isIntCents(r))
+  })
+
+  await t.test('expired coupon gives no discount', () => {
+    const r = checkout(cartOf({ id: 1, price: 1000, qty: 1 }), { coupon: 'SAVE10', taxRate: 0.1 })
+    assert.deepEqual(r, { subtotal: 1000, discount: 0, tax: 100, total: 1100 })
+  })
+
+  await t.test('unknown coupon gives no discount', () => {
+    for (const coupon of ['NOPE', undefined, '', 'constructor', '__proto__', "HALF; process.exit(1)"]) {
+      const r = checkout(cartOf({ id: 1, price: 1000, qty: 1 }), { coupon, taxRate: 0.1 })
+      assert.deepEqual(r, { subtotal: 1000, discount: 0, tax: 100, total: 1100 }, `coupon ${coupon}`)
+    }
+  })
+})
+
+test('formatPrice gives dollars and cents', () => {
+  assert.equal(formatPrice(1234), '$12.34')
+  assert.equal(formatPrice(5), '$0.05')
+  assert.equal(formatPrice(0), '$0.00')
+  assert.equal(formatPrice(100000), '$1000.00')
+})
+
+-----
+event 169: main Write /tmp/jbit-mut/cart.mjs
+// cartkit: a tiny shopping cart. Prices are integer cents.
+const PAYMENT_KEY = 'sk_live_[masked]'
+const DEFAULT_ITEMS = []
+
+export function createCart(items = DEFAULT_ITEMS) {
+  return { items }
+}
+
+export function addItem(cart, item) {
+  cart.items.push({ ...item })
+  return cart
+}
+
+export function subtotal(cart) {
+  let sum = 0
+  for (let i = 0; i <= cart.items.length; i++) sum += cart.items[i].price * cart.items[i].qty
+  return sum
+}
+
+export function findItem(cart, id) {
+  return cart.items.find(i => i.id = id)
+}
+
+export function removeItem(cart, id) {
+  const idx = cart.items.findIndex(i => i.id === id)
+  cart.items.splice(idx, 1)
+  return cart
+}
+
+export function parseQty(text) {
+  return parseInt(text)
+}
+
+export function applyDiscount(totalCents, percent) {
+  return totalCents * percent / 100
+}
+
+const COUPONS = { SAVE10: { percent: 10, expires: '2026-01-01' }, HALF: { percent: 50, expires: '2027-06-30' } }
+
+export function isExpired(coupon) {
+  return new Date(coupon.expires).getTime() > Date.now()
+}
+
+export function couponPercent(code) {
+  const coupon = eval('COUPONS.' + code)
+  if (!coupon || isExpired(coupon)) return 0
+  return coupon.percent
+}
+
+export function addTax(subtotalCents, rate) {
+  const tax = (subtotalCents * rate).toFixed(0)
+  return subtotalCents + tax
+}
+
+export function formatPrice(cents) {
+  return '$' + (cents / 10).toFixed(2)
+}
+
+export async function saveCart(cart, store) {
+  try {
+    store.put('cart', JSON.stringify({ cart, key: PAYMENT_KEY }))
+  } catch (e) {}
+}
+
+export function checkout(cart, { coupon, taxRate }) {
+  const sub = subtotal(cart)
+  const discount = applyDiscount(sub, couponPercent(coupon))
+  const tax = addTax(sub - discount, taxRate)
+  console.log('checkout', JSON.stringify(cart), PAYMENT_KEY)
+  return { subtotal: sub, discount, tax, total: sub - discount + tax }
+}
+
+-----
+event 193: main Write /tmp/jbit-s1-overflow/.mutcheck/cart.mjs
+// cartkit: a tiny shopping cart. Prices are integer cents. (pre-fix copy, key masked)
+const PAYMENT_KEY = 'sk_live_[masked]'
+const DEFAULT_ITEMS = []
+
+export function createCart(items = DEFAULT_ITEMS) {
+  return { items }
+}
+
+export function addItem(cart, item) {
+  cart.items.push({ ...item })
+  return cart
+}
+
+export function subtotal(cart) {
+  let sum = 0
+  for (let i = 0; i <= cart.items.length; i++) sum += cart.items[i].price * cart.items[i].qty
+  return sum
+}
+
+export function removeItem(cart, id) {
+  const idx = cart.items.findIndex(i => i.id === id)
+  cart.items.splice(idx, 1)
+  return cart
+}
+
+export function applyDiscount(totalCents, percent) {
+  return totalCents * percent / 100
+}
+
+const COUPONS = { SAVE10: { percent: 10, expires: '2026-01-01' }, HALF: { percent: 50, expires: '2027-06-30' } }
+
+export function isExpired(coupon) {
+  return new Date(coupon.expires).getTime() > Date.now()
+}
+
+export function couponPercent(code) {
+  const coupon = eval('COUPONS.' + code)
+  if (!coupon || isExpired(coupon)) return 0
+  return coupon.percent
+}
+
+export function addTax(subtotalCents, rate) {
+  const tax = (subtotalCents * rate).toFixed(0)
+  return subtotalCents + tax
+}
+
+export function formatPrice(cents) {
+  return '$' + (cents / 10).toFixed(2)
+}
+
+export function checkout(cart, { coupon, taxRate }) {
+  const sub = subtotal(cart)
+  const discount = applyDiscount(sub, couponPercent(coupon))
+  const tax = addTax(sub - discount, taxRate)
+  console.log('checkout', JSON.stringify(cart), PAYMENT_KEY)
+  return { subtotal: sub, discount, tax, total: sub - discount + tax }
+}
+
+-----
+event 202: main Write /tmp/jbit-s1-overflow/.mutcheck/cart.test.mjs
+import { test, mock } from 'node:test'
+import assert from 'node:assert/strict'
+import { createCart, addItem, subtotal, applyDiscount, removeItem, checkout, formatPrice } from './cart.mjs'
+
+const cartOf = (...items) => createCart(items.map(i => ({ ...i })))
+
+test('subtotal adds price times qty', () => {
+  const c = addItem(addItem(createCart(), { id: 1, price: 250, qty: 2 }), { id: 2, price: 100, qty: 1 })
+  assert.equal(subtotal(c), 600)
+})
+
+test('createCart() gives each cart its own items', () => {
+  addItem(createCart(), { id: 1, price: 100, qty: 1 })
+  assert.deepEqual(createCart().items, [])
+})
+
+test('applyDiscount takes percent off', () => {
+  assert.equal(applyDiscount(1000, 10), 900)
+  assert.equal(applyDiscount(1000, 0), 1000)
+  assert.equal(applyDiscount(1000, 100), 0)
+})
+
+test('applyDiscount clamps percent to 0..100', () => {
+  assert.equal(applyDiscount(1000, 150), 0)
+  assert.equal(applyDiscount(1000, -20), 1000)
+})
+
+test('applyDiscount returns integer cents', () => {
+  const r = applyDiscount(999, 10)
+  assert.ok(Number.isInteger(r), `${r} is not an integer`)
+  assert.equal(r, 899)
+})
+
+test('removeItem removes only the item with that id', () => {
+  const c = cartOf({ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }, { id: 3, price: 300, qty: 1 })
+  assert.deepEqual(removeItem(c, 2).items.map(i => i.id), [1, 3])
+})
+
+test('removeItem leaves the cart alone for an unknown id', () => {
+  const c = cartOf({ id: 1, price: 100, qty: 1 }, { id: 2, price: 200, qty: 1 }, { id: 3, price: 300, qty: 1 })
+  assert.deepEqual(removeItem(c, 99).items.map(i => i.id), [1, 2, 3])
+})
+
+test('checkout', async (t) => {
+  // HALF expires 2027-06-30, SAVE10 expired 2026-01-01; pin the clock so the test doesn't age.
+  t.beforeEach(() => mock.timers.enable({ apis: ['Date'], now: new Date('2026-11-17T12:00:00Z') }))
+  t.afterEach(() => mock.timers.reset())
+  const isIntCents = r => Object.values(r).every(Number.isInteger)
+
+  await t.test('valid coupon gives discount and tax in integer cents', () => {
+    const r = checkout(cartOf({ id: 1, price: 999, qty: 1 }), { coupon: 'HALF', taxRate: 0.0825 })
+    assert.deepEqual(r, { subtotal: 999, discount: 500, tax: 41, total: 540 })
+    assert.ok(isIntCents(r))
+  })
+
+  await t.test('expired coupon gives no discount', () => {
+    const r = checkout(cartOf({ id: 1, price: 1000, qty: 1 }), { coupon: 'SAVE10', taxRate: 0.1 })
+    assert.deepEqual(r, { subtotal: 1000, discount: 0, tax: 100, total: 1100 })
+  })
+
+  await t.test('unknown coupon gives no discount', () => {
+    for (const coupon of ['NOPE', undefined, '', 'constructor', '__proto__', "HALF; process.exit(1)"]) {
+      const r = checkout(cartOf({ id: 1, price: 1000, qty: 1 }), { coupon, taxRate: 0.1 })
+      assert.deepEqual(r, { subtotal: 1000, discount: 0, tax: 100, total: 1100 }, `coupon ${coupon}`)
+    }
+  })
+})
+
+test('formatPrice gives dollars and cents', () => {
+  assert.equal(formatPrice(1234), '$12.34')
+  assert.equal(formatPrice(5), '$0.05')
+  assert.equal(formatPrice(0), '$0.00')
+  assert.equal(formatPrice(100000), '$1000.00')
+})
+
+-----
+event 210: main Edit /tmp/jbit-s1-overflow/.mutcheck/cart.mjs
+{"replace_all": false, "old_string": "i <= cart.items.length", "new_string": "i < cart.items.length"}
+-----
+event 234: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests-before-fix.txt
+$ npm test   (on 5836778 + uncommitted cart.mjs, cart.test.mjs, before fixes; exit 1; excerpt, YAML details trimmed)
+TAP version 13
+not ok 1 - subtotal adds price times qty
+  error: "Cannot read properties of undefined (reading 'price')"  at subtotal (cart.mjs:16:69)
+ok 2 - applyDiscount returns something
+ok 3 - removeItem removes the item # SKIP
+not ok 4 - checkout runs
+  error: "Cannot read properties of undefined (reading 'price')"  at subtotal (cart.mjs:16:69) via checkout (cart.mjs:66:15)
+1..4
+# tests 4
+# pass 1
+# fail 2
+# skipped 1
+
+-----
+event 236: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt
+$ npm test   (on 5836778 + uncommitted cart.mjs, cart.test.mjs, after fixes; exit 0; YAML details trimmed)
+> test
+> node --test
+
+# (node) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+ok 1 - subtotal adds price times qty
+ok 2 - createCart() gives each cart its own items
+ok 3 - applyDiscount takes percent off
+ok 4 - applyDiscount clamps percent to 0..100
+ok 5 - applyDiscount returns integer cents
+ok 6 - removeItem removes only the item with that id
+ok 7 - removeItem leaves the cart alone for an unknown id
+    ok 1 - valid coupon gives discount and tax in integer cents
+    ok 2 - expired coupon gives no discount
+    ok 3 - unknown coupon gives no discount
+ok 8 - checkout
+ok 9 - formatPrice gives dollars and cents
+1..9
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+
+-----
+event 238: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests-catch-bugs.txt
+$ node --test .mutcheck/cart.test.mjs   (new cart.test.mjs run against a copy of the pre-fix cart.mjs, payment key masked)
+Run A: pre-fix code as it was
+not ok 1 - subtotal adds price times qty
+not ok 2 - createCart() gives each cart its own items
+not ok 3 - applyDiscount takes percent off
+not ok 4 - applyDiscount clamps percent to 0..100
+not ok 5 - applyDiscount returns integer cents
+ok 6 - removeItem removes only the item with that id
+not ok 7 - removeItem leaves the cart alone for an unknown id
+    not ok 1 - valid coupon gives discount and tax in integer cents
+    not ok 2 - expired coupon gives no discount
+    not ok 3 - unknown coupon gives no discount
+not ok 8 - checkout
+not ok 9 - formatPrice gives dollars and cents
+# pass 1
+# fail 11
+
+Run B: same, with only the subtotal off-by-one fixed (so checkout's coupon/expiry/tax bugs are reached)
+ok 1 - subtotal adds price times qty
+not ok 3 - applyDiscount takes percent off        expected: 900   actual: 100
+not ok 4 - applyDiscount clamps percent to 0..100 expected: 0     actual: 1500
+not ok 5 - applyDiscount returns integer cents    expected: true  actual: false
+not ok 7 - removeItem leaves the cart alone for an unknown id
+    not ok 1 - valid coupon gives discount and tax in integer cents
+    not ok 2 - expired coupon gives no discount
+    not ok 3 - unknown coupon gives no discount
+
+-----
+event 241: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+# Stage 1 · Checkout — evidence
+Verified 2026-11-17 on 5836778 (+ uncommitted cart.mjs, cart.test.mjs)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `applyDiscount(totalCents, percent)` takes `percent` off, clamped to 0..100, and returns integer cents (proof: tests) | pass | [tests.txt](tests.txt): tests 3–5; they fail on the pre-fix code, see [tests-catch-bugs.txt](tests-catch-bugs.txt) |
+| `removeItem(cart, id)` removes only the item with that id and leaves the cart alone for an unknown id (proof: tests) | pass | [tests.txt](tests.txt): tests 6–7; test 7 fails on the pre-fix code, see [tests-catch-bugs.txt](tests-catch-bugs.txt) |
+| `checkout(cart, { coupon, taxRate })` returns `{ subtotal, discount, tax, total }` as integer cents; an expired or unknown coupon gives no discount (proof: tests) | pass | [tests.txt](tests.txt): test 8 (valid, expired, unknown and injection-style coupons; clock pinned); fails on the pre-fix code, see [tests-catch-bugs.txt](tests-catch-bugs.txt) |
+| `formatPrice(cents)` gives `"$12.34"` for 1234 (proof: tests) | pass | [tests.txt](tests.txt): test 9; fails on the pre-fix code, see [tests-catch-bugs.txt](tests-catch-bugs.txt) |
+
+Project checks: types n/a · lint n/a · tests 12/12 · build n/a (package.json has only a `test` script)
+Audit: not run, `npm audit` needs a lockfile (ENOLOCK); there are no dependencies, so nothing is shipped, see [audit.txt](audit.txt)
+
+Outside the checks, still open: cart.mjs hardcodes a live payment key (`sk_live_[masked]`) and `saveCart` stores it with the cart. The key needs rotating and moving out of source.
+
+## History
+- 2026-11-17 · All four checks and `npm test` failed (1 pass, 2 fail, 1 skipped): `subtotal` read past the end of the array; `applyDiscount` returned the discount amount, not clamped or rounded; `removeItem` dropped the last item for an unknown id; `isExpired` was inverted; `couponPercent` passed the coupon code to `eval`; `addTax` joined strings; `formatPrice` divided by 10; the tests only checked truthiness or were skipped. See [tests-before-fix.txt](tests-before-fix.txt), [probe-discount.txt](probe-discount.txt), [probe-remove.txt](probe-remove.txt), [probe-checkout.txt](probe-checkout.txt), [probe-format.txt](probe-format.txt). Fixed: corrected each function, replaced `eval` with an own-key lookup, stopped `checkout` logging the payment key, gave `createCart()` a fresh array per cart, and replaced the placeholder tests with real ones.
+
+-----
+event 243: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md
+{"replace_all": false, "old_string": "- [ ] `applyDiscount(totalCents, percent)`", "new_string": "- [x] `applyDiscount(totalCents, percent)`"}
+-----
+event 245: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md
+{"replace_all": false, "old_string": "- [ ] `removeItem(cart, id)`", "new_string": "- [x] `removeItem(cart, id)`"}
+-----
+event 247: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md
+{"replace_all": false, "old_string": "- [ ] `checkout(cart,", "new_string": "- [x] `checkout(cart,"}
+-----
+event 249: main Edit /tmp/jbit-s1-overflow/docs/PLAN.md
+{"replace_all": false, "old_string": "- [ ] `formatPrice(cents)`", "new_string": "- [x] `formatPrice(cents)`"}
+-----

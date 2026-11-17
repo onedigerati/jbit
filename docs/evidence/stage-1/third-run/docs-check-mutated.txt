@@ -1,0 +1,64 @@
+$ bash mutate.sh   # per role: cp agents/<role>.md /tmp/<role>.md.bak; sed -i -E 's/<handoff rule>//' agents/<role>.md; node --test plugins/jbit/tests/docs.check.mjs; cp /tmp/<role>.md.bak agents/<role>.md; node --test plugins/jbit/tests/docs.check.mjs (output filtered to not-ok lines, errors and totals); script below
+
+## Mutated: handoff rule cut from builder.md
+lines changed vs original: 1
+not ok 12 - each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: "builder.md lacks: When the detail doesn't fit in 20 lines, write all of it to `docs/evidence/stage-<n>/build-<part>.md`, where `<part>` is a short name for the part the brief gave you, unique to that brief"
+# pass 33
+# fail 1
+## Restored builder.md
+# pass 34
+# fail 0
+
+## Mutated: handoff rule cut from verifier.md
+lines changed vs original: 1
+not ok 12 - each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'verifier.md lacks: under a `## Report` heading, hand back your full results table'
+# pass 33
+# fail 1
+## Restored verifier.md
+# pass 34
+# fail 0
+
+## Mutated: handoff rule cut from reviewer.md
+lines changed vs original: 1
+not ok 12 - each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'reviewer.md lacks: Write the full review to `docs/evidence/stage-<n>/review.md`, or `docs/reviews/<date>-<topic>.md` outside a plan stage'
+# pass 33
+# fail 1
+## Restored reviewer.md
+# pass 34
+# fail 0
+
+## Mutated: handoff rule cut from researcher.md
+lines changed vs original: 1
+not ok 12 - each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: "researcher.md lacks: When the detail doesn't fit in 20 lines, write all of it to the note"
+# pass 33
+# fail 1
+## Restored researcher.md
+# pass 34
+# fail 0
+
+--- mutate.sh
+#!/bin/bash
+# For each role agent: back it up, cut its handoff rule, run the docs check, restore it, run the docs check again.
+cd ~/src/repos/jbit
+declare -A CUT=(
+  [builder]=" When the detail doesn't fit in 20 lines[^.]*\.[^.]*left out\."
+  [researcher]=" When the detail doesn't fit in 20 lines[^.]*left out\."
+  [verifier]=" Then, under a \`## Report\` heading[^;]*;[^.]*\`report\.md\`\."
+  [reviewer]=" Write the full review to[^.]*\.[^.]*\.[^:]*:[^.]*\."
+)
+for role in builder verifier reviewer researcher; do
+  f=plugins/jbit/agents/$role.md
+  cp $f /tmp/$role.md.bak
+  echo "## Mutated: handoff rule cut from $role.md"
+  sed -i -E "s/${CUT[$role]}//" $f
+  echo "lines changed vs original: $(diff /tmp/$role.md.bak $f | grep -c '^>')"
+  node --test plugins/jbit/tests/docs.check.mjs 2>&1 | grep -E "^not ok|^  error|^# (pass|fail)"
+  cp /tmp/$role.md.bak $f
+  echo "## Restored $role.md"
+  node --test plugins/jbit/tests/docs.check.mjs 2>&1 | grep -E "^not ok|^# (pass|fail)"
+  echo
+done

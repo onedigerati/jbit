@@ -1,0 +1,7 @@
+$ python3 cmp.py verify-run-1.jsonl   # order of agent starts, handbacks, report.md writes and the main session naming report.md; rows compared with the verifier's ## Report
+event 2: main starts jbit:verifier; brief mentions report.md: Save raw proof files in docs/evidence/stage-1/ (command on first line; create docs/evidence/.gitignore per the skill if missing). Do NOT write report.md — I'll write it. Read narrowly and stop when done.
+event 88: verifier handback arrives; carries '## Report': True
+event 241: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+   its 4 check rows: 0 identical to rows of the latest verifier handback's ## Report (4 rows); results ['pass', 'pass', 'pass', 'pass'] vs handback ['fail', 'fail', 'fail', 'fail']
+event 254: main text names report.md
+note (by hand): event 241's pass rows are the main session's own re-check after it edited cart.mjs and cart.test.mjs (events 118-145); no second verifier was started. The verifier's four fail rows appear only as prose under ## History.

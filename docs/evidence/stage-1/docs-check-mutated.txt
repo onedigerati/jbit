@@ -1,0 +1,22 @@
+$ cp plugins/jbit/agents/reviewer.md $SCRATCH/reviewer.md.bak; sha256sum plugins/jbit/agents/reviewer.md; sed -i -E 's/ Write the full review to[^.]*\.[^.]*\.[^:]*:[^.]*\.//' plugins/jbit/agents/reviewer.md; diff; node --test plugins/jbit/tests/docs.check.mjs; cp $SCRATCH/reviewer.md.bak plugins/jbit/agents/reviewer.md; sha256sum; cmp; node --test docs check
+## before
+7532f0bb78e2214b3d4a6527b762d84f92d872c3e924c5fcfbed86b52ecd4ee6  plugins/jbit/agents/reviewer.md
+## Mutated: handoff rule cut from reviewer.md
+removed text:
+<  Write the full review to `docs/evidence/stage-<n>/review
+< md`, or `docs/reviews/<date>-<topic>
+< md` outside a plan stage, where `<n>` is the stage the brief names, else the stage of the work under review; when that's unclear, use the `docs/reviews/` path
+<  Mask secrets, tokens and personal data in it
+<  List fix-now findings first, then defer, then reject: each finding with its location and how you confirmed it, then what you checked and found sound
+lines changed vs original: 1
+not ok 12 - each role agent hands back 20 lines at most, no blank lines; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'reviewer.md lacks: Write the full review to `docs/evidence/stage-<n>/review.md`, or `docs/reviews/<date>-<topic>.md` outside a plan stage'
+# pass 33
+# fail 1
+## Restored reviewer.md
+7532f0bb78e2214b3d4a6527b762d84f92d872c3e924c5fcfbed86b52ecd4ee6  plugins/jbit/agents/reviewer.md
+cmp: identical to backup
+git diff of reviewer.md vs HEAD unchanged from pre-mutation:  plugins/jbit/agents/reviewer.md | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+# pass 34
+# fail 0

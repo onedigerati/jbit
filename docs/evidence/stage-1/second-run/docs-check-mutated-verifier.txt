@@ -1,0 +1,81 @@
+$ python3 mutate.py   # per role, two mutations: cut the overflow/report rule, then cut "Blank lines count toward the 20."; run docs check; restore; rerun (output filtered to not-ok, error, totals)
+## Mutated builder.md: cut overflow/report rule (254 chars removed)
+removed text: When the detail doesn't fit in 20 lines, write all of it to `docs/evidence/stage-<n>/build-<part>.md`, where `<part>` is a short name for the part the brief gav
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: "builder.md lacks: When the detail doesn't fit in 20 lines, write all of it to `docs/evidence/stage-<n>/build-<part>.md`, where `<part>` is a short name for the part the brief gave you, unique to that brief"
+# pass 33
+# fail 1
+## Restored builder.md
+# pass 34
+# fail 0
+
+## Mutated builder.md: cut blank-lines rule (33 chars removed)
+removed text: Blank lines count toward the 20.
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'builder.md lacks: Blank lines count toward the 20.'
+# pass 33
+# fail 1
+## Restored builder.md
+# pass 34
+# fail 0
+
+## Mutated verifier.md: cut overflow/report rule (217 chars removed)
+removed text: Then, under a `## Report` heading, hand back your full results table: a pass or fail per check, how it was shown and its evidence path. That table is not limite
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'verifier.md lacks: under a `## Report` heading, hand back your full results table'
+# pass 33
+# fail 1
+## Restored verifier.md
+# pass 34
+# fail 0
+
+## Mutated verifier.md: cut blank-lines rule (33 chars removed)
+removed text: Blank lines count toward the 20.
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'verifier.md lacks: Blank lines count toward the 20.'
+# pass 33
+# fail 1
+## Restored verifier.md
+# pass 34
+# fail 0
+
+## Mutated reviewer.md: cut overflow/report rule (254 chars removed)
+removed text: Write the full review to `docs/evidence/stage-<n>/review.md`, or `docs/reviews/<date>-<topic>.md` outside a plan stage, where `<n>` is the stage the brief names
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'reviewer.md lacks: Write the full review to `docs/evidence/stage-<n>/review.md`, or `docs/reviews/<date>-<topic>.md` outside a plan stage'
+# pass 33
+# fail 1
+## Restored reviewer.md
+# pass 34
+# fail 0
+
+## Mutated reviewer.md: cut blank-lines rule (33 chars removed)
+removed text: Blank lines count toward the 20.
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'reviewer.md lacks: Blank lines count toward the 20.'
+# pass 33
+# fail 1
+## Restored reviewer.md
+# pass 34
+# fail 0
+
+## Mutated researcher.md: cut overflow/report rule (135 chars removed)
+removed text: When the detail doesn't fit in 20 lines, write all of it to the note, give its full path in the report, and say how much you left out.
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: "researcher.md lacks: When the detail doesn't fit in 20 lines, write all of it to the note"
+# pass 33
+# fail 1
+## Restored researcher.md
+# pass 34
+# fail 0
+
+## Mutated researcher.md: cut blank-lines rule (33 chars removed)
+removed text: Blank lines count toward the 20.
+not ok 12 - each role agent hands back 20 lines at most, blank lines counted; builder and researcher overflow into a file with its full path and how much they left out; the verifier hands back its table; the reviewer always saves its full review
+  error: 'researcher.md lacks: Blank lines count toward the 20.'
+# pass 33
+# fail 1
+## Restored researcher.md
+# pass 34
+# fail 0
+

@@ -1,0 +1,16 @@
+$ node extract.mjs <run> | grep -E "init plugin|START|END|^result"   # each of the three headless runs
+## review-run-1
+event 1: init plugin jbit path=~/src/repos/jbit/plugins/jbit version=1.2.0; agents include jbit:builder, jbit:researcher, jbit:reviewer, jbit:verifier
+event 2: main START Agent subagent_type=jbit:reviewer "Review stage 1 diff" model=-
+event 35: END jbit:reviewer is_error=false
+result: success, is_error=false, turns=2
+## review-run-2
+event 1: init plugin jbit path=~/src/repos/jbit/plugins/jbit version=1.2.0; agents include jbit:builder, jbit:researcher, jbit:reviewer, jbit:verifier
+event 2: main START Agent subagent_type=jbit:reviewer "Review stage 1 diff" model=-
+event 36: END jbit:reviewer is_error=false
+result: success, is_error=false, turns=2
+## verifier-run
+event 1: init plugin jbit path=~/src/repos/jbit/plugins/jbit version=1.2.0; agents include jbit:builder, jbit:researcher, jbit:reviewer, jbit:verifier
+event 2: main START Agent subagent_type=jbit:verifier "Verify stage 1 check 4" model=-
+event 47: END jbit:verifier is_error=false
+result: success, is_error=false, turns=2

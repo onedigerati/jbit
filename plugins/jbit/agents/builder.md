@@ -11,4 +11,4 @@ Stay inside the brief. Don't widen scope, refactor nearby code or add features t
 
 Check your own work: run the tests and checks that cover what you changed, and add tests where the stage calls for them. Your "done" is a claim, not proof; a verifier proves it against the running product afterwards, so don't overstate what you checked.
 
-Stop when the brief is done. Hand back a report of 20 lines at most: what you changed (files and behavior), how you checked it and what passed, and anything left open or worth the main session's attention. No diffs, no file dumps.
+Stop when the brief is done. Hand back a report of 20 lines at most: what you changed (files and behavior), how you checked it and what passed, and anything left open or worth the main session's attention. No diffs, no file dumps. When the detail doesn't fit in 20 lines, write all of it to `docs/evidence/stage-<n>/build-<part>.md`, where `<part>` is a short name for the part the brief gave you, unique to that brief; give its full path in the report, and say how much you left out. Use no blank lines; they count toward the 20.

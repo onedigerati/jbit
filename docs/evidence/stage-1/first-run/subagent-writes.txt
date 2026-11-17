@@ -1,0 +1,13 @@
+$ node extract.mjs <run> | grep -E "(Write|Edit) |Subagents should"   # every Write/Edit by main or subagent, and the tool error that refused one
+## review-run-1
+event 21: subagent(jbit:reviewer) Write /tmp/rv1/p.mjs (16 lines)
+## review-run-2
+event 14: subagent(jbit:reviewer) Write /tmp/rv/p.mjs (19 lines)
+event 21: subagent(jbit:reviewer) Write /tmp/rv/q.mjs (10 lines)
+event 32: subagent(jbit:reviewer) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md (73 lines)
+## verifier-run
+event 36: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/formatPrice-direct.txt (20 lines)
+event 39: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/tests.txt (18 lines)
+event 42: subagent(jbit:verifier) Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md (15 lines)
+event 43: subagent(jbit:verifier) tool error: <tool_use_error>Subagents should return findings as text, not write report files. Include this content in your final response instead.</tool_use_error>
+(no Write or Edit by the main session in any run)

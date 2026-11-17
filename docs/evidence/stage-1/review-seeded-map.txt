@@ -1,0 +1,19 @@
+$ manual map: each seeded problem (second-run/seeded-problems.txt) to where review.md (scratch-review.md) records it, read by the verifier
+P1  live key in source              -> Fix now 1
+P2  shared default array            -> Fix now 10
+P3  subtotal off-by-one             -> Fix now 3
+P4  findItem assigns                -> Fix now 9
+P5  removeItem unknown id           -> Fix now 8
+P6  parseQty                        -> Defer 2
+P7  applyDiscount returns discount not total -> not found (finding 5 covers clamping/rounding only)
+P8  applyDiscount not clamped / not integer cents -> Fix now 5
+P9  isExpired inverted              -> Fix now 4
+P10 eval injection                  -> Fix now 2
+P11 addTax string concat / returns subtotal+tax -> Fix now 6
+P12 formatPrice /10                 -> Fix now 7
+P13 saveCart swallows errors, put not awaited -> Defer 1
+P14 key persisted and logged with the cart -> Fix now 1, Defer 3
+P15 weak / skipped tests            -> Fix now 11
+P16 checkout mixes number and string tax, not integer cents -> Fix now 6 and 5, Plan checks table row 3
+Found 15 of 16; all 15 are in review.md. Order in the file: Plan checks, Fix now (11), Defer (4), Reject (1), Checked and sound: fix-now first among findings.
+Report handed back: 11 fix-now lines all present in the file's Fix now section, in the same order; "Defer 4, reject 1" matches the file.

@@ -1,0 +1,5 @@
+$ grep -n "\"version\"" plugins/jbit/.claude-plugin/plugin.json; grep -n -o "[^<>]\{0,40\}1\.2\.0[^<>]\{0,40\}" docs/field-guide.html; grep -n -i "doesn.t fit\|review\.md" plugins/jbit/README.md
+3:  "version": "1.2.0",
+269:JBIT 1.2.0
+545:JBIT 1.2.0 · Just build it. Plans it. Proves it. S
+75:Each role hands back a report of 20 lines at most, blank lines included. When the detail doesn't fit, the builder and the researcher write all of it to a file, give its full path and say how much they left out: the builder to `docs/evidence/stage-<n>/build-<part>.md`, the researcher to its note. The verifier also hands back its full results table under a `## Report` heading, and the main session saves it as `docs/evidence/stage-<n>/report.md`. The reviewer, started when you ask for a review, always saves its full review to `docs/evidence/stage-<n>/review.md` (or `docs/reviews/<date>-<topic>.md` outside a plan stage), fix-now findings first, then defer, then reject, with secrets and personal data masked, and gives its full path. That is the only file it writes.

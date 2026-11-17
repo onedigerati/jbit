@@ -1,0 +1,19 @@
+$ cd /tmp/jbit-s1-overflow && git status --short --untracked-files=all; sha256sum cart.mjs cart.test.mjs; git diff --stat HEAD   # before (after reset.sh) and after verify run 1
+before:
+reset:  M cart.mjs  M cart.test.mjs 
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+exit 0
+after:
+ M cart.mjs
+ M cart.test.mjs
+?? docs/evidence/.gitignore
+?? docs/evidence/stage-1/audit.txt
+?? docs/evidence/stage-1/probe-behaviour.txt
+?? docs/evidence/stage-1/report.md
+?? docs/evidence/stage-1/tests.txt
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 16 +++++++++++++++
+ 2 files changed, 77 insertions(+), 3 deletions(-)

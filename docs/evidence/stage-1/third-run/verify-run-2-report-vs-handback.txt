@@ -1,0 +1,11 @@
+$ python3 cmp.py verify-run-2.jsonl   # order of agent starts, handbacks, report.md writes and the main session naming report.md; rows compared with the verifier's ## Report
+event 6: main starts jbit:verifier; brief mentions report.md: - Do NOT write docs/evidence/stage-1/report.md. I will write it from your report. Do not edit PLAN.md, do not commit, and do not fix the product code. Report failures as fail and anything you couldn't prove as unproven.
+event 111: verifier handback arrives; carries '## Report': True
+event 128: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+   its 4 check rows: 0 identical to rows of the latest verifier handback's ## Report (4 rows); results ['fail', 'fail', 'fail', 'fail'] vs handback ['fail', 'fail', 'fail', 'fail']
+event 142: main starts jbit:verifier; brief mentions report.md: - Overwrite the evidence files in docs/evidence/stage-1/ (tests.txt, apply-discount.txt, remove-item.txt, checkout.txt, format-price.txt, mutation.txt). Each is raw output with the command on its first line. Mask secrets. Do NOT write report.md, edit PLAN.md, or commit.
+event 220: verifier handback arrives; carries '## Report': True
+event 252: main Write /tmp/jbit-s1-overflow/docs/evidence/stage-1/report.md
+   its 4 check rows: 0 identical to rows of the latest verifier handback's ## Report (4 rows); results ['pass', 'pass', 'pass', 'pass'] vs handback ['pass', 'pass', 'pass', 'pass']
+event 270: main text names report.md
+note (by hand): the event 128 rows are the handback's rows with light rewording (same check text, same fail results, same evidence links); the event 252 rows likewise follow the second verifier's pass rows.

@@ -7,18 +7,10 @@ Make sure the 20-line handoff never loses findings without anyone knowing. Each 
 2026-11-17 · tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 31 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 1 of 1 · Handoff overflow
-Risk: agent permissions (the `reviewer` gains Write); otherwise prompt text and docs
-Checks:
-- [ ] `builder.md`, `verifier.md`, `reviewer.md` and `researcher.md` each say: a report of 20 lines at most; when the detail doesn't fit, write it all to the role's file (builder `docs/evidence/stage-<n>/build-<part>.md`, verifier `report.md`, reviewer `review.md`, researcher its note), give the path, and say how much was left out. The reviewer's file lists fix-now findings first (proof: docs check, and a mutation showing it fails when the rule is cut from one file)
-- [ ] `reviewer.md` lists `Write` in its tools, limits its writes to the review file, and its description no longer says JBIT's skills start it (proof: docs check)
-- [ ] In a scratch repo with a stage whose diff holds 12 or more seeded problems, a headless run that starts `jbit:reviewer` gets back a report of 20 lines at most with the `review.md` path; the file holds every seeded problem the reviewer found, fix-now first, and nothing outside the review file changed (proof: saved run, a test can't start Claude Code)
-- [ ] In the same scratch repo, a headless `jbit:verifier` run writes `docs/evidence/stage-1/report.md` with its own Write call. Either result settles the 2026-11-08 question and is logged as a decision (proof: saved run)
-- [ ] `plugin.json` and the field guide say 1.2.0, the README describes the overflow rule and the reviewer's file, and `claude plugin validate .`, `claude plugin test plugins/jbit` and the docs check are green (proof: test run)
-Open: none
+All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is wanted.
 
 ## Stages
-- [ ] 1. Handoff overflow — overflow rule in the four agent files, reviewer gets Write and `review.md`, docs check, headless proof, 1.2.0
+- [x] 1. Handoff overflow — overflow rule in the four agent files, reviewer gets Write and `review.md`, docs check, headless proof, 1.2.0 · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md) (check 4 accepted by the user; see Decisions)
 
 ## Decisions
 - 2026-11-17 · The reviewer gets the Write tool and saves its full review to `docs/evidence/stage-<n>/review.md`. The user chose this over keeping it read-only and having it report a count of what it cut. Why: the report is the only copy of a review's findings, unlike a builder's diff, a verifier's `report.md` or a researcher's note.
@@ -27,10 +19,22 @@ Open: none
 - 2026-11-17 · (pm) Every overflowing report says how much it left out. Why: a silent cut is the failure this plan is about.
 - 2026-11-17 · (pm) Version 1.2.0: new behaviour, nothing removed.
 - 2026-11-17 · (pm) Scale: one stage, no PRD, so one plan. No research: everything this plan depends on is inside the repo, and the subagent-write question is tested directly.
-- 2026-11-17 · (pm) The 2026-11-08 finding that subagents can't write report `.md` files looks out of date. In 1.1.0's headless run ([run](plans/2026-11-17-fan-out-limit/evidence/stage-1/stage-run.jsonl.txt)) the verifier subagent wrote `report.md` itself; only shell redirection was blocked, and the main session then rewrote the file. The fourth check confirms it in a clean run instead of resting on that one sighting.
+- ~~2026-11-17 · (pm) The 2026-11-08 finding that subagents can't write report `.md` files looks out of date. In 1.1.0's headless run ([run](plans/2026-11-17-fan-out-limit/evidence/stage-1/stage-run.jsonl.txt)) the verifier subagent wrote `report.md` itself; only shell redirection was blocked, and the main session then rewrote the file. The fourth check confirms it in a clean run instead of resting on that one sighting.~~ — wrong: that run's verifier Write was refused too, and the main session wrote the file.
+- 2026-11-17 · (autopilot) Settled by check 4, but not as the plan expected: Claude Code refuses a subagent's Write of `report.md` with "Subagents should return findings as text, not write report files." This happened in this stage's run and also in 1.1.0's. The same run let the reviewer write `review.md` and the verifier write `.txt` evidence. The 2026-11-08 finding still holds, so the verifier's overflow into `report.md` can't work. Stopped for the user ([evidence](evidence/stage-1/subagent-writes.txt)).
+- 2026-11-17 · The verifier hands back its full results table as text, and the main session writes `report.md`, which is what already happened in practice. `jbit:verify` says so. Builder, reviewer and researcher keep their overflow files, which worked. Checks 1 and 4 were reworded to match. This was the user's choice, after the stop; the risk is that Claude Code widens the refusal to other `.md` files.
+- 2026-11-17 · (autopilot) The reviewer always saves its full review to `review.md`, not only when it overflows. Why: that is the user's choice and the Goal's wording; the builder had made it overflow-only.
 
+- 2026-11-17 · (autopilot) Fix round 2: the reviewer's handback has a set layout (the review file's full path on line 1, one line per fix-now finding, one line counting the rest, one line on what is sound), and every role uses no blank lines. Why: a line limit stated alone still produced 23 lines.
+- 2026-11-17 · (autopilot) Fix round 3: after a verifier, verify writes its table to `report.md` before any fix, and re-verifies with a fresh verifier rather than in the main session. Why: one run had replaced the verifier's fail rows with the main session's own re-check.
+- 2026-11-17 · (autopilot) The reviewer may write probe scripts outside the repo; inside it, its only file is the review. Why: it confirms findings by running code, which `/tmp` probes did in every run.
+- 2026-11-17 · (autopilot) Words cut from `verify` to pay for the new rules, keeping every rule and every checked phrase: the opening line, some examples (`pyproject.toml`, `govulncheck`, the "unproven" examples, a dev-server aside) and "its agent file sets those". Why: the six skills are at exactly 5,000 words.
+- 2026-11-17 · Check 4 accepted as passed after three fix rounds. Round 4's run 2 wrote the verifier's rows word for word but in verify's report format, which meets the check's wording; "exactly as it came" was a stricter bar added in fix round 3. verify now says "rows as they came, in this format". The user chose this. The report keeps the verifier's fail row and adds a History line.
+- 2026-11-17 · (autopilot) Code review, deferred: the field guide still says the skills hand work to all four role agents (left alone because the file has the user's uncommitted edits), and `docs/reviews/` isn't carried by archiving. Rejected: "Write is enforced by prompt alone" — the user chose to give the reviewer Write, and check 3 showed it keeps to the review file in the repo.
 ## Open questions
-- `docs/field-guide.html` has your uncommitted changes. The version bump edits only its version line, and the commit stages that hunk alone, leaving the rest uncommitted — for the user, before the stage commits.
+- The six skills sit at exactly 5,000 words, the docs check's limit, so the next skill change has to trim first — for a later plan.
+- In every headless review the reviewer missed one planted bug (P7, `applyDiscount` returns the discount instead of the total) — review quality, outside this plan.
+- The field guide's role-agent line and `docs/reviews/` archiving (deferred from code review) — for a later plan.
+- `docs/field-guide.html` still has your uncommitted changes; the 1.2.0 commit took only its two version lines — for the user.
 - milestone-close-gap's `tal-04-stays-blank` and `m1-not-ticked` graders judge changed files only, so a run that rightly changes nothing fails them — for a later plan.
 - Single-run eval drops outside 1.0.0's pass condition: charter-prd 0.92 → 0.64, regression-caught 1.0 → 0.60, research-spike 1.0 → 0.75 — worth a two-run check before shipping, for the user.
 - A `/jbit:stage` run in a repo with a project `builder.md` hasn't been shown to pick `builder` over `jbit:builder` — for a later plan.

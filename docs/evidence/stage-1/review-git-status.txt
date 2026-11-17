@@ -1,0 +1,26 @@
+$ cd /tmp/jbit-s1-overflow && git status --short --untracked-files=all; sha256sum cart.mjs cart.test.mjs; git diff --stat HEAD   # before (after reset.sh) and after the review run
+before:
+reset:  M cart.mjs  M cart.test.mjs 
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+exit 0
+after:
+ M cart.mjs
+ M cart.test.mjs
+?? docs/evidence/stage-1/review.md
+aa9249d3b72e13d130180194d8e1ec4a17a981008215c404ffb0940b7420a24d  cart.mjs
+eddf8393773ffcdcb891e39256f6de94ed8f15933f8f63a4155c9087668ea802  cart.test.mjs
+ cart.mjs      | 64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ cart.test.mjs | 16 +++++++++++++++
+ 2 files changed, 77 insertions(+), 3 deletions(-)
+files the reviewer wrote (transcript): /tmp/probe-s1/p.mjs /tmp/jbit-s1-overflow/docs/evidence/stage-1/review.md 
+--- reset.sh
+#!/bin/bash
+# Reset /tmp/jbit-s1-overflow to its seeded state: baseline commit 5836778 plus the seeded cart.mjs / cart.test.mjs diff, nothing else.
+set -e
+cd /tmp/jbit-s1-overflow
+git reset -q --hard 5836778
+git clean -qfdx
+cp $SCRATCH/scratchpad/seed/cart.mjs $SCRATCH/scratchpad/seed/cart.test.mjs .
+echo "reset: $(git status --short --untracked-files=all | tr '\n' ' ')"
+sha256sum cart.mjs cart.test.mjs

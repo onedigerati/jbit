@@ -1,0 +1,18 @@
+# Stage 1 · Role agents — evidence
+Verified 2026-11-17 on 74dce4c, plus uncommitted changes (docs/PLAN.md)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `plugins/jbit/agents/` has `builder.md`, `reviewer.md`, `verifier.md` and `researcher.md`, each with a description, a short role prompt carrying JBIT's brief rules (narrow reading, stop when done, 20-line handoff) and no `model` or `effort`, so each runs as the session until the user overrides it | pass | [validate.txt](validate.txt) (`✔ Validation passed`); [agent-files.txt](agent-files.txt): four files, 14–15 lines each, each has a description, "Read narrowly", "stop when", "20 lines at most", and 0 `model`/`effort` lines; [control-jbit-builder-summary.txt](control-jbit-builder-summary.txt): with no project file, `jbit:builder` runs on the session's `claude-opus-5-5` (modelUsage only opus) |
+| A project `.claude/agents/builder.md` with `model: haiku` overrides the plugin's builder when a skill starts it the way the skills will (`jbit:builder` or `builder`, whichever the run shows works): the agent reports running on haiku | pass, for `builder` only | [override-file.txt](override-file.txt); [override-builder-summary.txt](override-builder-summary.txt) / [override-builder.jsonl](override-builder.jsonl): `subagent_type: "builder"` → subagent answers `claude-haiku-5-5`, modelUsage `claude-opus-5-5` + `claude-haiku-5-5`; [override-jbit-builder-summary.txt](override-jbit-builder-summary.txt) / [override-jbit-builder.jsonl](override-jbit-builder.jsonl): `subagent_type: "jbit:builder"` in the same repo is **not** overridden → `claude-opus-5-5`, modelUsage opus only; control [control-jbit-builder.jsonl](control-jbit-builder.jsonl) |
+| The README says how to set a role's model and effort for one project or for every repo: copy the role file, change the two fields | pass | [docs-check.txt](docs-check.txt): `ok 48 - the plugin README says how to set a role agent's model and effort for one project or every repo` (plugins/jbit/README.md, `### Role agents`) |
+
+Project checks: validate pass ([validate.txt](validate.txt)) · tests 561 pass / 0 fail, baseline 561 ([tests.txt](tests.txt)) · docs checks 48/48, baseline 47 + 1 new ([docs-check.txt](docs-check.txt)) · no type check, lint or build step (plugin of Markdown and TS hooks run by `claude plugin test`)
+Audit: none run; the plugin ships no npm dependencies to audit (would be `npm audit --omit=dev` if it did)
+
+## Notes
+- The override resolves by bare name: the session's agent list holds both `builder` (project) and `jbit:builder` (plugin) as separate entries. A project or user file named `builder` overrides only `subagent_type: "builder"`; the skills must start roles as `builder`, not `jbit:builder`, for the README's override to apply.
+- Added by the main session after the verifier's run: [control-bare-builder.jsonl](control-bare-builder.jsonl), in the control repo with no project file, `subagent_type: "builder"` fails with `Agent type 'builder' not found. Available agents: claude, Explore, general-purpose, jbit:builder, …`. A bare name resolves only when a user or project file defines it, so the skills start `builder` when the session's agent list has it, else `jbit:builder`.
+- Headless runs: `claude -p` with `--plugin-dir plugins/jbit --output-format stream-json --verbose`, session model `claude-opus-5-5`, scratch git repos outside the project. The subagent's own messages don't appear in the stream; its model is shown by the result's `modelUsage` and its self-report.
+- The `--plugin-dir` copy (source `jbit@inline`) was the only jbit plugin loaded; the installed 0.18.1's hooks emitted only empty `ui_status` events and did not interfere.
+- Paths, usernames and session IDs in the saved outputs are masked.

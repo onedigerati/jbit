@@ -188,7 +188,7 @@ JBIT's skills hand delegated work to four role agents, defined in the plugin's `
 - **`verifier`** checks finished work against the running product and the project's own checks.
 - **`researcher`** looks up a research question (web or domain) for a plan or a stage and reports what it found.
 
-The plugin's files set no model or effort, so each role runs as the session. Because the skills start these roles by name, a same-named agent file of your own takes over:
+The plugin's files set no model or effort, so each role runs as the session. A same-named agent file of your own takes over: the skills start a role by its bare name (`builder`) when you've defined one, and by the plugin's name (`jbit:builder`) otherwise.
 
 - **For one project**, copy the role's file to `.claude/agents/<role>.md` in that repo (for example `.claude/agents/builder.md`).
 - **For every repo**, copy it to `~/.claude/agents/<role>.md`.

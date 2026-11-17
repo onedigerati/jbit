@@ -7,16 +7,12 @@ Cut JBIT down to what still earns its place on today's models, and ship it as 1.
 2026-11-17 · tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 47 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 1 of 4 · Role agents
-Risk: none (agent definition files, no code)
-Checks:
-- [ ] `plugins/jbit/agents/` has `builder.md`, `reviewer.md`, `verifier.md` and `researcher.md`, each with a description, a short role prompt carrying JBIT's brief rules (narrow reading, stop when done, 20-line handoff) and no `model` or `effort`, so each runs as the session until the user overrides it (proof: `claude plugin validate .` and the files, a test can't judge a role prompt)
-- [ ] A project `.claude/agents/builder.md` with `model: haiku` overrides the plugin's builder when a skill starts it the way the skills will (`jbit:builder` or `builder`, whichever the run shows works): the agent reports running on haiku (proof: headless run in a scratch repo, saved output, a test can't start Claude Code)
-- [ ] The README says how to set a role's model and effort for one project or for every repo: copy the role file, change the two fields (proof: docs check)
-Open: none
+Mode: autopilot — unattended
+Agents: wide — confirmed 2026-11-17 08:56
+Stage 2 of 4 · Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`
 
 ## Stages
-- [ ] 1. Role agents — `builder`, `reviewer`, `verifier`, `researcher` agent files; prove a project file overrides one; README section
+- [x] 1. Role agents — `builder`, `reviewer`, `verifier`, `researcher` agent files; prove a project file overrides one; README section
 - [ ] 2. Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review on risky stages via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`; no Agents, Models or Mode-level text
 - [ ] 3. Small hook — `## Now` section and the secret guard only; delete `project.ts`, `models.ts`, the session state and the outward code in `shell.ts`; tests cut to what's kept; a plan with old Mode, Agents or Models lines is shown, not acted on
 - [ ] 4. Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run the ablation subset, README and field guide, retire standing decisions for removed features, version 1.0.0
@@ -28,11 +24,12 @@ Open: none
 - 2026-11-17 · Ship as 1.0.0, replacing the plugin in place — the user's pick. 0.18.1 stays in git history. Old `Mode:`, `Agents:` and `Models:` lines in existing plans (eVelo's) are left alone and ignored.
 - 2026-11-17 · Model and effort per role come from agent files, not a plan line: the plugin ships `builder`, `reviewer`, `verifier` and `researcher` without `model` or `effort`, and the user overrides a role with a same-named file in the project's `.claude/agents/` or their own `~/.claude/agents/`. Skills never pass `model` or `effort` on the Agent call, because a call's values beat the file's and would defeat the override. A same-named file replaces the whole definition, so an override is a copy with two fields changed ([research](research/subagent-model-effort.md)).
 - 2026-11-17 · Agents: balanced for this plan — the user's pick, over the `wide` line carried from the last plan.
+- 2026-11-17 · Agents: wide for the autopilot run — the user's pick in their command ("Jbit autopilot wide"), replacing balanced.
+- 2026-11-17 · (unattended) Skills start a role as `builder` when the session's agent list has it, else as `jbit:builder`: stage 1's runs show a project `builder.md` overrides only the bare name, and the bare name doesn't resolve without one ([evidence](evidence/stage-1/report.md)). Stage 2's skills follow this.
 - 2026-11-17 · Scale: 4 stages, one release, no PRD; no signal fired, one plan.
 - 2026-11-17 · Stage 3's risk is secrets: it rewrites the hook around the secret guard, so it gets a security review (`/security-review`, or `jbit:review` while 0.18.1 is the installed version).
 
 ## Open questions
-- Does a project `.claude/agents/builder.md` override an explicit `jbit:builder` call? The docs don't say ([research](research/subagent-model-effort.md), medium confidence). Stage 1 tests it; if it doesn't, the skills start the role by its bare name — for stage 1's builder.
 - `plugins/jbit/evals-ablation/` (untracked) holds the ablation's case copies and raw results. Delete it once the user has looked, or after stage 4's re-run — for the user.
 - Until 1.0.0 is reinstalled from the local marketplace, this session runs the installed 0.18.1 hook and its commit gate. That's fine for this plan, but stage 4 says to reinstall before re-running the evals.
 

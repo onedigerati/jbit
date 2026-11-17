@@ -1,0 +1,31 @@
+$ for f in plugins/jbit/agents/*.md; do frontmatter; grep for model/effort and brief rules; done
+== plugins/jbit/agents/builder.md (14 lines)
+---
+name: builder
+description: Builds one stage or one independent part of a stage from JBIT's plan. JBIT's stage and autopilot skills start it with a brief that quotes the stage's acceptance checks.
+---
+model/effort lines in frontmatter: 0
+narrow reading: 1 · stop: 1 · 20 lines: 1
+== plugins/jbit/agents/researcher.md (15 lines)
+---
+name: researcher
+description: Looks up what a plan needs from real sources, such as web docs, libraries or a domain question. JBIT's plan skill starts it during research, and stage or autopilot start it when a stage needs a lookup.
+tools: Read, Grep, Glob, WebFetch, WebSearch, Write
+---
+model/effort lines in frontmatter: 0
+narrow reading: 1 · stop: 1 · 20 lines: 1
+== plugins/jbit/agents/reviewer.md (15 lines)
+---
+name: reviewer
+description: Reviews recent work with fresh eyes, as an agent that didn't write it. JBIT's review, stage and autopilot skills start it at the end of risky stages and milestones, or when the user asks for a review.
+tools: Read, Grep, Glob, Bash
+---
+model/effort lines in frontmatter: 0
+narrow reading: 1 · stop: 1 · 20 lines: 1
+== plugins/jbit/agents/verifier.md (14 lines)
+---
+name: verifier
+description: Proves a built stage against the running product. JBIT's verify, stage and autopilot skills start it after a build, so the checks are run by an agent that built nothing.
+---
+model/effort lines in frontmatter: 0
+narrow reading: 1 · stop: 1 · 20 lines: 1

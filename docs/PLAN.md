@@ -9,11 +9,11 @@ Cut JBIT down to what still earns its place on today's models, and ship it as 1.
 ## Now
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-17 08:56
-Stage 2 of 4 · Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`
+Stage 3 of 4 · Small hook — `## Now` section and the secret guard only; delete `project.ts`, `models.ts`, the session state and the outward code in `shell.ts`; tests cut to what's kept; a plan with old Mode, Agents or Models lines is shown, not acted on
 
 ## Stages
 - [x] 1. Role agents — `builder`, `reviewer`, `verifier`, `researcher` agent files; prove a project file overrides one; README section
-- [ ] 2. Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review on risky stages via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`; no Agents, Models or Mode-level text
+- [x] 2. Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `autopilot`, `charter` short; fold the quick-fix rule into `stage`; review on risky stages via `/code-review` and `/security-review`; delete `approve`, `fix`, `review`; no Agents, Models or Mode-level text
 - [ ] 3. Small hook — `## Now` section and the secret guard only; delete `project.ts`, `models.ts`, the session state and the outward code in `shell.ts`; tests cut to what's kept; a plan with old Mode, Agents or Models lines is shown, not acted on
 - [ ] 4. Evals, docs, 1.0.0 — drop evals for removed behaviour, re-run the ablation subset, README and field guide, retire standing decisions for removed features, version 1.0.0
 
@@ -26,10 +26,15 @@ Stage 2 of 4 · Short skills — rewrite `plan`, `stage`, `verify`, `resume`, `a
 - 2026-11-17 · Agents: balanced for this plan — the user's pick, over the `wide` line carried from the last plan.
 - 2026-11-17 · Agents: wide for the autopilot run — the user's pick in their command ("Jbit autopilot wide"), replacing balanced.
 - 2026-11-17 · (unattended) Skills start a role as `builder` when the session's agent list has it, else as `jbit:builder`: stage 1's runs show a project `builder.md` overrides only the bare name, and the bare name doesn't resolve without one ([evidence](evidence/stage-1/report.md)). Stage 2's skills follow this.
+- 2026-11-17 · (unattended) Autopilot without the hook's levels: it runs the remaining stages in a row, makes judgement calls inside the plan's intent itself and logs them dated as `(autopilot)`, and stops for the user only when a check still fails after three fix rounds, a builder's report and the evidence disagree, the Goal or scope would change, or the next step is outward or hard to undo (which Claude Code's permission modes also gate). Why: the plan drops the Mode levels and approval grammar, and these are the stops that protect the user without them.
+- 2026-11-17 · (unattended) Stage 2 cuts `docs.check.mjs`'s skill assertions to the new skills; its README, hook and field-guide assertions stay until stages 3–4 change those files. The hook's working rules still name `fix` and `review` until stage 3 rewrites them. Why: keeps the suite green at every stage close.
+- 2026-11-17 · (unattended) `charter` drops backfilling coverage from shipped plans and the fine-grained re-chart cases (restored IDs, ID clashes, moved PRD sections): kept are PRD to roadmap, the ledger, re-charting without losing history, and milestone close on evidence. Why: the word budget, and eVelo was charted from the start.
+- 2026-11-17 · (unattended) "Short" is measured: the six skills at most 5,000 words together, none over 1,500. Why: about a third of 0.18.1's 14,193, and a number a docs check can hold.
 - 2026-11-17 · Scale: 4 stages, one release, no PRD; no signal fired, one plan.
 - 2026-11-17 · Stage 3's risk is secrets: it rewrites the hook around the secret guard, so it gets a security review (`/security-review`, or `jbit:review` while 0.18.1 is the installed version).
 
 ## Open questions
+- At a plan's last stage, `stage` sets `## Now` to "All stages done", so the committed plan keeps the ticked stage line but not its ticked checks; the checks live on in the stage's evidence report (seen in stage 2's end-to-end run). Same as 0.18.1; left as is unless the user wants the checks kept — for the user.
 - `plugins/jbit/evals-ablation/` (untracked) holds the ablation's case copies and raw results. Delete it once the user has looked, or after stage 4's re-run — for the user.
 - Until 1.0.0 is reinstalled from the local marketplace, this session runs the installed 0.18.1 hook and its commit gate. That's fine for this plan, but stage 4 says to reinstall before re-running the evals.
 

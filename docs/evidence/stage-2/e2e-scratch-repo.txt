@@ -1,0 +1,168 @@
+$ git log --stat (scratch repo ~/.claude/jobs/fade5911/tmp/s2-e2e, after the run)
+commit f41672e4eb3ab3b18b8eb0581714dc5726d8cb9e
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:11:08 2026 -0600
+
+    Stage 1: slugify(text) with node --test suite
+    
+    Adds slugify.mjs, which turns text into a lowercase a-z0-9 slug joined by
+    single hyphens, and 6 tests covering the plan's checks plus accents,
+    apostrophes, digits and punctuation-only input.
+    
+    Reviewer notes: accents are stripped via NFKD ("Café" -> "cafe") and
+    apostrophes are dropped ("Don't" -> "dont"); both are logged as decisions in
+    docs/PLAN.md. Evidence: docs/evidence/stage-1/report.md, including a test
+    run against a deliberately broken version to show the tests catch it.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/PLAN.md                            |  11 +--
+ docs/evidence/.gitignore                |  11 +++
+ docs/evidence/stage-1/audit.txt         |   6 ++
+ docs/evidence/stage-1/report.md         |  13 +++
+ docs/evidence/stage-1/tests-mutated.txt | 138 ++++++++++++++++++++++++++++++++
+ docs/evidence/stage-1/tests.txt         |  51 ++++++++++++
+ slugify.mjs                             |  13 +++
+ slugify.test.mjs                        |  27 +++++++
+ 8 files changed, 262 insertions(+), 8 deletions(-)
+
+commit 29b4375d569855e6053911b1439a72d8829afd64
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:10:22 2026 -0600
+
+    Plan slugify
+
+ docs/PLAN.md | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+commit 453f037e26a423d5bffa1be448ea6d05bcd2e5a6
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 09:10:17 2026 -0600
+
+    Initial commit
+
+ README.md    | 2 ++
+ package.json | 1 +
+ 2 files changed, 3 insertions(+)
+
+$ git status --short
+(clean)
+
+$ git diff 29b4375 f41672e -- docs/PLAN.md
+diff --git a/docs/PLAN.md b/docs/PLAN.md
+index 4cece55..bc1a8fa 100644
+--- a/docs/PLAN.md
++++ b/docs/PLAN.md
+@@ -7,19 +7,14 @@ A tiny `slugify(text)` ES module for turning titles into URL slugs. Done when it
+ 2026-11-17 · tests: 0 (none yet) · lint: none · build: none
+ 
+ ## Now
+-Stage 1 of 1 · Slugify
+-Scope: add `slugify.mjs` exporting `slugify(text)` and `slugify.test.mjs` run by `node --test`.
+-Risk: none
+-Checks:
+-- [ ] `slugify("Hello, World!")` returns `"hello-world"`: lowercases, drops punctuation, joins words with single hyphens (proof: test)
+-- [ ] Leading/trailing spaces and repeated separators collapse: `slugify("  a -- b  ")` returns `"a-b"`, and `slugify("")` returns `""` (proof: test)
+-Open: none
++All stages done; goal met. Next: none planned (run jbit:plan for new work).
+ 
+ ## Stages
+-- [ ] 1. Slugify — the function and its tests
++- [x] 1. Slugify — the function and its tests ([evidence](evidence/stage-1/report.md))
+ 
+ ## Decisions
+ - 2026-11-17 · Plain Node, no dependencies — tiny scope
++- 2026-11-17 · Slugs are ASCII `a-z0-9` joined by `-`: accents are stripped (NFKD) so "Café" → "cafe" rather than "caf"; apostrophes are dropped so "Don't" → "dont" rather than "don-t"; any other character is a separator
+ 
+ ## Open questions
+ - none
+
+$ cat docs/PLAN.md
+# slugify plan
+
+## Goal
+A tiny `slugify(text)` ES module for turning titles into URL slugs. Done when it's built and tested.
+
+## Baseline
+2026-11-17 · tests: 0 (none yet) · lint: none · build: none
+
+## Now
+All stages done; goal met. Next: none planned (run jbit:plan for new work).
+
+## Stages
+- [x] 1. Slugify — the function and its tests ([evidence](evidence/stage-1/report.md))
+
+## Decisions
+- 2026-11-17 · Plain Node, no dependencies — tiny scope
+- 2026-11-17 · Slugs are ASCII `a-z0-9` joined by `-`: accents are stripped (NFKD) so "Café" → "cafe" rather than "caf"; apostrophes are dropped so "Don't" → "dont" rather than "don-t"; any other character is a separator
+
+## Open questions
+- none
+
+$ cat docs/evidence/stage-1/report.md
+# Stage 1 · Slugify — evidence
+Verified 2026-11-17 on 29b4375 (+ uncommitted: slugify.mjs, slugify.test.mjs)
+
+| Check | Result | Evidence |
+|---|---|---|
+| `slugify("Hello, World!")` returns `"hello-world"`: lowercases, drops punctuation, joins words with single hyphens (proof: test) | pass | [tests.txt](tests.txt): test 1 passes; [tests-mutated.txt](tests-mutated.txt): it fails when separator collapsing and trimming are broken |
+| Leading/trailing spaces and repeated separators collapse: `slugify("  a -- b  ")` returns `"a-b"`, and `slugify("")` returns `""` (proof: test) | pass | [tests.txt](tests.txt): tests 2 and 3 pass; [tests-mutated.txt](tests-mutated.txt): test 2 fails under the mutation |
+
+Project checks: types n/a · lint n/a · tests 6/6 · build n/a
+Audit: n/a, no dependencies and no lockfile ([audit.txt](audit.txt))
+
+## History
+- none
+
+$ cat slugify.mjs slugify.test.mjs
+/**
+ * Turn text into a URL slug: lowercase ASCII letters and digits joined by single hyphens.
+ * Accents are stripped first; anything else (punctuation, spaces, hyphens, underscores) acts as a separator.
+ */
+export function slugify(text) {
+  return String(text)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents: "é" -> "e"
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { slugify } from "./slugify.mjs";
+
+test("lowercases, drops punctuation, joins words with single hyphens", () => {
+  assert.equal(slugify("Hello, World!"), "hello-world");
+});
+
+test("collapses leading/trailing spaces and repeated separators", () => {
+  assert.equal(slugify("  a -- b  "), "a-b");
+});
+
+test("empty string gives empty slug", () => {
+  assert.equal(slugify(""), "");
+});
+
+test("only punctuation gives empty slug", () => {
+  assert.equal(slugify("!!! --- ???"), "");
+});
+
+test("keeps digits and drops apostrophes inside words", () => {
+  assert.equal(slugify("Top 10 Tips: Don't Panic"), "top-10-tips-dont-panic");
+});
+
+test("strips accents rather than dropping the letter", () => {
+  assert.equal(slugify("Café Crème"), "cafe-creme");
+});
+
+$ node --test (re-run by verifier)
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38.419992

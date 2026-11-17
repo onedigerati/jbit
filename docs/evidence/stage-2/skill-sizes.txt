@@ -1,0 +1,14 @@
+$ wc -w plugins/jbit/skills/*/SKILL.md; ls plugins/jbit/skills
+  676 plugins/jbit/skills/autopilot/SKILL.md
+  819 plugins/jbit/skills/charter/SKILL.md
+ 1059 plugins/jbit/skills/plan/SKILL.md
+  342 plugins/jbit/skills/resume/SKILL.md
+  981 plugins/jbit/skills/stage/SKILL.md
+  923 plugins/jbit/skills/verify/SKILL.md
+ 4800 total
+autopilot
+charter
+plan
+resume
+stage
+verify

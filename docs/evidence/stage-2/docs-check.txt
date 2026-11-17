@@ -1,0 +1,197 @@
+$ node --test plugins/jbit/tests/docs.check.mjs
+TAP version 13
+# Subtest: plugin.json and the field guide are version 0.18.1
+ok 1 - plugin.json and the field guide are version 0.18.1
+  ---
+  duration_ms: 0.6925
+  type: 'test'
+  ...
+# Subtest: no skill, README or hook text describes the old opt-in arming rule
+ok 2 - no skill, README or hook text describes the old opt-in arming rule
+  ---
+  duration_ms: 1.322601
+  type: 'test'
+  ...
+# Subtest: every skill says "JBIT <command>" triggers it
+ok 3 - every skill says "JBIT <command>" triggers it
+  ---
+  duration_ms: 0.2238
+  type: 'test'
+  ...
+# Subtest: the command words the plugin README lists are the hook's COMMAND_VOCABULARY
+ok 4 - the command words the plugin README lists are the hook's COMMAND_VOCABULARY
+  ---
+  duration_ms: 0.4128
+  type: 'test'
+  ...
+# Subtest: the plugin README describes "JBIT approve" as releasing the hold
+ok 5 - the plugin README describes "JBIT approve" as releasing the hold
+  ---
+  duration_ms: 0.1223
+  type: 'test'
+  ...
+# Subtest: skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review
+ok 6 - skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review
+  ---
+  duration_ms: 0.2755
+  type: 'test'
+  ...
+# Subtest: the six skills together are at most 5,000 words, none over 1,500
+ok 7 - the six skills together are at most 5,000 words, none over 1,500
+  ---
+  duration_ms: 0.4037
+  type: 'test'
+  ...
+# Subtest: no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text
+ok 8 - no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text
+  ---
+  duration_ms: 1.504001
+  type: 'test'
+  ...
+# Subtest: habits: stage rechecks the risk line, runs /code-review and /security-review, logs \#\# Fixes and pins untested code
+ok 9 - habits: stage rechecks the risk line, runs /code-review and /security-review, logs \#\# Fixes and pins untested code
+  ---
+  duration_ms: 0.3021
+  type: 'test'
+  ...
+# Subtest: habits: verify saves docs/evidence/stage-<n>/report.md and reports unproven checks
+ok 10 - habits: verify saves docs/evidence/stage-<n>/report.md and reports unproven checks
+  ---
+  duration_ms: 0.3005
+  type: 'test'
+  ...
+# Subtest: habits: plan points to jbit:charter and asks before writing one big plan
+ok 11 - habits: plan points to jbit:charter and asks before writing one big plan
+  ---
+  duration_ms: 0.2755
+  type: 'test'
+  ...
+# Subtest: every skill that starts a role agent starts it by its bare name, else as jbit:<role>, and never passes model or effort
+ok 12 - every skill that starts a role agent starts it by its bare name, else as jbit:<role>, and never passes model or effort
+  ---
+  duration_ms: 0.649201
+  type: 'test'
+  ...
+# Subtest: stage, autopilot and plan tell each agent to read narrowly, stop when the brief is done, and hand back a short report
+ok 13 - stage, autopilot and plan tell each agent to read narrowly, stop when the brief is done, and hand back a short report
+  ---
+  duration_ms: 0.1243
+  type: 'test'
+  ...
+# Subtest: no doc says plain words run attended without saying the level that stands
+ok 14 - no doc says plain words run attended without saying the level that stands
+  ---
+  duration_ms: 1.0192
+  type: 'test'
+  ...
+# Subtest: the product is JBIT in prose, not jbit
+ok 15 - the product is JBIT in prose, not jbit
+  ---
+  duration_ms: 0.6124
+  type: 'test'
+  ...
+# Subtest: READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+ok 16 - READMEs, plugin.json and the marketplace lead with "Just build it." and the promise line
+  ---
+  duration_ms: 0.2997
+  type: 'test'
+  ...
+# Subtest: READMEs describe the arming rule
+ok 17 - READMEs describe the arming rule
+  ---
+  duration_ms: 0.071
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe research, spikes and progress updates
+ok 18 - READMEs and the field guide describe research, spikes and progress updates
+  ---
+  duration_ms: 0.1391
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide say the progress note is for when someone reads along, and a headless run leaves it to the final report
+ok 19 - READMEs and the field guide say the progress note is for when someone reads along, and a headless run leaves it to the final report
+  ---
+  duration_ms: 0.195101
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe the commit gate: a line that writes the plan and commits is refused under autopilot, a close found after the run is checked against its commit and flagged to reopen
+ok 20 - READMEs and the field guide describe the commit gate: a line that writes the plan and commits is refused under autopilot, a close found after the run is checked against its commit and flagged to reopen
+  ---
+  duration_ms: 0.1003
+  type: 'test'
+  ...
+# Subtest: the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches
+ok 21 - the hold descriptions name the docs/research/ note exception, and the outward check is said to cover shell commands, not web searches
+  ---
+  duration_ms: 0.2125
+  type: 'test'
+  ...
+# Subtest: the research and progress eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+ok 22 - the research and progress eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+  ---
+  duration_ms: 0.2927
+  type: 'test'
+  ...
+# Subtest: the hook's armed-autopilot rules carry the progress note, in both the unattended and attended texts
+ok 23 - the hook's armed-autopilot rules carry the progress note, in both the unattended and attended texts
+  ---
+  duration_ms: 0.1022
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can't be set, and that only the user sets effort
+ok 24 - READMEs and the field guide describe the Models line, JBIT models, the CLAUDE.md default, what can't be set, and that only the user sets effort
+  ---
+  duration_ms: 0.204
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide give the research-fetch rule: a read-only curl or wget GET passes under autopilot, a send waits, WebFetch and WebSearch read
+ok 25 - READMEs and the field guide give the research-fetch rule: a read-only curl or wget GET passes under autopilot, a send waits, WebFetch and WebSearch read
+  ---
+  duration_ms: 0.1161
+  type: 'test'
+  ...
+# Subtest: the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+ok 26 - the models-line and research-fetch eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+  ---
+  duration_ms: 0.2165
+  type: 'test'
+  ...
+# Subtest: the plugin README says a CLAUDE.md default waits for the user's word, and describes the user's own default and its precedence
+ok 27 - the plugin README says a CLAUDE.md default waits for the user's word, and describes the user's own default and its precedence
+  ---
+  duration_ms: 0.1329
+  type: 'test'
+  ...
+# Subtest: the plugin README and the field guide say subagent calls never move the main session's state and describe the baseRef notice
+ok 28 - the plugin README and the field guide say subagent calls never move the main session's state and describe the baseRef notice
+  ---
+  duration_ms: 0.1099
+  type: 'test'
+  ...
+# Subtest: READMEs and the field guide describe the research role, small agents, the user's own default and a CLAUDE.md default waiting for the user's word
+ok 29 - READMEs and the field guide describe the research role, small agents, the user's own default and a CLAUDE.md default waiting for the user's word
+  ---
+  duration_ms: 0.5748
+  type: 'test'
+  ...
+# Subtest: the research-role, research-batches and models-my-default eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+ok 30 - the research-role, research-batches and models-my-default eval cases exist with a case.yaml, scaffold and graders, and the README lists them
+  ---
+  duration_ms: 0.3857
+  type: 'test'
+  ...
+# Subtest: the plugin README says how to set a role agent's model and effort for one project or every repo
+ok 31 - the plugin README says how to set a role agent's model and effort for one project or every repo
+  ---
+  duration_ms: 0.0822
+  type: 'test'
+  ...
+1..31
+# tests 31
+# suites 0
+# pass 31
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 58.319421

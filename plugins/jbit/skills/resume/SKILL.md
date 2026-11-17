@@ -5,11 +5,11 @@ description: Pick a project back up after a break, a restart or a context summar
 
 # Resume
 
-Rebuild the picture from what's written down, not from memory. A summary of the conversation is a lead, not a source; the plan and git are the sources.
+Rebuild the picture from the plan and git, not memory; a conversation summary is a lead, not a source.
 
 ## Gather
 
-1. The plan (`docs/PLAN.md`, or the plan the project keeps): goal, `## Now`, stages, recent decisions, open questions. If `docs/decisions.md` exists, read it too: standing decisions from earlier plans live there.
+1. The plan (`docs/PLAN.md`, or the plan the project keeps): goal, `## Now`, stages, recent decisions, open questions. Read `docs/decisions.md` too, if it exists.
 2. `git log --oneline -15` and the last stage commit; anything after it is work in the current stage.
 3. `git status` and `git diff --stat`: uncommitted work, and whether it matches the current stage.
 4. `git worktree list`: worktrees holding work not yet merged.
@@ -28,4 +28,4 @@ In a few lines:
 - decisions waiting on the user;
 - the next step you'd take.
 
-Then wait for the user's go, unless the message that brought you here already gave it. If every stage is done, say the plan's goal is met and offer `jbit:plan` to start the next plan.
+Then wait for the user's go, unless their message already gave it. If every stage is done, say the plan's goal is met and offer `jbit:plan` to start the next plan.

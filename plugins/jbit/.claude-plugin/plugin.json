@@ -1,6 +1,6 @@
 {
   "name": "jbit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Just build it. Plans it. Proves it. Sees it through. JBIT (jay-bit, for Just Build It) turns a goal into one plan file of stages with acceptance checks, builds and verifies each stage against the running product with evidence kept in the repo, reviews risky ones and commits them. Say \"JBIT, just build it.\" and autopilot runs the rest, logging its calls and stopping when stuck or before anything outward. Also role agents you can tune per project, a roadmap for projects too big for one plan, and a secret guard on commits.",
   "author": {
     "name": "jonah"

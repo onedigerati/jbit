@@ -106,6 +106,22 @@ test('stage, autopilot and plan tell each agent to read narrowly, stop when the 
     assert.ok(skill(name).includes('read narrowly, stop when the brief is done, and hand back a report of 20 lines at most'), `${name} SKILL.md lacks the brief rule`)
 })
 
+// 1.1.0: a limit the user writes in CLAUDE.md on agents at once or worktrees is followed; the README says how.
+test('stage, autopilot and plan follow a CLAUDE.md limit on agents at once or worktrees', () => {
+  const shared = ['`CLAUDE.md`', 'agents at once or worktrees', 'at most that many agents at a time', 'one after another', 'no `isolation: "worktree"`', 'worktrees off', 'with agents off, the work runs in the main session']
+  const own = { stage: ['`~/.claude/CLAUDE.md` or the project\'s', 'builders work in the main tree on separate files'], autopilot: [], plan: ['research and survey agents'] }
+  for (const [name, extra] of Object.entries(own))
+    for (const words of [...shared, ...extra]) assert.ok(skill(name).includes(words), `${name} SKILL.md lacks: ${words}`)
+})
+
+test('the plugin README has a ## Slower machines section with CLAUDE.md lines for every repo and one project, and the Agent deny fallback', () => {
+  const m = /\n## Slower machines\n([\s\S]*?)(?=\n## |$)/.exec(readmes.plugin)
+  assert.ok(m, 'plugin README lacks a ## Slower machines section')
+  assert.match(m[1], /project(?:'s)? `CLAUDE\.md`|`CLAUDE\.md` (?:at|in) the project|`\.\/CLAUDE\.md`/, 'Slower machines section lacks a project CLAUDE.md')
+  for (const words of ['~/.claude/CLAUDE.md', 'permissions.deny', '"Agent"'])
+    assert.ok(m[1].includes(words), `Slower machines section lacks ${words}`)
+})
+
 test('the product is JBIT in prose, not jbit', () => {
   // `jbit` stays in command names (`/jbit:plan`, `jbit:stage`), the status line (`jbit · …`) and code
   const prose = /(?<![/:`@\w-])jbit(?![:\w@-]| ·)/
@@ -212,10 +228,10 @@ test('READMEs (outside the upgrade notes), manifests and the field guide carry n
   assert.deepEqual(hits, [])
 })
 
-test('plugin.json is 1.0.0, the field guide says JBIT 1.0.0, and the descriptions fit 1.0.0', () => {
-  assert.equal(manifest.version, '1.0.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 1.0.0</span>'), 'field guide header lacks JBIT 1.0.0')
-  assert.ok(guide.includes('<footer>JBIT 1.0.0 ·'), 'field guide footer lacks JBIT 1.0.0')
+test('plugin.json is 1.1.0, the field guide says JBIT 1.1.0, and the descriptions fit 1.x', () => {
+  assert.equal(manifest.version, '1.1.0')
+  assert.ok(guide.includes('<span class="brand">JBIT 1.1.0</span>'), 'field guide header lacks JBIT 1.1.0')
+  assert.ok(guide.includes('<footer>JBIT 1.1.0 ·'), 'field guide footer lacks JBIT 1.1.0')
   assert.doesNotMatch(guide, /JBIT 0\.\d+\.\d+/, 'field guide still names a 0.x version')
   for (const [name, text] of Object.entries(manifests)) {
     assert.doesNotMatch(text, /\b0\.\d+\.\d+\b/, `${name} names a 0.x version`)

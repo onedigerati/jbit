@@ -1,0 +1,78 @@
+$ cat CLAUDE.md; git log --stat; git status --short; git worktree list; git branch -a; cat docs/evidence/stage-1/report.md   # in /tmp/jbit-s1-fanout after the run
+# textkit
+JBIT: at most one agent at a time, no worktrees.
+commit f1c4766d95769d464178aff0ab3c7fa22c02f1fb
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 10:19:02 2026 -0600
+
+    Stage 1: add slugify and titleCase helpers with tests
+    
+    - slugify(text): lowercase, each run of non [a-z0-9] characters becomes
+      one "-", leading and trailing dashes trimmed. ASCII only, so
+      accented letters are dropped ("Café" -> "caf"); this is logged as an
+      open question.
+    - titleCase(text): capitalises each run of non-whitespace and keeps the
+      whitespace as it is.
+    - 10 node:test tests, all passing. Evidence is in docs/evidence/stage-1/.
+    
+    Risk: none (pure string functions, no I/O), so there was no review pass.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/PLAN.md                           | 16 +++++++---------
+ docs/evidence/.gitignore               |  1 +
+ docs/evidence/stage-1/direct-calls.txt |  7 +++++++
+ docs/evidence/stage-1/npm-test.txt     | 27 +++++++++++++++++++++++++++
+ docs/evidence/stage-1/report.md        | 20 ++++++++++++++++++++
+ slugify.mjs                            |  6 ++++++
+ slugify.test.mjs                       | 24 ++++++++++++++++++++++++
+ titlecase.mjs                          |  6 ++++++
+ titlecase.test.mjs                     | 24 ++++++++++++++++++++++++
+ 9 files changed, 122 insertions(+), 9 deletions(-)
+
+commit e1a4add4262125e6b70ee300578e1b2cb184765f
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 10:15:19 2026 -0600
+
+    Plan textkit
+
+ docs/PLAN.md | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+commit 8ad046fb160674fb95c04ce3ec9f225290b44d7f
+Author: tester <tester@example.com>
+Date:   Tue Nov 17 10:15:13 2026 -0600
+
+    Initial commit
+
+ CLAUDE.md    | 2 ++
+ README.md    | 2 ++
+ package.json | 1 +
+ 3 files changed, 5 insertions(+)
+$ git status --short
+(clean)
+$ git worktree list
+/tmp/jbit-s1-fanout f1c4766 [master]
+$ git branch -a
+* master
+$ cat docs/evidence/stage-1/report.md
+# Stage 1 · Two helpers — verification report
+
+Date: 2026-11-17 · Node v22 · Verified by a `verifier` agent that built nothing; outputs re-checked in the main session.
+
+## Project checks
+- Tests: `npm test` (`node --test`) → 10 tests, 10 pass, 0 fail. See [npm-test.txt](npm-test.txt).
+- Type check / lint / build: none in this project. Dependencies: none, so nothing to audit.
+
+## Acceptance checks
+
+### 1. slugify — PASS
+- Test: `slugify.test.mjs` asserts with `assert.equal` (strict) `slugify("Hello, World!") === "hello-world"` and `slugify("  a -- b  ") === "a-b"`; both `ok`.
+- Running module: `node -e` importing `slugify.mjs` printed `"Hello, World!" -> "hello-world"` and `"  a -- b  " -> "a-b"`. See [direct-calls.txt](direct-calls.txt).
+
+### 2. titleCase — PASS
+- Test: `titlecase.test.mjs` asserts with `assert.equal` (strict) `titleCase("hello big world") === "Hello Big World"` and `titleCase("") === ""`; both `ok`.
+- Running module: `node -e` importing `titlecase.mjs` printed `"hello big world" -> "Hello Big World"` and `"" -> ""`. See [direct-calls.txt](direct-calls.txt).
+
+## Failures and fixes
+- None in the product. Process note: sandbox permissions kept the verifier from redirecting output to files, so the `.txt` files hold its session output copied verbatim (per-test duration blocks left out). This report was written in the main session.

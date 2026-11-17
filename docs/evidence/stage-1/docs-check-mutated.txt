@@ -1,0 +1,5 @@
+$ node --test plugins/jbit/tests/docs.check.mjs   # with "with agents off, the work runs in the main session" deleted from skills/stage/SKILL.md, then restored
+not ok 12 - stage, autopilot and plan follow a CLAUDE.md limit on agents at once or worktrees
+  error: 'stage SKILL.md lacks: with agents off, the work runs in the main session'
+# pass 30
+# fail 1

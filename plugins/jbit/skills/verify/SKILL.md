@@ -38,7 +38,7 @@ Prove each check in `## Now` the way it names, against the real app:
 
 For a plan stage, save each check's proof in `docs/evidence/stage-<n>/` as you go (`<n>` is the stage in `## Now` unless asked about another), even when asked only for a report: raw output (test run, CLI run, request and response) as one text file per proof named for what it shows (`tests.txt`, `cli-bad-arg.txt`) with the command on its first line, plus screenshots, traces and videos.
 
-If `docs/evidence/.gitignore` is missing, create it (leave an existing one alone):
+If `docs/evidence/.gitignore` is missing, create it:
 
 ```
 # Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.

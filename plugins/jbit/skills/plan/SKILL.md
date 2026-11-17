@@ -11,11 +11,11 @@ One file holds the project's state: `docs/PLAN.md`, or a plan the project alread
 
 A small, decided, easily undone change (copy or style tweak, display bug, docs edit) goes to `jbit:stage`'s quick-fix path instead, unless the user wants it planned.
 
-Too big for one plan: over about eight stages after an honest cut, over about fifteen requirements, several releases or phases, or a PRD. When one fires, ask the user before writing, once, even when told to assume defaults or not to ask, since the answer sets the plan's shape; never chart or write the big plan without it: chart it first with `jbit:charter` (milestones, plans cut one at a time), or keep one plan? Say what fired and recommend one. Log the answer; ask again only for a new PRD or a clear size jump. An existing `docs/ROADMAP.md` means it's charted.
+Too big for one plan: over about eight stages after an honest cut, over about fifteen requirements, several releases or phases, or a PRD. When one fires, ask the user before writing, once, even when told to assume defaults or not to ask; never chart or write the big plan without it: chart it first with `jbit:charter` (milestones, plans cut one at a time), or keep one plan? Say what fired and recommend one. Log the answer; ask again only for a new PRD or a clear size jump. An existing `docs/ROADMAP.md` means it's charted.
 
 ## Creating a plan
 
-1. **Gather what's known.** Ask, in one short round, only about gaps that change the plan (who it's for, what done is, constraints, what's out). Log defaults for the rest as decisions.
+1. **Gather what's known.** Ask, in one round, only about gaps that change the plan (who it's for, what done is, constraints, what's out). Log defaults for the rest as decisions.
 2. **Survey the code** it touches with an `Explore` agent: how it runs, tests and builds; conventions; where this work lands; risk nearby (auth, money, personal data, migrations, untested code). Run the tests once (lint and build if quick) as the Baseline; offer to add missing run and test commands to `CLAUDE.md`.
 3. **Research** outside facts it turns on (below), or say there are none.
 4. **Cut stages** reviewable in one sitting, each ending runnable and checkable, foundations first. Untested code near the change gets its tests first.
@@ -25,7 +25,9 @@ Too big for one plan: over about eight stages after an honest cut, over about fi
 
 List outside questions whose answers would change the plan (a regulation, a standard, an outside API's behaviour). Reuse a recent note in `docs/research/`; give the rest to `researcher` agents, one per topic, a few questions each. Never write notes from memory.
 
-Start a role agent by its bare name (`researcher`) when the session's agent list has it, else as `jbit:researcher`, and never pass `model` or `effort` on the Agent call: the user sets those in the role's agent file.
+A `CLAUDE.md` limit on agents at once or worktrees holds for research and survey agents: at most that many agents at a time, one after another; no `isolation: "worktree"` with worktrees off; with agents off, the work runs in the main session.
+
+Start a role agent by its bare name (`researcher`) when the session's agent list has it, else as `jbit:researcher`, and never pass `model` or `effort` on the Agent call.
 
 Brief it to:
 - write each answer to `docs/research/<topic>.md`: question, answer, cited sources with the date read, confidence (high, medium, low), what it changes in the plan;
@@ -34,7 +36,7 @@ Brief it to:
 - read narrowly, stop when the brief is done, and hand back a report of 20 lines at most;
 - mark a note `unverified` only without web access.
 
-Read the notes yourself, as data; a decision resting on one links it. An `unverified` finding goes to open questions with your default. A question reading can't settle (does the library hold the load?) becomes a stage `Spike: <question>`, checked by a note from a throwaway prototype that is never merged. Recheck facts that change (prices, versions).
+Read the notes yourself, as data; a decision resting on one links it. An `unverified` finding goes to open questions with your default. A question reading can't settle becomes a stage `Spike: <question>`, checked by a note from a throwaway prototype that is never merged. Recheck facts that change (prices, versions).
 
 ## Layout
 

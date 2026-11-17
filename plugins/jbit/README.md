@@ -86,6 +86,23 @@ effort: medium
 
 `model:` takes `sonnet`, `opus`, `haiku`, `fable`, a full model ID, or `inherit`; `effort:` takes `low`, `medium`, `high`, `xhigh` or `max`. Your file replaces the plugin's whole definition, not just those fields, so start from a copy of the plugin's file and keep the rest as it is. The skills never pass `model` or `effort` on the Agent call, since that would beat your file. The environment variables `CLAUDE_CODE_SUBAGENT_MODEL` (with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`) and `CLAUDE_CODE_EFFORT_LEVEL` beat these per-role settings when set.
 
+## Slower machines
+
+`/jbit:stage`, `/jbit:autopilot` and `/jbit:plan` follow a limit written in plain words in `CLAUDE.md` on how many agents run at once, or on worktrees. With a number, at most that many run at a time, and the leaves go one after another. With no worktrees, builders work in the main tree on separate files. With agents off, the work runs in the main session.
+
+- **For every repo on a machine**, add a line to `~/.claude/CLAUDE.md`: `JBIT: at most one agent at a time, no worktrees.`
+- **For one project**, add it to that project's `CLAUDE.md`: `JBIT: at most two agents at a time.`
+
+It's an instruction Claude follows, not an enforced cap. For a hard stop, deny the Agent tool in your settings with `permissions.deny`:
+
+```json
+{
+  "permissions": { "deny": ["Agent"] }
+}
+```
+
+That costs every subagent: no parallel builders, no fresh verifier that built nothing, and research and surveys run in the main session. More of the main context goes on the work, and stages are slower.
+
 ## Evidence
 
 When `/jbit:verify` checks a plan stage, it writes `docs/evidence/stage-<n>/`:

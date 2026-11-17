@@ -1,0 +1,11 @@
+$ claude plugin validate .
+Validating marketplace manifest: /home/jonah/src/repos/jbit/.claude-plugin/marketplace.json
+
+Validating hooks: /home/jonah/src/repos/jbit/plugins/jbit/hooks/hooks.json
+
+  ❯ ./register.ts hooks: prompt.compose, session.compact, tool.call{tool=Bash}
+  ❯ ./register.ts gating hook with .catch: session.compact
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Bash}
+  ❯ ./register.ts calls: $.fs.exists, $.fs.read (via pendingChanges, readPlan), $.process.run (via git), $.session.cwd, $.ui.status, $.ui.toast
+
+✔ Validation passed

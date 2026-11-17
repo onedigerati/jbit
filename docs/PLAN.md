@@ -7,17 +7,10 @@ Give 1.0.0 back a way to narrow how widely work fans out to agents, for slower m
 2026-11-17 · tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 29 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 1 of 1 · Fan-out limit
-Risk: none (skill prose, README, docs check, version; no runtime code)
-Checks:
-- [ ] `stage`, `autopilot` and `plan` say that a limit in `CLAUDE.md` on how many agents run at once, or on worktrees, is followed: at most that many agents at a time (leaves then go one after another), no `isolation: "worktree"` when worktrees are off (builders work in the main tree on separate files), and with agents off, the work runs in the main session; the six skills stay within 5,000 words (proof: docs check)
-- [ ] The plugin README has a "Slower machines" section with example `CLAUDE.md` lines for every repo on a machine (`~/.claude/CLAUDE.md`) and for one project, and the `permissions.deny: ["Agent"]` fallback with what it costs (proof: docs check)
-- [ ] In a scratch repo whose `CLAUDE.md` says "at most one agent at a time, no worktrees", headless `/jbit:stage` on a stage of two independent leaves starts no Agent call with `isolation: "worktree"` and never has two agents running at once, and the stage still builds, verifies and commits (proof: saved run, a test can't start Claude Code)
-- [ ] `plugin.json` says `1.1.0`; `claude plugin validate .`, `claude plugin test plugins/jbit` and the docs check are green (proof: test run)
-Open: none
+All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is wanted.
 
 ## Stages
-- [ ] 1. Fan-out limit — skills honour a `CLAUDE.md` limit on agents and worktrees; README "Slower machines"; docs check; headless proof; 1.1.0
+- [x] 1. Fan-out limit — skills honour a `CLAUDE.md` limit on agents and worktrees; README "Slower machines"; docs check; headless proof; 1.1.0 · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md)
 
 ## Decisions
 - 2026-11-17 · Restore a fan-out limit as skill text read from `CLAUDE.md`, not a plan line or hook — the user's pick ("plan it"), after the 1.0.0 cut left no way to narrow fan-out on slower machines. A machine's limit belongs to the machine, so `~/.claude/CLAUDE.md` is the main place; a project's `CLAUDE.md` works too. It's an instruction Claude follows, not an enforced cap; `permissions.deny: ["Agent"]` is the enforced, blunt fallback.
@@ -26,6 +19,8 @@ Open: none
 - 2026-11-17 · No Agents line in this plan: 1.0.0 ignores it. This session still runs the installed 0.18.1 hook, which reads no line as `balanced`.
 - 2026-11-17 · Scale: one stage, no PRD; no signal fired, one plan. No research: nothing outside the repo changes this plan.
 - 2026-11-17 · No control run without the limit: a small stage may not fan out anyway, so a control proves little for its cost.
+- 2026-11-17 · (unattended) Skill wording trimmed elsewhere to fit the rule under 5,000 words (4,996): the repeated "the user sets those in the role's agent file" stays in `stage` and `verify` only, and a few asides went from `charter`, `plan`, `autopilot`, `resume` and `verify`; no rule or checked phrase dropped. Why: the cap was 27 words from full.
+- 2026-11-17 · (unattended) The field guide's header and footer say JBIT 1.1.0, and the version docs check now asserts 1.1.0. Why: the existing check tied the guide to the manifest version.
 
 ## Open questions
 - 1.0.0 isn't reinstalled from the local marketplace yet; this session runs the installed 0.18.1 hook — for the user.

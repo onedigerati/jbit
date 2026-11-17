@@ -61,11 +61,11 @@ const OLD_RULE = [
   /Only your own typed (?:message|command) arms/i,
 ]
 
-test('plugin.json and the field guide are version 0.18.0', () => {
-  assert.equal(manifest.version, '0.18.0')
-  assert.ok(guide.includes('<span class="brand">JBIT 0.18.0</span>'), 'field guide header lacks JBIT 0.18.0')
-  assert.ok(guide.includes('<footer>JBIT 0.18.0 ·'), 'field guide footer lacks JBIT 0.18.0')
-  assert.doesNotMatch(guide, /JBIT 0\.1[0-7]\.\d/, 'field guide still names an older version')
+test('plugin.json and the field guide are version 0.18.1', () => {
+  assert.equal(manifest.version, '0.18.1')
+  assert.ok(guide.includes('<span class="brand">JBIT 0.18.1</span>'), 'field guide header lacks JBIT 0.18.1')
+  assert.ok(guide.includes('<footer>JBIT 0.18.1 ·'), 'field guide footer lacks JBIT 0.18.1')
+  assert.doesNotMatch(guide, /JBIT 0\.(?:1[0-7]\.\d|18\.0)\b/, 'field guide still names an older version')
 })
 
 test('no skill, README or hook text describes the old opt-in arming rule', () => {
@@ -673,6 +673,30 @@ test('plan, stage, autopilot and the plugin README say a CLAUDE.md default waits
   // the struck 2026-11-15 rule: a plan line matching the CLAUDE.md default is no longer honoured unasked
   for (const [name, text] of [['plan', skill('plan')], ['stage', skill('stage')], ['autopilot', skill('autopilot')], ['plugin README', readmes.plugin]])
     assert.ok(!/matches (?:it|the (?:project )?default) is honoured/i.test(text), `${name} still says a line matching the default is honoured`)
+})
+
+// 0.18.1 docs: subagent calls never move the main session's state, and the worktree baseRef notice.
+test('the plugin README and the field guide say subagent calls never move the main session\'s state and describe the baseRef notice', () => {
+  const phrases = {
+    plugin: [
+      'A subagent\'s tool calls never move the main session\'s state',
+      'judge a subagent\'s calls by the main session\'s plan',
+      'Worktree agents start from the remote\'s default branch, not your local `HEAD`',
+      '`"worktree": {"baseRef": "head"}`',
+      'With `"baseRef": "head"` set, nothing is said.',
+      'A subagent\'s own Agent calls never give the notice.',
+    ],
+    'field-guide.html': [
+      'A subagent\'s tool calls never move the main session\'s state',
+      'judge its calls by the main session\'s plan',
+      'Worktree agents start from the remote\'s default branch, not your local <code>HEAD</code>',
+      '<code>"worktree": {"baseRef": "head"}</code>',
+      'With <code>"baseRef": "head"</code>, nothing is said.',
+    ],
+  }
+  const texts = { plugin: readmes.plugin, 'field-guide.html': guide }
+  for (const [name, list] of Object.entries(phrases))
+    for (const words of list) assert.ok(texts[name].includes(words), `${name} lacks: ${words}`)
 })
 
 // 0.18.0 docs: the research role, small agents, the user's own default, and a CLAUDE.md default waiting for the user's word.

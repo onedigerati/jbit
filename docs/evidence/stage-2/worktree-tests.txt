@@ -1,0 +1,13 @@
+$ claude plugin test plugins/jbit 2>&1 | grep -i worktree
+(pass) without worktree.baseRef set, the first worktree Agent call tells the user once where the worktree starts [30.77ms]
+(pass) with worktree.baseRef fresh, the first worktree Agent call tells the user [35.78ms]
+(pass) with worktree.baseRef head, a worktree Agent call says nothing [36.64ms]
+(pass) an Agent call without worktree isolation says nothing about worktrees [37.02ms]
+(pass) a subagent's own worktree Agent call says nothing about worktrees [44.80ms]
+(pass) a denied worktree Agent call gives no notice, and the next one that goes through does [34.20ms]
+(pass) when the settings cannot be read, a worktree Agent call goes through without a notice [34.77ms]
+(pass) a subagent reading a Mode line that changed in its worktree doesn't arm the main session [40.27ms]
+(pass) a subagent reading its worktree's ticked checks leaves the main session's open checks: closing that stage is still refused [32.43ms]
+(pass) attended, a subagent's Edit and Agent calls are held by the main session's risky stage, whatever its worktree's plan says [40.21ms]
+(pass) under an unattended outward run, a subagent whose worktree plan has an older Goal can push [41.87ms]
+(pass) a lean main plan whose worktree copy says wide: the subagent's own Agent call is still denied [41.81ms]

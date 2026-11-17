@@ -7,20 +7,12 @@ Make autopilot keep the user's command when helper agents run in worktrees. In e
 2026-11-16 · tests: 537 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 46 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 2 of 2 · Worktree base, docs, 0.18.1
-Risk: none (a notice, docs and the version; it reads a setting, changes no hold, level or gate)
-Checks:
-- [ ] With `worktree.baseRef` unset or `fresh` in the settings Claude Code reads, the first Agent call with `isolation: "worktree"` in a session tells the user once that worktree agents start from the remote's default branch, not local `HEAD`, and how to set `"worktree": {"baseRef": "head"}` (proof: test if the hook can read the setting; otherwise the skill text plus a headless run)
-- [ ] With `baseRef: "head"` set, no notice is given (proof: same as above)
-- [ ] The README and field guide say subagent tool calls never move the main session's state and judge holds from its plan, and describe the baseRef notice; docs checks pass (proof: docs check)
-- [ ] The plugin is 0.18.1 in its manifest and the marketplace; `claude plugin validate .` passes and the suite is green (proof: command)
-Open: whether the hook can read `worktree.baseRef` (open question below)
-Mode: autopilot — unattended
-Agents: wide — confirmed 2026-11-16 21:16
+All stages done.
+Agents: wide — confirmed 2026-11-16 21:55
 
 ## Stages
 - [x] 1. Main session owns state — subagent tool calls never move the session's Goal, Mode, level, approvals or checks; holds and gates judge them by the main session's view; regression tests and a headless replay
-- [ ] 2. Worktree base, docs, 0.18.1 — tell the user when worktree agents would start from the remote (`worktree.baseRef` not `head`), README and field guide, version
+- [x] 2. Worktree base, docs, 0.18.1 — tell the user when worktree agents would start from the remote (`worktree.baseRef` not `head`), README and field guide, version
 
 ## Decisions
 - 2026-11-16 · Plan from the eVelo-v2 session of 2026-11-16 (dea08261): builder worktrees forked from `6ac7a1a` (`origin/main`) not `67c79d0` (local `HEAD`), and the hook's `sync` reset the level at `register.ts` (new-Goal branch) on a subagent's Edit — traced in this session, user asked to "plan the fix".
@@ -33,10 +25,15 @@ Agents: wide — confirmed 2026-11-16 21:16
 - 2026-11-16 · Stage 1 done: subagent calls write no session state and judge holds, outward steps and the lean cap from the main session's plan (at its git toplevel), falling back to their own copy, attended if its Goal differs; 554 tests; headless eVelo replay built the money stage with no hold — [evidence](evidence/stage-1/report.md).
 - 2026-11-16 · Agents: wide, from the user's command "JBit Autopilot Wide" (in-session, stamped 21:16).
 - 2026-11-16 · Scale: 2 stages, one release; no signal fired, one plan.
+- 2026-11-16 · Agents: wide and the run unattended, from the user's commands "jbit autopilot" and "jbit autopilot wide" in this session (stamped 21:55).
+- 2026-11-16 · (unattended) The hook can read `worktree.baseRef`: the engine's `$.settings.read()` gives the merged settings (Claude Code 2.1.326's plugin types), and the Agent call carries `isolation`, so the notice is the hook's (a toast plus a note telling Claude to say it in a line), proven by tests rather than skill text. Why: it fires whatever the skill text says, once per session.
+- 2026-11-16 · (unattended) Check 4 reworded to "in its manifest (the marketplace entry carries no version)": the marketplace's `jbit` entry has never had a version field, so the manifest is the one place it lives. Why: the check as written couldn't be met, and adding a version field to the marketplace would be a second place to keep in step.
+- 2026-11-16 · (unattended) No jbit:review for stage 2: risk none, and the diff matches it (a notice added after an Agent call goes through, docs, the version); the manager read the 24-line handler itself. Why: review is for risky stages and milestones, and this one changes no hold, level or gate.
+- 2026-11-16 · (unattended) The verifier agent's write of `report.md` was refused by the harness ("Subagents should return findings as text"); the main session re-ran the suite, docs checks and validate itself and wrote the report from that run, rather than from the agent's word.
+- 2026-11-16 · Stage 2 done: the main session's first worktree Agent call tells the user once where the worktree starts when `worktree.baseRef` isn't `head`; README and field guide updated; 0.18.1; 561 tests, 47 docs checks — [evidence](evidence/stage-2/report.md).
 
 ## Open questions
 - Stage 1 review (0.18.1), deferred: the main session's root is taken from its cwd's git toplevel at each main look, so a main-session `cd` into an agent's worktree (`.claude/worktrees/agent-x`) moves it there, and holds are then judged from that worktree's plan, which a subagent may have edited. The main session's own relative reads were already steerable this way; pinning the root once per session would close it but would break a main session that legitimately moves with EnterWorktree. Also pre-existing: the plan-file exemption (`samePath` suffix match) lets any subagent edit a file ending in `/docs/PLAN.md`, the main plan included.
-- Stage 2: if the hook can't read `worktree.baseRef`, the notice can only come from skill text (autopilot and stage telling Claude to check the user's settings before starting worktree builders) — default picked: skill text plus a README line; for the builder to settle.
 - Stage 3 review (0.18.0), deferred: a `Models:` line already committed in a cloned repo's `docs/PLAN.md` is honoured at the session's first look, as the approved plan's line (standing rule), so it can raise spend unasked as a `CLAUDE.md` default could; the same confirmation rule would close it — for the user. Also: the `sdk` and `bridge` origins count as the user's, so an SDK harness relaying other agents' text can save or clear the per-user default (same remedy as the CI-host item); two sessions saving at once keep the last write; and with no Models line in effect, an Agent call naming any model passes unchecked (pre-existing).
 - Stage 1 review (0.18.0), deferred: a changed Models line now needs each added or changed role named, but value words still aren't tied to a role, so "build opus, research sonnet/high, review medium" can confirm `build sonnet/medium · research opus/high`; requiring `role model/effort` together would close it. `JBIT models researcher …` is refused as not a role, as `builder` is.
 - Stage 4 proof (0.17.0): under Claude Code's auto permission mode, its own classifier can refuse a send ("Unsanctioned Communication") before JBIT's hook sees it, so the user gets that refusal rather than JBIT's hold and pause; the `research-fetch` eval runs with permissions bypassed for that reason. Worth a line in the README's autopilot section — for the user.

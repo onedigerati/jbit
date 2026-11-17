@@ -39,6 +39,8 @@ declare module 'claude-code' {
       modelsPending: boolean
       /** The user's `JBIT models` command set the honoured Models line this session: it names every role it keeps, so the defaults fill in nothing more, and a line matching them needs the user like any other. */
       modelsChosen: boolean
+      /** The user has been told this session, at the main loop's first worktree Agent call, that worktree agents start from the remote's default branch rather than local `HEAD` (Claude Code's `worktree.baseRef` isn't `head`). Set only once the notice is given. */
+      worktreeNotice: boolean
       /** Every project rule (`JBIT risk:` / `JBIT outward:` in CLAUDE.md) seen this session, so a line removed mid-run still holds until a new session. */
       projectRules: { risk: string[]; outward: { words: string[]; file: string }[] }
     }

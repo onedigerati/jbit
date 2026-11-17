@@ -266,7 +266,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
 
 <div class="wrap">
 <nav class="top" aria-label="Sections">
-  <span class="brand">JBIT 0.18.0</span>
+  <span class="brand">JBIT 0.18.1</span>
   <a href="#memory">Memory</a><a href="#stage">Stage loop</a><a href="#autopilot">Autopilot</a><a href="#agents">Agents level</a><a href="#models">Models</a><a href="#guards">Guardrails</a><a href="#roadmap">Roadmap</a><a href="#nextplan">Next plan</a><a href="#fix">Quick fix</a><a href="#commands">Commands</a>
 </nav>
 
@@ -443,6 +443,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <h3>Unattended: fewer waits, the same checks</h3>
     <p>Unattended is the default for your own command: <code>JBIT, just build it.</code>, <code>JBIT autopilot</code> or a typed <code>/jbit:autopilot</code>. The run doesn't wait on a risky stage, an open decision or a plan that turns out wrong. Claude picks what it would recommend and logs each call as a dated <code>(unattended)</code> decision, listed first in its final report. Verification, the commit gates, the secret guard, the security review of risky stages and the <code>lean</code> cap all stay.</p>
     <p>Add <code>attended</code> to the command to keep the stops (<code>JBIT autopilot attended</code>), or <code>outward</code> to let push, publish and deploy through (<code>JBIT autopilot outward</code>). The level holds until your next command or a new plan goal; talk, an approval, a pause or a stop and resume leave it as it is. Nothing but your own command sets it: plain words, Claude starting autopilot, a Mode line, a plugin's prompt or a file run at the level that stands, attended unless your own command set one for this plan.</p>
+    <p>A subagent's tool calls never move the main session's state: a builder can't change the Goal, the Mode, the autopilot level, approvals or ticked checks. Holds, outward checks and the <code>lean</code> cap judge its calls by the main session's plan, so an older plan in a builder's worktree changes nothing. Only when the main plan can't be read do they use the subagent's own copy, and a copy with a different Goal counts as attended.</p>
   </div>
 </section>
 
@@ -453,6 +454,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
     <h2>Agents level: spending tokens to save time</h2>
     <p>One line in <code>## Now</code> sets how widely work fans out to subagents. <code>/jbit:plan</code> asks once, and every skill follows the answer.</p>
     <p>At every level the agents stay small. A fan-out, research or build, gives each agent a few items at most (a nine-item research list goes to agents of at most three each), and every brief asks the agent to read narrowly, stop when its brief is done and hand back a short report, 20 lines at most with no diffs or dumps. An agent's cost grows with its turns and context, so small agents spend less. The rule adds no agent: under <code>lean</code> the batches go one after another.</p>
+    <p>Worktree agents start from the remote's default branch, not your local <code>HEAD</code>, unless Claude Code's <code>worktree.baseRef</code> is <code>"head"</code>, so commits you haven't pushed, the plan included, aren't in their worktree. The first time the main session starts a worktree agent in a session with the setting unset or <code>fresh</code>, JBIT tells you once, with a toast and a line from Claude. To change it, add <code>"worktree": {"baseRef": "head"}</code> to <code>~/.claude/settings.json</code> (or the project's <code>.claude/settings.json</code>). With <code>"baseRef": "head"</code>, nothing is said.</p>
   </div>
   <div class="fan">
     <div class="stack">
@@ -594,7 +596,7 @@ footer{padding-block:32px 48px;color:var(--muted);font-size:.84rem;border-top:1p
   </table></div>
 </section>
 
-<footer>JBIT 0.18.0 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
+<footer>JBIT 0.18.1 · Just build it. Plans it. Proves it. Sees it through. · based on <code>plugins/jbit/README.md</code> and the skill files in <code>plugins/jbit/skills/</code>.</footer>
 </div>
 
 <script>

@@ -1,0 +1,16 @@
+# Stage 2 · Worktree base, docs, 0.18.1 — evidence
+Verified 2026-11-16 on 72502ac, plus uncommitted changes (`plugins/jbit/hooks/register.ts`, `plugins/jbit/types/index.d.ts`, `plugins/jbit/tests/jbit.test.ts`, `plugins/jbit/tests/docs.check.mjs`, `plugins/jbit/README.md`, `docs/field-guide.html`, `plugins/jbit/.claude-plugin/plugin.json`). A fresh verifier agent ran the checks and saved the output files; its own write of this report was refused by the harness, so the main session re-ran the suite, docs checks and validate itself (same counts) and wrote this report from that run.
+
+| Check | Result | Evidence |
+|---|---|---|
+| With `worktree.baseRef` unset or `fresh` in the settings Claude Code reads, the first Agent call with `isolation: "worktree"` in a session tells the user once that worktree agents start from the remote's default branch, not local `HEAD`, and how to set `"worktree": {"baseRef": "head"}` (proof: test, the hook reads the setting through `$.settings.read()`) | pass | [worktree-tests.txt](worktree-tests.txt), [tests.txt](tests.txt): `without worktree.baseRef set, the first worktree Agent call tells the user once where the worktree starts` asserts the note holds "starts from the remote's default branch, not local `HEAD`", `"worktree": {"baseRef": "head"}` and "Tell the user this once", one toast, and nothing on a second call; `with worktree.baseRef fresh, the first worktree Agent call tells the user`. Also: no notice without worktree isolation, for a subagent's own call, for a denied call (the next allowed one gets it), or when settings can't be read |
+| With `baseRef: "head"` set, no notice is given (proof: test) | pass | [worktree-tests.txt](worktree-tests.txt): `with worktree.baseRef head, a worktree Agent call says nothing` (no context, no toast, not denied) |
+| The README and field guide say subagent tool calls never move the main session's state and judge holds from its plan, and describe the baseRef notice; docs checks pass (proof: docs check) | pass | [docs-checks.txt](docs-checks.txt) 47/47, the 0.18.1 docs test covering both statements and the notice in `plugins/jbit/README.md` and `docs/field-guide.html` |
+| The plugin is 0.18.1 in its manifest (the marketplace entry carries no version); `claude plugin validate .` passes and the suite is green (proof: command) | pass | [versions.txt](versions.txt): `plugin.json` 0.18.1, the marketplace's `jbit` entry has name, source and description only; [validate.txt](validate.txt) passes; [tests.txt](tests.txt) 561 pass, 0 fail (554 + 7 new) |
+
+Project checks: tests 561/561 ([tests.txt](tests.txt)) · docs checks 47/47 ([docs-checks.txt](docs-checks.txt)) · `claude plugin validate .` passes ([validate.txt](validate.txt)). The repo has no type check, lint or build script.
+Audit: no `package.json` or lockfile; the plugin ships no dependencies.
+
+Notes:
+- Check 4 was reworded: the plan said "in its manifest and the marketplace", but the marketplace entry has never carried a version, so the version lives in the manifest alone.
+- The tests answer `settings.read` themselves; no headless run showed the live engine returning the user's `worktree` setting. The engine's types (Claude Code 2.1.326) document `$.settings.read()` as the merged settings files, keyed as settings.json.

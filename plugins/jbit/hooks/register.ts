@@ -438,6 +438,11 @@ const MODELS_DEFAULT = { plugin: 'jbit', key: 'modelsDefault' } as const
 const MODELS_PENDING = { plugin: 'jbit', key: 'modelsPending' } as const
 /** The user's `JBIT models` command set the honoured Models line this session: the defaults fill in nothing more (`fallbackModels`). */
 const MODELS_CHOSEN = { plugin: 'jbit', key: 'modelsChosen' } as const
+/** The user has been told this session that worktree agents start from the remote's default branch, not local `HEAD` (`WORKTREE_NOTE`). */
+const WORKTREE_NOTICE = { plugin: 'jbit', key: 'worktreeNotice' } as const
+/** Why a worktree agent may lack this session's commits, and how the user changes it: Claude Code's `worktree.baseRef` defaults to `fresh`. */
+const WORKTREE_NOTE =
+  "JBIT: this agent's worktree starts from the remote's default branch, not local `HEAD`, since Claude Code's `worktree.baseRef` is `fresh` (its default): commits not yet pushed, the plan included, aren't in it. JBIT still judges the agent's calls by this session's plan. Tell the user this once, in a line, with how to change it: add `\"worktree\": {\"baseRef\": \"head\"}` to `~/.claude/settings.json` (or the project's `.claude/settings.json`)."
 /** The user confirmed the project's default this session (`syncModels`, or `JBIT models default`): only then is it honoured. */
 const MODELS_DEFAULT_CONFIRMED = { plugin: 'jbit', key: 'modelsDefaultConfirmed' } as const
 /** The user's own Models default (`userModels`) as the session first read it from the store (`''` for none). */
@@ -2421,6 +2426,25 @@ export const register: Register = on => {
     } finally {
       release()
     }
+  }).catch(($, e, next) => next(e))
+
+  // a worktree agent starts from the remote's default branch unless the user set `worktree.baseRef` to `head`: the main
+  // session tells them once, after the call goes through, since its unpushed commits (the plan too) aren't in the agent's tree
+  on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
+    if (e.agentId || e.isolation !== 'worktree') return next(e)
+    const result = await next(e)
+    if (result.deny) return result
+    try {
+      if ((await $.state.get(WORKTREE_NOTICE)).value === true) return result
+      const settings = (await $.settings.read()) as { worktree?: { baseRef?: unknown } } | undefined
+      if (settings?.worktree?.baseRef === 'head') return result
+      await $.state.set(WORKTREE_NOTICE, true)
+    } catch {
+      // only a notice: settings or state that can't be read say nothing, and leave it for a later call
+      return result
+    }
+    $.ui.toast('JBIT: worktree agents start from the remote default branch, not local HEAD')
+    return { ...result, context: [...(result.context ?? []), WORKTREE_NOTE] }
   }).catch(($, e, next) => next(e))
 
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {

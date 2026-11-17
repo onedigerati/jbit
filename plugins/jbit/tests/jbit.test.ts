@@ -402,6 +402,8 @@ function engine(
     looks: [] as string[],
     /** Every prompt as it reached the engine past the hooks: its text and the context entries beside it. */
     submitted: [] as { text: string; context: readonly string[] | undefined }[],
+    /** Every toast the hooks showed the user. */
+    toasts: [] as string[],
   }
   on('agent.list', () => ({ value: agents.map((a, i) => ({ id: `a${i}`, description: 'build', type: 'general-purpose', ...a })) as never }))
   on('session.cwd', () => {
@@ -450,7 +452,7 @@ function engine(
     return { text: e.text }
   })
   on('ui.notify', (_, e) => (sent.notes.push(e.text), { value: { isSent: true, channel: 'terminal_bell' } as never }))
-  on('ui.toast', () => ({ value: undefined }))
+  on('ui.toast', (_, e) => (sent.toasts.push(e.text), { value: undefined }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('turn.complete', (_, e) => ({ text: e.answer }))
   return sent
@@ -2692,6 +2694,85 @@ test("under a confirmed wide, a subagent's own Agent call is left alone", async 
 
 test("with no Agents line, a subagent's own Agent call is left alone", async ($, on) => {
   expect(await agentCall($, on, 'Open: none', [{ status: 'running' }], 'a0')).toBeUndefined()
+})
+
+/** Drives Agent calls with Claude Code's settings answering `settings` (`'throws'` makes the read fail); returns what the calls came back with and the toasts shown. */
+function worktreeSession(on: On, settings: Record<string, unknown> | 'throws', line = 'Open: none', agents: { status: string }[] = []) {
+  const { toasts } = engine(on, { text: planWith(line) }, 20, agents)
+  on('settings.read', () => {
+    if (settings === 'throws') throw new Error('settings unreadable')
+    return { value: settings as never }
+  })
+  on('tool.call', () => ({ result: { text: 'started' } }))
+  return toasts
+}
+
+const WORKTREE_AGENT = { tool: 'Agent', description: 'build', prompt: 'build stage 2', isolation: 'worktree' } as never
+
+test('without worktree.baseRef set, the first worktree Agent call tells the user once where the worktree starts', async ($, on) => {
+  const toasts = worktreeSession(on, {})
+  const first = await $.tool.call(WORKTREE_AGENT)
+  expect(first.deny).toBeUndefined()
+  expect(first.context).toHaveLength(1)
+  expect(first.context?.[0]).toContain("starts from the remote's default branch, not local `HEAD`")
+  expect(first.context?.[0]).toContain('"worktree": {"baseRef": "head"}')
+  expect(first.context?.[0]).toContain('Tell the user this once')
+  expect(toasts).toHaveLength(1)
+  expect(toasts[0]).toContain('worktree')
+  const second = await $.tool.call(WORKTREE_AGENT)
+  expect(second.deny).toBeUndefined()
+  expect(second.context).toBeUndefined()
+  expect(toasts).toHaveLength(1)
+})
+
+test('with worktree.baseRef fresh, the first worktree Agent call tells the user', async ($, on) => {
+  const toasts = worktreeSession(on, { worktree: { baseRef: 'fresh' } })
+  expect((await $.tool.call(WORKTREE_AGENT)).context?.[0]).toContain('"worktree": {"baseRef": "head"}')
+  expect(toasts).toHaveLength(1)
+})
+
+test('with worktree.baseRef head, a worktree Agent call says nothing', async ($, on) => {
+  const toasts = worktreeSession(on, { worktree: { baseRef: 'head' } })
+  const r = await $.tool.call(WORKTREE_AGENT)
+  expect(r.deny).toBeUndefined()
+  expect(r.context).toBeUndefined()
+  expect(toasts).toHaveLength(0)
+})
+
+test('an Agent call without worktree isolation says nothing about worktrees', async ($, on) => {
+  const toasts = worktreeSession(on, {})
+  expect((await $.tool.call({ tool: 'Agent', description: 'build', prompt: 'build stage 2' } as never)).context).toBeUndefined()
+  expect(toasts).toHaveLength(0)
+})
+
+test("a subagent's own worktree Agent call says nothing about worktrees", async ($, on) => {
+  const toasts = worktreeSession(on, {})
+  const r = await $.tool.call({ tool: 'Agent', description: 'build', prompt: 'build stage 2', isolation: 'worktree', agentId: 'a0' } as never)
+  expect(r.deny).toBeUndefined()
+  expect(r.context).toBeUndefined()
+  expect(toasts).toHaveLength(0)
+})
+
+test('a denied worktree Agent call gives no notice, and the next one that goes through does', async ($, on) => {
+  const agents = [{ status: 'running' }]
+  const toasts = worktreeSession(on, {}, 'Agents: lean', agents)
+  const denied = await $.tool.call(WORKTREE_AGENT)
+  expect(denied.deny).toContain('one is still running')
+  expect(denied.context).toBeUndefined()
+  expect(toasts).toHaveLength(0)
+  agents[0].status = 'completed'
+  const r = await $.tool.call(WORKTREE_AGENT)
+  expect(r.deny).toBeUndefined()
+  expect(r.context?.[0]).toContain("starts from the remote's default branch")
+  expect(toasts).toHaveLength(1)
+})
+
+test('when the settings cannot be read, a worktree Agent call goes through without a notice', async ($, on) => {
+  const toasts = worktreeSession(on, 'throws')
+  const r = await $.tool.call(WORKTREE_AGENT)
+  expect(r.deny).toBeUndefined()
+  expect(r.context).toBeUndefined()
+  expect(toasts).toHaveLength(0)
 })
 
 test("under an unconfirmed wide, a subagent's own Agent call is left alone", async ($, on) => {

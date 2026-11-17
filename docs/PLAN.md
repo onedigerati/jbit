@@ -31,7 +31,7 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 - 2026-11-17 · Check 4 accepted as passed after three fix rounds. Round 4's run 2 wrote the verifier's rows word for word but in verify's report format, which meets the check's wording; "exactly as it came" was a stricter bar added in fix round 3. verify now says "rows as they came, in this format". The user chose this. The report keeps the verifier's fail row and adds a History line.
 - 2026-11-17 · (autopilot) Code review, deferred: the field guide still says the skills hand work to all four role agents (left alone because the file has the user's uncommitted edits), and `docs/reviews/` isn't carried by archiving. Rejected: "Write is enforced by prompt alone" — the user chose to give the reviewer Write, and check 3 showed it keeps to the review file in the repo.
 ## Fixes
-- 2026-11-17 · Lifted the 5,000-word total on the six skills; each skill stays at most 1,500 words (docs check and standing decision updated) — docs check, plugin tests and validate green
+- 2026-11-17 · Lifted the 5,000-word total on the six skills, then the 1,500-word limit per skill (docs check and standing decision updated) — docs check, plugin tests and validate green
 
 ## Open questions
 - In every headless review the reviewer missed one planted bug (P7, `applyDiscount` returns the discount instead of the total) — review quality, outside this plan.

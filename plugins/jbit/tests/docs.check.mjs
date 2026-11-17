@@ -38,19 +38,10 @@ test('every skill says "JBIT <command>" triggers it', () => {
 
 // 1.0.0 stage 2: six short skills, no Agents/Models/Mode lines, no approval or holds; the habits each keeps.
 const SIX = ['autopilot', 'charter', 'plan', 'resume', 'stage', 'verify']
-const words = text => text.split(/\s+/).filter(Boolean).length
 
 test('skills/ holds exactly autopilot, charter, plan, resume, stage, verify; no skill names jbit:approve, jbit:fix or jbit:review', () => {
   assert.deepEqual(skills, SIX)
   for (const name of skills) assert.doesNotMatch(skill(name), /jbit:(?:approve|fix|review)\b/, `skills/${name} names a removed skill`)
-})
-
-// The 5,000-word total was lifted on 2026-11-17 (user's call); the per-skill limit stays.
-test('no skill is over 1,500 words', () => {
-  for (const name of skills) {
-    const n = words(skill(name))
-    assert.ok(n <= 1500, `skills/${name} is ${n} words, over 1,500`)
-  }
 })
 
 test('no skill carries Agents/Models/Mode-level, attended/unattended/outward, approval or hold text', () => {

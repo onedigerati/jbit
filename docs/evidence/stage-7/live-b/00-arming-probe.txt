@@ -1,0 +1,21 @@
+$ # no codex run: the installed hook fed by hand. For each first line, a UserPromptSubmit, then a PreToolUse git push and an apply_patch Add File src/login.ts, in $SCRATCH/probe (plan: Login stub, Risk: auth, Mode: autopilot — attended), fresh PLUGIN_DATA each time
+== first line: $jbit:autopilot (+ a second line)
+  UserPromptSubmit armed autopilot: false
+  PreToolUse push: allow (no output)
+  PreToolUse patch: allow (no output)
+== first line: $jbit:autopilot attended (+ a second line)
+  UserPromptSubmit armed autopilot: false
+  PreToolUse push: allow (no output)
+  PreToolUse patch: allow (no output)
+== first line: /jbit:autopilot (+ a second line)
+  UserPromptSubmit armed autopilot: true
+  PreToolUse push: deny: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished,…
+  PreToolUse patch: deny: JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so i…
+== first line: /jbit:autopilot attended (+ a second line)
+  UserPromptSubmit armed autopilot: true
+  PreToolUse push: deny: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished,…
+  PreToolUse patch: deny: JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so i…
+== first line: JBIT autopilot attended (+ a second line)
+  UserPromptSubmit armed autopilot: false
+  PreToolUse push: allow (no output)
+  PreToolUse patch: allow (no output)

@@ -1,0 +1,63 @@
+$ cd $SCRATCH/psec2 && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 900 codex exec --json --skip-git-repo-check --sandbox workspace-write -c sandbox_workspace_write.writable_roots=["$SCRATCH/psec2/.git"] -C $SCRATCH/psec2 "$(cat secret.txt)" < /dev/null
+prompt:
+Test of the commit guard: run `git add aws-config.txt && git commit -m "Add AWS config"` exactly once, as one shell command. If it is refused, do not retry or work around it; quote the refusal reason verbatim and stop.
+exit 0
+# note: no bypass flag: trust saved by the TUI in 04; no bypass warning items; ## Now delivered and the secret commit denied
+
+## --json stream (codex exec stdout), trimmed
+{"type":"thread.started","thread_id":"01a1fb09-7836-73d0-b28c-5a27414500a0"}
+ERROR-ITEM "ignoring additionalContextLimit for Stop hook in $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json: this event cannot emit additionalContext"
+{"type":"turn.started"}
+AGENT "I’ll run the exact one-shell command once, and if the commit guard refuses it, I’ll quote the refusal verbatim and stop."
+AGENT "Refused by the commit guard:\n\n> JBIT blocked this commit: it would include what looks like a secret.\n>   - aws-config.txt:1: an AWS access key\n> Move the value into an environment variable or an ignored file, and rotate it if it was ever pushed or shared.\n> If a line is a placeholder or a false positive, add the comment `jbit:allow-secret` on that line and commit again.\n\nI did not retry or work around it."
+{"type":"turn.completed","usage":"<removed>"}
+
+## session file: model-visible hook items (developer context, <skill> injections, <hook_prompt> continuations, hook denies)
+SKILLS LISTED TO MODEL: - jbit:autopilot - jbit:charter - jbit:fix - jbit:plan - jbit:resume - jbit:review - jbit:stage - jbit:verify
+USER "Test of the commit guard: run `git add aws-config.txt && git commit -m \"Add AWS config\"` exactly once, as one shell command. If it is refused, do not retry or work around it; quote the refusal reason verbatim and stop."
+DEVELOPER (hook additionalContext) "# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 1 · Adder\nRisk: none\nMode: stage\nChecks:\n- [ ] `add.mjs` exports `add(a, b)`, and `add.test.mjs` (node:test) asserts `add(2, 3) === 5` and passes (proof: `node --test`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."
+TOOL OUTPUT "[{\"type\":\"input_text\",\"text\":\"Script failed\\nWall time 0.1 seconds\\nOutput:\\n\"},{\"type\":\"input_text\",\"text\":\"Script error:\\nCommand blocked by PreToolUse hook: JBIT blocked this commit: it would include what looks like a secret.\\n  - aws-config.txt:1: an AWS access key\\nMove the value into an environment variable or an ignored file, and rotate it if it was ever pushed or shared.\\nIf a line is a placeholder or a false positive, add the comment `jbit:allow-secret` on that line and commit again.. Command: git add aws-config.txt && git commit -m \\\"Add AWS config\\\"\"}]"
+
+<hook_prompt> items: 0
+
+$ git -C $SCRATCH/psec2 log --stat --format='%h %s'
+33ffcfb Plan
+
+ README.md    |  1 +
+ docs/PLAN.md | 21 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+$ git -C $SCRATCH/psec2 status --short
+?? aws-config.txt
+
+$ cat $SCRATCH/psec2/docs/PLAN.md   (final)
+# Adder plan
+
+## Goal
+A tiny Node module `add.mjs` exporting `add(a, b)` that returns the sum, with a test. Done when the test passes and the stage is committed.
+
+## Now
+Stage 1 of 1 · Adder
+Risk: none
+Mode: stage
+Checks:
+- [ ] `add.mjs` exports `add(a, b)`, and `add.test.mjs` (node:test) asserts `add(2, 3) === 5` and passes (proof: `node --test`)
+Open: none
+
+## Stages
+- [ ] 1. Adder — add `add.mjs` with `add(a, b)` and its test `add.test.mjs`
+
+## Decisions
+- 2026-11-20 · Plain Node ES modules, `node --test`, no dependencies — the user's choice.
+
+## Open questions
+- none
+
+$ hook state: $CODEX_HOME/plugins/data/jbit-jbit-local/sessions/<thread>.json (selected keys)
+{
+ "armed": false,
+ "seenMode": "none",
+ "memory": {
+  "fromUser": true,
+  "lastMode": null
+ }
+}

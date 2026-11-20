@@ -87,11 +87,11 @@ function withGapBlock(text, cap) {
   return `${text.slice(0, a + start.length)}\n${gapBlock(cap)}\n${text.slice(b)}`
 }
 
-/** The events `hook.mjs` answers, read from its `EVENTS` table; null when it has none and the capability allows that. */
+/** The events the hook answers, read from the `EVENTS` table of `hook.mjs` (or `hooks.eventsFrom`); null when it has none and the capability allows that. */
 function handledEvents(hookSource, required = true) {
   const m = /const EVENTS = \{([^}]*)\}/.exec(hookSource)
   if (!m && !required) return null
-  if (!m) fail('hook.mjs has no EVENTS table to check hooks.json against')
+  if (!m) fail('the hook has no EVENTS table to check hooks.json against')
   return m[1].split(',').map(s => s.trim().split(':')[0].trim()).filter(Boolean).sort()
 }
 
@@ -276,13 +276,17 @@ export function generate({ src = REPO, host }) {
   const plan = scriptPlan(src, cap.scripts)
   const hookSrc = Object.keys(plan).find(k => plan[k] === 'scripts/hook.mjs')
   if (!hookSrc) fail('capability.json copies no scripts/hook.mjs')
+  // the script holding the EVENTS table: hook.mjs, or the handler an entry script loads (`hooks.eventsFrom`)
+  const eventsTo = cap.hooks.eventsFrom ?? 'scripts/hook.mjs'
+  const eventsSrc = Object.keys(plan).find(k => plan[k] === eventsTo)
+  if (!eventsSrc) fail(`capability.json copies no ${eventsTo}`)
   const events = [...cap.hooks.events].sort()
-  const handled = handledEvents(read(src, hookSrc), cap.hooks.requireEventsTable !== false)
+  const handled = handledEvents(read(src, eventsSrc), cap.hooks.requireEventsTable !== false)
   if (handled) {
     const unhandled = events.filter(e => !handled.includes(e))
     const unlisted = handled.filter(e => !events.includes(e))
     if (unhandled.length || unlisted.length) {
-      fail(`hooks.json events and the hook disagree: not handled by hook.mjs: ${unhandled.join(', ') || 'none'}; handled but not listed: ${unlisted.join(', ') || 'none'}`)
+      fail(`hooks.json events and the hook disagree: not handled by ${eventsTo.replace(/^scripts\//, '')}: ${unhandled.join(', ') || 'none'}; handled but not listed: ${unlisted.join(', ') || 'none'}`)
     }
   }
   files.set(`${pkg}/hooks/hooks.json`, json(hooksFile(cap, events)))

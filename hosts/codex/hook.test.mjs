@@ -10,7 +10,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parsePatch } from '../core/patch.mjs'
 import { mapTool, writesCodexHome } from './map.mjs'
-import * as hookModule from './hook.mjs'
+import * as hookModule from './handler.mjs'
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), 'hook.mjs')
 const temps = []
@@ -537,7 +537,7 @@ function fakeCore(stopRes, promptRes) {
 }
 
 test('review: a Stop block with no reason does not crash, still carries ## Now, and counts only an emitted block', async () => {
-  assert.equal(typeof hookModule.stopWith, 'function', 'hook.mjs exports stopWith(core)')
+  assert.equal(typeof hookModule.stopWith, 'function', 'handler.mjs exports stopWith(core)')
   const now = 'Current position (from the plan):\nStage 2 of 3 · Share mode'
   const c = fakeCore({ decision: 'block', notices: [] }, { context: [now], notices: [] })
   const out = await hookModule.stopWith(c)
@@ -554,4 +554,89 @@ test('review: a Stop block with no reason does not crash, still carries ## Now, 
   })
   await assert.rejects(hookModule.stopWith(broken))
   assert.equal(broken.store.get('stopBlocks'), undefined)
+})
+
+// ---- stage 7: live-run fixes ----
+
+const AGENT_TOOLS = ['spawn_agent', 'send_message', 'followup_task']
+const QUIET_AGENT_TOOLS = ['wait_agent', 'list_agents', 'interrupt_agent']
+const PREFIXES = ['', 'collaboration', 'collaboration.', 'collaboration__']
+
+test('live: the collaboration-prefixed agent tools map as the bare ones do', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  for (const p of PREFIXES) {
+    for (const t of AGENT_TOOLS) {
+      const r = mapTool(`${p}${t}`, { task_name: 'build', target: 'agent-1', message: 'build stage 2' }, root, o)
+      assert.equal(r.kind, 'calls', `${p}${t}: ${JSON.stringify(r)}`)
+      assert.equal(r.calls[0].tool, 'Agent', `${p}${t}`)
+    }
+    for (const t of QUIET_AGENT_TOOLS) assert.equal(mapTool(`${p}${t}`, { timeout_ms: 1000, target: 'agent-1' }, root, o).kind, 'allow', `${p}${t}`)
+  }
+  // a prefix alone, or one glued to another word, is no agent tool
+  assert.notEqual(mapTool('collaborationspawn_agentx', { message: 'x', path: 'a' }, root, o).kind, 'calls')
+})
+
+test('live: in a held stage, collaborationspawn_agent with an encrypted brief is denied', () => {
+  const { project, session } = heldRepo()
+  // the shape Codex 0.171.0 sent: keys task_name, fork_turns, message; the message encrypted
+  const input = { task_name: 'builder', fork_turns: 'none', message: 'gAAAAABrAMcYMoQACjdp5UodCR8DiawNw6BwFr0e0uvjpf0WD_o8k_4qG_skEAreDs6NGcP2do2JmKUe' }
+  for (const p of PREFIXES) {
+    const out = pre(`${p}spawn_agent`, input, { project, session })
+    assert.ok(denied(out), `${p}spawn_agent: ${JSON.stringify(out)}`)
+    assert.match(why(out), /holding/)
+  }
+  assert.deepEqual(pre('collaborationwait_agent', { timeout_ms: 30000 }, { project, session }), {})
+})
+
+test('live: a leading $jbit:autopilot arms autopilot as /jbit:autopilot does', () => {
+  const risky = repo(planWith('Mode: autopilot', { risk: 'auth' }))
+  const held = { project: risky, session: 'dollar-attended' }
+  prompt('$jbit:autopilot attended', held)
+  const out = pre('apply_patch', { command: patch('*** Add File: src/login.ts\n+x') }, held)
+  assert.ok(denied(out), JSON.stringify(out))
+  assert.match(why(out), /holding/)
+
+  const driving = repo(planWith('Mode: autopilot'))
+  const o = { project: driving, session: 'dollar-push' }
+  prompt('$jbit:autopilot', o)
+  const push = pre('Bash', { command: 'git push origin main' }, o)
+  assert.ok(denied(push), JSON.stringify(push))
+  assert.match(why(push), /outward-facing/)
+  assert.equal(stop(o).decision, 'block')
+
+  // not leading, or not the plugin's: nothing is rewritten, so nothing arms
+  for (const [i, text] of ['please run $jbit:autopilot', '$jbitx:autopilot', '$autopilot'].entries()) {
+    const n = { project: driving, session: `dollar-no-${i}` }
+    prompt(text, n)
+    assert.deepEqual(pre('Bash', { command: 'git push origin main' }, n), {}, text)
+  }
+})
+
+test('live: $jbit:approve releases a held stage as /jbit:approve does', () => {
+  const { project, session } = heldRepo()
+  const o = { project, session }
+  assert.ok(denied(pre('apply_patch', { command: patch('*** Add File: src/login.ts\n+x') }, o)))
+  prompt('$jbit:approve', o)
+  assert.deepEqual(pre('apply_patch', { command: patch('*** Add File: src/login.ts\n+x') }, o), {})
+})
+
+test('live: only the user prompt is rewritten; a tool command holding $jbit:approve is not an approval', () => {
+  const { project, session } = heldRepo()
+  const o = { project, session }
+  assert.deepEqual(pre('Bash', { command: "echo '$jbit:approve'" }, o), {})
+  assert.ok(denied(pre('apply_patch', { command: patch('*** Add File: src/login.ts\n+x') }, o)))
+})
+
+// stage 7 review: small hardening
+test('stage 7 review: an unknown collaboration tool carrying a message is judged as an Agent call', () => {
+  const r = mapTool('collaborationdelegate_task', { task_name: 'b', message: 'build it' }, '/tmp')
+  assert.equal(r.kind, 'calls')
+  assert.equal(r.calls[0].tool, 'Agent')
+  assert.equal(r.calls[0].prompt, 'build it')
+})
+
+test('stage 7 review: the $jbit: rewrite ignores case, as the core does', () => {
+  assert.equal(hookModule.userPrompt('$JBIT:approve'), '/JBIT:approve')
+  assert.equal(hookModule.userPrompt('$Jbit:autopilot lean'), '/Jbit:autopilot lean')
 })

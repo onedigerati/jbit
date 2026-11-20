@@ -1,0 +1,17 @@
+$ HOME=$H CODEX_HOME=$H/.codex codex plugin marketplace add $HOME/src/repos/jbit && codex plugin add jbit@jbit-local && codex plugin list
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/verify7/home/.codex"))
+Added marketplace `jbit-local` from $HOME/src/repos/jbit.
+Installed marketplace root: $HOME/src/repos/jbit
+exit 0
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/verify7/home/.codex"))
+Added plugin `jbit` from marketplace `jbit-local`.
+Installed plugin root: $SCRATCH/verify7/home/.codex/plugins/cache/jbit-local/jbit/2.0.0
+exit 0
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/verify7/home/.codex"))
+Marketplace `jbit-local`
+$HOME/src/repos/jbit/.agents/plugins/marketplace.json
+
+PLUGIN           STATUS              VERSION  SOURCE
+jbit@jbit-local  installed, enabled  2.0.0    $HOME/src/repos/jbit/plugins/jbit-codex
+
+(remote catalog listing trimmed)

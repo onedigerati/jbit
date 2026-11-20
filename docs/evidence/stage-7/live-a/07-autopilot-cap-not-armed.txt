@@ -1,0 +1,64 @@
+$ cd $SCRATCH/pcap && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 900 codex exec --json --skip-git-repo-check --sandbox workspace-write -c sandbox_workspace_write.writable_roots=["$SCRATCH/pcap/.git"] -C $SCRATCH/pcap --dangerously-bypass-hook-trust "$(cat autopilot-cap.txt)" < /dev/null
+prompt:
+JBIT autopilot
+Test of the turn-end hook cap: do not read or edit any file and do not run any command. Reply with the single word `waiting` and end your turn. Do exactly the same for every follow-up message, including carry-on messages.
+exit 0
+# note: failed cap attempt: two-line prompt did not arm autopilot and the plan's Mode stayed 'stage', so Stop never blocked (expected per the hook's rules). Re-run as 08.
+
+## --json stream (codex exec stdout), trimmed
+{"type":"thread.started","thread_id":"01a1fb0b-9969-7942-bc0e-860534ceae40"}
+ERROR-ITEM "`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."
+ERROR-ITEM "`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."
+ERROR-ITEM "ignoring additionalContextLimit for Stop hook in $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json: this event cannot emit additionalContext"
+{"type":"turn.started"}
+AGENT "waiting"
+{"type":"turn.completed","usage":"<removed>"}
+
+## session file: model-visible hook items (developer context, <skill> injections, <hook_prompt> continuations, hook denies)
+SKILLS LISTED TO MODEL: - jbit:autopilot - jbit:charter - jbit:fix - jbit:plan - jbit:resume - jbit:review - jbit:stage - jbit:verify
+USER "JBIT autopilot\nTest of the turn-end hook cap: do not read or edit any file and do not run any command. Reply with the single word `waiting` and end your turn. Do exactly the same for every follow-up message, including carry-on messages."
+DEVELOPER (hook additionalContext) "# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 2 · One file\nRisk: none\nMode: stage\nChecks:\n- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."
+
+<hook_prompt> items: 0
+
+$ git -C $SCRATCH/pcap log --stat --format='%h %s'
+515b23a Plan
+
+ README.md    |  1 +
+ docs/PLAN.md | 22 ++++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+$ git -C $SCRATCH/pcap status --short
+
+$ cat $SCRATCH/pcap/docs/PLAN.md   (final)
+# Greetings plan
+
+## Goal
+Two text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.
+
+## Now
+Stage 1 of 2 · One file
+Risk: none
+Mode: stage
+Checks:
+- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)
+Open: none
+
+## Stages
+- [ ] 1. One file — create `one.txt` with the line `one`
+- [ ] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly `two` followed by a newline (proof: `cat two.txt`)
+
+## Decisions
+- 2026-11-20 · Plain text files, no build or tests — the user's choice.
+
+## Open questions
+- none
+
+$ hook state: $CODEX_HOME/plugins/data/jbit-jbit-local/sessions/<thread>.json (selected keys)
+{
+ "armed": false,
+ "seenMode": "none",
+ "memory": {
+  "fromUser": true,
+  "lastMode": null
+ }
+}

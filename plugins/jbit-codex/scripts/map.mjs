@@ -9,6 +9,15 @@ import { mapTool as copilotMap, resolveInProject } from './copilot/map.mjs'
 /** Tools that only read or report: allowed whatever their input. */
 export const READ_ONLY = new Set(['view_image', 'update_plan', 'web_search', 'list_agents', 'wait_agent', 'interrupt_agent'])
 
+/** Codex's agent tools, which it may name with a `collaboration` prefix (`collaborationspawn_agent`, seen live). */
+const AGENT_TOOLS = new Set(['spawn_agent', 'wait_agent', 'send_message', 'followup_task', 'list_agents', 'interrupt_agent'])
+
+/** An agent tool's bare name, with or without a `collaboration`, `collaboration.` or `collaboration__` prefix. */
+export function agentToolName(tool) {
+  const m = /^collaboration(?:\.|__)?(.+)$/.exec(tool)
+  return m && AGENT_TOOLS.has(m[1]) ? m[1] : tool
+}
+
 /** An input key that carries a path or a command, at any depth. */
 const PATHY = /path|file|dir|folder|cwd|command|cmd|script|patch|shell|exec/i
 
@@ -162,6 +171,9 @@ function patchCalls(text, root, codexHome) {
  * project's directory; `codexHome` the folder to keep writes out of.
  */
 export function mapTool(tool, input, root, { codexHome = codexHomeOf() } = {}) {
+  if (typeof tool === 'string') tool = agentToolName(tool)
+  // an agent tool Codex adds later, still under the `collaboration` prefix: judged as a spawn while it carries a brief
+  if (typeof tool === 'string' && /^collaboration/.test(tool) && input !== null && typeof input === 'object' && typeof input.message === 'string' && !pathyKey(input)) tool = 'spawn_agent'
   if (READ_ONLY.has(tool)) return { kind: 'allow' }
   switch (tool) {
     case 'apply_patch':

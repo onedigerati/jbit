@@ -29,8 +29,7 @@
           {
             "type": "command",
             "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" Stop",
-            "timeout": 30,
-            "additionalContextLimit": 16000
+            "timeout": 30
           }
         ]
       }

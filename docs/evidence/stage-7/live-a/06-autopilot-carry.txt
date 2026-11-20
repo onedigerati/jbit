@@ -1,0 +1,120 @@
+$ cd $SCRATCH/p3 && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 900 codex exec --json --skip-git-repo-check --sandbox workspace-write -c sandbox_workspace_write.writable_roots=["$SCRATCH/p3/.git"] -C $SCRATCH/p3 --dangerously-bypass-hook-trust "$(cat autopilot-forced-stop.txt)" < /dev/null
+prompt:
+JBIT autopilot
+Test of the turn-end hook: right after stage 1's commit, end your turn with a one-line reply, without starting stage 2. If a follow-up message tells you to carry on, follow it.
+exit 0
+# note: two-line prompt: the hook does not take it as the user's autopilot command (not command words only); the model set Mode: autopilot itself, which armed it; Stop blocked once after stage 1 with Next: 2 and ## Now; both stages committed
+
+## --json stream (codex exec stdout), trimmed
+{"type":"thread.started","thread_id":"01a1fb09-bd68-7592-b9e5-ddb845a985be"}
+ERROR-ITEM "`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."
+ERROR-ITEM "`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."
+ERROR-ITEM "ignoring additionalContextLimit for Stop hook in $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json: this event cannot emit additionalContext"
+{"type":"turn.started"}
+AGENT "I’ll follow the approved autopilot workflow through stage 1, commit it, then stop with the requested one-line reply before stage 2."
+CMD "/bin/bash -lc 'cat $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/autopilot/SKILL.md'" exit=0
+   OUT "---\nname: autopilot\ndescription: Take over an approved plan as its project manager and see it through — run every remaining stage through build, verify, review and commit without stopping between stages, keep the plan current, and come back to the user only when something is stuck or theirs to decide. The user's own command, a typed `/jbit:autopilot` or a message opening with \"JBIT\" made of command words (\"JBIT autopilot lean\", \"JBIT, just build it. Autopilot, lean.\"), runs it unattended, deciding and logging judgment calls itself; `attended` keeps the stops for risky stages and open decisions…[22407 more chars]"
+AGENT "I’ve read the autopilot instructions. I’m checking the plan and stage workflow now, then I’ll make and prove only stage 1 before committing."
+CMD "/bin/bash -lc 'cat docs/PLAN.md && cat $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/stage/SKILL.md && cat $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/SKILL.md'" exit=0
+   OUT "# Greetings plan\n\n## Goal\nTwo text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.\n\n## Now\nStage 1 of 2 · One file\nRisk: none\nMode: stage\nChecks:\n- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\nOpen: none\n\n## Stages\n- [ ] 1. One file — create `one.txt` with the line `one`\n- [ ] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly…[26408 more chars]"
+CMD "/bin/bash -lc \"git status --short && if [ -f docs/decisions.md ]; then cat docs/decisions.md; fi && rg --files -g 'AGENTS.md' -g 'docs/evidence/**' -g 'docs/PLAN.md' -g 'docs/decisions.md'\"" exit=0
+   OUT "docs/PLAN.md\n"
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"}] status=completed
+PATCH [{"path":"$SCRATCH/p3/one.txt","kind":"add"}] status=completed
+AGENT "Stage 1 is a single-file change, so I’m building it directly. I’ll prove the exact newline content with the plan’s `cat` check, record that output, and close the plan at stage 2 before committing."
+CMD "/bin/bash -lc \"mkdir -p docs/evidence/stage-1 && printf 'cat one.txt\\\\n' > docs/evidence/stage-1/one.txt && cat one.txt | tee -a docs/evidence/stage-1/one.txt && if [ \"'! -f docs/evidence/.gitignore ]; then cat > docs/evidence/.gitignore <<'\"'EOF'\n# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.\n*.png\n*.jpg\n*.jpeg\n*.webp\n*.gif\n*.zip\n*.webm\n*.mp4\n*.trace\n*.…[41 more chars]" exit=0
+   OUT "one\na03950e\n"
+CMD "/bin/bash -lc \"rg --files -g 'package.json' -g 'Makefile' -g 'pyproject.toml' -g 'Cargo.toml' -g 'go.mod' -g '.github/workflows/**' -g '*requirements*.txt' -g 'Pipfile' -g 'Justfile'\"" exit=1
+   OUT ""
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"},{"path":"$SCRATCH/p3/docs/evidence/stage-1/report.md","kind":"add"}] status=completed
+CMD "/bin/bash -lc 'git diff -- docs/PLAN.md one.txt docs/evidence/stage-1/report.md docs/evidence/stage-1/one.txt docs/evidence/.gitignore && git status --short'" exit=0
+   OUT "diff --git a/docs/PLAN.md b/docs/PLAN.md\nindex f22fdfd..6ff6f5a 100644\n--- a/docs/PLAN.md\n+++ b/docs/PLAN.md\n@@ -4,15 +4,13 @@\n Two text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.\n \n ## Now\n-Stage 1 of 2 · One file\n+Stage 2 of 2 · Two file\n Risk: none\n-Mode: stage\n-Checks:\n-- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\n+Mode: autopilot — unattended\n Open: none\n \n ## Stages\n-- [ ] 1. One f…[340 more chars]"
+AGENT "The commit guard caught that I advanced `## Now` before it saw stage 1’s check marked complete. I’m restoring the proven check as ticked in `## Now` and retrying the stage 1 close."
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"}] status=completed
+CMD "/bin/bash -lc 'git add docs/PLAN.md one.txt docs/evidence/.gitignore docs/evidence/stage-1/report.md docs/evidence/stage-1/one.txt && git commit -m \"Create one.txt for stage 1\"'" exit=0
+   OUT "[main d49ba84] Create one.txt for stage 1\n 5 files changed, 26 insertions(+), 3 deletions(-)\n create mode 100644 docs/evidence/.gitignore\n create mode 100644 docs/evidence/stage-1/one.txt\n create mode 100644 docs/evidence/stage-1/report.md\n create mode 100644 one.txt\n"
+AGENT "Stage 1 is committed (`d49ba84`); `one.txt` passed its exact-content check, recorded in [stage-1 evidence]($SCRATCH/p3/docs/evidence/stage-1/report.md). Stage 2 has not started."
+AGENT "I’m resuming autopilot for stage 2. I’ll reread the plan, create `two.txt`, verify its exact content and save the evidence, then commit the stage."
+CMD "/bin/bash -lc \"cat docs/PLAN.md && git status --short && cat $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/autopilot/SKILL.md | sed -n '1,95p'\"" exit=0
+   OUT "# Greetings plan\n\n## Goal\nTwo text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.\n\n## Now\nStage 1 of 2 · One file\nRisk: none\nMode: autopilot — unattended\nChecks:\n- [x] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\nOpen: none\n\n## Stages\n- [x] 1. One file — create `one.txt` with the line `one`\n- [ ] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its c…[19114 more chars]"
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"}] status=completed
+PATCH [{"path":"$SCRATCH/p3/two.txt","kind":"add"}] status=completed
+CMD "/bin/bash -lc \"mkdir -p docs/evidence/stage-2 && printf 'cat two.txt\\\\n' > docs/evidence/stage-2/two.txt && cat two.txt | tee -a docs/evidence/stage-2/two.txt && printf 'cat one.txt\\\\n' > docs/evidence/stage-2/rerun-stage-1.txt && cat one.txt | tee -a docs/evidence/stage-2/rerun-stage-1.txt\"" exit=0
+   OUT "two\none\n"
+AGENT "Stage 2’s `cat two.txt` check passed, and I reran stage 1’s hand-proven check as required for the final stage. I’m recording both proofs and closing the plan now."
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"},{"path":"$SCRATCH/p3/docs/evidence/stage-2/report.md","kind":"add"}] status=completed
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"}] status=completed
+PATCH [{"path":"$SCRATCH/p3/docs/PLAN.md","kind":"update"}] status=completed
+CMD "/bin/bash -lc 'git add docs/PLAN.md two.txt docs/evidence/stage-2/report.md docs/evidence/stage-2/two.txt docs/evidence/stage-2/rerun-stage-1.txt && git commit -m \"Create two.txt for stage 2\"'" exit=0
+   OUT "[main 4b854e7] Create two.txt for stage 2\n 5 files changed, 17 insertions(+), 7 deletions(-)\n create mode 100644 docs/evidence/stage-2/report.md\n create mode 100644 docs/evidence/stage-2/rerun-stage-1.txt\n create mode 100644 docs/evidence/stage-2/two.txt\n create mode 100644 two.txt\n"
+AGENT "All stages are complete. The repo now has `one.txt` and `two.txt`, each with the exact requested line, and both stages are committed.\n\n- Stage 1: no concerns; verified with `cat one.txt` in [stage 1 evidence]($SCRATCH/p3/docs/evidence/stage-1/report.md).\n- Stage 2: no concerns; verified with `cat two.txt` and reran stage 1’s check in [stage 2 evidence]($SCRATCH/p3/docs/evidence/stage-2/report.md).\n\nNo unattended decisions were needed; no review fixes or open questions remain. The plan records that no project test, build, or dependency audit applies to these plain text files."
+{"type":"turn.completed","usage":"<removed>"}
+
+## session file: model-visible hook items (developer context, <skill> injections, <hook_prompt> continuations, hook denies)
+SKILLS LISTED TO MODEL: - jbit:autopilot - jbit:charter - jbit:fix - jbit:plan - jbit:resume - jbit:review - jbit:stage - jbit:verify
+USER "JBIT autopilot\nTest of the turn-end hook: right after stage 1's commit, end your turn with a one-line reply, without starting stage 2. If a follow-up message tells you to carry on, follow it."
+DEVELOPER (hook additionalContext) "# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 2 · One file\nRisk: none\nMode: stage\nChecks:\n- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."
+TOOL OUTPUT "[{\"type\":\"input_text\",\"text\":\"Script completed\\nWall time 0.1 seconds\\nOutput:\\n\"},{\"type\":\"input_text\",\"text\":\"Warning: truncated output (original token count: 5762)\\nTotal output lines: 111\\n\\n---\\nname: autopilot\\ndescription: Take over an approved plan as its project manager and see it through — run every remaining stage through build, verify, review and commit without stopping between stages, keep the plan current, and come back to the user only when something is stuck or theirs to decide. The user's own command, a typed `/jbit:autopilot` or a message opening with \\\"JBIT\\\" made of command words (\\\"JBIT autopilot lean\\\", \\\"JBIT, just build it. Autopilot, lean.\\\"), runs it unattended, deciding and logging judgment calls itself; `attended` keeps the stops for risky stages and open decisions. Use when the user approves a plan and says to run it, \\\"just build it\\\", take it from here, see it through, or put it on autopilot, and when a message opens with \\\"JBIT autopilot\\\" or \\\"JBIT, just build it\\\" (any case, after a space, comma or colon), as `/jbit:autopilot` does. While autopilot holds a risky stage, \\\"just build it\\\" is the user's approval of it, not a new run.\\n---\\n\\n# JBIT: autopilot\\n\\nYou're the project manager. You don't write the code; you make sure it gets built, proven and committed, stage after stage, until the plan's goal is met. The user hands over at the plan and comes back at the end, or when you call them.\\n\\n## 1. Take over\\n\\n- Read the plan, and `docs/dec…[14797 more chars]"
+TOOL OUTPUT "[{\"type\":\"input_text\",\"text\":\"Script completed\\nWall time 0.1 seconds\\nOutput:\\n\"},{\"type\":\"input_text\",\"text\":\"# Greetings plan\\n\\n## Goal\\nTwo text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.\\n\\n## Now\\nStage 1 of 2 · One file\\nRisk: none\\nMode: stage\\nChecks:\\n- [ ] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\\nOpen: none\\n\\n## Stages\\n- [ ] 1. One file — create `one.txt` with the line `one`\\n- [ ] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly `two` followed by a newline (proof: `cat two.txt`)\\n\\n## Decisions\\n- 2026-11-20 · Plain text files, no build or tests — the user's choice.\\n\\n## Open questions\\n- none\\n---\\nname: stage\\ndescription: Run the next stage of the project plan end to end — scope it, build it (fanning independent parts out to subagents), test, verify against the running product, review, update the plan, commit, and stop for the user's review. Use when the user says to start, continue or \\\"go\\\" on planned work, or names a stage to build. Also when a message opens with \\\"JBIT stage\\\" (any case, after a space, comma or colon, as in \\\"JBit, stage\\\"), which works as `/jbit:stage`.\\n---\\n\\n# JBIT: stage\\n\\nA stage is done when its checks pass against the running product, the suite is green…[25865 more chars]"
+TOOL OUTPUT "[{\"type\":\"input_text\",\"text\":\"Script failed\\nWall time 0.1 seconds\\nOutput:\\n\"},{\"type\":\"input_text\",\"text\":\"Script error:\\nCommand blocked by PreToolUse hook: JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`:\\n  - `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\\nProve them (jbit:verify). If they pass, put stage 1's checks back in `## Now` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from `## Now` first.. Command: git add docs/PLAN.md one.txt docs/evidence/.gitignore docs/evidence/stage-1/report.md docs/evidence/stage-1/one.txt && git commit -m \\\"Create one.txt for stage 1\\\"\"}]"
+HOOK_PROMPT #1 "<hook_prompt hook_run_id=\"stop:3:$SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json\">jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Two file.\n\n# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 2 · One file\nRisk: none\nMode: autopilot — unattended\nChecks:\n- [x] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-&lt;n&gt;/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-&lt;n&gt;/report.md`), its `(unattended)` decisions, and what's left. A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions. Tell a concern (…[985 more chars]"
+TOOL OUTPUT "[{\"type\":\"input_text\",\"text\":\"Script completed\\nWall time 0.1 seconds\\nOutput:\\n\"},{\"type\":\"input_text\",\"text\":\"# Greetings plan\\n\\n## Goal\\nTwo text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.\\n\\n## Now\\nStage 1 of 2 · One file\\nRisk: none\\nMode: autopilot — unattended\\nChecks:\\n- [x] `one.txt` exists in the repo root and its content is exactly `one` followed by a newline (proof: `cat one.txt`)\\nOpen: none\\n\\n## Stages\\n- [x] 1. One file — create `one.txt` with the line `one`\\n- [ ] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly `two` followed by a newline (proof: `cat two.txt`)\\n\\n## Decisions\\n- 2026-11-20 · Plain text files, no build or tests — the user's choice.\\n\\n## Open questions\\n- none\\n---\\nname: autopilot\\ndescription: Take over an approved plan as its project manager and see it through — run every remaining stage through build, verify, review and commit without stopping between stages, keep the plan current, and come back to the user only when something is stuck or theirs to decide. The user's own command, a typed `/jbit:autopilot` or a message opening with \\\"JBIT\\\" made of command words (\\\"JBIT autopilot lean\\\", \\\"JBIT, just build it. Autopilot, lean.\\\"), runs it unattended, deciding and logging judgment calls itself; `attended` keeps the stops for risky st…[18534 more chars]"
+
+<hook_prompt> items: 1
+
+$ git -C $SCRATCH/p3 log --stat --format='%h %s'
+4b854e7 Create two.txt for stage 2
+
+ docs/PLAN.md                            |  9 ++-------
+ docs/evidence/stage-2/report.md         | 10 ++++++++++
+ docs/evidence/stage-2/rerun-stage-1.txt |  2 ++
+ docs/evidence/stage-2/two.txt           |  2 ++
+ two.txt                                 |  1 +
+ 5 files changed, 17 insertions(+), 7 deletions(-)
+d49ba84 Create one.txt for stage 1
+
+ docs/PLAN.md                    |  6 +++---
+ docs/evidence/.gitignore        | 11 +++++++++++
+ docs/evidence/stage-1/one.txt   |  2 ++
+ docs/evidence/stage-1/report.md |  9 +++++++++
+ one.txt                         |  1 +
+ 5 files changed, 26 insertions(+), 3 deletions(-)
+a03950e Plan
+
+ README.md    |  1 +
+ docs/PLAN.md | 22 ++++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+$ git -C $SCRATCH/p3 status --short
+
+$ cat $SCRATCH/p3/docs/PLAN.md   (final)
+# Greetings plan
+
+## Goal
+Two text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.
+
+## Now
+All stages done
+
+## Stages
+- [x] 1. One file — create `one.txt` with the line `one`
+- [x] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly `two` followed by a newline (proof: `cat two.txt`)
+
+## Decisions
+- 2026-11-20 · Plain text files, no build or tests — the user's choice.
+
+## Open questions
+- none
+
+$ hook state: $CODEX_HOME/plugins/data/jbit-jbit-local/sessions/<thread>.json (selected keys)
+{
+ "armed": false,
+ "seenMode": "none",
+ "stopBlocks": 1,
+ "notices": [
+  "All 2 stages done."
+ ],
+ "memory": {
+  "fromUser": false,
+  "lastMode": null
+ }
+}

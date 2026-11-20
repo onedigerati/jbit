@@ -102,3 +102,47 @@ What Copilot can't do:
 - **A hook that hangs or prints junk.** Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks.
 - **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
 <!-- copilot-gaps:end -->
+
+## Codex CLI
+
+JBIT also runs on OpenAI Codex CLI. `plugins/jbit-codex/` is the same plugin, version 2.0.0, generated from this one by `node hosts/build.mjs codex`: the same skills with a note on Codex's tool names, and the hook ported to a Node script. It needs Node 22.18 or later.
+
+```
+codex plugin marketplace add onedigerati/jbit
+codex plugin add jbit@jbit-local
+```
+
+The GitHub form works once the Codex package is pushed; from a local clone, use `codex plugin marketplace add /path/to/jbit`. Codex reads its own marketplace file, `.agents/plugins/marketplace.json`, so it installs the Codex package, not the Claude one.
+
+**Trust the hooks first.** Codex runs a plugin's hooks only once you trust them: at startup the TUI says "Hooks need review"; choose "Trust all", or review them in `/hooks`. Do it again after every JBIT update, which voids the trust. Until then nothing guards, no plan reaches the model, and nothing says so. Trusted hooks run outside Codex's sandbox.
+
+Invoke a skill as `$jbit:<name>`: `$jbit:plan`, `$jbit:stage`, `$jbit:autopilot`. A typed `/jbit:plan` is plain text to Codex. The hook reads a leading `$jbit:autopilot` or `$jbit:approve` as the typed `/jbit:autopilot` or `/jbit:approve`.
+
+Headless, run `codex exec "<prompt>" < /dev/null` from the project (without `< /dev/null` it waits for more input on stdin). Under `--sandbox workspace-write`, `.git` is read-only, so a stage can't commit until you make it writable: `-c 'sandbox_workspace_write.writable_roots=["<project>/.git"]'`. `--dangerously-bypass-hook-trust` runs the hooks without saved trust; use it in CI only.
+
+What works, proven headless on Codex CLI 0.171.0 from the marketplace install: the plan's `## Now` reaches the model with every prompt, a stage runs to its close and commit, the commit gate refuses a stage close with an unticked check, the secret guard refuses a commit carrying a key, a `git push` under autopilot is held, an edit through `apply_patch` in a held stage is refused, a write under `$CODEX_HOME` is refused, autopilot carries on through the turn end and stops at the hook's cap, the hooks fire for `Bash` and `apply_patch` calls inside `spawn_agent` children, and `approve` is left out of the skills Codex shows the model (it wasn't invoked when asked to approve).
+
+What Codex can't do:
+
+<!-- codex-gaps:start: generated from hosts/codex/capability.json by node hosts/build.mjs codex; don't edit -->
+- **Hooks need trusting after every install and update.** Codex runs a plugin's hooks only once the user trusts them, at startup ("Hooks need review", then "Trust all") or through `/hooks`, and every JBIT update voids that trust silently. Until they're trusted again, JBIT has no `## Now` in context, no gates and no carry-on, and nothing says so; `codex exec` skips untrusted hooks without a warning. Trusted hooks run outside the sandbox.
+- **A hook killed on timeout.** A PreToolUse hook that Codex kills on its 30-second timeout lets the call run (proven live at stage 7). The shipped hook refuses by its own 25-second watchdog first, and refuses when its own modules fail to load, so this bites only if the hook's event loop blocks.
+- **Stall detection and other in-memory state.** Each hook event is a fresh process, as on Copilot, so nothing counts repeated turn ends; the hook's own cap of 8 Stop blocks per prompt bounds the loop instead, and an unattended `codex exec` run stops quietly when it's reached. Prompt again to carry on.
+- **Lean's count of agents already running.** The Claude hook keeps it in memory across events; a command hook has no running process to keep it in.
+- **Tracking background agents.** Same reason: no in-memory agent list between events.
+- **The reopen check after a commit.** It runs before the commit lands, since there's no in-memory state carried to the next event.
+- **A `## Now` longer than 40 lines.** JBIT passes at most 40 lines of `## Now` into context, as on Claude Code: a longer one reaches the model cut at its 40th line (proven live, along with 40 lines passed whole). Keep `## Now` short.
+- **The brief of a `spawn_agent` call.** Codex hands the hook the brief (`message`) encrypted, so no check can read it. The stage hold and the Models line still apply to the call; nothing that needs the brief's words does.
+- **Some tool calls inside `spawn_agent` children.** The hooks fire for `Bash` and `apply_patch` calls a subagent makes (proven live), but whether they fire for its `write_stdin` and MCP tool calls is unproven.
+- **Writes through the shell in a held stage.** The hold refuses `apply_patch` and builder agents, but a file written by a shell command (`echo > file`, `sed -i`) isn't held, on any host: the hook can't tell a build step from a read in a shell line.
+- **The `$CODEX_HOME` guard.** Writes under `$CODEX_HOME` or a `.codex` folder are refused through `apply_patch` and through shell commands that name the folder, but the shell check is best-effort: a command that reaches the folder without naming it isn't caught.
+- **Case-insensitive file systems.** The guard compares paths case-sensitively, so on a case-insensitive file system (macOS, Windows) a write to `.Codex/` or to `$CODEX_HOME` spelled in another case can slip past it.
+- **No role agents.** A Codex plugin can't register agents (none of the routes the spike tried did), so the package ships none; builders, verifiers and reviewers are plain `spawn_agent` calls briefed with the role.
+- **`CLAUDE.md` loaded at startup.** Codex loads `AGENTS.md`, not `CLAUDE.md`; the skills tell the model to read `CLAUDE.md` itself.
+- **Typing `/jbit:<name>`.** Codex recognises a skill only as `$jbit:<name>` (for example `$jbit:autopilot`). A typed `/jbit:plan` or `$plan` reaches the model as plain text, which may still find the skill from its description, with no guarantee. The hook reads a leading `$jbit:autopilot` or `$jbit:approve` as the typed command.
+- **Node older than 22.18.** The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused.
+- **`/code-review` and `/security-review`.** They are Claude Code built-ins; on Codex the review runs as a fresh `spawn_agent` briefed with the same lenses.
+- **Worktree isolation for parallel builders.** Codex's `spawn_agent` has none, so parallel builders must own separate files or run one at a time.
+- **Compacting the context before autopilot carries on.** Codex gives a command hook no context gauge and no compact call; Codex manages its own context.
+- **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
+<!-- codex-gaps:end -->

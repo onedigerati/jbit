@@ -1,0 +1,561 @@
+$ node --test --test-name-pattern='live|Stop carries no|fails to import' hosts/codex/hook.test.mjs hosts/build.test.mjs
+TAP version 13
+# Subtest: codex: Stop carries no additionalContextLimit (Codex rejects it); UserPromptSubmit keeps its raised one
+not ok 1 - codex: Stop carries no additionalContextLimit (Codex rejects it); UserPromptSubmit keeps its raised one
+  ---
+  duration_ms: 16.640998
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/build.test.mjs:733:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 16000
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual: 16000
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:737:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: codex: a package whose adapter fails to import still denies a PreToolUse with exit 0, and is silent elsewhere
+not ok 2 - codex: a package whose adapter fails to import still denies a PreToolUse with exit 0, and is silent elsewhere
+  ---
+  duration_ms: 34.618396
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/build.test.mjs:741:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input was expected to not match the regular expression /^\s*import\s[^(]*from\s+['"]\.\.?\//m. Input:
+    
+    '#!/usr/bin/env node\n' +
+      "// JBIT's Codex CLI command hook. argv[2] is the Codex event name; the event's JSON comes on stdin. It runs the Claude\n" +
+      "// hook's handlers through the host-neutral core (`hosts/core/`) and answers in Codex's words on stdout:\n" +
+      '// - UserPromptSubmit → {"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext"}}: the plan\'s `## Now`\n' +
+      '// - PreToolUse       → {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",…}} or nothing\n' +
+      '// - Stop             → {"decision":"block","reason"} while autopilot carries on; the reason carries `## Now` too, since\n' +
+      '//                      Codex runs no UserPromptSubmit on a continuation. Codex has no cap, so this hook keeps one.\n' +
+      '// - SessionStart     → nothing: every prompt carries the plan\n' +
+      '// It fails closed and never exits 1, which Codex reads as allow: a crash, unreadable stdin, no project or no data\n' +
+      '// folder denies a PreToolUse; elsewhere it adds nothing. Nothing but the answer goes to stdout.\n' +
+      "import { realpathSync, statSync } from 'node:fs'\n" +
+      "import { isAbsolute } from 'node:path'\n" +
+      "import { fileURLToPath } from 'node:url'\n" +
+      "import { codexHomeOf, mapTool } from './map.mjs'\n" +
+      '\n' +
+      `const CRASH = "JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."\n` +
+      "const NO_PROJECT = tool => `JBIT blocked \\`${tool}\\`: the hook couldn't tell which project this is (no usable \\`cwd\\` on the event), so it can't check the plan's gates and fails closed.`\n" +
+      "const NO_DATA = tool => `JBIT blocked \\`${tool}\\`: the hook has no data folder (Codex sets PLUGIN_DATA for a plugin's hooks), so it can't keep the session's state and fails closed. Tell the user JBIT's hooks need to run from the installed plugin.`\n" +
+      'const WATCHDOG_MS = (() => {\n' +
+      '  const n = Number(process.env.JBIT_HOOK_WATCHDOG_MS)\n' +
+      '  return Number.isInteger(n) && n > 0 && n < 25000 ? n : 25000\n' +
+      '})()\n' +
+      '/** Stop blocks per user prompt before the hook lets the turn end. */\n' +
+      'export const STOP_CAP = 8\n' +
+      '\n' +
+      "const deny = reason => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } })\n" +
+      '\n' +
+      "/** The project: the event's `cwd`, absolute and a directory. Its real path, or undefined. */\n" +
+      'export function projectDir(input) {\n' +
+      '  const dir = input?.cwd\n' +
+      "  if (typeof dir !== 'string' || !dir || !isAbsolute(dir)) return undefined\n" +
+      '  try {\n' +
+      '    const real = realpathSync(dir)\n' +
+      '    return statSync(real).isDirectory() ? real : undefined\n' +
+      '  } catch {\n' +
+      '    return undefined\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'const dataDir = (env = process.env) => env.PLUGIN_DATA || env.CLAUDE_PLUGIN_DATA || undefined\n' +
+      '\n' +
+      'async function core(input, project) {\n' +
+      "  const { createCore } = await import('./core/index.mjs')\n" +
+      "  return createCore({ projectDir: project, dataDir: dataDir(), sessionId: typeof input.session_id === 'string' ? input.session_id : 'unknown' })\n" +
+      '}\n' +
+      '\n' +
+      '/** Notices an earlier call raised that no answer could carry yet. */\n' +
+      'async function takeNotices(c) {\n' +
+      "  const pending = (await c.host.get('notices')) ?? []\n" +
+      "  if (pending.length) await c.host.set('notices', undefined)\n" +
+      "  return Array.isArray(pending) ? pending.filter(n => typeof n === 'string') : []\n" +
+      '}\n' +
+      '\n' +
+      'async function keepNotices(c, notices) {\n' +
+      '  if (!notices.length) return\n' +
+      "  const pending = (await c.host.get('notices')) ?? []\n" +
+      "  await c.host.set('notices', [...(Array.isArray(pending) ? pending : []), ...notices].slice(-20))\n" +
+      '}\n' +
+      '\n' +
+      'async function PreToolUse(input, project) {\n' +
+      '  const tool = input.tool_name\n' +
+      "  if (typeof tool !== 'string' || !tool) return deny(CRASH)\n" +
+      "  const r = mapTool(tool, input.tool_input, project ?? '/', { codexHome: codexHomeOf() })\n" +
+      "  if (r.kind === 'allow') return {}\n" +
+      "  if (r.kind === 'deny') return deny(r.reason)\n" +
+      '  if (!project) return deny(NO_PROJECT(tool))\n' +
+      '  if (!dataDir()) return deny(NO_DATA(tool))\n' +
+      '  const c = await core(input, project)\n' +
+      '  const context = []\n' +
+      '  for (const call of r.calls) {\n' +
+      "    const res = await c.run({ kind: 'tool', call })\n" +
+      "    if (res.decision === 'deny') {\n" +
+      '      await keepNotices(c, res.notices)\n' +
+      '      return deny(res.reason || CRASH)\n' +
+      '    }\n' +
+      '    context.push(...res.context, ...res.notices)\n' +
+      '  }\n' +
+      '  // Codex has no answer that adds context to an allowed call: it rides on the next prompt or continuation\n' +
+      "  await keepNotices(c, context.filter(t => typeof t === 'string' && t))\n" +
+      '  return {}\n' +
+      '}\n' +
+      '\n' +
+      'async function UserPromptSubmit(input, project) {\n' +
+      '  if (!project || !dataDir()) return {}\n' +
+      '  const c = await core(input, project)\n' +
+      '  // a new prompt from the user: the continuation count starts again\n' +
+      "  await c.host.set('stopBlocks', undefined)\n" +
+      "  const res = await c.run({ kind: 'prompt', text: typeof input.prompt === 'string' ? input.prompt : '', origin: 'composer' })\n" +
+      '  const context = [...res.context, ...(await takeNotices(c)), ...res.notices]\n' +
+      '  if (!context.length) return {}\n' +
+      "  return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context.join('\\n\\n') } }\n" +
+      '}\n' +
+      '\n' +
+      'async function Stop(input, project) {\n' +
+      '  if (!project || !dataDir()) return {}\n' +
+      '  return stopWith(await core(input, project))\n' +
+      '}\n' +
+      '\n' +
+      '/** The Stop answer from a core: a block carrying `## Now`, counted only once it is the answer. */\n' +
+      'export async function stopWith(c) {\n' +
+      "  const res = await c.run({ kind: 'stop', reason: 'answer' })\n" +
+      '  const notices = Array.isArray(res.notices) ? res.notices : []\n' +
+      "  if (res.decision !== 'block') {\n" +
+      '    await keepNotices(c, notices)\n' +
+      '    return {}\n' +
+      '  }\n' +
+      "  const blocks = Number(await c.host.get('stopBlocks')) || 0\n" +
+      '  if (blocks >= STOP_CAP) {\n' +
+      '    await keepNotices(c, [...notices, `JBIT autopilot stopped carrying on by itself after ${STOP_CAP} continuations in one turn; a new prompt resumes it.`])\n' +
+      '    return {}\n' +
+      '  }\n' +
+      "  const reason = typeof res.reason === 'string' ? res.reason : ''\n" +
+      "  // the continuation is autopilot's own prompt: it goes through the prompt handlers as the plugin's, and what they add\n" +
+      "  // (the plan's `## Now` first) rides in the reason, the only context a continuation gets\n" +
+      "  const next = await c.run({ kind: 'prompt', text: reason, origin: 'plugin' })\n" +
+      '  const taken = await takeNotices(c)\n' +
+      "  const extra = [...(next.context ?? []), ...taken, ...notices, ...(next.notices ?? [])].filter(t => typeof t === 'string' && t && !reason.includes(t))\n" +
+      "  const text = [reason, ...extra].filter(Boolean).join('\\n\\n')\n" +
+      '  if (!text) {\n' +
+      '    // nothing to carry on with: no block, so none counted, and the notices wait for the next prompt\n' +
+      '    await keepNotices(c, taken)\n' +
+      '    return {}\n' +
+      '  }\n' +
+      "  await c.host.set('stopBlocks', blocks + 1)\n" +
+      "  return { decision: 'block', reason: text }\n" +
+      '}\n' +
+      '\n' +
+      'const SessionStart = async () => ({})\n' +
+      '\n' +
+      'const EVENTS = { PreToolUse, UserPromptSubmit, Stop, SessionStart }\n' +
+      '\n' +
+      'async function readStdin() {\n' +
+      '  const chunks = []\n' +
+      '  for await (const chunk of process.stdin) chunks.push(chunk)\n' +
+      "  return Buffer.concat(chunks).toString('utf8')\n" +
+      '}\n' +
+      '\n' +
+      "/** The answer for one event, as the object to print; throws on anything it can't handle. */\n" +
+      'export async function handle(event, raw) {\n' +
+      '  const fn = EVENTS[event]\n' +
+      '  if (!fn) return {}\n' +
+      '  const input = JSON.parse(raw)\n' +
+      "  if (input === null || typeof input !== 'object' || Array.isArray(input)) throw new Error('event is not an object')\n" +
+      '  return fn(input, projectDir(input))\n' +
+      '}\n' +
+      '\n' +
+      "/** A Node that can't load the hook: a guarded call is refused and a prompt is told why, in the hook's words. */\n" +
+      'function nodeTooOld(event, message) {\n' +
+      `  const text = message.replace("JBIT's Copilot hook", "JBIT's Codex hook")\n` +
+      "  if (event === 'PreToolUse') return deny(text)\n" +
+      "  if (event === 'UserPromptSubmit') return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: text } }\n" +
+      '  return {}\n' +
+      '}\n' +
+      '\n' +
+      'function answer(out) {\n' +
+      "  const text = out && Object.keys(out).length ? `${JSON.stringify(out)}\\n` : ''\n" +
+      '  process.stdout.write(text, () => process.exit(0))\n' +
+      '}\n' +
+      '\n' +
+      'async function main() {\n' +
+      '  const event = process.argv[2]\n' +
+      "  const failed = () => (event === 'PreToolUse' ? deny(CRASH) : {})\n" +
+      '  let done = false\n' +
+      '  const finish = out => {\n' +
+      '    if (done) return\n' +
+      '    done = true\n' +
+      '    answer(out)\n' +
+      '  }\n' +
+      "  // a hook that hangs fails closed before Codex's own timeout decides for it\n" +
+      '  setTimeout(() => finish(failed()), WATCHDOG_MS)\n' +
+      "  process.on('uncaughtException', () => finish(failed()))\n" +
+      "  process.on('unhandledRejection', () => finish(failed()))\n" +
+      '  try {\n' +
+      '    const raw = await readStdin()\n' +
+      '    finish(await handle(event, raw))\n' +
+      '  } catch (err) {\n' +
+      "    process.stderr.write(`jbit hook: ${event}: ${String(err?.message ?? err).split('\\n')[0].slice(0, 200)}\\n`)\n" +
+      "    finish(err?.code === 'JBIT_NODE' ? nodeTooOld(event, err.message) : failed())\n" +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'const invoked = (() => {\n' +
+      '  try {\n' +
+      '    return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))\n' +
+      '  } catch {\n' +
+      '    return false\n' +
+      '  }\n' +
+      '})()\n' +
+      'if (invoked) main()\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    #!/usr/bin/env node
+    // JBIT's Codex CLI command hook. argv[2] is the Codex event name; the event's JSON comes on stdin. It runs the Claude
+    // hook's handlers through the host-neutral core (`hosts/core/`) and answers in Codex's words on stdout:
+    // - UserPromptSubmit → {"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext"}}: the plan's `## Now`
+    // - PreToolUse       → {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny",…}} or nothing
+    // - Stop             → {"decision":"block","reason"} while autopilot carries on; the reason carries `## Now` too, since
+    //                      Codex runs no UserPromptSubmit on a continuation. Codex has no cap, so this hook keeps one.
+    // - SessionStart     → nothing: every prompt carries the plan
+    // It fails closed and never exits 1, which Codex reads as allow: a crash, unreadable stdin, no project or no data
+    // folder denies a PreToolUse; elsewhere it adds nothing. Nothing but the answer goes to stdout.
+    import { realpathSync, statSync } from 'node:fs'
+    import { isAbsolute } from 'node:path'
+    import { fileURLToPath } from 'node:url'
+    import { codexHomeOf, mapTool } from './map.mjs'
+    
+    const CRASH = "JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."
+    const NO_PROJECT = tool => `JBIT blocked \`${tool}\`: the hook couldn't tell which project this is (no usable \`cwd\` on the event), so it can't check the plan's gates and fails closed.`
+    const NO_DATA = tool => `JBIT blocked \`${tool}\`: the hook has no data folder (Codex sets PLUGIN_DATA for a plugin's hooks), so it can't keep the session's state and fails closed. Tell the user JBIT's hooks need to run from the installed plugin.`
+    const WATCHDOG_MS = (() => {
+      const n = Number(process.env.JBIT_HOOK_WATCHDOG_MS)
+      return Number.isInteger(n) && n > 0 && n < 25000 ? n : 25000
+    })()
+    /** Stop blocks per user prompt before the hook lets the turn end. */
+    export const STOP_CAP = 8
+    
+    const deny = reason => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } })
+    
+    /** The project: the event's `cwd`, absolute and a directory. Its real path, or undefined. */
+    export function projectDir(input) {
+      const dir = input?.cwd
+      if (typeof dir !== 'string' || !dir || !isAbsolute(dir)) return undefined
+      try {
+        const real = realpathSync(dir)
+        return statSync(real).isDirectory() ? real : undefined
+      } catch {
+        return undefined
+      }
+    }
+    
+    const dataDir = (env = process.env) => env.PLUGIN_DATA || env.CLAUDE_PLUGIN_DATA || undefined
+    
+    async function core(input, project) {
+      const { createCore } = await import('./core/index.mjs')
+      return createCore({ projectDir: project, dataDir: dataDir(), sessionId: typeof input.session_id === 'string' ? input.session_id : 'unknown' })
+    }
+    
+    /** Notices an earlier call raised that no answer could carry yet. */
+    async function takeNotices(c) {
+      const pending = (await c.host.get('notices')) ?? []
+      if (pending.length) await c.host.set('notices', undefined)
+      return Array.isArray(pending) ? pending.filter(n => typeof n === 'string') : []
+    }
+    
+    async function keepNotices(c, notices) {
+      if (!notices.length) return
+      const pending = (await c.host.get('notices')) ?? []
+      await c.host.set('notices', [...(Array.isArray(pending) ? pending : []), ...notices].slice(-20))
+    }
+    
+    async function PreToolUse(input, project) {
+      const tool = input.tool_name
+      if (typeof tool !== 'string' || !tool) return deny(CRASH)
+      const r = mapTool(tool, input.tool_input, project ?? '/', { codexHome: codexHomeOf() })
+      if (r.kind === 'allow') return {}
+      if (r.kind === 'deny') return deny(r.reason)
+      if (!project) return deny(NO_PROJECT(tool))
+      if (!dataDir()) return deny(NO_DATA(tool))
+      const c = await core(input, project)
+      const context = []
+      for (const call of r.calls) {
+        const res = await c.run({ kind: 'tool', call })
+        if (res.decision === 'deny') {
+          await keepNotices(c, res.notices)
+          return deny(res.reason || CRASH)
+        }
+        context.push(...res.context, ...res.notices)
+      }
+      // Codex has no answer that adds context to an allowed call: it rides on the next prompt or continuation
+      await keepNotices(c, context.filter(t => typeof t === 'string' && t))
+      return {}
+    }
+    
+    async function UserPromptSubmit(input, project) {
+      if (!project || !dataDir()) return {}
+      const c = await core(input, project)
+      // a new prompt from the user: the continuation count starts again
+      await c.host.set('stopBlocks', undefined)
+      const res = await c.run({ kind: 'prompt', text: typeof input.prompt === 'string' ? input.prompt : '', origin: 'composer' })
+      const context = [...res.context, ...(await takeNotices(c)), ...res.notices]
+      if (!context.length) return {}
+      return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context.join('\n\n') } }
+    }
+    
+    async function Stop(input, project) {
+      if (!project || !dataDir()) return {}
+      return stopWith(await core(input, project))
+    }
+    
+    /** The Stop answer from a core: a block carrying `## Now`, counted only once it is the answer. */
+    export async function stopWith(c) {
+      const res = await c.run({ kind: 'stop', reason: 'answer' })
+      const notices = Array.isArray(res.notices) ? res.notices : []
+      if (res.decision !== 'block') {
+        await keepNotices(c, notices)
+        return {}
+      }
+      const blocks = Number(await c.host.get('stopBlocks')) || 0
+      if (blocks >= STOP_CAP) {
+        await keepNotices(c, [...notices, `JBIT autopilot stopped carrying on by itself after ${STOP_CAP} continuations in one turn; a new prompt resumes it.`])
+        return {}
+      }
+      const reason = typeof res.reason === 'string' ? res.reason : ''
+      // the continuation is autopilot's own prompt: it goes through the prompt handlers as the plugin's, and what they add
+      // (the plan's `## Now` first) rides in the reason, the only context a continuation gets
+      const next = await c.run({ kind: 'prompt', text: reason, origin: 'plugin' })
+      const taken = await takeNotices(c)
+      const extra = [...(next.context ?? []), ...taken, ...notices, ...(next.notices ?? [])].filter(t => typeof t === 'string' && t && !reason.includes(t))
+      const text = [reason, ...extra].filter(Boolean).join('\n\n')
+      if (!text) {
+        // nothing to carry on with: no block, so none counted, and the notices wait for the next prompt
+        await keepNotices(c, taken)
+        return {}
+      }
+      await c.host.set('stopBlocks', blocks + 1)
+      return { decision: 'block', reason: text }
+    }
+    
+    const SessionStart = async () => ({})
+    
+    const EVENTS = { PreToolUse, UserPromptSubmit, Stop, SessionStart }
+    
+    async function readStdin() {
+      const chunks = []
+      for await (const chunk of process.stdin) chunks.push(chunk)
+      return Buffer.concat(chunks).toString('utf8')
+    }
+    
+    /** The answer for one event, as the object to print; throws on anything it can't handle. */
+    export async function handle(event, raw) {
+      const fn = EVENTS[event]
+      if (!fn) return {}
+      const input = JSON.parse(raw)
+      if (input === null || typeof input !== 'object' || Array.isArray(input)) throw new Error('event is not an object')
+      return fn(input, projectDir(input))
+    }
+    
+    /** A Node that can't load the hook: a guarded call is refused and a prompt is told why, in the hook's words. */
+    function nodeTooOld(event, message) {
+      const text = message.replace("JBIT's Copilot hook", "JBIT's Codex hook")
+      if (event === 'PreToolUse') return deny(text)
+      if (event === 'UserPromptSubmit') return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: text } }
+      return {}
+    }
+    
+    function answer(out) {
+      const text = out && Object.keys(out).length ? `${JSON.stringify(out)}\n` : ''
+      process.stdout.write(text, () => process.exit(0))
+    }
+    
+    async function main() {
+      const event = process.argv[2]
+      const failed = () => (event === 'PreToolUse' ? deny(CRASH) : {})
+      let done = false
+      const finish = out => {
+        if (done) return
+        done = true
+        answer(out)
+      }
+      // a hook that hangs fails closed before Codex's own timeout decides for it
+      setTimeout(() => finish(failed()), WATCHDOG_MS)
+      process.on('uncaughtException', () => finish(failed()))
+      process.on('unhandledRejection', () => finish(failed()))
+      try {
+        const raw = await readStdin()
+        finish(await handle(event, raw))
+      } catch (err) {
+        process.stderr.write(`jbit hook: ${event}: ${String(err?.message ?? err).split('\n')[0].slice(0, 200)}\n`)
+        finish(err?.code === 'JBIT_NODE' ? nodeTooOld(event, err.message) : failed())
+      }
+    }
+    
+    const invoked = (() => {
+      try {
+        return !!process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+      } catch {
+        return false
+      }
+    })()
+    if (invoked) main()
+    
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:758:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: live: the collaboration-prefixed agent tools map as the bare ones do
+not ok 3 - live: the collaboration-prefixed agent tools map as the bare ones do
+  ---
+  duration_ms: 1.3798
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:565:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    collaborationspawn_agent: {"kind":"allow"}
+    
+    'allow' !== 'calls'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'calls'
+  actual: 'allow'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:571:14)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: live: in a held stage, collaborationspawn_agent with an encrypted brief is denied
+not ok 4 - live: in a held stage, collaborationspawn_agent with an encrypted brief is denied
+  ---
+  duration_ms: 185.781081
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:580:1'
+  failureType: 'testCodeFailure'
+  error: 'collaborationspawn_agent: {}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:586:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: live: a leading $jbit:autopilot arms autopilot as /jbit:autopilot does
+not ok 5 - live: a leading $jbit:autopilot arms autopilot as /jbit:autopilot does
+  ---
+  duration_ms: 157.846083
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:592:1'
+  failureType: 'testCodeFailure'
+  error: '{}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:597:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: live: $jbit:approve releases a held stage as /jbit:approve does
+not ok 6 - live: $jbit:approve releases a held stage as /jbit:approve does
+  ---
+  duration_ms: 311.558867
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:616:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + {
+    +   hookSpecificOutput: {
+    +     hookEventName: 'PreToolUse',
+    +     permissionDecision: 'deny',
+    +     permissionDecisionReason: 'JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn\'t built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what\'s finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.'
+    +   }
+    + }
+    - {}
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    hookSpecificOutput:
+      hookEventName: 'PreToolUse'
+      permissionDecision: 'deny'
+      permissionDecisionReason: 'JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn\'t built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what\'s finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:621:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: live: only the user prompt is rewritten; a tool command holding $jbit:approve is not an approval
+ok 7 - live: only the user prompt is rewritten; a tool command holding $jbit:approve is not an approval
+  ---
+  duration_ms: 232.905275
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 1
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 932.778001
+
+$ # the shipped package before the fix, map.mjs corrupted in a temp copy:
+$ echo '{"session_id":"s","cwd":"/tmp","tool_name":"Bash","tool_input":{"command":"git push"}}' | PLUGIN_DATA=$S/data node $S/jbit-codex/scripts/hook.mjs PreToolUse; echo exit=$?
+file://$SCRATCH/stage7/red-pkg/jbit-codex/scripts/map.mjs:201
+export const = ;
+             ^
+
+SyntaxError: Unexpected token '='
+exit=1

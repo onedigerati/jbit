@@ -1,0 +1,33 @@
+$ HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex codex plugin marketplace add $REPO
+Added marketplace `jbit-local` from $REPO.
+Installed marketplace root: $REPO
+exit 0
+$ codex plugin add jbit@jbit-local
+Added plugin `jbit` from marketplace `jbit-local`.
+Installed plugin root: $SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0
+exit 0
+$ codex plugin --help
+$ codex plugin list   (trimmed to the jbit-local marketplace; the remote catalog is omitted)
+Marketplace `jbit-local`
+$REPO/.agents/plugins/marketplace.json
+
+PLUGIN           STATUS              VERSION  SOURCE
+jbit@jbit-local  installed, enabled  2.0.0    $REPO/plugins/jbit-codex
+
+$ cat $CODEX_HOME/config.toml
+[marketplaces.jbit-local]
+source_type = "local"
+source = "$REPO"
+
+[plugins."jbit@jbit-local"]
+enabled = true
+$ ls $CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills
+approve
+autopilot
+charter
+fix
+plan
+resume
+review
+stage
+verify

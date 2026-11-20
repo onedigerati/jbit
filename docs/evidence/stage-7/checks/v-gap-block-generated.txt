@@ -1,0 +1,10 @@
+$ cp the repo (tracked + untracked files) to $SCRATCH/verify7/repocopy; cd there
+$ node hosts/build.mjs codex --check   (before)
+codex: up to date (30 files)
+## exit 0
+$ node -e: hosts/codex/capability.json gaps[2].what += " (edited)"
+$ node hosts/build.mjs codex --check   (after)
+drift: plugins/jbit-codex or the README.md gap list lags its sources; run node hosts/build.mjs codex
+differs: README.md
+differs: plugins/jbit-codex/GENERATED.json
+## exit 1

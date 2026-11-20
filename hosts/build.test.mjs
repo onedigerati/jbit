@@ -504,17 +504,17 @@ test('codex: 9 skills with bare names, no Claude-only frontmatter, and one "On C
   }
 })
 
-test('codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false, and the gap is listed', () => {
+test('codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false (proven live, so no gap)', () => {
   const src = codexSources()
   const { files, cap } = generate({ src, host: 'codex' })
   const yamls = [...files.keys()].filter(k => k.endsWith('openai.yaml'))
   assert.deepEqual(yamls, [`${PKG}/skills/approve/agents/openai.yaml`])
   assert.match(files.get(yamls[0]), /^policy:\n {2}allow_implicit_invocation: false\n$/)
   assert.doesNotMatch(files.get(`${PKG}/skills/approve/SKILL.md`), /disable-model-invocation/)
-  assert.ok(cap.gaps.some(g => g.id === 'approve-implicit' && /visible to the model/.test(g.what)))
+  assert.ok(!cap.gaps.some(g => g.id === 'approve-implicit'), 'hidden live at stage 7: no longer a gap')
 })
 
-test('codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with raised context limits', () => {
+test('codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with a raised prompt context limit', () => {
   const src = codexSources()
   const { files } = generate({ src, host: 'codex' })
   const { hooks, ...rest } = JSON.parse(files.get(`${PKG}/hooks/hooks.json`))
@@ -529,7 +529,7 @@ test('codex: hooks.json runs the hook on the four events, PreToolUse on every to
     assert.equal(h.type, 'command')
     assert.equal(h.command, `node "\${PLUGIN_ROOT}/scripts/hook.mjs" ${event}`)
     assert.ok(h.timeout > 25, `${event}: timeout ${h.timeout} must outlast the hook's 25 s watchdog`)
-    if (event === 'UserPromptSubmit' || event === 'Stop') assert.ok(h.additionalContextLimit >= 16000, event)
+    if (event === 'UserPromptSubmit') assert.ok(h.additionalContextLimit >= 16000, event)
     else assert.equal(h.additionalContextLimit, undefined, event)
   }
 })
@@ -555,13 +555,15 @@ test('codex: scripts are globbed from hosts/core and hosts/codex, with imports r
   const { files } = generate({ src, host: 'codex' })
   const scripts = [...files.keys()].filter(k => k.startsWith(`${PKG}/scripts/`)).map(k => k.slice(PKG.length + 9))
   assert.deepEqual(scripts, [
-    'copilot/map.mjs', 'core/dispatch.mjs', 'core/engine.mjs', 'core/extra.mjs', 'core/index.mjs', 'core/patch.mjs', 'hook.mjs',
+    'copilot/map.mjs', 'core/dispatch.mjs', 'core/engine.mjs', 'core/extra.mjs', 'core/index.mjs', 'core/patch.mjs', 'handler.mjs', 'hook.mjs',
     'hooks/models.ts', 'hooks/project.ts', 'hooks/register.ts', 'hooks/secrets.ts', 'hooks/shell.ts',
     'map.mjs', 'package.json',
   ])
-  const hook = files.get(`${PKG}/scripts/hook.mjs`)
-  assert.match(hook, /import\('\.\/core\/index\.mjs'\)/)
-  assert.match(hook, /from '\.\/map\.mjs'/)
+  // the entry script loads the handler dynamically; the handler loads the map and the core
+  assert.match(files.get(`${PKG}/scripts/hook.mjs`), /import\('\.\/handler\.mjs'\)/)
+  const handler = files.get(`${PKG}/scripts/handler.mjs`)
+  assert.match(handler, /import\('\.\.?\/core\/index\.mjs'\)/)
+  assert.match(handler, /from '\.\/map\.mjs'/)
   assert.match(files.get(`${PKG}/scripts/map.mjs`), /from '\.\/copilot\/map\.mjs'/)
   assert.match(files.get(`${PKG}/scripts/copilot/map.mjs`), /from '\.\.\/core\/patch\.mjs'/)
   assert.match(files.get(`${PKG}/scripts/core/dispatch.mjs`), /'\.\.\/hooks\/register\.ts'/)
@@ -588,7 +590,7 @@ for (const [what, change] of [
     src => {
       const p = join(src, 'hosts/codex/capability.json')
       const cap = JSON.parse(readFileSync(p, 'utf8'))
-      cap.hooks.additionalContextLimit.Stop = 12000
+      cap.hooks.additionalContextLimit.UserPromptSubmit = 12000
       writeFileSync(p, JSON.stringify(cap, null, 2))
     },
   ],
@@ -650,9 +652,11 @@ test('codex gaps: the capability lists the gaps the stage-7 README must carry', 
   const cap = loadCapability(ROOT, 'codex')
   const ids = cap.gaps.map(g => g.id)
   assert.equal(ids[0], 'hook-trust', 'hook trust comes first')
-  for (const id of ['hook-trust', 'role-agents', 'dollar-invocation', 'approve-implicit', 'hook-timeout-unproven', 'stall-detection', 'lean-agent-count', 'background-agents', 'compaction']) {
+  for (const id of ['hook-trust', 'hook-timeout', 'stall-detection', 'long-now', 'encrypted-brief', 'shell-writes-held', 'codex-home-guard', 'case-insensitive-fs', 'role-agents', 'claude-md', 'dollar-invocation', 'lean-agent-count', 'background-agents', 'compaction']) {
     assert.ok(ids.includes(id), `missing gap ${id}`)
   }
+  // proven to work live at stage 7: no longer gaps
+  for (const id of ['approve-implicit', 'subagent-hooks-unproven', 'hook-timeout-unproven']) assert.ok(!ids.includes(id), `stale gap ${id}`)
   assert.equal(new Set(ids).size, ids.length)
   for (const g of cap.gaps) assert.ok(g.what && g.why, g.id)
   assert.match(gapBlock(cap), /^- \*\*Hooks need trusting after every install and update\.\*\*/)
@@ -702,21 +706,21 @@ test('review: dropping disable-model-invocation: true with no openai.yaml writte
 test('review: the codex build requires the hook EVENTS table, and the real hook has one it reads', () => {
   assert.notEqual(loadCapability(ROOT, 'codex').hooks.requireEventsTable, false)
   const src = codexSources()
-  const p = join(src, 'hosts/codex/hook.mjs')
+  const p = join(src, 'hosts/codex/handler.mjs')
   writeFileSync(p, readFileSync(p, 'utf8').replaceAll('EVENTS', 'HANDLERS'))
   const r = codex('--src', src, '--out', temp())
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /EVENTS table/)
   // an event dropped from the real table is caught
   const src2 = codexSources()
-  const p2 = join(src2, 'hosts/codex/hook.mjs')
+  const p2 = join(src2, 'hosts/codex/handler.mjs')
   const text = readFileSync(p2, 'utf8')
   const m = /const EVENTS = \{([^}]*)\}/.exec(text)
   assert.ok(m && /\bSessionStart\b/.test(m[1]), 'the table names SessionStart')
   writeFileSync(p2, text.replace(m[0], m[0].replace(/,?\s*SessionStart\b[^,}]*/, '')))
   const r2 = codex('--src', src2, '--out', temp())
   assert.notEqual(r2.status, 0)
-  assert.match(r2.stderr, /not handled by hook\.mjs: SessionStart/)
+  assert.match(r2.stderr, /not handled by handler\.mjs: SessionStart/)
 })
 
 test('review: a dropped frontmatter key takes its indented continuation lines with it', () => {
@@ -726,4 +730,60 @@ test('review: a dropped frontmatter key takes its indented continuation lines wi
   const { files } = generate({ src, host: 'codex' })
   const front = files.get(`${PKG}/skills/resume/SKILL.md`).split('\n---\n')[0].split('\n').slice(1)
   assert.deepEqual(front.map(l => l.split(':')[0]), ['name', 'description'])
+})
+
+// ---- stage 7: live-run fixes ----
+
+test('codex: Stop carries no additionalContextLimit (Codex rejects it); UserPromptSubmit keeps its raised one', () => {
+  const src = codexSources()
+  const { files } = generate({ src, host: 'codex' })
+  const { hooks } = JSON.parse(files.get(`${PKG}/hooks/hooks.json`))
+  assert.equal(hooks.Stop[0].hooks[0].additionalContextLimit, undefined)
+  assert.ok(hooks.UserPromptSubmit[0].hooks[0].additionalContextLimit >= 16000)
+})
+
+test('codex: a package whose adapter fails to import still denies a PreToolUse with exit 0, and is silent elsewhere', () => {
+  const src = codexSources()
+  const out = temp()
+  assert.equal(codex('--src', src, '--out', out).status, 0)
+  const scripts = join(out, PKG, 'scripts')
+  const project = temp('jbit-build-codex-proj-')
+  const data = temp('jbit-build-codex-data-')
+  const run = (event, payload) =>
+    spawnSync(process.execPath, [join(scripts, 'hook.mjs'), event], {
+      input: JSON.stringify({ session_id: 's', cwd: project, hook_event_name: event, ...payload }),
+      cwd: project,
+      env: { ...process.env, PLUGIN_DATA: data, CODEX_HOME: temp('jbit-build-codex-home-') },
+      encoding: 'utf8',
+      timeout: 30000,
+    })
+  // the entry script imports nothing of the adapter statically
+  const entry = readFileSync(join(scripts, 'hook.mjs'), 'utf8')
+  assert.doesNotMatch(entry, /^\s*import\s[^(]*from\s+['"]\.\.?\//m)
+  for (const broken of ['map.mjs', 'core/index.mjs']) {
+    const copy = temp('jbit-build-codex-pkg-')
+    cpSync(scripts, copy, { recursive: true })
+    writeFileSync(join(copy, broken), `${readFileSync(join(copy, broken), 'utf8')}\nexport const = ;\n`)
+    const runIn = (event, payload) =>
+      spawnSync(process.execPath, [join(copy, 'hook.mjs'), event], {
+        input: JSON.stringify({ session_id: 's', cwd: project, hook_event_name: event, ...payload }),
+        cwd: project,
+        env: { ...process.env, PLUGIN_DATA: data, CODEX_HOME: temp('jbit-build-codex-home-') },
+        encoding: 'utf8',
+        timeout: 30000,
+      })
+    const r = runIn('PreToolUse', { tool_name: 'Bash', tool_input: { command: 'git push origin main' } })
+    assert.equal(r.status, 0, `${broken}: ${r.stderr}`)
+    const o = JSON.parse(r.stdout)
+    assert.equal(o.hookSpecificOutput?.permissionDecision, 'deny', `${broken}: ${r.stdout}`)
+    for (const event of ['UserPromptSubmit', 'Stop', 'SessionStart']) {
+      const q = runIn(event, { prompt: 'hi' })
+      assert.equal(q.status, 0, `${broken} ${event}: ${q.stderr}`)
+      assert.equal(q.stdout.trim(), '', `${broken} ${event}`)
+    }
+  }
+  // the intact package allows a plain call
+  const ok = run('PreToolUse', { tool_name: 'Bash', tool_input: { command: 'ls' } })
+  assert.equal(ok.status, 0, ok.stderr)
+  assert.equal(ok.stdout.trim(), '')
 })

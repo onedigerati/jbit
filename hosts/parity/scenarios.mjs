@@ -24,6 +24,7 @@ const TICKED = planOn2('Checks:', '- [x] link opens read-only', '- [x] controls 
 const UNTICKED = planOn2('Checks:', '- [x] link opens read-only', '- [ ] controls work on touch')
 const RISKY = planOn2('Risk: auth, user input', 'Mode: autopilot', 'Checks:', '- [ ] login works')
 const DRIVING = planOn2('Mode: autopilot', 'Checks:', '- [ ] link opens read-only')
+const LEFT_UNATTENDED = planOn2('Mode: autopilot — unattended', 'Checks:', '- [ ] link opens read-only')
 
 const user = text => ({ kind: 'prompt', text, fromUser: true })
 const commit = message => ({ kind: 'tool', tool: 'Bash', input: { command: `git commit -m "${message}"` } })
@@ -88,6 +89,16 @@ export const SCENARIOS = [
     name: 'turn end under armed autopilot with stages left keeps the run going',
     fixture: { committed: { 'docs/PLAN.md': DRIVING } },
     steps: [user('/jbit:autopilot'), { kind: 'stop', expect: { kind: 'block', has: ['jbit:autopilot', 'Next: 2. Share mode'] } }],
+  },
+  {
+    name: "a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held",
+    fixture: { committed: { 'docs/PLAN.md': LEFT_UNATTENDED } },
+    steps: [
+      user('where are we?'),
+      { kind: 'tool', tool: 'Bash', input: { command: 'git push origin main' }, expect: { kind: 'allow' } },
+      { kind: 'stop', expect: { kind: 'allow' } },
+      { kind: 'stop', expect: { kind: 'allow' } },
+    ],
   },
   {
     name: 'turn end without autopilot lets the turn end',

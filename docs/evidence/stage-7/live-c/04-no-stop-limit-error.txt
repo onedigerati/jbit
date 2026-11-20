@@ -1,0 +1,22 @@
+$ cd $SCRATCH && node <counter> runs/*.jsonl   (no codex run; checks the --json streams of runs 01, 02, 03 and 05)
+## runs/01-push-dollar-autopilot.jsonl
+additionalContextLimit mentions: 0
+item.type error, by message:
+  2x `--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.
+top-level error / turn.failed events: 0
+## runs/02-held-spawn.jsonl
+additionalContextLimit mentions: 0
+item.type error, by message:
+  2x `--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.
+top-level error / turn.failed events: 0
+## runs/03-crash-import.jsonl
+additionalContextLimit mentions: 0
+item.type error, by message:
+  2x `--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.
+top-level error / turn.failed events: 0
+## runs/05-ups-in-child.jsonl
+additionalContextLimit mentions: 0
+item.type error, by message:
+  2x `--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.
+top-level error / turn.failed events: 0
+## stderr: additionalContextLimit mentions across runs: 0

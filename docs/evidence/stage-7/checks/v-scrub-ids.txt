@@ -1,0 +1,12 @@
+$ UUIDs not starting 01a1 (Codex v7 thread ids), the Claude session id, and session_id contexts
+non-01a1 count above
+claude session id hits above
+docs/evidence/stage-7/01-fixes-red.txt:81:Dir: dataDir(), sessionId: typeof input.session_id === 'string' ? input.session_id : 'unknown' })\n" +
+docs/evidence/stage-7/01-fixes-red.txt:275:Dir: dataDir(), sessionId: typeof input.session_id === 'string' ? input.session_id : 'unknown' })
+docs/evidence/stage-7/01-fixes-red.txt:555:$ echo '{"session_id":"s","cwd":"/tmp","tool_name":"Bash","tool_input":{"command
+docs/evidence/stage-7/live-c/05-ups-in-child.txt:205:## UserPromptSubmit log: 1 event(s); session_id, turn_id, keys, prompt (first 80 chars):
+docs/evidence/stage-7/live-c/05-ups-in-child.txt:206:{"session_id":"01a1fb17-dd6b-7923-8bfb-fb8e05f2eceb","turn_id":"01a1fb17
+docs/evidence/stage-7/live-c/05-ups-in-child.txt:206:-de99-7563-9429-45b3c84b8c3b","keys":["session_id","turn_id","transcript_path","cwd","hook_event_name","model
+docs/evidence/stage-7/live-c/05-ups-in-child.txt:208:## child session_meta: id / session_id / parent_thread_id
+docs/evidence/stage-7/live-b/06c-subagent-held-toolnames.txt:81:ify({ ev: o.hook_event_name, session: o.session_id, tool_name: o.tool_name, keys: o.tool_input && typeof o.too
+any local Claude session id hit above

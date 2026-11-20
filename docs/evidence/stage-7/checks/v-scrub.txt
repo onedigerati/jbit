@@ -1,0 +1,19 @@
+$ command grep -rnoE <pattern> docs/evidence/stage-7/ | count per pattern
+pattern $HOME: 0
+pattern /tmp/claude-1000: 0
+pattern eyJ[A-Za-z0-9_-]{10,}: 0
+pattern access_token: 0
+pattern account_id: 0
+pattern [A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}: 0
+pattern AKIA[A-Z0-9]{16}: 0
+pattern [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}: 81
+docs/evidence/stage-7/live-b/01-refuse-unticked.txt:4:01a1fb06-cc8a-72f2-b89c-007988a8d4d5
+docs/evidence/stage-7/live-a/10-plugin-root-and-data.txt:15:01a1fb07-1466-7991-8179-a070059411f0
+docs/evidence/stage-7/live-b/04-refuse-held-edit.txt:4:01a1fb07-546d-7863-949f-5ac8fa02c4c3
+docs/evidence/stage-7/live-b/03b-push-dollar-autopilot.txt:4:01a1fb07-546f-7322-8400-fa58926615cc
+docs/evidence/stage-7/live-b/02-refuse-secret.txt:4:01a1fb07-546f-75a3-a383-91201a3ccf82
+docs/evidence/stage-7/live-b/03-refuse-push.txt:4:01a1fb07-546f-79e1-a9b0-c0c710be16e8
+pattern input_tokens: 0
+pattern session_id: 10
+docs/evidence/stage-7/01-fixes-red.txt:81:session_id
+pattern jonah: 0

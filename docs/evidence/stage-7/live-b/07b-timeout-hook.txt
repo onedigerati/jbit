@@ -1,0 +1,64 @@
+$ cd $SCRATCH/p7b && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 600 codex exec --json --skip-git-repo-check --sandbox danger-full-access --dangerously-bypass-hook-trust $'This is a test of a commit hook. Do exactly one thing: run this shell command once, unchanged: git add aws-config.txt && git commit -m "Add AWS config"\nDo not edit any file, do not fix anything, do not retry, and do not run any other command. If the command is refused or blocked, quote the refusal reason you were given verbatim, in full, in a fenced code block, then stop.' < /dev/null
+
+## --json stream (trimmed)
+{"type":"thread.started","thread_id":"01a1fb0a-7ab3-7133-8d27-52650dae630c"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_2","type":"error","message":"ignoring additionalContextLimit for Stop hook in $SCRATCH/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json: this event cannot emit additionalContext"}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"I’ll run the exact shell command once and won’t run anything else."}}
+{"type":"item.started","item":{"id":"item_4","type":"command_execution","command":"/bin/bash -lc 'git add aws-config.txt && git commit -m \"Add AWS config\"'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_4","type":"command_execution","command":"/bin/bash -lc 'git add aws-config.txt && git commit -m \"Add AWS config\"'","aggregated_output":"[main 22de667] Add AWS config\n 1 file changed, 1 insertion(+)\n create mode 100644 aws-config.txt\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_5","type":"agent_message","text":"The command succeeded. Commit: `22de667` (`Add AWS config`)."}}
+{"type":"turn.completed","usage":"<removed>"}
+## exit 0
+## session file main: sessions/…/rollout-2026-11-20T16-18-50-01a1fb0a-7ab3-7133-8d27-52650dae630c.jsonl
+META source="exec" agent_role=
+DEVELOPER <skills_instructions> lists jbit:approve: false; skills: jbit:autopilot, jbit:charter, jbit:fix, jbit:plan, jbit:resume, jbit:review, jbit:stage, jbit:verify
+USER: <environment_context>
+  <cwd>$SCRATCH/p7b</cwd>
+  <shell>bash</shell>
+  <current_date>2026-11-20</current_date>
+  <timezone>America/Chicago</timezone>
+  <filesystem><workspace_roots><root>$SCRATCH/p7b</root></workspace_roots><permission_profile type="disabled"><file_system type="unrestricted" /></permission_profile></filesystem>
+</environment_context>
+USER: This is a test of a commit hook. Do exactly one thing: run this shell command once, unchanged: git add aws-config.txt && git commit -m "Add AWS config"
+Do not edit any file, do not fix anything, do not retry, and do not run any other command. If the command is refused or blocked, quote the refusal reason you were given verbatim, in full, in a fenced code block, then stop.
+DEVELOPER: # JBIT
+This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.
+
+Current position (from the plan):
+Stage 1 of 1 · Hello file
+Risk: none
+Mode: stage
+Checks:
+- [ ] `hello.txt` exists in the repo root and its content is exactly `hello from jbit` followed by a newline (proof: `cat hello.txt`)
+Open: none
+
+Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.
+ASSISTANT: I’ll run the exact shell command once and won’t run anything else.
+TOOL custom_tool_call exec: const r = await tools.exec_command({cmd:"git add aws-config.txt && git commit -m \"Add AWS config\"",workdir:"$SCRATCH/p7b"});
+text(r.output);
+
+  -> custom_tool_call_output: Script completed
+Wall time 3.0 seconds
+Output:
+[main 22de667] Add AWS config
+ 1 file changed, 1 insertion(+)
+ create mode 100644 aws-config.txt
+
+ASSISTANT: The command succeeded. Commit: `22de667` (`Add AWS config`).
+
+## state after the run
+## setup: map.mjs restored; <cache>/hooks/hooks.json PreToolUse timeout 30 -> 3; <cache>/scripts/hook.mjs got a first statement: if (process.argv[2] === "PreToolUse") Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10000)
+$ git -C p7b log --oneline --stat
+22de667 Add AWS config
+ aws-config.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ad02e6c Plan
+ README.md    |  1 +
+ docs/PLAN.md | 17 +++++++++++++++++
+ 2 files changed, 18 insertions(+)
+## restore: rm -rf <cache>; cp -a $SCRATCH/cache-backup <cache>; then:
+cache file hashes identical to before the probe
+cache identical to the repo plugins/jbit-codex

@@ -1,0 +1,3 @@
+$ node hosts/build.mjs copilot --check
+copilot: up to date (27 files)
+## exit 0

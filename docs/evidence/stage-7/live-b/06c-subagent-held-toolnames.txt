@@ -1,0 +1,90 @@
+$ cd $SCRATCH/p6c && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 600 codex exec --json --skip-git-repo-check --sandbox workspace-write --dangerously-bypass-hook-trust $'/jbit:autopilot attended\nThis run is a test of subagent hooks. Do exactly this: call spawn_agent once (task_name "login_editor", fork_turns "none") with this message: "In the project at the current directory, edit src/login.ts so that `return true` becomes `return false`, using your apply_patch tool, once. Do not retry, do not use the shell to edit, and do not run any other tool. If the edit is refused or blocked, reply with the refusal reason verbatim, in full." Then wait_agent for it. Do not edit any file yourself and do not run any other tool. If anything is refused or blocked, quote the refusal reason verbatim in a fenced code block; otherwise quote the subagent\'s reply verbatim. Then stop.' < /dev/null
+
+## --json stream (trimmed)
+{"type":"thread.started","thread_id":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_2","type":"error","message":"ignoring additionalContextLimit for Stop hook in $SCRATCH/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json: this event cannot emit additionalContext"}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"I’ll follow your constrained hook test exactly: one agent spawn, then wait for its reply."}}
+{"type":"item.started","item":{"id":"item_4","type":"collab_tool_call","tool":"wait","sender_thread_id":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","receiver_thread_ids":[],"prompt":null,"agents_states":{},"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_4","type":"collab_tool_call","tool":"wait","sender_thread_id":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","receiver_thread_ids":[],"prompt":null,"agents_states":{},"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_5","type":"agent_message","text":"```text\nThe edit was blocked by the PreToolUse hook: “JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation other than \"?\" (as in \"yes, build it\"), or `/jbit:approve` (or \"JBIT approve\"). Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.”\n```"}}
+{"type":"turn.completed","usage":"<removed>"}
+## exit 0
+## stderr (hook/error lines)
+2026-11-20T22:18:04.431042Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so it isn't built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.. Command: *** Begin Patch
+## session file main: sessions/…/rollout-2026-11-20T16-17-56-01a1fb09-a81c-7cb2-9d3b-bd081e0cd359.jsonl
+META source="exec" agent_role=
+DEVELOPER <skills_instructions> lists jbit:approve: false; skills: jbit:autopilot, jbit:charter, jbit:fix, jbit:plan, jbit:resume, jbit:review, jbit:stage, jbit:verify
+USER: <environment_context>
+  <cwd>$SCRATCH/p6c</cwd>
+  <shell>bash</shell>
+  <current_date>2026-11-20</current_date>
+  <timezone>America/Chicago</timezone>
+  <filesystem><workspace_roots><root>$SCRATCH/p6c</root></workspace_roots><permission_profile type="managed"><file_system type="restricted"><entry access="read"><special>:root</special></entry><entry access="write"><path>$SCRATCH/p6c</path></entry><entry access="write"><special>:slash_tmp</special></entry><entry access="write"><special>:tmpdir</special></entry><entry access="read"><path>$SCRATCH/p6c/.git</path></entry><entry access="read"><path>$SCRATCH/p6c/.agents</path></entry><entry access="read"><path>$SCRATCH/p6c/.codex</path></entry><entry access="read"><path>$SCRATCH/p6c/.aws</path></entry></file_system></permission_profile></filesystem>
+</environment_context>
+USER: /jbit:autopilot attended
+This run is a test of subagent hooks. Do exactly this: call spawn_agent once (task_name "login_editor", fork_turns "none") with this message: "In the project at the current directory, edit src/login.ts so that `return true` becomes `return false`, using your apply_patch tool, once. Do not retry, do not use the shell to edit, and do not run any other tool. If the edit is refused or blocked, reply with the refusal reason verbatim, in full." Then wait_agent for it. Do not edit any file yourself and do not run any other tool. If anything is refused or blocked, quote the refusal reason verbatim in a fenced code block; otherwise quote the subagent's reply verbatim. Then stop.
+DEVELOPER: JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, `attended`. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for `docs/PLAN.md`, and follow its rules and the working rules below.
+
+# JBIT
+This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.
+
+Current position (from the plan):
+Stage 1 of 1 · Login stub
+Risk: auth (the login entry point)
+Mode: autopilot — attended
+Checks:
+- [ ] `src/login.ts` exports `login(user: string, password: string): boolean` returning `false` (proof: `grep -n "export function login" src/login.ts`)
+Open: none
+
+Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is on, and the current stage is held: its risk line names auth, login. Building it (file edits outside the plan and its `docs/research/` notes, builder agents) is blocked until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"); nothing else releases it. Commit what is finished, set the Mode line to `paused — <reason>`, and ask the user for that reply. This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user's own command set one for this plan. The level holds until their next command or a new plan Goal. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details. When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing.
+ASSISTANT: I’ll follow your constrained hook test exactly: one agent spawn, then wait for its reply.
+TOOL function_call spawn_agent: {"task_name":"login_editor","fork_turns":"none","message":"<removed>"}
+  -> function_call_output: {"task_name":"/root/login_editor"}
+TOOL function_call wait_agent: {"timeout_ms":3600000}
+  -> function_call_output: {"message":"Wait completed.","timed_out":false}
+ASSISTANT: ```text
+The edit was blocked by the PreToolUse hook: “JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so it isn't built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.”
+```
+## session file child: sessions/…/rollout-2026-11-20T16-18-00-01a1fb09-b793-7160-9ee2-39ddffd3eb1c.jsonl
+META source={"subagent":{"thread_spawn":{"parent_thread_id":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","depth":1,"agent_path":"/root/login_editor","agent_nickname":"Newton","agent_role":null}}} agent_role=
+DEVELOPER <skills_instructions> lists jbit:approve: false; skills: jbit:autopilot, jbit:charter, jbit:fix, jbit:plan, jbit:resume, jbit:review, jbit:stage, jbit:verify
+USER: <environment_context>
+  <cwd>$SCRATCH/p6c</cwd>
+  <shell>bash</shell>
+  <current_date>2026-11-20</current_date>
+  <timezone>America/Chicago</timezone>
+  <filesystem><workspace_roots><root>$SCRATCH/p6c</root></workspace_roots><permission_profile type="managed"><file_system type="restricted"><entry access="read"><special>:root</special></entry><entry access="write"><path>$SCRATCH/p6c</path></entry><entry access="write"><special>:slash_tmp</special></entry><entry access="write"><special>:tmpdir</special></entry><entry access="read"><path>$SCRATCH/p6c/.git</path></entry><entry access="read"><path>$SCRATCH/p6c/.agents</path></entry><entry access="read"><path>$SCRATCH/p6c/.codex</path></entry><entry access="read"><path>$SCRATCH/p6c/.aws</path></entry></file_system></permission_profile></filesystem>
+</environment_context>
+TOOL custom_tool_call exec: const r = await tools.apply_patch("*** Begin Patch\n*** Update File: src/login.ts\n@@\n-  return true\n+  return false\n*** End Patch");
+text(r);
+
+  -> custom_tool_call_output: Script failed
+Wall time 0.1 seconds
+Output:
+Script error:
+Command blocked by PreToolUse hook: JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so it isn't built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.. Command: *** Begin Patch
+*** Update File: src/login.ts
+@@
+-  return true
++  return false
+*** End Patch
+ASSISTANT: The edit was blocked by the PreToolUse hook: “JBIT autopilot is holding Stage 1 of 1 · Login stub: its risk line names auth, login, so it isn't built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what's finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.”
+
+## state after the run
+## extra for this run only: a logging PreToolUse hook in $CODEX_HOME/hooks.json (removed after), running:
+// logs each PreToolUse event's tool_name and input keys to $LOG; answers nothing (allow)
+import fs from 'node:fs'
+let s = ''; process.stdin.on('data', d => (s += d)).on('end', () => {
+  try { const o = JSON.parse(s); fs.appendFileSync(process.env.JBIT_PROBE_LOG, JSON.stringify({ ev: o.hook_event_name, session: o.session_id, tool_name: o.tool_name, keys: o.tool_input && typeof o.tool_input === 'object' ? Object.keys(o.tool_input) : typeof o.tool_input, message: typeof o.tool_input?.message === 'string' ? o.tool_input.message.slice(0, 80) : undefined }) + '\n') } catch (e) { fs.appendFileSync(process.env.JBIT_PROBE_LOG, 'ERR ' + e + '\n') }
+})
+## its log (tool_name and input keys Codex passes; message cut to 80 chars):
+{"ev":"PreToolUse","session":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","tool_name":"collaborationspawn_agent","keys":["task_name","fork_turns","message"],"message":"<removed>"}
+{"ev":"PreToolUse","session":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","tool_name":"collaborationwait_agent","keys":["timeout_ms"]}
+{"ev":"PreToolUse","session":"01a1fb09-a81c-7cb2-9d3b-bd081e0cd359","tool_name":"apply_patch","keys":["command"]}
+$ cat p6c/src/login.ts
+export function login(user: string, password: string): boolean {
+  return true
+}

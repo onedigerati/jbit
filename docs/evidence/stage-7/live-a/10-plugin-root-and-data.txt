@@ -1,0 +1,26 @@
+# ${PLUGIN_ROOT} and PLUGIN_DATA after runs 02-09 (no model run)
+$ grep command $CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" PreToolUse",
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" SessionStart",
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" Stop",
+            "type": "command",
+            "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" UserPromptSubmit",
+# The Stop hook_run_id in 06/08/09 names the cached hooks.json, and the hook answered (## Now, denies, blocks), so ${PLUGIN_ROOT} resolved to the cache dir:
+hook_run_id=\"stop:3:$SCRATCH/$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/hooks/hooks.json
+
+$ find $CODEX_HOME/plugins/data -type f   (PLUGIN_DATA = $CODEX_HOME/plugins/data/jbit-jbit-local; one state file per codex thread)
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb07-1466-7991-8179-a070059411f0.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb08-9bf7-7ea3-b709-c21a3f45d0ea.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb09-7836-73d0-b28c-5a27414500a0.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb09-bd68-7592-b9e5-ddb845a985be.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb0b-9969-7942-bc0e-860534ceae40.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb0c-24a0-7790-b7c5-3c0f7e7a91f2.json
+$CODEX_HOME/plugins/data/jbit-jbit-local/sessions/01a1fb0c-8860-7ba2-9d32-eefad919690d.json
+
+$ skills: 9 in the cache (01-install.txt); the model-visible list in every run has 8: jbit:approve is absent
+policy:
+  allow_implicit_invocation: false
+SKILLS LISTED TO MODEL: - jbit:autopilot - jbit:charter - jbit:fix - jbit:plan - jbit:resume - jbit:review - jbit:stage - jbit:verify

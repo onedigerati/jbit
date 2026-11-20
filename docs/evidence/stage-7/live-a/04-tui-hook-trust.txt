@@ -1,0 +1,50 @@
+$ (tmux) cd $SCRATCH/psec2 && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex codex   # interactive TUI, no prompt sent (no model spend)
+--- screen 1 -> Enter (Trust and continue)
+  Folder access
+  $SCRATCH/psec2
+  Trust this folder? Codex can read, edit, and run files here, subject to your permission settings. Folder settings can run code automatically, even without a
+  model request. Continue only if you trust these files. Your trust decision will be saved.
+› 1. Trust and continue
+  2. Back to Agent Command Center
+  enter continue · esc back
+--- screen 2 (startup, unprompted) -> Down, Enter (2. Trust all and continue)
+  Hooks need review
+  4 hooks are new or changed.
+  Hooks can run outside the sandbox after you trust them.
+› 1. Review hooks
+  2. Trust all and continue
+  3. Continue without trusting (hooks won't run)
+  enter confirm · esc skip
+--- screen 3: the composer ("Ask Codex to do anything"); then Ctrl-C twice to quit
+  >_ OpenAI Codex (v0.171.0)
+     $SCRATCH/psec2
+                                                                              ⠈⠙⠛⠿⠿⠿⠿⠛⠉
+› Ask Codex to do anything
+  ? for shortcuts
+
+$ diff config.toml (before TUI) config.toml (after)
+6a7,30
+> 
+> [tui]
+> screen_reader_detection_done = true
+> 
+> [projects."$SCRATCH/psec2"]
+> trust_level = "trusted"
+> 
+> [hooks.state]
+> 
+> [hooks.state."jbit@jbit-local:hooks/hooks.json:pre_tool_use:0:0"]
+> trusted_hash = "sha256:286b0bc888650aa855fd7df480064b9a8e346cbb0d8fb1048c4d6e51ee7879a0"
+> trusted_content_hash = "sha256:c82ea7a389596a492d9322d0b0638f6719c2caf8c51a1c1c9d66e65e917bf1e0"
+> 
+> [hooks.state."jbit@jbit-local:hooks/hooks.json:session_start:0:0"]
+> trusted_hash = "sha256:34b42c21341f38617a0e2d387120b2e1691d436ea1f3eb7f194cc9784265256d"
+> trusted_content_hash = "sha256:c82ea7a389596a492d9322d0b0638f6719c2caf8c51a1c1c9d66e65e917bf1e0"
+> 
+> [hooks.state."jbit@jbit-local:hooks/hooks.json:user_prompt_submit:0:0"]
+> trusted_hash = "sha256:0c67058977ba597dbb2ceba8520666eec5b8fad551d7c51fd89146348b43975c"
+> trusted_content_hash = "sha256:c82ea7a389596a492d9322d0b0638f6719c2caf8c51a1c1c9d66e65e917bf1e0"
+> 
+> [hooks.state."jbit@jbit-local:hooks/hooks.json:stop:0:0"]
+> trusted_hash = "sha256:f446420d06918d0cc01353e897d6beabff5e5a954f45606a870ab6a859dc98aa"
+> trusted_content_hash = "sha256:c82ea7a389596a492d9322d0b0638f6719c2caf8c51a1c1c9d66e65e917bf1e0"

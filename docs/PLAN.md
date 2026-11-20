@@ -7,21 +7,21 @@ Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI 
 2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
 
 ## Now
-Stage 2 of 7 · Hook core + Copilot adapter
-Risk: secrets and user input (the secret guard and shell parsing run in a new command hook); tests first, `/code-review` and `/security-review`
+Stage 3 of 7 · Copilot package
+Risk: none beyond packaging: generated files, a build script and local installs; the hook code inside is stage 2's, copied
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-20 10:45
-Scope: a host-neutral hook core under `hosts/core/` that reuses the Claude hook's pure modules from `plugins/jbit/hooks/` (imported read-only, never edited; stage 3's build copies them), a Copilot adapter `hosts/copilot/hook.mjs` (a Node command hook reading the event on stdin, per [copilot-spike-2026-11.md](research/copilot-spike-2026-11.md) "Stage 2"), and shared parity scenarios under `hosts/parity/` run against the Claude hook and the Copilot hook. Session state lives in the plugin data folder, keyed by session id.
+Scope: `hosts/build.mjs` reads `hosts/copilot/capability.json` and generates `plugins/jbit-copilot/` from `plugins/jbit/` and `hosts/`: a `plugin.json` named `jbit` at version 2.0.0, the skills with bare names plus a short Copilot mapping section and a few tested substitutions, the role agents if the source has any, `hooks/hooks.json` running `node "${PLUGIN_ROOT}/scripts/hook.mjs" <event>`, and the hook's modules copied. It also writes `.github/plugin/marketplace.json` listing `jbit` at `./plugins/jbit-copilot`, per [copilot-spike-2026-11.md](research/copilot-spike-2026-11.md) "Stage 3".
 Checks:
-- [ ] Shared parity scenarios pass against both the Claude hook and the Copilot command hook: a commit closing a stage with an unticked check, a stage close without evidence, a secret in a commit, an edit and a builder agent in a held stage under attended autopilot, an outward command under autopilot, autopilot at turn end with stages left, and the plan's `## Now` in context on a prompt (proof: test)
-- [ ] The Copilot hook, fed the stage-1 event shapes, answers as the spike proved: `userPromptTransformed` appends to `transformedPrompt`; `preToolUse` denies through `bash`, `apply_patch` (Add/Update/Delete/Move to, paths normalised, unparseable denied), `edit`, `create` and unknown tools carrying a path or command; `agentStop` blocks; no project dir or a crash in the core fails closed (proof: test)
-- [ ] The guard and parsing tests were written before the adapter code, and `/code-review` and `/security-review` ran with each finding fixed, deferred or rejected (proof: `docs/evidence/stage-2/review.md`)
-- [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate and the new `hosts/` tests green (proof: test)
+- [ ] `node hosts/build.mjs copilot` generates `plugins/jbit-copilot/` and `.github/plugin/marketplace.json`, and a second run changes nothing (proof: test)
+- [ ] A drift check fails when the generated package lags its source (a changed skill, hook module or capability file) and passes after a rebuild; a leak check fails on Claude-only names that `capability.json` maps (tool names, `CLAUDE_PLUGIN_ROOT`, `.claude/`…) left outside the mapping section (proof: test)
+- [ ] In an isolated `COPILOT_HOME`, `copilot plugin marketplace add <this repo>` lists `jbit`, `copilot plugin install jbit@<marketplace>` installs it, and its skills list as `/jbit:plan`, `/jbit:stage` … with the hook entries pointing at the copied script; no model prompt is sent (proof: run)
+- [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate, `node --test 'hosts/**/*.test.mjs'` and `node hosts/parity/run-claude.mjs` green (proof: test)
 Open: none
 
 ## Stages
 - [x] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
-- [ ] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
+- [x] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
 - [ ] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
 - [ ] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
 - [ ] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
@@ -44,6 +44,14 @@ Open: none
 - 2026-11-20 · (pm) Spikes before builds, one per host, with prototypes kept in the scratchpad. Why: the notes leave the load-bearing questions (per-prompt context on Copilot, plugin hooks in the Codex CLI) to a real run.
 - 2026-11-20 · (pm) Scale: seven stages, one plan; no charter. Why: under eight stages and one goal.
 - 2026-11-20 · (pm) Risk: stages 2 and 6 touch secrets and user input (the secret guard and shell parsing move to a new hook), so they get tests first, `/code-review` and `/security-review`; the spikes and end-to-end stages touch external services.
+- 2026-11-20 · (unattended) The hook core is the Claude hook itself: `hosts/core/` gives `plugins/jbit/hooks/register.ts` a shim engine (state in a JSON file under the plugin data folder, `fs`, `session.cwd` from the event, `git` through `child_process`, notices dropped or turned into context) and maps each host event to its handlers (`prompt.submit`/`prompt.compose`, `tool.call` with the host's tool names mapped to `Bash`/`Edit`/`Write`/`Agent`/`Skill`, `turn.complete`). Why: the handlers use a small engine surface (`state`, `fs`, `session.cwd`/`usage`/`compact`, `ui`, `process.run`, `clock`, `agent.list`, `store`, `settings`), so the gate logic stays in one copy, which is what the parity scenarios guard; a second copy would drift.
+- 2026-11-20 · (unattended) The Claude parity runner (`node hosts/parity/run-claude.mjs`) runs from outside `plugins/jbit/` on a byte-checked copy of its `hooks/` and `types/`, made into `hosts/parity/` (gitignored) just before `claude plugin test hosts/parity`. This settles the "stops for the user" condition in the parity decision: `claude plugin test` loads only files inside the folder it tests, the copy is checked identical first, and `plugins/jbit/` is never written.
+- 2026-11-20 · (unattended) Some of what the Claude hook keeps in memory can't carry to Copilot, since each event there is a fresh process. Lost: stall detection (Copilot's cap of 8 blocks per prompt bounds the loop instead), lean's count of agents already running, background agents, and the reopen check after a commit (it runs before the commit lands). They go into the README's Copilot gap list at stage 4.
+- 2026-11-20 · (pm) Small calls the adapter makes:
+  - `write_bash` is judged as Bash;
+  - `str_replace_editor` maps to Edit/Write;
+  - an allowed call prints nothing, so Copilot's own permission prompts still apply;
+  - a prompt that repeats the hook's last block reason counts as the plugin's, so it can't set an autopilot level or approve a stage.
 - 2026-11-20 · (unattended) Copilot: `## Now` rides on `userPromptTransformed` every turn, continuations included — settles the open question; the spike showed it honoured ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) Copilot skills keep bare names (`name: plan`) under a plugin and marketplace entry named `jbit`, reversing the research note's `name: jbit:<skill>`. Why: Copilot prefixes plugin skills itself and `jbit:plan` came out double-prefixed ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) The Copilot guard covers `edit` and `create` on their documented shape with fixture tests only, and the README says so. Why: no model this account offers writes through them, so a live run can't prove them; `bash` and `apply_patch` are proven ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
@@ -59,6 +67,9 @@ Open: none
   The README note will say this; carrying any of it into 2.0.x is for a later plan. (carried)
 - Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs, so the reason for this change rests on one run per case — for the user. (carried)
 - The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts — carried; 0.18.1 has the same gap, and the ported hook will too.
+- Stage 2 review, deferred:
+  - `hosts/parity/claude.test.ts` sends a prompt before composing it. No current scenario depends on that order, so settle Claude Code's real order when a scenario judges an arming prompt's context.
+  - On Claude Code, `register.ts`'s commit guard also steps aside when git fails (a huge diff, a timeout). Copilot's shim now fails closed. Fixing the Claude side means changing `plugins/jbit/`, which is for the user ([review](evidence/stage-2/review.md)).
 - `plugins/jbit/evals-ablation/` (untracked) — carried; for the user.
 - `CLAUDE.md` (untracked, in the repo root before this plan's stage 1) — left alone; for the user to commit or drop.
 

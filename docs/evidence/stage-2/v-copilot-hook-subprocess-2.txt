@@ -1,0 +1,11 @@
+$ node $SCRATCH/drive2.mjs $SCRATCH
+--- plain prompt, no autopilot: ## Now appended?
+  stdout={"modifiedTransformedPrompt":"ORIG\n\n# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same ch
+--- arm attended
+  stdout={"modifiedTransformedPrompt":"ORIG\n\nJBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, `attended`. This entry supersedes the JBIT section of the system prompt, which
+--- .. path normalising to the plan: src/../docs/PLAN.md -> allow
+  stdout=(empty)
+--- .. path escaping repo onto guarded: ../repo2-u43qGd/src/a.ts -> deny
+  stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"pr
+--- Move to with no hunk header, garbage op -> deny
+  stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked this `apply_patch` call: it couldn't read the patch (unknown patch line `*** Frob File: x`), and a patch it can't check doesn't run. Send a well-forme

@@ -1,0 +1,3 @@
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin ; git diff --cached --stat ...; git status --short ...
+[committed+worktree diff above, empty = unchanged]
+?? plugins/jbit/evals-ablation/

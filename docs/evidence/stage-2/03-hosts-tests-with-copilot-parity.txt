@@ -1,0 +1,210 @@
+$ node --test 'hosts/**/*.test.mjs'
+2026-11-20T11:20:47-06:00
+TAP version 13
+# Subtest: parsePatch reads Add, Update, Delete and Move to
+ok 1 - parsePatch reads Add, Update, Delete and Move to
+  ---
+  duration_ms: 0.979201
+  type: 'test'
+  ...
+# Subtest: parsePatch reads the captured spike patch
+ok 2 - parsePatch reads the captured spike patch
+  ---
+  duration_ms: 0.1466
+  type: 'test'
+  ...
+# Subtest: parsePatch refuses what it cannot read
+ok 3 - parsePatch refuses what it cannot read
+  ---
+  duration_ms: 0.1238
+  type: 'test'
+  ...
+# Subtest: parsePatch tolerates CRLF and surrounding blank lines
+ok 4 - parsePatch tolerates CRLF and surrounding blank lines
+  ---
+  duration_ms: 0.093
+  type: 'test'
+  ...
+# Subtest: paths resolve against the project, normalising .., absolute paths and symlinks
+ok 5 - paths resolve against the project, normalising .., absolute paths and symlinks
+  ---
+  duration_ms: 0.661501
+  type: 'test'
+  ...
+# Subtest: mapTool maps Copilot tools to the Claude tool calls the core judges
+ok 6 - mapTool maps Copilot tools to the Claude tool calls the core judges
+  ---
+  duration_ms: 0.570601
+  type: 'test'
+  ...
+# Subtest: mapTool: a toolArgs of the wrong type never means allow
+ok 7 - mapTool: a toolArgs of the wrong type never means allow
+  ---
+  duration_ms: 0.980202
+  type: 'test'
+  ...
+# Subtest: mapTool: unknown tools carrying a path or a command are denied, naming the tool
+ok 8 - mapTool: unknown tools carrying a path or a command are denied, naming the tool
+  ---
+  duration_ms: 0.2848
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit with a secret staged is denied
+ok 9 - preToolUse: a commit with a secret staged is denied
+  ---
+  duration_ms: 165.935654
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit closing a stage with an unticked check is denied
+ok 10 - preToolUse: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 96.163847
+  type: 'test'
+  ...
+# Subtest: preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+ok 11 - preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+  ---
+  duration_ms: 1080.230754
+  type: 'test'
+  ...
+# Subtest: preToolUse: outside a held stage the same calls go through
+ok 12 - preToolUse: outside a held stage the same calls go through
+  ---
+  duration_ms: 387.623894
+  type: 'test'
+  ...
+# Subtest: preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+ok 13 - preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+  ---
+  duration_ms: 81.074024
+  type: 'test'
+  ...
+# Subtest: preToolUse: unknown tools carrying a path or command are denied, naming the tool
+ok 14 - preToolUse: unknown tools carrying a path or command are denied, naming the tool
+  ---
+  duration_ms: 58.469089
+  type: 'test'
+  ...
+# Subtest: preToolUse: an outward command under autopilot is denied
+ok 15 - preToolUse: an outward command under autopilot is denied
+  ---
+  duration_ms: 167.493057
+  type: 'test'
+  ...
+# Subtest: no project dir: guarded tools are denied and prompts get no context
+ok 16 - no project dir: guarded tools are denied and prompts get no context
+  ---
+  duration_ms: 138.449412
+  type: 'test'
+  ...
+# Subtest: COPILOT_PROJECT_DIR stands in when stdin has no cwd
+ok 17 - COPILOT_PROJECT_DIR stands in when stdin has no cwd
+  ---
+  duration_ms: 94.586745
+  type: 'test'
+  ...
+# Subtest: a crash in the core fails closed for preToolUse and stays silent elsewhere
+ok 18 - a crash in the core fails closed for preToolUse and stays silent elsewhere
+  ---
+  duration_ms: 260.300699
+  type: 'test'
+  ...
+# Subtest: userPromptTransformed appends the plan to transformedPrompt, never replacing it
+ok 19 - userPromptTransformed appends the plan to transformedPrompt, never replacing it
+  ---
+  duration_ms: 177.555571
+  type: 'test'
+  ...
+# Subtest: sessionStart gives the plan as additionalContext
+ok 20 - sessionStart gives the plan as additionalContext
+  ---
+  duration_ms: 81.326925
+  type: 'test'
+  ...
+# Subtest: agentStop blocks while autopilot is armed with stages left, and not otherwise
+ok 21 - agentStop blocks while autopilot is armed with stages left, and not otherwise
+  ---
+  duration_ms: 537.940324
+  type: 'test'
+  ...
+# Subtest: copilot parity: a commit closing a stage with an unticked check is denied
+ok 22 - copilot parity: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 192.315294
+  type: 'test'
+  ...
+# Subtest: copilot parity: a stage close without an evidence report is denied
+ok 23 - copilot parity: a stage close without an evidence report is denied
+  ---
+  duration_ms: 181.682078
+  type: 'test'
+  ...
+# Subtest: copilot parity: a stage close with its checks ticked and its report passes
+ok 24 - copilot parity: a stage close with its checks ticked and its report passes
+  ---
+  duration_ms: 252.897087
+  type: 'test'
+  ...
+# Subtest: copilot parity: a secret in a staged commit is denied, named by kind and never by value
+ok 25 - copilot parity: a secret in a staged commit is denied, named by kind and never by value
+  ---
+  duration_ms: 178.202473
+  type: 'test'
+  ...
+# Subtest: copilot parity: a clean commit passes
+ok 26 - copilot parity: a clean commit passes
+  ---
+  duration_ms: 251.466085
+  type: 'test'
+  ...
+# Subtest: copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+ok 27 - copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+  ---
+  duration_ms: 327.800602
+  type: 'test'
+  ...
+# Subtest: copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+ok 28 - copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+  ---
+  duration_ms: 181.803178
+  type: 'test'
+  ...
+# Subtest: copilot parity: the user's approval releases a held stage
+ok 29 - copilot parity: the user's approval releases a held stage
+  ---
+  duration_ms: 330.683907
+  type: 'test'
+  ...
+# Subtest: copilot parity: an outward command under autopilot is denied
+ok 30 - copilot parity: an outward command under autopilot is denied
+  ---
+  duration_ms: 322.077393
+  type: 'test'
+  ...
+# Subtest: copilot parity: turn end under armed autopilot with stages left keeps the run going
+ok 31 - copilot parity: turn end under armed autopilot with stages left keeps the run going
+  ---
+  duration_ms: 184.117682
+  type: 'test'
+  ...
+# Subtest: copilot parity: turn end without autopilot lets the turn end
+ok 32 - copilot parity: turn end without autopilot lets the turn end
+  ---
+  duration_ms: 163.818051
+  type: 'test'
+  ...
+# Subtest: copilot parity: a prompt carries the plan's \#\# Now into context
+ok 33 - copilot parity: a prompt carries the plan's \#\# Now into context
+  ---
+  duration_ms: 97.481149
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3379.378274

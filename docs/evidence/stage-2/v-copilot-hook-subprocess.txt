@@ -1,0 +1,64 @@
+$ node $SCRATCH/drive.mjs $SCRATCH  # drives hosts/copilot/hook.mjs as a subprocess
+--- 1. prompt: arm attended autopilot; expect ## Now appended
+  event=userPromptTransformed stdin={"sessionId":"verify-risky","timestamp":1795196239059,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"modifiedTransformedPrompt":"ORIGINAL\n\nJBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, `attended`. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, un
+--- 2. bash git push -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239155,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user."}
+--- 3. bash git status -> allow
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239236,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout=(empty)
+--- 4. apply_patch Add src/new.ts in held stage -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239326,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 5. apply_patch Update src/login.ts -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239409,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 6. apply_patch Delete src/login.ts -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239494,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 7. apply_patch Update docs/PLAN.md -> allow (plan exempt)
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239575,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout=(empty)
+--- 8. apply_patch Update docs/PLAN.md Move to: src/login.ts -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239652,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 9. apply_patch Update docs/../src/login.ts (.. path) -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239735,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 10. apply_patch unparseable -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239815,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked this `apply_patch` call: it couldn't read the patch (the patch does not open with `*** Begin Patch`), and a patch it can't check doesn't run. Send a well-formed patch: `*** Begin Patch`, `*** Add File:`/`*** Update File:`/`*** Del
+--- 11. edit src/login.ts -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239832,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 12. create src/x.ts -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239909,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation o
+--- 13. unknown tool with path -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196239986,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked `mystery_writer`: it doesn't know this tool, and its arguments carry a path or a command (`file_path`) that the plan's gates can't check. Use bash, apply_patch, edit or create instead, or ask the user."}
+--- 14. unknown tool with command -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196240002,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked `mystery_runner`: it doesn't know this tool, and its arguments carry a path or a command (`cmd`) that the plan's gates can't check. Use bash, apply_patch, edit or create instead, or ask the user."}
+--- 15. prompt: arm autopilot (driving plan)
+  event=userPromptTransformed stdin={"sessionId":"verify-drv","timestamp":1795196240032,"cwd":"$SCRATCH/repo-QDJt
+  exit=0 stdout={"modifiedTransformedPrompt":"ORIG2\n\nJBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, unattended. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unles
+--- 16. agentStop armed w/ stages left -> block
+  event=agentStop stdin={"sessionId":"verify-drv","timestamp":1795196240124,"cwd":"$SCRATCH/repo-QDJt
+  exit=0 stdout={"decision":"block","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode."}
+--- 17. no cwd, no COPILOT_PROJECT_DIR: bash -> deny
+  event=preToolUse stdin={"sessionId":"verify-s","timestamp":1795196240200,"toolCallId":"x","toolName":"bash","toolArgs":{"command":"ls"}}
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked `bash`: the hook couldn't tell which project this is (no `cwd` on the event and no COPILOT_PROJECT_DIR), so it can't check the plan's gates and fails closed."}
+--- 18. no cwd, no COPILOT_PROJECT_DIR: edit -> deny
+  event=preToolUse stdin={"sessionId":"verify-s","timestamp":1795196240217,"toolCallId":"x","toolName":"edit","toolArgs":{"path":"/tmp/a","old_str":"a","new_str":"b"}}
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT blocked `edit`: the hook couldn't tell which project this is (no `cwd` on the event and no COPILOT_PROJECT_DIR), so it can't check the plan's gates and fails closed."}
+--- 19. no cwd: view (read-only) -> allow
+  event=preToolUse stdin={"sessionId":"verify-s","timestamp":1795196240235,"toolCallId":"x","toolName":"view","toolArgs":{"path":"/tmp/a"}}
+  exit=0 stdout=(empty)
+--- 20. crash: invalid JSON stdin -> deny
+  event=preToolUse stdin={not json
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."}
+--- 21. crash: COPILOT_PLUGIN_DATA unwritable (core throws) -> deny
+  event=preToolUse stdin={"sessionId":"verify-risky","timestamp":1795196240274,"cwd":"$SCRATCH/repo-q5
+  exit=0 stdout={"permissionDecision":"deny","permissionDecisionReason":"JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."}

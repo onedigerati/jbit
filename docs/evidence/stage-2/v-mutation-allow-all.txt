@@ -1,0 +1,156 @@
+$ [MUTATION: preToolUse returns {} (allow all)] node --test hosts/parity/copilot.test.mjs
+TAP version 13
+# Subtest: copilot parity: a commit closing a stage with an unticked check is denied
+not ok 1 - copilot parity: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 191.352501
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Bash): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: copilot parity: a stage close without an evidence report is denied
+not ok 2 - copilot parity: a stage close without an evidence report is denied
+  ---
+  duration_ms: 184.342501
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Bash): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: copilot parity: a stage close with its checks ticked and its report passes
+ok 3 - copilot parity: a stage close with its checks ticked and its report passes
+  ---
+  duration_ms: 180.8065
+  type: 'test'
+  ...
+# Subtest: copilot parity: a secret in a staged commit is denied, named by kind and never by value
+not ok 4 - copilot parity: a secret in a staged commit is denied, named by kind and never by value
+  ---
+  duration_ms: 172.094001
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Bash): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: copilot parity: a clean commit passes
+ok 5 - copilot parity: a clean commit passes
+  ---
+  duration_ms: 175.7915
+  type: 'test'
+  ...
+# Subtest: copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+not ok 6 - copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+  ---
+  duration_ms: 274.569201
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Edit): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+not ok 7 - copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+  ---
+  duration_ms: 176.7953
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Agent): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: copilot parity: the user's approval releases a held stage
+ok 8 - copilot parity: the user's approval releases a held stage
+  ---
+  duration_ms: 259.693301
+  type: 'test'
+  ...
+# Subtest: copilot parity: an outward command under autopilot is denied
+not ok 9 - copilot parity: an outward command under autopilot is denied
+  ---
+  duration_ms: 256.709101
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:94:3'
+  failureType: 'testCodeFailure'
+  error: 'step 2 (tool Bash): expected deny, got allow: ""'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/parity/copilot.test.mjs:96:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: copilot parity: turn end under armed autopilot with stages left keeps the run going
+ok 10 - copilot parity: turn end under armed autopilot with stages left keeps the run going
+  ---
+  duration_ms: 172.936701
+  type: 'test'
+  ...
+# Subtest: copilot parity: turn end without autopilot lets the turn end
+ok 11 - copilot parity: turn end without autopilot lets the turn end
+  ---
+  duration_ms: 164.2642
+  type: 'test'
+  ...
+# Subtest: copilot parity: a prompt carries the plan's \#\# Now into context
+ok 12 - copilot parity: a prompt carries the plan's \#\# Now into context
+  ---
+  duration_ms: 91.1654
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 6
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2335.615307
+exit=1

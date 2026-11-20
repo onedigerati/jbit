@@ -1,0 +1,439 @@
+$ node --test hosts/copilot/hook.test.mjs   (review round 1 regression tests written, fixes not yet; buffer knob only)
+2026-11-20T11:33:51-06:00
+TAP version 13
+# Subtest: parsePatch reads Add, Update, Delete and Move to
+ok 1 - parsePatch reads Add, Update, Delete and Move to
+  ---
+  duration_ms: 1.0286
+  type: 'test'
+  ...
+# Subtest: parsePatch reads the captured spike patch
+ok 2 - parsePatch reads the captured spike patch
+  ---
+  duration_ms: 0.1488
+  type: 'test'
+  ...
+# Subtest: parsePatch refuses what it cannot read
+ok 3 - parsePatch refuses what it cannot read
+  ---
+  duration_ms: 0.126
+  type: 'test'
+  ...
+# Subtest: parsePatch tolerates CRLF and surrounding blank lines
+ok 4 - parsePatch tolerates CRLF and surrounding blank lines
+  ---
+  duration_ms: 0.0832
+  type: 'test'
+  ...
+# Subtest: paths resolve against the project, normalising .., absolute paths and symlinks
+ok 5 - paths resolve against the project, normalising .., absolute paths and symlinks
+  ---
+  duration_ms: 1.1396
+  type: 'test'
+  ...
+# Subtest: mapTool maps Copilot tools to the Claude tool calls the core judges
+ok 6 - mapTool maps Copilot tools to the Claude tool calls the core judges
+  ---
+  duration_ms: 0.6145
+  type: 'test'
+  ...
+# Subtest: mapTool: a toolArgs of the wrong type never means allow
+ok 7 - mapTool: a toolArgs of the wrong type never means allow
+  ---
+  duration_ms: 0.2586
+  type: 'test'
+  ...
+# Subtest: mapTool: unknown tools carrying a path or a command are denied, naming the tool
+ok 8 - mapTool: unknown tools carrying a path or a command are denied, naming the tool
+  ---
+  duration_ms: 0.2434
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit with a secret staged is denied
+ok 9 - preToolUse: a commit with a secret staged is denied
+  ---
+  duration_ms: 166.2394
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit closing a stage with an unticked check is denied
+ok 10 - preToolUse: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 83.966301
+  type: 'test'
+  ...
+# Subtest: preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+ok 11 - preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+  ---
+  duration_ms: 1026.4958
+  type: 'test'
+  ...
+# Subtest: preToolUse: outside a held stage the same calls go through
+ok 12 - preToolUse: outside a held stage the same calls go through
+  ---
+  duration_ms: 356.843001
+  type: 'test'
+  ...
+# Subtest: preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+ok 13 - preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+  ---
+  duration_ms: 73.8623
+  type: 'test'
+  ...
+# Subtest: preToolUse: unknown tools carrying a path or command are denied, naming the tool
+ok 14 - preToolUse: unknown tools carrying a path or command are denied, naming the tool
+  ---
+  duration_ms: 50.143
+  type: 'test'
+  ...
+# Subtest: preToolUse: an outward command under autopilot is denied
+ok 15 - preToolUse: an outward command under autopilot is denied
+  ---
+  duration_ms: 158.8946
+  type: 'test'
+  ...
+# Subtest: no project dir: guarded tools are denied and prompts get no context
+ok 16 - no project dir: guarded tools are denied and prompts get no context
+  ---
+  duration_ms: 124.9423
+  type: 'test'
+  ...
+# Subtest: COPILOT_PROJECT_DIR stands in when stdin has no cwd
+ok 17 - COPILOT_PROJECT_DIR stands in when stdin has no cwd
+  ---
+  duration_ms: 82.2096
+  type: 'test'
+  ...
+# Subtest: a crash in the core fails closed for preToolUse and stays silent elsewhere
+ok 18 - a crash in the core fails closed for preToolUse and stays silent elsewhere
+  ---
+  duration_ms: 239.987
+  type: 'test'
+  ...
+# Subtest: userPromptTransformed appends the plan to transformedPrompt, never replacing it
+ok 19 - userPromptTransformed appends the plan to transformedPrompt, never replacing it
+  ---
+  duration_ms: 167.943
+  type: 'test'
+  ...
+# Subtest: sessionStart gives the plan as additionalContext
+ok 20 - sessionStart gives the plan as additionalContext
+  ---
+  duration_ms: 82.9953
+  type: 'test'
+  ...
+# Subtest: agentStop blocks while autopilot is armed with stages left, and not otherwise
+ok 21 - agentStop blocks while autopilot is armed with stages left, and not otherwise
+  ---
+  duration_ms: 530.119
+  type: 'test'
+  ...
+# Subtest: S1: git output past the buffer limit fails the commit check closed
+not ok 22 - S1: git output past the buffer limit fails the commit check closed
+  ---
+  duration_ms: 87.957701
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:426:1'
+  failureType: 'testCodeFailure'
+  error: '{}'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:432:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: S2: a lone carriage return or an indented directive makes a patch unparseable
+not ok 23 - S2: a lone carriage return or an indented directive makes a patch unparseable
+  ---
+  duration_ms: 0.2554
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:436:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    "*** Begin Patch\n*** Update File: a.txt\n@@\n *** Add File: src/evil.ts\n+x\n*** End Patch\n"
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:443:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C1: the model starting jbit:autopilot after the user asked arms autopilot
+not ok 24 - C1: the model starting jbit:autopilot after the user asked arms autopilot
+  ---
+  duration_ms: 219.0745
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:448:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {}
+    + actual - expected
+    
+    + undefined
+    - 'block'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'block'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:454:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C1: a skill call with no user prompt before it does not arm
+ok 25 - C1: a skill call with no user prompt before it does not arm
+  ---
+  duration_ms: 216.1189
+  type: 'test'
+  ...
+# Subtest: C2: a run that pauses tells the user at the next prompt
+not ok 26 - C2: a run that pauses tells the user at the next prompt
+  ---
+  duration_ms: 298.4914
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:465:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Autopilot paused: waiting on the API keys/. Input:
+    
+    '<current_datetime>now</current_datetime>\n' +
+      'what now?\n' +
+      '\n' +
+      '# JBIT\n' +
+      'This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n' +
+      '\n' +
+      'Current position (from the plan):\n' +
+      'Stage 2 of 3 · Share mode\n' +
+      'Mode: paused — waiting on the API keys\n' +
+      '\n' +
+      "Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is paused (waiting on the API keys): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    <current_datetime>now</current_datetime>
+    what now?
+    
+    # JBIT
+    This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.
+    
+    Current position (from the plan):
+    Stage 2 of 3 · Share mode
+    Mode: paused — waiting on the API keys
+    
+    Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is paused (waiting on the API keys): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:474:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C3: a prompt composes before it submits, as Claude Code does
+not ok 27 - C3: a prompt composes before it submits, as Claude Code does
+  ---
+  duration_ms: 46.6953
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:477:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+    +   'submit',
+        'compose',
+    -   'submit'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'compose'
+    1: 'submit'
+  actual:
+    0: 'submit'
+    1: 'compose'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:485:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C4: on a Node without TypeScript stripping, the deny says what Node it needs
+not ok 28 - C4: on a Node without TypeScript stripping, the deny says what Node it needs
+  ---
+  duration_ms: 35.3472
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:489:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /Node 22\.18\+/. Input:
+    
+    "JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: "JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:494:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C5: the held notice is said once per stage, not at every turn end
+not ok 29 - C5: the held notice is said once per stage, not at every turn end
+  ---
+  duration_ms: 316.8454
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:499:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    <current_datetime>now</current_datetime>
+    status?
+    
+    # JBIT
+    This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.
+    
+    Current position (from the plan):
+    Stage 2 of 3 · Share mode
+    Risk: auth
+    Mode: autopilot
+    
+    Working rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is on, and the current stage is held: its risk line names auth. Building it (file edits outside the plan and its `docs/research/` notes, builder agents) is blocked until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"); nothing else releases it. Commit what is finished, set the Mode line to `paused — <reason>`, and ask the user for that reply. This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with "JBIT" made of nothing but command words, such as "JBIT autopilot lean"; `outward` in it also lets push, publish and deploy through. Plain words without the name ("just build it, autopilot lean"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user's own command set one for this plan. The level holds until their next command or a new plan Goal. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details.
+    
+    Autopilot (attended) is holding before Stage 2 of 3 · Share mode: it touches auth. Reply "approve" (or /jbit:approve) to build it.
+    
+    Autopilot (attended) is holding before Stage 2 of 3 · Share mode: it touches auth. Reply "approve" (or /jbit:approve) to build it.
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:505:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+not ok 30 - C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+  ---
+  duration_ms: 233.0913
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:510:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Autopilot (unattended) is building Stage 2 of 3 · Share mode without a hold: it touches auth.
+    
+    Autopilot (unattended) is building Stage 2 of 3 · Share mode without a hold: it touches auth.
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:516:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C7: removed keys drop their versions, and stale post: keys are pruned
+not ok 31 - C7: removed keys drop their versions, and stale post: keys are pruned
+  ---
+  duration_ms: 19.2235
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:521:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    2 !== undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:529:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: C8: Windows backslash and drive-letter paths are denied with a reason
+not ok 32 - C8: Windows backslash and drive-letter paths are denied with a reason
+  ---
+  duration_ms: 0.214
+  type: 'test'
+  location: '/home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:538:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    edit {"path":"C:\\repo\\a.ts","old_str":"a","new_str":"b"}
+    
+    'calls' !== 'deny'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'deny'
+  actual: 'calls'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/jonah/src/repos/jbit/hosts/copilot/hook.test.mjs:548:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 22
+# fail 10
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4670.353404

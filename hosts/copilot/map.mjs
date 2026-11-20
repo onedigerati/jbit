@@ -2,7 +2,7 @@
 // A call whose args this can't read is denied: a field it can't read never means allow.
 import { lstatSync, readlinkSync, realpathSync } from 'node:fs'
 import { dirname, isAbsolute, join } from 'node:path'
-import { parsePatch } from './patch.mjs'
+import { parsePatch } from '../core/patch.mjs'
 
 /** Tools that only read, or only report: always allowed, whatever their args. */
 export const READ_ONLY = new Set(['view', 'glob', 'grep', 'read_agent', 'list_agents', 'read_bash', 'list_bash', 'stop_bash', 'report_intent', 'web_fetch', 'web_search', 'fetch_copilot_cli_documentation'])

@@ -23,10 +23,10 @@
     "files": {
       "hosts/copilot/hook.mjs": "scripts/hook.mjs",
       "hosts/copilot/map.mjs": "scripts/map.mjs",
-      "hosts/copilot/patch.mjs": "scripts/patch.mjs",
       "hosts/core/dispatch.mjs": "scripts/core/dispatch.mjs",
       "hosts/core/engine.mjs": "scripts/core/engine.mjs",
       "hosts/core/index.mjs": "scripts/core/index.mjs",
+      "hosts/core/patch.mjs": "scripts/core/patch.mjs",
       "plugins/jbit/hooks/models.ts": "scripts/hooks/models.ts",
       "plugins/jbit/hooks/project.ts": "scripts/hooks/project.ts",
       "plugins/jbit/hooks/register.ts": "scripts/hooks/register.ts",
@@ -35,7 +35,8 @@
     },
     "rewrites": [
       { "file": "scripts/hook.mjs", "from": "import('../core/index.mjs')", "to": "import('./core/index.mjs')" },
-      { "file": "scripts/core/dispatch.mjs", "from": "'../../plugins/jbit/hooks/register.ts'", "to": "'../hooks/register.ts'" }
+      { "file": "scripts/core/dispatch.mjs", "from": "'../../plugins/jbit/hooks/register.ts'", "to": "'../hooks/register.ts'" },
+      { "file": "scripts/map.mjs", "from": "from '../core/patch.mjs'", "to": "from './core/patch.mjs'" }
     ]
   },
   "tools": [

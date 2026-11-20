@@ -1,0 +1,237 @@
+$ node --test hosts/codex/hook.test.mjs hosts/parity/codex.test.mjs
+TAP version 13
+# node:internal/modules/esm/resolve:275
+#     throw new ERR_MODULE_NOT_FOUND(
+#           ^
+# Error [ERR_MODULE_NOT_FOUND]: Cannot find module '$HOME/src/repos/jbit/hosts/core/patch.mjs' imported from $HOME/src/repos/jbit/hosts/codex/hook.test.mjs
+#     at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+#     at moduleResolve (node:internal/modules/esm/resolve:865:10)
+#     at defaultResolve (node:internal/modules/esm/resolve:989:11)
+#     at \#cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+#     at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+#     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+#     at ModuleJob._link (node:internal/modules/esm/module_job:182:49) {
+#   code: 'ERR_MODULE_NOT_FOUND',
+#   url: 'file://$HOME/src/repos/jbit/hosts/core/patch.mjs'
+# }
+# Node.js v22.23.5
+# Subtest: hosts/codex/hook.test.mjs
+not ok 1 - hosts/codex/hook.test.mjs
+  ---
+  duration_ms: 23.155101
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: codex parity: the shared scenarios through runScenarios
+not ok 2 - codex parity: the shared scenarios through runScenarios
+  ---
+  duration_ms: 500.486835
+  type: 'test'
+  location: '$HOME/src/repos/jbit/hosts/parity/codex.test.mjs:90:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a commit closing a stage with an unticked check is denied:
+      step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    a stage close without an evidence report is denied:
+      step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    a stage close with its checks ticked and its report passes:
+      step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    a secret in a staged commit is denied, named by kind and never by value:
+      step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    a clean commit passes:
+      step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    under attended autopilot, an edit in a held risky stage is denied, the plan itself is not:
+      step 2 (tool Edit): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+      step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    under attended autopilot, a builder agent in a held risky stage is denied:
+      step 2 (tool Agent): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    the user's approval releases a held stage:
+      step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    an outward command under autopilot is denied:
+      step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+      step 3 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    turn end under armed autopilot with stages left keeps the run going:
+      step 2 (stop): expected block, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    turn end without autopilot lets the turn end:
+      step 2 (stop): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    a prompt carries the plan's ## Now into context:
+      step 1 (prompt): expected context, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._lo
+    + actual - expected
+    
+    + [
+    +   {
+    +     name: 'a commit closing a stage with an unticked check is denied',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'a stage close without an evidence report is denied',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'a stage close with its checks ticked and its report passes',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'a secret in a staged commit is denied, named by kind and never by value',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'a clean commit passes',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'under attended autopilot, an edit in a held risky stage is denied, the plan itself is not',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Edit): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`,
+    +       `step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'under attended autopilot, a builder agent in a held risky stage is denied',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Agent): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: "the user's approval releases a held stage",
+    +     ok: false,
+    +     problems: [
+    +       `step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'an outward command under autopilot is denied',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`,
+    +       `step 3 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'turn end under armed autopilot with stages left keeps the run going',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (stop): expected block, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: 'turn end without autopilot lets the turn end',
+    +     ok: false,
+    +     problems: [
+    +       `step 2 (stop): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   },
+    +   {
+    +     name: "a prompt carries the plan's ## Now into context",
+    +     ok: false,
+    +     problems: [
+    +       `step 1 (prompt): expected context, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    +     ]
+    +   }
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0:
+      name: 'a commit closing a stage with an unticked check is denied'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    1:
+      name: 'a stage close without an evidence report is denied'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    2:
+      name: 'a stage close with its checks ticked and its report passes'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    3:
+      name: 'a secret in a staged commit is denied, named by kind and never by value'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    4:
+      name: 'a clean commit passes'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    5:
+      name: 'under attended autopilot, an edit in a held risky stage is denied, the plan itself is not'
+      ok: false
+      problems:
+        0: `step 2 (tool Edit): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+        1: `step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    6:
+      name: 'under attended autopilot, a builder agent in a held risky stage is denied'
+      ok: false
+      problems:
+        0: `step 2 (tool Agent): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    7:
+      name: "the user's approval releases a held stage"
+      ok: false
+      problems:
+        0: `step 3 (tool Edit): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    8:
+      name: 'an outward command under autopilot is denied'
+      ok: false
+      problems:
+        0: `step 2 (tool Bash): expected deny, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+        1: `step 3 (tool Bash): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    9:
+      name: 'turn end under armed autopilot with stages left keeps the run going'
+      ok: false
+      problems:
+        0: `step 2 (stop): expected block, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    10:
+      name: 'turn end without autopilot lets the turn end'
+      ok: false
+      problems:
+        0: `step 2 (stop): expected allow, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+    11:
+      name: "a prompt carries the plan's ## Now into context"
+      ok: false
+      problems:
+        0: `step 1 (prompt): expected context, got error: "Error: hook exited 1: node:internal/modules/cjs/loader:1433\\n  throw err;\\n  ^\\n\\nError: Cannot find module '$HOME/src/repos/jbit/hosts/codex/hook.mjs'\\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\\n    at Function._lo`
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/parity/codex.test.mjs:94:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 541.946138
+exit: 1

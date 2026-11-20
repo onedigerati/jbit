@@ -7,7 +7,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, symlinkSync, realpathSync, rmSyn
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { parsePatch } from './patch.mjs'
+import { parsePatch } from '../core/patch.mjs'
 import { mapTool, resolveInProject } from './map.mjs'
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), 'hook.mjs')

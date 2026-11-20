@@ -1,0 +1,11 @@
+# verifier rerun of the builder tui-complete.py (from 10-tui-slash-completion.txt) in $V3HOME/$V3PROJ: type text, no Enter; skill names in the completion menu
+$ python3 tc.py $V3HOME $V3PROJ out.raw '/jbit:'
+approve The user;autopilot Take over;charter Chart a;fix Make a;plan Create or;resume Pick a;/jbit:approve;
+$ python3 tc.py $V3HOME $V3PROJ out.raw '/jbit:r'
+/jbit:resume;
+$ python3 tc.py $V3HOME $V3PROJ out.raw '/jbit:s'
+/jbit:stage;
+$ python3 tc.py $V3HOME $V3PROJ out.raw '/jbit:v'
+/jbit:verify;
+$ find $V3HOME -name events.jsonl | wc -l   # no prompt sent
+0

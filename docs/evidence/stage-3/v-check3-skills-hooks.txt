@@ -1,0 +1,93 @@
+$ copilot skill list --json | jq -c ".[] | select(.source|tostring|test(\"jbit\")) "  (abridged keys)
+{"name":"approve","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/approve","enabled":true}
+{"name":"autopilot","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/autopilot","enabled":true}
+{"name":"charter","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/charter","enabled":true}
+{"name":"fix","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/fix","enabled":true}
+{"name":"plan","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/plan","enabled":true}
+{"name":"resume","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/resume","enabled":true}
+{"name":"review","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/review","enabled":true}
+{"name":"stage","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/stage","enabled":true}
+{"name":"verify","source":"plugin","path":"/home/jonah/src/repos/jbit/plugins/jbit-copilot/skills/verify","enabled":true}
+{"name":"customize-cloud-agent","source":"builtin","path":"/home/jonah/.cache/copilot/pkg/linux-arm64/1.0.114/builtin/customize-cloud-agent","enabled":true}
+{"name":"github-pr-media","source":"builtin","path":"/home/jonah/.cache/copilot/pkg/linux-arm64/1.0.114/builtin/github-pr-media","enabled":true}
+{"name":"pr-stack","source":"builtin","path":"/home/jonah/.cache/copilot/pkg/linux-arm64/1.0.114/builtin/pr-stack","enabled":true}
+
+$ copilot plugin list --json
+[
+  {
+    "name": "jbit",
+    "marketplace": "jbit-local",
+    "version": "2.0.0",
+    "enabled": true,
+    "source": "live",
+    "installedFrom": "/home/jonah/src/repos/jbit"
+  },
+  {
+    "name": "browser-use",
+    "marketplace": "",
+    "version": "0.1.0",
+    "enabled": false,
+    "source": "builtin"
+  }
+]
+
+$ cat plugins/jbit-copilot/hooks/hooks.json (the live-loaded file)
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" agentStop",
+        "timeoutSec": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" postToolUse",
+        "timeoutSec": 30
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" preToolUse",
+        "timeoutSec": 30
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" sessionStart",
+        "timeoutSec": 30
+      }
+    ],
+    "userPromptTransformed": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" userPromptTransformed",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}
+
+$ ls $V3HOME; cat $V3HOME/settings.json
+installed-plugins.lock
+logs
+settings.json
+settings.json.lock
+{
+  "extraKnownMarketplaces": {
+    "jbit-local": {
+      "source": {
+        "source": "directory",
+        "path": "/home/jonah/src/repos/jbit"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "jbit@jbit-local": true
+  }
+}

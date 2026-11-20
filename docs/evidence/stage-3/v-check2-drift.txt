@@ -1,0 +1,34 @@
+$ node hosts/build.mjs copilot --check   (real repo)
+copilot: up to date (26 files)
+exit 0
+
+# scratch copy: edit one line of plugins/jbit/skills/plan/SKILL.md
+ plugins/jbit/skills/plan/SKILL.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+$ node hosts/build.mjs copilot --check
+drift: plugins/jbit-copilot lags its sources; run node hosts/build.mjs copilot
+differs: plugins/jbit-copilot/GENERATED.json
+differs: plugins/jbit-copilot/skills/plan/SKILL.md
+exit 1
+$ node hosts/build.mjs copilot
+copilot: wrote 2, removed 0, unchanged 24 (plugins/jbit-copilot, .github/plugin/marketplace.json)
+exit 0
+$ node hosts/build.mjs copilot --check
+copilot: up to date (26 files)
+exit 0
+
+# scratch: edit a hook module plugins/jbit/hooks/shell.ts (append comment)
+drift: plugins/jbit-copilot lags its sources; run node hosts/build.mjs copilot
+differs: plugins/jbit-copilot/GENERATED.json
+differs: plugins/jbit-copilot/scripts/hooks/shell.ts
+exit 1
+copilot: up to date (26 files)
+exit after revert 0
+
+# scratch: change capability.json (timeoutSec 30->31)
+drift: plugins/jbit-copilot lags its sources; run node hosts/build.mjs copilot
+differs: plugins/jbit-copilot/GENERATED.json
+differs: plugins/jbit-copilot/hooks/hooks.json
+exit 1
+copilot: up to date (26 files)
+exit after revert 0

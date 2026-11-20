@@ -1,0 +1,114 @@
+{
+  "host": "copilot",
+  "hostName": "GitHub Copilot CLI",
+  "testedWith": "GitHub Copilot CLI 1.0.114 (stage 1 spike)",
+  "pluginDir": "plugins/jbit-copilot",
+  "marketplace": {
+    "path": ".github/plugin/marketplace.json",
+    "name": "jbit-local",
+    "entry": "jbit",
+    "description": "Just build it. Plans it. Proves it. Sees it through. JBIT for GitHub Copilot CLI, generated from the JBIT plugin: one plan file, evidence for every stage, and autopilot that sees the plan through."
+  },
+  "hooks": {
+    "events": ["agentStop", "postToolUse", "preToolUse", "sessionStart", "userPromptTransformed"],
+    "command": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" <event>",
+    "timeoutSec": 30
+  },
+  "scripts": {
+    "files": {
+      "hosts/copilot/hook.mjs": "scripts/hook.mjs",
+      "hosts/copilot/map.mjs": "scripts/map.mjs",
+      "hosts/copilot/patch.mjs": "scripts/patch.mjs",
+      "hosts/core/dispatch.mjs": "scripts/core/dispatch.mjs",
+      "hosts/core/engine.mjs": "scripts/core/engine.mjs",
+      "hosts/core/index.mjs": "scripts/core/index.mjs",
+      "plugins/jbit/hooks/models.ts": "scripts/hooks/models.ts",
+      "plugins/jbit/hooks/project.ts": "scripts/hooks/project.ts",
+      "plugins/jbit/hooks/register.ts": "scripts/hooks/register.ts",
+      "plugins/jbit/hooks/secrets.ts": "scripts/hooks/secrets.ts",
+      "plugins/jbit/hooks/shell.ts": "scripts/hooks/shell.ts"
+    },
+    "rewrites": [
+      { "file": "scripts/hook.mjs", "from": "import('../core/index.mjs')", "to": "import('./core/index.mjs')" },
+      { "file": "scripts/core/dispatch.mjs", "from": "'../../plugins/jbit/hooks/register.ts'", "to": "'../hooks/register.ts'" }
+    ]
+  },
+  "tools": [
+    { "claude": "Bash", "copilot": ["bash", "write_bash"], "verified": "bash in the stage-1 preToolUse log (skills/41); write_bash in the tool list (hooks/08)" },
+    { "claude": "Edit", "copilot": ["apply_patch", "edit", "str_replace_editor"], "verified": "apply_patch live (hooks/06, 07); edit and str_replace_editor from the docs only: no model this account offers called them" },
+    { "claude": "Write", "copilot": ["apply_patch", "create"], "verified": "apply_patch live; create from the docs only (hooks/08, 14, 15)" },
+    { "claude": "Read", "copilot": ["view"], "verified": "view in the preToolUse log (skills/41)" },
+    { "claude": "Glob", "copilot": ["glob"], "verified": "glob in the preToolUse log (skills/41)" },
+    { "claude": "Grep", "copilot": ["grep"], "verified": "grep in the tool list (hooks/08)" },
+    { "claude": "Agent", "copilot": ["task"], "verified": "task with agent_type, name, description, prompt, mode, model in the hook log (skills/25, 41)" },
+    { "claude": "Skill", "copilot": ["skill"], "verified": "skill with {\"skill\": \"<name>\"} in the hook log (skills/41)" },
+    { "claude": "WebFetch", "copilot": ["web_fetch"], "verified": "web_fetch in the tool list (hooks/08)" },
+    { "claude": "WebSearch", "copilot": ["web_search"], "verified": "unverified: docs only, not in this account's tool list (hooks/08)" },
+    { "claude": "AskUserQuestion", "copilot": ["ask_user"], "verified": "unverified: docs only; the spike ran with --no-ask-user, so the tool list (hooks/08) lacks it" }
+  ],
+  "substitutions": [
+    { "from": "Research reads go through WebFetch and WebSearch.", "to": "Research reads go through `web_fetch` and `web_search`." },
+    { "from": "(WebSearch, WebFetch, or the docs the question names)", "to": "(`web_search`, `web_fetch`, or the docs the question names)" },
+    { "from": "each with `isolation: \"worktree\"` so parallel edits can't collide; check each one's branch and merge it back", "to": "each owning files no other builder touches, since Copilot has no worktree isolation for agents; check each one's work in the tree" },
+    { "from": "each with `isolation: \"worktree\"` so they can't collide, and merge each builder's branch back once you've checked it", "to": "each owning files no other builder touches, since Copilot has no worktree isolation for agents, and check each builder's work once it reports" },
+    { "from": "every independent leaf to its own agent in its own worktree", "to": "every independent leaf to its own agent, each owning separate files" },
+    { "from": "every independent leaf gets its own builder and worktree", "to": "every independent leaf gets its own builder, each owning separate files" },
+    { "from": "every independent leaf its own agent in its own worktree", "to": "every independent leaf its own agent, each owning separate files" },
+    { "from": "on the Agent call", "to": "on the `task` call" },
+    { "from": "The hook ignores a skill Claude invoked", "to": "The hook ignores a skill the model invoked" },
+    { "from": "Claude Code refuses a subagent's report file, so", "to": "a subagent's report file isn't trusted as the main session's, so" },
+    { "from": "(created if missing; `.claude/CLAUDE.md` when that exists and the root one doesn't)", "to": "(at the repo root, created if missing, where Copilot reads it)" },
+    { "from": "it compacts the context if it's past 65% full, then prompts you to carry on", "to": "it prompts you to carry on (the hook doesn't compact the context on Copilot, which manages its own context)" },
+    { "from": "`Explore` agents", "to": "`explore` agents" },
+    { "from": "run the built-in `security-review` skill (and `code-review` for a broad correctness sweep)", "to": "run Copilot's built-in `security-review` agent through `task` (and its `code-review` agent for a broad correctness sweep)" }
+  ],
+  "leakTerms": [
+    "\\bClaude\\b",
+    "CLAUDE_PLUGIN_ROOT",
+    "CLAUDE_PLUGIN_DATA",
+    "CLAUDE_PROJECT_DIR",
+    "\\.claude/",
+    "\\.claude-plugin",
+    "AskUserQuestion",
+    "WebFetch",
+    "WebSearch",
+    "TodoWrite",
+    "subagent_type",
+    "run_in_background",
+    "isolation: \"worktree\"",
+    "\\bAgent (call|tool)\\b",
+    "\\bSkill tool\\b",
+    "/code-review",
+    "/security-review",
+    "`Explore`",
+    "past 65% full"
+  ],
+  "mapping": {
+    "heading": "## On GitHub Copilot CLI",
+    "lines": [
+      "JBIT was written for Claude Code; this copy is generated for GitHub Copilot CLI. Where the text or the hook's messages use Claude's names, read them this way:",
+      "",
+      "- **Agents.** An Agent call is Copilot's `task` tool: `agent_type` (`general-purpose` for a builder or verifier, `research` for research, `code-review` or `security-review` for a review), `name`, `description`, `prompt`, and `mode` `\"sync\"` or `\"background\"` (poll a background agent with `read_agent`). Pass `model` and `reasoning_effort` only as the plan's Models line sets them; a model id the account doesn't offer fails and is retried without it.",
+      "- **No worktree isolation.** `task` has no `isolation: \"worktree\"`. Build leaves one at a time in the main tree, or in parallel only when each builder owns files no other touches; there is no branch to merge back.",
+      "- **Skills.** A `jbit:<name>` skill is the `skill` tool with `{\"skill\": \"<name>\"}`, typed by the user as `/jbit:<name>`. A typed `/plan`, `/review` or `/autopilot` is Copilot's own command, not JBIT's.",
+      "- **Questions.** Where a skill says to ask the user (AskUserQuestion on Claude Code), ask in the chat and wait for the reply.",
+      "- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a `task` agent with `agent_type: \"code-review\"` (seen working), or a fresh `general-purpose` agent briefed with the same lenses. `security-review` is listed in the `task` tool's agent types but wasn't seen called; if it fails, brief a fresh `general-purpose` agent with the security lens.",
+      "- **Instructions.** Copilot reads `CLAUDE.md` too; also read `AGENTS.md` and `.github/copilot-instructions.md` when they exist.",
+      "- **Tools.** {tools}."
+    ]
+  },
+  "gaps": [
+    { "id": "stall-detection", "what": "Stall detection", "why": "Each hook event is a fresh process, so nothing counts repeated turn ends; Copilot's cap of 8 agentStop blocks per prompt bounds the loop instead." },
+    { "id": "lean-agent-count", "what": "Lean's count of agents already running", "why": "The Claude hook keeps it in memory across events; a command hook has no running process to keep it in." },
+    { "id": "background-agents", "what": "Tracking background agents", "why": "Same reason: no in-memory agent list between events." },
+    { "id": "post-commit-reopen", "what": "The reopen check after a commit", "why": "It runs before the commit lands, since there's no in-memory state carried to the next event." },
+    { "id": "edit-create-unproven", "what": "The guard on `edit` and `create`", "why": "Covered on their documented shape with fixture tests only: no model this account offers writes through them, so no live run proved them. `bash` and `apply_patch` are proven." },
+    { "id": "eight-blocks", "what": "Long unattended runs under `copilot -p`", "why": "agentStop gets 8 blocks per prompt, so an unattended run stops quietly at its 9th turn end; use Copilot's --autopilot or prompt again." },
+    { "id": "builtin-commands", "what": "Typed `/plan`, `/review`, `/autopilot`", "why": "They are Copilot's own commands; type `/jbit:plan`, `/jbit:review`, `/jbit:autopilot`." },
+    { "id": "node-22-18", "what": "Node older than 22.18", "why": "The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused." },
+    { "id": "review-commands", "what": "`/code-review` and `/security-review`", "why": "They are Claude Code built-ins; on Copilot the review runs as a `task` agent (`code-review`, `security-review`) or a fresh agent with the same lenses." },
+    { "id": "worktree-isolation", "what": "Worktree isolation for parallel builders", "why": "Copilot's `task` has none, so parallel builders must own separate files or run one at a time." },
+    { "id": "compaction", "what": "Compacting the context before autopilot carries on", "why": "Copilot gives a command hook no context gauge and no compact call (the shim reports 0% and skips compaction); Copilot manages its own context." },
+    { "id": "hook-wording", "what": "The hook's own messages", "why": "They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them." }
+  ]
+}

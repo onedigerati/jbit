@@ -1,0 +1,8 @@
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ) copilot plugin list
+
+Built-in plugins:
+  • browser-use (v0.1.0) [disabled]
+Live Plugins (loaded from a local marketplace directory, never copied):
+  • jbit@jbit-local (v2.0.0) (enabled)
+      from /home/jonah/src/repos/jbit
+[exit 0]

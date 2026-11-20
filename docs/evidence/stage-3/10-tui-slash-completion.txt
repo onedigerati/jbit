@@ -1,0 +1,68 @@
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ, a fresh git repo) python3 tui-complete.py $STAGE3_HOME $STAGE3_PROJ out.raw '/jbit:'
+# completion menu rows on screen after typing '/jbit:' (no Enter; ANSI stripped by tui-rows.py):
+  /jbit:approve  The user's approval of a JBIT stage that autopilot is holding or paused on because its ris
+  /jbit:autopilot  Take over an approved plan as its project manager and see it through — run every remaining
+  /jbit:charter  Chart a project too big for one plan — turn a PRD into docs/ROADMAP.md (milestones with de
+  /jbit:fix  Make a small, low-risk change without a stage — a style or copy tweak, a display bug, a do
+  /jbit:plan  Create or update the project's single plan file (docs/PLAN.md) — goal, current position, s
+  /jbit:resume  Pick a project back up after a break, a restart or a context summary — read the plan, the 
+
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ, a fresh git repo) python3 tui-complete.py $STAGE3_HOME $STAGE3_PROJ out.raw '/jbit:r'
+# completion menu rows on screen after typing '/jbit:r' (no Enter; ANSI stripped by tui-rows.py):
+  /jbit:resume  Pick a project back up after a break, a restart or a context summary — read the plan, the 
+  /jbit:review  Fresh-eyes review of recent work by an agent that didn't write it — correctness against th
+  /jbit:verify  Verify work against the running product and the project's own checks — type check, lint, t
+  /jbit:approve  The user's approval of a JBIT stage that autopilot is holding or paused on because its ris
+  /jbit:charter  Chart a project too big for one plan — turn a PRD into docs/ROADMAP.md (milestones with de
+
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ, a fresh git repo) python3 tui-complete.py $STAGE3_HOME $STAGE3_PROJ out.raw '/jbit:s'
+# completion menu rows on screen after typing '/jbit:s' (no Enter; ANSI stripped by tui-rows.py):
+  /jbit:stage  Run the next stage of the project plan end to end — scope it, build it (fanning independen
+  /jbit:resume  Pick a project back up after a break, a restart or a context summary — read the plan, the 
+
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ, a fresh git repo) python3 tui-complete.py $STAGE3_HOME $STAGE3_PROJ out.raw '/jbit:v'
+# completion menu rows on screen after typing '/jbit:v' (no Enter; ANSI stripped by tui-rows.py):
+  /jbit:verify  Verify work against the running product and the project's own checks — type check, lint, t
+  /jbit:review  Fresh-eyes review of recent work by an agent that didn't write it — correctness against th
+  /jbit:approve  The user's approval of a JBIT stage that autopilot is holding or paused on because its ris
+
+$ find $STAGE3_HOME/session-state -name events.jsonl | wc -l   # no session events: no prompt was sent
+0
+
+# tui-complete.py (scratchpad):
+# Opens Copilot's TUI in a pty, accepts the folder-trust prompt, types "/jbit:" WITHOUT Enter to show the slash-command
+# completion menu, captures the raw screen bytes, then quits with Ctrl-C. No prompt is submitted.
+import os, pty, sys, time, select, re
+home, proj, out = sys.argv[1], sys.argv[2], sys.argv[3]  # argv[4]: the text to type
+env = dict(os.environ, COPILOT_HOME=home, TERM='xterm-256color', COLUMNS='160', LINES='50')
+pid, fd = pty.fork()
+if pid == 0:
+    os.chdir(proj)
+    os.execvpe('copilot', ['copilot'], env)
+import fcntl, termios, struct
+fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', 50, 160, 0, 0))
+buf = b''
+def pump(secs):
+    global buf
+    end = time.time() + secs
+    while time.time() < end:
+        r, _, _ = select.select([fd], [], [], 0.2)
+        if r:
+            try: buf += os.read(fd, 65536)
+            except OSError: return
+pump(8)
+marks = {}
+marks['before_trust'] = len(buf)
+if b'trust' in buf.lower():
+    os.write(fd, b'\r'); pump(5)
+marks['before_type'] = len(buf)
+q = sys.argv[4].encode()
+os.write(fd, q); pump(4)  # the whole query at once, never Enter
+os.write(fd, b'\x15'); pump(1)  # clear the line
+marks['after_type'] = len(buf)
+os.write(fd, b'\x03'); pump(1); os.write(fd, b'\x03'); pump(2)
+try: os.kill(pid, 9)
+except Exception: pass
+open(out, 'wb').write(buf)
+txt = re.sub(rb'\x1b\[[0-9;?<>=$]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(\x07|\x1b\\)|\x1b[=>PX^_].', b' ', buf[marks['before_type']:marks['after_type']])
+print(re.sub(rb'[ \t]+', b' ', txt).decode('utf8', 'replace'))

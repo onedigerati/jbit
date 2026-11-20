@@ -7,22 +7,23 @@ Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI 
 2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
 
 ## Now
-Stage 3 of 7 · Copilot package
-Risk: none beyond packaging: generated files, a build script and local installs; the hook code inside is stage 2's, copied
+Stage 4 of 7 · Copilot end to end
+Risk: external services (runs Copilot headlessly on the user's account and spends AI credits); no new guard logic
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-20 10:45
-Scope: `hosts/build.mjs` reads `hosts/copilot/capability.json` and generates `plugins/jbit-copilot/` from `plugins/jbit/` and `hosts/`: a `plugin.json` named `jbit` at version 2.0.0, the skills with bare names plus a short Copilot mapping section and a few tested substitutions, the role agents if the source has any, `hooks/hooks.json` running `node "${PLUGIN_ROOT}/scripts/hook.mjs" <event>`, and the hook's modules copied. It also writes `.github/plugin/marketplace.json` listing `jbit` at `./plugins/jbit-copilot`, per [copilot-spike-2026-11.md](research/copilot-spike-2026-11.md) "Stage 3".
+Scope: everything runs from this repo's marketplace (a local path, not `owner/repo`, which waits for the push), installed into an isolated `COPILOT_HOME`, with throwaway projects in the scratchpad. The root `README.md` gets a "Copilot CLI" section; its gap list is generated from `hosts/copilot/capability.json`. Model calls are kept small.
 Checks:
-- [ ] `node hosts/build.mjs copilot` generates `plugins/jbit-copilot/` and `.github/plugin/marketplace.json`, and a second run changes nothing (proof: test)
-- [ ] A drift check fails when the generated package lags its source (a changed skill, hook module or capability file) and passes after a rebuild; a leak check fails on Claude-only names that `capability.json` maps (tool names, `CLAUDE_PLUGIN_ROOT`, `.claude/`…) left outside the mapping section (proof: test)
-- [ ] In an isolated `COPILOT_HOME`, `copilot plugin marketplace add <this repo>` lists `jbit`, `copilot plugin install jbit@<marketplace>` installs it, and its skills list as `/jbit:plan`, `/jbit:stage` … with the hook entries pointing at the copied script; no model prompt is sent (proof: run)
-- [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate, `node --test 'hosts/**/*.test.mjs'` and `node hosts/parity/run-claude.mjs` green (proof: test)
+- [ ] Headless, a small one-stage JBIT plan in a throwaway project runs to a stage close under the installed plugin. The plan's `## Now` reaches the model, and the stage commit lands with ticked checks and evidence (proof: run, with the transcript, hook log and `git log` saved)
+- [ ] Headless in the same install, each refusal reaches the model with the hook's reason: a commit closing a stage with an unticked check, a commit carrying a fake secret assembled at run time, `git push` under autopilot, and an edit in a held stage (proof: run)
+- [ ] Under the user's `/jbit:autopilot` with two small stages, `agentStop` carries the run into the second stage. Hooks fire through `${PLUGIN_ROOT}` on every event under the marketplace install. A deny inside a `task` subagent and a crashing hook are each either proven or recorded as a gap (proof: run)
+- [ ] The root `README.md` has a "Copilot CLI" section: install, what works, and the gaps from `capability.json`. A test fails when the gap list and `capability.json` disagree (proof: test)
+- [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate, hosts tests, Claude parity and `node hosts/build.mjs copilot --check` green (proof: test)
 Open: none
 
 ## Stages
 - [x] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
 - [x] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
-- [ ] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
+- [x] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
 - [ ] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
 - [ ] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
 - [ ] 6. Codex adapter + package — Codex adapter on the core, generated `plugins/jbit-codex/`, `.agents/plugins/marketplace.json`, parity scenarios
@@ -52,6 +53,10 @@ Open: none
   - `str_replace_editor` maps to Edit/Write;
   - an allowed call prints nothing, so Copilot's own permission prompts still apply;
   - a prompt that repeats the hook's last block reason counts as the plugin's, so it can't set an autopilot level or approve a stage.
+- 2026-11-20 · (pm) The Copilot build makes three small calls:
+  - It quotes skill frontmatter values that hold `: `, because Copilot rejected three skills over it ([evidence](evidence/stage-3/06-skill-list-before-frontmatter-fix.txt)).
+  - For reviews, the mapping section points at Copilot's `code-review` agent type (seen working), and at `security-review` with a `general-purpose` fallback (listed, never seen called).
+  - Parallel builders on Copilot each own separate files, since there are no worktrees.
 - 2026-11-20 · (unattended) Copilot: `## Now` rides on `userPromptTransformed` every turn, continuations included — settles the open question; the spike showed it honoured ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) Copilot skills keep bare names (`name: plan`) under a plugin and marketplace entry named `jbit`, reversing the research note's `name: jbit:<skill>`. Why: Copilot prefixes plugin skills itself and `jbit:plan` came out double-prefixed ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) The Copilot guard covers `edit` and `create` on their documented shape with fixture tests only, and the README says so. Why: no model this account offers writes through them, so a live run can't prove them; `bash` and `apply_patch` are proven ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).

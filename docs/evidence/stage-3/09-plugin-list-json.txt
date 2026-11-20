@@ -1,0 +1,20 @@
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ) copilot plugin list --json
+
+[
+  {
+    "name": "jbit",
+    "marketplace": "jbit-local",
+    "version": "2.0.0",
+    "enabled": true,
+    "source": "live",
+    "installedFrom": "/home/jonah/src/repos/jbit"
+  },
+  {
+    "name": "browser-use",
+    "marketplace": "",
+    "version": "0.1.0",
+    "enabled": false,
+    "source": "builtin"
+  }
+]
+[exit 0]

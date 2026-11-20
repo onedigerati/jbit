@@ -1,0 +1,8 @@
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ) copilot plugin marketplace list
+
+Included with GitHub Copilot:
+  ◆ awesome-copilot (GitHub: github/awesome-copilot)
+
+Registered marketplaces:
+  • jbit-local (Local: /home/jonah/src/repos/jbit)
+[exit 0]

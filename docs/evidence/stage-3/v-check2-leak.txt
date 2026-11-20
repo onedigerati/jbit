@@ -1,0 +1,13 @@
+# scratch: insert 'Use AskUserQuestion and ${CLAUDE_PLUGIN_ROOT}' at line 8 of generated plugins/jbit-copilot/skills/stage/SKILL.md (outside mapping section)
+$ node hosts/build.mjs copilot --check
+drift: plugins/jbit-copilot lags its sources; run node hosts/build.mjs copilot
+differs: plugins/jbit-copilot/skills/stage/SKILL.md
+exit 1
+
+# scratch: plant 'AskUserQuestion' in SOURCE plugins/jbit/skills/stage/SKILL.md line 8, then build
+$ node hosts/build.mjs copilot
+build copilot failed:
+leak: plugins/jbit-copilot/skills/stage/SKILL.md:8 AskUserQuestion
+exit 1
+copilot: up to date (26 files)
+exit after revert 0

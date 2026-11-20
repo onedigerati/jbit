@@ -1,0 +1,4 @@
+$ COPILOT_HOME=$STAGE3_HOME (cwd $STAGE3_PROJ) copilot plugin marketplace add /home/jonah/src/repos/jbit
+
+Marketplace "jbit-local" added successfully.
+[exit 0]

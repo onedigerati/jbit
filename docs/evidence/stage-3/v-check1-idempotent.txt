@@ -1,0 +1,11 @@
+$ node hosts/build.mjs copilot (x2), sha256 + git status compared
+copilot: wrote 0, removed 0, unchanged 26 (plugins/jbit-copilot, .github/plugin/marketplace.json)
+exit 0
+copilot: wrote 0, removed 0, unchanged 26 (plugins/jbit-copilot, .github/plugin/marketplace.json)
+exit 0
+files: 26
+hashes identical
+git status identical
+?? .github/
+?? plugins/jbit-copilot/
+tree sha: 7b274aec3e830c006b7401648d71ed650b21f0a901e0643f8308289dc58609c4  -

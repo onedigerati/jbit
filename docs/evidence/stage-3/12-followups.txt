@@ -1,0 +1,155 @@
+$ node --test 'hosts/**/*.test.mjs'
+# Subtest: building twice gives identical bytes, and the second run writes nothing
+ok 1 - building twice gives identical bytes, and the second run writes nothing
+# Subtest: the committed package is current: --check passes on the repo
+ok 2 - the committed package is current: --check passes on the repo
+# Subtest: plugin.json, marketplace and hooks.json follow the spike's working layout
+ok 3 - plugin.json, marketplace and hooks.json follow the spike's working layout
+# Subtest: skills keep bare names and get one mapping section at the end
+ok 4 - skills keep bare names and get one mapping section at the end
+# Subtest: scripts are copied with their imports rewritten inside the package, and a source hash manifest
+ok 5 - scripts are copied with their imports rewritten inside the package, and a source hash manifest
+# Subtest: frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+ok 6 - frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+# Subtest: drift: --check fails when a skill changed, and passes after a rebuild
+ok 7 - drift: --check fails when a skill changed, and passes after a rebuild
+# Subtest: drift: --check fails when a hook module changed, and passes after a rebuild
+ok 8 - drift: --check fails when a hook module changed, and passes after a rebuild
+# Subtest: drift: --check fails when a core module changed, and passes after a rebuild
+ok 9 - drift: --check fails when a core module changed, and passes after a rebuild
+# Subtest: drift: --check fails when the capability file changed, and passes after a rebuild
+ok 10 - drift: --check fails when the capability file changed, and passes after a rebuild
+# Subtest: drift: a stray file in the package, or an edited generated file, fails --check
+ok 11 - drift: a stray file in the package, or an edited generated file, fails --check
+# Subtest: leak check: the real output has no leak
+ok 12 - leak check: the real output has no leak
+# Subtest: leak check: a Claude-only name planted outside the mapping section fails the build and --check
+ok 13 - leak check: a Claude-only name planted outside the mapping section fails the build and --check
+# Subtest: leak check: the same names inside the mapping section are allowed
+ok 14 - leak check: the same names inside the mapping section are allowed
+# Subtest: --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+ok 15 - --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+# Subtest: Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+ok 16 - Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+# Subtest: a substitution that no longer matches its source fails the build
+ok 17 - a substitution that no longer matches its source fails the build
+# Subtest: a rewrite that no longer matches fails the build
+ok 18 - a rewrite that no longer matches fails the build
+# Subtest: an import that leaves the package fails the build
+ok 19 - an import that leaves the package fails the build
+# Subtest: a hooks.json event the hook does not handle fails the build
+ok 20 - a hooks.json event the hook does not handle fails the build
+# Subtest: the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+ok 21 - the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+# Subtest: the repo's own generated hook denies `git push` under armed autopilot
+ok 22 - the repo's own generated hook denies `git push` under armed autopilot
+# Subtest: parsePatch reads Add, Update, Delete and Move to
+ok 23 - parsePatch reads Add, Update, Delete and Move to
+# Subtest: parsePatch reads the captured spike patch
+ok 24 - parsePatch reads the captured spike patch
+# Subtest: parsePatch refuses what it cannot read
+ok 25 - parsePatch refuses what it cannot read
+# Subtest: parsePatch tolerates CRLF and surrounding blank lines
+ok 26 - parsePatch tolerates CRLF and surrounding blank lines
+# Subtest: paths resolve against the project, normalising .., absolute paths and symlinks
+ok 27 - paths resolve against the project, normalising .., absolute paths and symlinks
+# Subtest: mapTool maps Copilot tools to the Claude tool calls the core judges
+ok 28 - mapTool maps Copilot tools to the Claude tool calls the core judges
+# Subtest: mapTool: a toolArgs of the wrong type never means allow
+ok 29 - mapTool: a toolArgs of the wrong type never means allow
+# Subtest: mapTool: unknown tools carrying a path or a command are denied, naming the tool
+ok 30 - mapTool: unknown tools carrying a path or a command are denied, naming the tool
+# Subtest: preToolUse: a commit with a secret staged is denied
+ok 31 - preToolUse: a commit with a secret staged is denied
+# Subtest: preToolUse: a commit closing a stage with an unticked check is denied
+ok 32 - preToolUse: a commit closing a stage with an unticked check is denied
+# Subtest: preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+ok 33 - preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+# Subtest: preToolUse: outside a held stage the same calls go through
+ok 34 - preToolUse: outside a held stage the same calls go through
+# Subtest: preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+ok 35 - preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+# Subtest: preToolUse: unknown tools carrying a path or command are denied, naming the tool
+ok 36 - preToolUse: unknown tools carrying a path or command are denied, naming the tool
+# Subtest: preToolUse: an outward command under autopilot is denied
+ok 37 - preToolUse: an outward command under autopilot is denied
+# Subtest: no project dir: guarded tools are denied and prompts get no context
+ok 38 - no project dir: guarded tools are denied and prompts get no context
+# Subtest: COPILOT_PROJECT_DIR stands in when stdin has no cwd
+ok 39 - COPILOT_PROJECT_DIR stands in when stdin has no cwd
+# Subtest: a crash in the core fails closed for preToolUse and stays silent elsewhere
+ok 40 - a crash in the core fails closed for preToolUse and stays silent elsewhere
+# Subtest: userPromptTransformed appends the plan to transformedPrompt, never replacing it
+ok 41 - userPromptTransformed appends the plan to transformedPrompt, never replacing it
+# Subtest: sessionStart gives the plan as additionalContext
+ok 42 - sessionStart gives the plan as additionalContext
+# Subtest: agentStop blocks while autopilot is armed with stages left, and not otherwise
+ok 43 - agentStop blocks while autopilot is armed with stages left, and not otherwise
+# Subtest: S1: git output past the buffer limit fails the commit check closed
+ok 44 - S1: git output past the buffer limit fails the commit check closed
+# Subtest: S2: a lone carriage return or an indented directive makes a patch unparseable
+ok 45 - S2: a lone carriage return or an indented directive makes a patch unparseable
+# Subtest: C1: the model starting jbit:autopilot after the user asked arms autopilot
+ok 46 - C1: the model starting jbit:autopilot after the user asked arms autopilot
+# Subtest: C1: a skill call with no user prompt before it does not arm
+ok 47 - C1: a skill call with no user prompt before it does not arm
+# Subtest: C2: a run that pauses tells the user at the next prompt
+ok 48 - C2: a run that pauses tells the user at the next prompt
+# Subtest: C3: a prompt composes before it submits, as Claude Code does
+ok 49 - C3: a prompt composes before it submits, as Claude Code does
+# Subtest: C4: on a Node without TypeScript stripping, the deny says what Node it needs
+ok 50 - C4: on a Node without TypeScript stripping, the deny says what Node it needs
+# Subtest: C5: the held notice is said once per stage, not at every turn end
+ok 51 - C5: the held notice is said once per stage, not at every turn end
+# Subtest: C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+ok 52 - C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+# Subtest: C7: removed keys drop their versions, and stale post: keys are pruned
+ok 53 - C7: removed keys drop their versions, and stale post: keys are pruned
+# Subtest: C8: Windows backslash and drive-letter paths are denied with a reason
+ok 54 - C8: Windows backslash and drive-letter paths are denied with a reason
+# Subtest: copilot parity: a commit closing a stage with an unticked check is denied
+ok 55 - copilot parity: a commit closing a stage with an unticked check is denied
+# Subtest: copilot parity: a stage close without an evidence report is denied
+ok 56 - copilot parity: a stage close without an evidence report is denied
+# Subtest: copilot parity: a stage close with its checks ticked and its report passes
+ok 57 - copilot parity: a stage close with its checks ticked and its report passes
+# Subtest: copilot parity: a secret in a staged commit is denied, named by kind and never by value
+ok 58 - copilot parity: a secret in a staged commit is denied, named by kind and never by value
+# Subtest: copilot parity: a clean commit passes
+ok 59 - copilot parity: a clean commit passes
+# Subtest: copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+ok 60 - copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+# Subtest: copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+ok 61 - copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+# Subtest: copilot parity: the user's approval releases a held stage
+ok 62 - copilot parity: the user's approval releases a held stage
+# Subtest: copilot parity: an outward command under autopilot is denied
+ok 63 - copilot parity: an outward command under autopilot is denied
+# Subtest: copilot parity: turn end under armed autopilot with stages left keeps the run going
+ok 64 - copilot parity: turn end under armed autopilot with stages left keeps the run going
+# Subtest: copilot parity: turn end without autopilot lets the turn end
+ok 65 - copilot parity: turn end without autopilot lets the turn end
+# Subtest: copilot parity: a prompt carries the plan's \#\# Now into context
+ok 66 - copilot parity: a prompt carries the plan's \#\# Now into context
+# tests 66
+# suites 0
+# pass 66
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5508.160957
+[exit 0]
+
+$ node hosts/build.mjs copilot --check
+copilot: up to date (26 files)
+[exit 0]
+
+$ grep -n "carry on (the hook\|explore. agents\|seen called" plugins/jbit-copilot/skills/{autopilot,plan}/SKILL.md
+plugins/jbit-copilot/skills/autopilot/SKILL.md:16:- The JBIT hook keeps the run going. When a turn ends in autopilot with stages left, it prompts you to carry on (the hook doesn't compact the context on Copilot, which ma
+plugins/jbit-copilot/skills/autopilot/SKILL.md:108:- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a `task` agent with `agent_type: "code-review"` (seen working), or a fresh `gene
+plugins/jbit-copilot/skills/plan/SKILL.md:17:2. **If the repo already has code, survey it before cutting stages.** Hand the survey to one or more `explore` agents (split by area in a large repo) and have them return conc
+plugins/jbit-copilot/skills/plan/SKILL.md:172:- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a `task` agent with `agent_type: "code-review"` (seen working), or a fresh `general-p
+
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin
+[empty]

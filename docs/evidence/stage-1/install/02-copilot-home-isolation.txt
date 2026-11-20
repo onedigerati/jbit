@@ -1,0 +1,22 @@
+$ COPILOT_HOME=<scratch>/homes/probe copilot -p "Reply with exactly: PONG"
+ ● Copilot Fusion selected MAI Code 2 Flash because it was the best choice out of the models
+   available in your plan.
+
+PONG
+
+
+
+Changes    +0 -0
+AI Credits 0.02 (8s)
+Tokens     ↑ 16.7k (15.9k cached) • ↓ 6
+Resume     copilot --resume=9b3a9af3-69a1-4b19-bc03-366bac3991e6
+
+$ ls <scratch>/homes/probe
+config.json
+installed-plugins
+logs
+session-state
+session-store.db
+session-store.db-shm
+session-store.db-wal
+settings.json.lock

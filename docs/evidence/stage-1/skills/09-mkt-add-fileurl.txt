@@ -1,0 +1,4 @@
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin marketplace add file:///tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt
+
+Failed to add marketplace: Local marketplace path does not exist: /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj/file:/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt
+[exit 1]

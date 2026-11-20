@@ -1,0 +1,4 @@
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin marketplace remove spike-claude
+
+Marketplace "spike-claude" removed successfully.
+[exit 0]

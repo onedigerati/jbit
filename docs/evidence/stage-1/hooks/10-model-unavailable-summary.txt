@@ -1,0 +1,26 @@
+# Model-selection attempts (each failed before any model call, 0 credits):
+--model claude-haiku-5.5
+Execution failed: Model "claude-haiku-5.5" is not available.
+--model claude-sonnet-5.5
+Execution failed: Model "claude-sonnet-5.5" is not available.
+--model claude-fable-5
+Execution failed: Model "claude-fable-5" is not available.
+--model claude-haiku-4.5
+Execution failed: Model "claude-haiku-4.5" is not available.
+--model claude-opus-4.8
+Execution failed: Model "claude-opus-4.8" is not available.
+--model claude-opus-5
+Execution failed: Model "claude-opus-5" is not available.
+--model claude-sonnet-4.6
+Execution failed: Model "claude-sonnet-4.6" is not available.
+--model claude-sonnet-5
+Execution failed: Model "claude-sonnet-5" is not available.
+--model gemini-3.8-flash
+Execution failed: Model "gemini-3.8-flash" is not available.
+--model mai-code-1.1-flash
+Execution failed: Model "mai-code-1.1-flash" is not available.
+# more model attempts (0 credits): mai-code-2-flash is what Copilot Fusion picked in run 03 (session-state chosenModel), but --model rejects it
+--model mai-code-2-flash
+Execution failed: Model "mai-code-2-flash" is not available.
+--model mai-code-2
+Execution failed: Model "mai-code-2" is not available.

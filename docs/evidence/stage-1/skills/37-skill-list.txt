@@ -1,0 +1,13 @@
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot skill list
+
+Plugin skills:
+  plan - Spike skill plan for JBIT. Use when the user asks for the JBIT plan spike test or types /jbit:plan.
+  review - Spike skill review for JBIT. Use when the user asks for the JBIT review spike test or types /review.
+  stage - Spike skill stage for JBIT. Use when the user asks for the JBIT stage spike test or types /stage.
+
+Builtin skills:
+  customize-cloud-agent - Skill for customizing the Copilot cloud agent (formerly known as Copilot coding agent) environment, including copilot-setup-steps.yml configuration, preinstalling tools and dependencies, runners, and settings. Use when the user mentions copilot-setup-steps, copilot setup steps, or wants to configure the cloud agent environment.
+  github-pr-media - Upload an image or video to GitHub's user attachments API and embed it in a pull request description or comment. Use when asked to add screenshots, diagrams, recordings, or other media to a PR or GitHub comment.
+  pr-stack - Manage GitHub pull request stacks. Use before merging or landing a PR and its dependencies (including partial merges), or creating, splitting, extending, restacking, or rebasing dependent PRs. Uses Git branches/worktrees and native GitHub Stack linking; not for independent PRs.
+
+[exit 0]

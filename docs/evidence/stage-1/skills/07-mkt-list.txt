@@ -1,0 +1,8 @@
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin marketplace list
+
+Included with GitHub Copilot:
+  ◆ awesome-copilot (GitHub: github/awesome-copilot)
+
+Registered marketplaces:
+  • spike-gh (Local: /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt)
+[exit 0]

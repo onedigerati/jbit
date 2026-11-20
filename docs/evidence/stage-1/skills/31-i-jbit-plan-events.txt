@@ -1,0 +1,3 @@
+$ (screen text of 30-i-jbit-plan.raw, ANSI stripped) | grep Unknown
+Unknown command: /jbit:plan
+(no events.jsonl was written for this session: the -i prompt was rejected before any turn; at that time the installed plugin was jbit-copilot, so the command was /jbit-copilot:jbit:plan)

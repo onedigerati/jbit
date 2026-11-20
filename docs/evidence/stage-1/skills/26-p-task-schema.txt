@@ -1,0 +1,92 @@
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot -p Do not call any tools. Print verbatim, as JSON, the parameters schema of your `task` tool (every property name, type, enum values, required list, and description text), then list every agent_type value its description offers. --allow-all-tools --no-ask-user -s
+
+{
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "description": {
+        "type": "string",
+        "description": "3-5 word UI intent."
+      },
+      "prompt": {
+        "type": "string",
+        "description": "Task; include complete context."
+      },
+      "agent_type": {
+        "type": "string",
+        "enum": [
+          "explore",
+          "task",
+          "general-purpose",
+          "rubber-duck",
+          "code-review",
+          "research",
+          "security-review",
+          "jbit-copilot:jbit-probe"
+        ]
+      },
+      "name": {
+        "type": "string",
+        "description": "Short agent name."
+      },
+      "model": {
+        "type": "string",
+        "description": "Optional model override. Specify a value only when the user's current request or applicable persistent custom instructions (including global instructions) explicitly require that value for the subagent. Do not reuse values from earlier requests or infer unspecified values from the parent configuration. The runtime resolves `/subagents` preferences when these fields are omitted; do not copy them merely because they appear in `<subagent_model_preferences>`."
+      },
+      "reasoning_effort": {
+        "type": "string",
+        "description": "Optional reasoning effort override. Specify a value only when the user's current request or applicable persistent custom instructions (including global instructions) explicitly require that value for the subagent. Do not reuse values from earlier requests or infer unspecified values from the parent configuration. The runtime resolves `/subagents` preferences when these fields are omitted; do not copy them merely because they appear in `<subagent_model_preferences>`."
+      },
+      "context_tier": {
+        "type": "string",
+        "enum": [
+          "default",
+          "long_context"
+        ],
+        "description": "Optional context tier override. Specify a value only when the user's current request or applicable persistent custom instructions (including global instructions) explicitly require that value for the subagent. Do not reuse values from earlier requests or infer unspecified values from the parent configuration. The runtime resolves `/subagents` preferences when these fields are omitted; do not copy them merely because they appear in `<subagent_model_preferences>`."
+      }
+    },
+    "required": [
+      "description",
+      "prompt",
+      "agent_type",
+      "name"
+    ]
+  },
+  "agent_types": [
+    {
+      "value": "explore",
+      "description": "Read-only exploration for multiple independent research threads needing separate context. For autonomous routing, never use it for a single continuous trace; use direct search/view."
+    },
+    {
+      "value": "task",
+      "description": "Runs verbose commands such as tests, builds, lints, and installs; returns concise success or full failure output."
+    },
+    {
+      "value": "general-purpose",
+      "description": "Full-capability agent for self-contained implementation/debugging needing broad tools/reasoning."
+    },
+    {
+      "value": "rubber-duck",
+      "description": "Reviews plans and implementations for meaningful bugs, logic errors, and design flaws; ignores trivial style issues."
+    },
+    {
+      "value": "code-review",
+      "description": "Read-only review of staged/unstaged changes and branch diffs for high-confidence bugs and logic errors."
+    },
+    {
+      "value": "research",
+      "description": "Thorough GitHub and web research with source verification and citations."
+    },
+    {
+      "value": "security-review",
+      "description": "/security-review or vulnerability request: invoke first, even without a diff."
+    },
+    {
+      "value": "jbit-copilot:jbit-probe",
+      "description": "JBIT spike probe agent. Only used when explicitly requested by name."
+    }
+  ]
+}
+
+[exit 0]

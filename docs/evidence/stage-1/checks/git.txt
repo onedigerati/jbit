@@ -1,0 +1,10 @@
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin
+(empty = unchanged)
+
+$ git status --short
+ M docs/PLAN.md
+?? CLAUDE.md
+?? docs/evidence/
+?? docs/research/copilot-spike-2026-11.md
+?? docs/research/vanilla-claude-code-2026-11.md
+?? plugins/jbit/evals-ablation/

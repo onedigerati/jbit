@@ -1,0 +1,36 @@
+$ env | grep -E "^(CLAUDE_PLUGIN_ROOT|CLAUDE_PROJECT_DIR|PLUGIN_ROOT|COPILOT_)"   # in the spawning shell, before copilot
+(exit 1 ; 1 = none set)
+
+$ cat $W/probe-shell-env.txt  # written by the bash: sessionStart probe in run 03
+PWD=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627
+PLUGIN_ROOT=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627
+COPILOT_PLUGIN_ROOT=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627
+CLAUDE_CODE_CHILD_SESSION=1
+AI_AGENT=claude-code_2-1-328_agent
+CLAUDE_CODE_SESSION_ID=85ea5585-cff8-4585-b029-f1589ec3abd5
+CLAUDE_PID=1045047
+CLAUDE_EFFORT=medium
+COPILOT_HOOK_DEPTH=1
+PWD=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627
+CLAUDE_CODE_MESSAGING_SOCKET=/run/user/1000/cc-socks/1045047.sock
+COPILOT_CLI_PATH=/home/jonah/.nvm/versions/node/v22.23.5/lib/node_modules/@github/copilot/node_modules/@github/copilot-linux-arm64/copilot
+CLAUDECODE=1
+COPILOT_CLI_RESOLVED_DIST_DIR=/home/jonah/.cache/copilot/pkg/linux-arm64/1.0.114
+CLAUDE_AGENT_SDK_VERSION=0.3.321
+CLAUDE_CODE_CHILD_NOTES_DIR=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/started
+CLAUDE_CODE_SESSION_ATTENDED=0
+CLAUDE_PLUGIN_ROOT=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627
+COPILOT_HOME=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home
+COPILOT_PLUGIN_DATA=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/plugin-data/_direct/7b6316271f86c63af80db1f729639b028b6e835fb0f2c79c6e7d056937920d3f
+COPILOT_CLI_BINARY_VERSION=1.0.114
+CLAUDE_PROJECT_DIR=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/proj
+CLAUDE_CODE_ENTRYPOINT=t3-code
+COPILOT_CLI=1
+CLAUDE_CODE_EXECPATH=/home/jonah/.local/share/claude/versions/2.1.328
+PATH=<redacted: machine PATH, not needed for any claim>
+COPILOT_HOOK_DIR=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627/hooks
+CLAUDE_PLUGIN_DATA=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/plugin-data/_direct/7b6316271f86c63af80db1f729639b028b6e835fb0f2c79c6e7d056937920d3f
+COPILOT_PROJECT_DIR=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/proj
+
+$ env | grep -E "GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS|COPILOT_ALLOW_ALL|TRUST"  # spawning shell
+(exit 1 ; 1 = none set)

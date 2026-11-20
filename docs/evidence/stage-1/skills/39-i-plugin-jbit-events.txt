@@ -1,0 +1,8 @@
+$ node sum.mjs $WORK/home/session-state/7c273698-e1bc-4cbc-954a-902f7c831cd4/events.jsonl  (events of file 38 session)
+EV skill.invoked {"name":"plan","path":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt3/jbit/skills/plan/SKILL.md","content":"# Spike plan\nReply with exactly the codeword CW-PLAN3-1111 and nothing else. Do not run any tools.\n","disableModelInvocation":f
+USER "/jbit:plan" 
+SAID mai-code-2-flash "CW-PLAN3-1111"
+EV skill.invoked {"name":"review","path":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt3/jbit/skills/review/SKILL.md","content":"# Spike review\nReply with exactly the codeword CW-REVIEW3-2222 and nothing else. Do not run any tools.\n","disableModelInvoc
+USER "/jbit:review" 
+SAID mai-code-2-flash "CW-REVIEW3-2222"
+"type":"session.mode_changed","data":{"previousMode":"interactive","newMode":"plan"

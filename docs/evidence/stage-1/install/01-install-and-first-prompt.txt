@@ -1,0 +1,15 @@
+$ npm i -g @github/copilot@1.0.114 && copilot --version
+GitHub Copilot CLI 1.0.114.
+
+$ copilot -p "Reply with exactly: PONG"
+ ● Copilot Fusion selected MAI Code 2 Flash because it was the best choice out of the models
+   available in your plan.
+
+PONG
+
+
+
+Changes    +0 -0
+AI Credits 0.17 (5s)
+Tokens     ↑ 16.7k • ↓ 6
+Resume     copilot --resume=c27f12f5-13e9-4290-94a0-6937ed4e06d6

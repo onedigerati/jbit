@@ -1,0 +1,12 @@
+# Stage 1 · Spike: Copilot CLI — verification report
+
+2026-11-20. Verified by a fresh agent that built nothing. Its findings were then re-run in the main session to save the raw output.
+
+| # | Check | Result | Proof |
+|---|---|---|---|
+| 1 | The Copilot CLI is installed here, signed in, and `copilot -p` answers a prompt headlessly | PASS | [install/01](install/01-install-and-first-prompt.txt) shows `GitHub Copilot CLI 1.0.114.` and `copilot -p` → `PONG`, with no login step because it uses the `gh` login. [install/02](install/02-copilot-home-isolation.txt) shows a fresh `COPILOT_HOME` also answers. The verifier's own run answered `PONG` too. |
+| 2 | The spike note answers each "Open for the spike" item from a throwaway plugin | PASS (as narrowed: `edit`/`create` unprovable here) | [copilot-spike-2026-11.md](../../research/copilot-spike-2026-11.md) answers items 1–10. The verifier checked 8 of its claims against [hooks/](hooks/) and [skills/](skills/), and all were supported. The deny on each edit tool is only partly proven. It held on `bash` and `apply_patch`, but `edit` and `create` never ran because no model on this account uses them. The check was narrowed by a dated `(unattended)` decision in the plan, and stage 2 guards both tools from their documented shape. Also unproven: `owner/repo` marketplace add, which needs a push. Review fixes then added the cap and path limits to the note. |
+| 3 | The note ends with what it changes for stages 2–4; the prototype is not in the repo | PASS | The note's last section is "What it changes for stages 2–4". [checks/git.txt](checks/git.txt) shows only `docs/` changes. `CLAUDE.md` and `plugins/jbit/evals-ablation/` were untracked before the stage. The plan's Open questions carry `evals-ablation`, and now `CLAUDE.md` too. The prototypes stayed in the scratchpad. |
+| 4 | `plugins/jbit/` and `.claude-plugin/` are unchanged from `c087d40`; suite, docs check and validate are green | PASS | `git diff --stat c087d40 -- plugins/jbit .claude-plugin` is empty ([checks/git.txt](checks/git.txt)). [Suite](checks/suite.txt): 561 pass, 0 fail. [Docs check](checks/docs-check.txt): 51 pass. [Validate](checks/validate.txt): passed. All three match the Baseline. |
+
+A secret scan of this folder found no credentials. Review found one machine `PATH` line in `hooks/04`, which showed a Windows username, and redacted it. The scan found no `gh*_` or `github_pat_` tokens and no email addresses. The repo has no shipped npm dependencies, so no audit was run.

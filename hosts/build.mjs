@@ -129,8 +129,27 @@ export function findLeaks(files, cap) {
 function dropFrontmatter(text, drop) {
   if (!drop?.length) return text
   const m = /^---\n([\s\S]*?)\n---\n/.exec(text)
-  const lines = m[1].split('\n').filter(l => !drop.includes(l.split(':')[0]))
+  const lines = []
+  let dropping = false
+  for (const l of m[1].split('\n')) {
+    // an indented line continues the key above it, and goes with it
+    if (/^\s/.test(l) && dropping) continue
+    dropping = drop.includes(l.split(':')[0])
+    if (!dropping) lines.push(l)
+  }
   return `---\n${lines.join('\n')}\n---\n${text.slice(m[0].length)}`
+}
+
+/** A top-level frontmatter key's value as a plain string (quotes and a trailing comment removed), or undefined. */
+function frontmatterValue(text, key) {
+  const front = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? ''
+  const line = front.split('\n').find(l => l.split(':')[0] === key)
+  if (line === undefined) return undefined
+  let v = line.slice(key.length + 1).trim()
+  const q = /^(["'])(.*?)\1/.exec(v)
+  if (q) return q[2]
+  v = v.replace(/(?:^|\s)#.*$/, '').trim()
+  return v
 }
 
 /**
@@ -234,7 +253,13 @@ export function generate({ src = REPO, host }) {
     if (!new RegExp(`^---\\nname: ${n}\\n`).test(text)) fail(`skills/${n}/SKILL.md must open with frontmatter naming it "${n}"`)
     if (text.includes(cap.mapping.heading)) fail(`skills/${n}/SKILL.md already has a "${cap.mapping.heading}" heading`)
     const ni = cap.frontmatter?.noImplicit
-    if (ni && /^---\n[\s\S]*?\n---\n/.exec(text)[0].split('\n').includes(ni.when)) files.set(`${pkg}/skills/${n}/${ni.file}`, ni.text)
+    const [niKey, niValue] = ni ? ni.when.split(':').map(x => x.trim()) : []
+    const offered = ni && String(frontmatterValue(text, niKey)).toLowerCase() === niValue
+    if (offered) files.set(`${pkg}/skills/${n}/${ni.file}`, ni.text)
+    // a skill the model mustn't invoke loses that key: it must not lose the protection with it
+    if (cap.frontmatter?.drop?.includes('disable-model-invocation') && String(frontmatterValue(text, 'disable-model-invocation')).toLowerCase() === 'true' && !(offered && niKey === 'disable-model-invocation')) {
+      fail(`skills/${n}/SKILL.md sets disable-model-invocation: true, which the ${host} build drops, and no file keeps the skill from implicit use (capability.json frontmatter.noImplicit)`)
+    }
     text = dropFrontmatter(text, cap.frontmatter?.drop)
     text = quoteFrontmatter(text, `skills/${n}/SKILL.md`)
     if (!text.endsWith('\n')) text += '\n'

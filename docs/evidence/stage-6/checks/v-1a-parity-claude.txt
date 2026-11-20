@@ -1,0 +1,21 @@
+$ node hosts/parity/run-claude.mjs
+
+claude.test.ts:
+(pass) parity · claude · a commit closing a stage with an unticked check is denied [98.22ms]
+(pass) parity · claude · a stage close without an evidence report is denied [53.15ms]
+(pass) parity · claude · a stage close with its checks ticked and its report passes [70.22ms]
+(pass) parity · claude · a secret in a staged commit is denied, named by kind and never by value [44.64ms]
+(pass) parity · claude · a clean commit passes [50.41ms]
+(pass) parity · claude · under attended autopilot, an edit in a held risky stage is denied, the plan itself is not [43.63ms]
+(pass) parity · claude · under attended autopilot, a builder agent in a held risky stage is denied [43.58ms]
+(pass) parity · claude · the user's approval releases a held stage [49.62ms]
+(pass) parity · claude · an outward command under autopilot is denied [47.22ms]
+(pass) parity · claude · turn end under armed autopilot with stages left keeps the run going [41.23ms]
+(pass) parity · claude · turn end without autopilot lets the turn end [49.43ms]
+(pass) parity · claude · a prompt carries the plan's ## Now into context [49.27ms]
+(pass) parity · the fixture diff is a -U0 diff git would print [0.35ms]
+
+ 13 pass
+ 0 fail
+Ran 13 tests across 1 file. [0.74s]
+exit=0

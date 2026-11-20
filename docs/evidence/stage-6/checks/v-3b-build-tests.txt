@@ -1,0 +1,306 @@
+$ node --test hosts/build.test.mjs
+TAP version 13
+# Subtest: building twice gives identical bytes, and the second run writes nothing
+ok 1 - building twice gives identical bytes, and the second run writes nothing
+  ---
+  duration_ms: 71.138
+  type: 'test'
+  ...
+# Subtest: the committed package is current: --check passes on the repo
+ok 2 - the committed package is current: --check passes on the repo
+  ---
+  duration_ms: 30.273801
+  type: 'test'
+  ...
+# Subtest: plugin.json, marketplace and hooks.json follow the spike's working layout
+ok 3 - plugin.json, marketplace and hooks.json follow the spike's working layout
+  ---
+  duration_ms: 4.2921
+  type: 'test'
+  ...
+# Subtest: skills keep bare names and get one mapping section at the end
+ok 4 - skills keep bare names and get one mapping section at the end
+  ---
+  duration_ms: 4.5296
+  type: 'test'
+  ...
+# Subtest: scripts are copied with their imports rewritten inside the package, and a source hash manifest
+ok 5 - scripts are copied with their imports rewritten inside the package, and a source hash manifest
+  ---
+  duration_ms: 4.3948
+  type: 'test'
+  ...
+# Subtest: frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+ok 6 - frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+  ---
+  duration_ms: 4.2215
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a skill changed, and passes after a rebuild
+ok 7 - drift: --check fails when a skill changed, and passes after a rebuild
+  ---
+  duration_ms: 143.121101
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a hook module changed, and passes after a rebuild
+ok 8 - drift: --check fails when a hook module changed, and passes after a rebuild
+  ---
+  duration_ms: 139.557301
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a core module changed, and passes after a rebuild
+ok 9 - drift: --check fails when a core module changed, and passes after a rebuild
+  ---
+  duration_ms: 140.907101
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when the capability file changed, and passes after a rebuild
+ok 10 - drift: --check fails when the capability file changed, and passes after a rebuild
+  ---
+  duration_ms: 144.461201
+  type: 'test'
+  ...
+# Subtest: drift: a stray file in the package, or an edited generated file, fails --check
+ok 11 - drift: a stray file in the package, or an edited generated file, fails --check
+  ---
+  duration_ms: 107.552101
+  type: 'test'
+  ...
+# Subtest: README gap list: the root README's block lists every capability.json gap, in order, and nothing else
+ok 12 - README gap list: the root README's block lists every capability.json gap, in order, and nothing else
+  ---
+  duration_ms: 3.9594
+  type: 'test'
+  ...
+# Subtest: README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it
+ok 13 - README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it
+  ---
+  duration_ms: 141.697802
+  type: 'test'
+  ...
+# Subtest: README gap list: a hand edit inside the block fails --check; prose outside it is the README's own
+ok 14 - README gap list: a hand edit inside the block fails --check; prose outside it is the README's own
+  ---
+  duration_ms: 80.3546
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path /etc/README.md (absolute or with ..) fails the build
+ok 15 - README gap list: readme.path /etc/README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 22.0085
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path ../README.md (absolute or with ..) fails the build
+ok 16 - README gap list: readme.path ../README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 22.754801
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path docs/../../README.md (absolute or with ..) fails the build
+ok 17 - README gap list: readme.path docs/../../README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 21.9668
+  type: 'test'
+  ...
+# Subtest: README gap list: a README without the markers fails the build
+ok 18 - README gap list: a README without the markers fails the build
+  ---
+  duration_ms: 21.9151
+  type: 'test'
+  ...
+# Subtest: leak check: the real output has no leak
+ok 19 - leak check: the real output has no leak
+  ---
+  duration_ms: 4.6487
+  type: 'test'
+  ...
+# Subtest: leak check: a Claude-only name planted outside the mapping section fails the build and --check
+ok 20 - leak check: a Claude-only name planted outside the mapping section fails the build and --check
+  ---
+  duration_ms: 72.873901
+  type: 'test'
+  ...
+# Subtest: leak check: the same names inside the mapping section are allowed
+ok 21 - leak check: the same names inside the mapping section are allowed
+  ---
+  duration_ms: 0.2279
+  type: 'test'
+  ...
+# Subtest: --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+ok 22 - --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+  ---
+  duration_ms: 110.920101
+  type: 'test'
+  ...
+# Subtest: Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+ok 23 - Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+  ---
+  duration_ms: 6.3273
+  type: 'test'
+  ...
+# Subtest: a substitution that no longer matches its source fails the build
+ok 24 - a substitution that no longer matches its source fails the build
+  ---
+  duration_ms: 20.5998
+  type: 'test'
+  ...
+# Subtest: a rewrite that no longer matches fails the build
+ok 25 - a rewrite that no longer matches fails the build
+  ---
+  duration_ms: 21.8028
+  type: 'test'
+  ...
+# Subtest: an import that leaves the package fails the build
+ok 26 - an import that leaves the package fails the build
+  ---
+  duration_ms: 27.2635
+  type: 'test'
+  ...
+# Subtest: a hooks.json event the hook does not handle fails the build
+ok 27 - a hooks.json event the hook does not handle fails the build
+  ---
+  duration_ms: 22.1365
+  type: 'test'
+  ...
+# Subtest: the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+ok 28 - the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+  ---
+  duration_ms: 682.717506
+  type: 'test'
+  ...
+# Subtest: the repo's own generated hook denies `git push` under armed autopilot
+ok 29 - the repo's own generated hook denies `git push` under armed autopilot
+  ---
+  duration_ms: 142.936301
+  type: 'test'
+  ...
+# Subtest: codex: building twice gives identical bytes, and the second run writes nothing
+ok 30 - codex: building twice gives identical bytes, and the second run writes nothing
+  ---
+  duration_ms: 102.359401
+  type: 'test'
+  ...
+# Subtest: codex: .codex-plugin/plugin.json names the plugin jbit at the source version, with LICENSE and GENERATED.json
+ok 31 - codex: .codex-plugin/plugin.json names the plugin jbit at the source version, with LICENSE and GENERATED.json
+  ---
+  duration_ms: 5.7655
+  type: 'test'
+  ...
+# Subtest: codex: 9 skills with bare names, no Claude-only frontmatter, and one "On Codex CLI" section
+ok 32 - codex: 9 skills with bare names, no Claude-only frontmatter, and one "On Codex CLI" section
+  ---
+  duration_ms: 6.107
+  type: 'test'
+  ...
+# Subtest: codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false, and the gap is listed
+ok 33 - codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false, and the gap is listed
+  ---
+  duration_ms: 6.7214
+  type: 'test'
+  ...
+# Subtest: codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with raised context limits
+ok 34 - codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with raised context limits
+  ---
+  duration_ms: 5.6196
+  type: 'test'
+  ...
+# Subtest: codex: .agents/plugins/marketplace.json points at the package under its own name
+ok 35 - codex: .agents/plugins/marketplace.json points at the package under its own name
+  ---
+  duration_ms: 6.0364
+  type: 'test'
+  ...
+# Subtest: codex: scripts are globbed from hosts/core and hosts/codex, with imports repointed inside the package
+ok 36 - codex: scripts are globbed from hosts/core and hosts/codex, with imports repointed inside the package
+  ---
+  duration_ms: 5.6635
+  type: 'test'
+  ...
+# Subtest: codex: a missing hook.mjs fails the build with a clear message and writes nothing
+ok 37 - codex: a missing hook.mjs fails the build with a clear message and writes nothing
+  ---
+  duration_ms: 40.299101
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when a skill changed, and passes after a rebuild
+ok 38 - codex drift: --check fails when a skill changed, and passes after a rebuild
+  ---
+  duration_ms: 150.098101
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when a core module changed, and passes after a rebuild
+ok 39 - codex drift: --check fails when a core module changed, and passes after a rebuild
+  ---
+  duration_ms: 149.301601
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when the hook changed, and passes after a rebuild
+ok 40 - codex drift: --check fails when the hook changed, and passes after a rebuild
+  ---
+  duration_ms: 146.058602
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when the capability file changed, and passes after a rebuild
+ok 41 - codex drift: --check fails when the capability file changed, and passes after a rebuild
+  ---
+  duration_ms: 144.949401
+  type: 'test'
+  ...
+# Subtest: codex drift: a stray file in the package or a hand-edited marketplace fails --check
+ok 42 - codex drift: a stray file in the package or a hand-edited marketplace fails --check
+  ---
+  duration_ms: 115.143301
+  type: 'test'
+  ...
+# Subtest: codex leak check: the output has none, and a Claude-only name planted outside the mapping section fails
+ok 43 - codex leak check: the output has none, and a Claude-only name planted outside the mapping section fails
+  ---
+  duration_ms: 145.794801
+  type: 'test'
+  ...
+# Subtest: codex gaps: the capability lists the gaps the stage-7 README must carry
+ok 44 - codex gaps: the capability lists the gaps the stage-7 README must carry
+  ---
+  duration_ms: 0.2332
+  type: 'test'
+  ...
+# Subtest: codex: the committed package is current (once the adapter has landed)
+ok 45 - codex: the committed package is current (once the adapter has landed)
+  ---
+  duration_ms: 31.4336
+  type: 'test'
+  ...
+# Subtest: review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml
+ok 46 - review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml
+  ---
+  duration_ms: 10.1405
+  type: 'test'
+  ...
+# Subtest: review: dropping disable-model-invocation: true with no openai.yaml written fails the build
+ok 47 - review: dropping disable-model-invocation: true with no openai.yaml written fails the build
+  ---
+  duration_ms: 2.8325
+  type: 'test'
+  ...
+# Subtest: review: the codex build requires the hook EVENTS table, and the real hook has one it reads
+ok 48 - review: the codex build requires the hook EVENTS table, and the real hook has one it reads
+  ---
+  duration_ms: 42.174101
+  type: 'test'
+  ...
+# Subtest: review: a dropped frontmatter key takes its indented continuation lines with it
+ok 49 - review: a dropped frontmatter key takes its indented continuation lines with it
+  ---
+  duration_ms: 5.4918
+  type: 'test'
+  ...
+1..49
+# tests 49
+# suites 0
+# pass 49
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3425.453128
+exit=0

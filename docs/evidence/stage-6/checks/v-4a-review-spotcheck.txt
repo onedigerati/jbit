@@ -1,0 +1,21 @@
+$ node --test --test-reporter=spec --test-name-pattern='review: (a Bash command holding apply_patch|PreToolUse denies an outward push riding|a shell apply_patch after a directory change|apply_patch counts only as the command word|writesCodexHome catches)' hosts/codex/hook.test.mjs
+✔ review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read (4.1843ms)
+✔ review: apply_patch counts only as the command word; a mention is a plain Bash command (0.5438ms)
+✔ review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project (0.5444ms)
+✔ review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot (251.14319ms)
+✔ review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it (2.0157ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 293.731489
+exit=0
+$ node scratchpad/drv/rows.mjs plugins/jbit-codex   # review rows 1,2,3,5 through the generated hook, autopilot armed
+row1 push riding a shell apply_patch -> [0,"deny","JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line t"]
+row2 cd ~/.codex then apply_patch -> [0,"deny","JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps "]
+row3 >&file into CODEX_HOME -> [0,"deny","JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps "]
+row5 rg mentioning apply_patch (want allow) -> [0,"allow",""]
+exit=0

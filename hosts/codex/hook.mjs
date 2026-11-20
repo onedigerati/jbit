@@ -93,26 +93,41 @@ async function UserPromptSubmit(input, project) {
 
 async function Stop(input, project) {
   if (!project || !dataDir()) return {}
-  const c = await core(input, project)
+  return stopWith(await core(input, project))
+}
+
+/** The Stop answer from a core: a block carrying `## Now`, counted only once it is the answer. */
+export async function stopWith(c) {
   const res = await c.run({ kind: 'stop', reason: 'answer' })
+  const notices = Array.isArray(res.notices) ? res.notices : []
   if (res.decision !== 'block') {
-    await keepNotices(c, res.notices)
+    await keepNotices(c, notices)
     return {}
   }
   const blocks = Number(await c.host.get('stopBlocks')) || 0
   if (blocks >= STOP_CAP) {
-    await keepNotices(c, [...res.notices, `JBIT autopilot stopped carrying on by itself after ${STOP_CAP} continuations in one turn; a new prompt resumes it.`])
+    await keepNotices(c, [...notices, `JBIT autopilot stopped carrying on by itself after ${STOP_CAP} continuations in one turn; a new prompt resumes it.`])
+    return {}
+  }
+  const reason = typeof res.reason === 'string' ? res.reason : ''
+  // the continuation is autopilot's own prompt: it goes through the prompt handlers as the plugin's, and what they add
+  // (the plan's `## Now` first) rides in the reason, the only context a continuation gets
+  const next = await c.run({ kind: 'prompt', text: reason, origin: 'plugin' })
+  const taken = await takeNotices(c)
+  const extra = [...(next.context ?? []), ...taken, ...notices, ...(next.notices ?? [])].filter(t => typeof t === 'string' && t && !reason.includes(t))
+  const text = [reason, ...extra].filter(Boolean).join('\n\n')
+  if (!text) {
+    // nothing to carry on with: no block, so none counted, and the notices wait for the next prompt
+    await keepNotices(c, taken)
     return {}
   }
   await c.host.set('stopBlocks', blocks + 1)
-  // the continuation is autopilot's own prompt: it goes through the prompt handlers as the plugin's, and what they add
-  // (the plan's `## Now` first) rides in the reason, the only context a continuation gets
-  const next = await c.run({ kind: 'prompt', text: res.reason, origin: 'plugin' })
-  const extra = [...next.context, ...(await takeNotices(c)), ...res.notices, ...next.notices].filter(t => typeof t === 'string' && t && !res.reason.includes(t))
-  return { decision: 'block', reason: [res.reason, ...extra].join('\n\n') }
+  return { decision: 'block', reason: text }
 }
 
-const EVENTS = { PreToolUse, UserPromptSubmit, Stop, SessionStart: async () => ({}) }
+const SessionStart = async () => ({})
+
+const EVENTS = { PreToolUse, UserPromptSubmit, Stop, SessionStart }
 
 async function readStdin() {
   const chunks = []

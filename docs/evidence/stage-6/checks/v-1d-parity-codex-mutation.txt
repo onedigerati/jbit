@@ -1,0 +1,122 @@
+$ (temp copy, hosts/codex/hook.mjs PreToolUse mutated to `return {}`) node --test hosts/parity/codex.test.mjs
+$ grep MUTATION hosts/codex/hook.mjs
+60:async function PreToolUse(input, project) { return {} // MUTATION: allow everything
+TAP version 13
+# Subtest: codex parity: the shared scenarios through runScenarios
+not ok 1 - codex parity: the shared scenarios through runScenarios
+  ---
+  duration_ms: 1606.491583
+  type: 'test'
+  location: '<tempcopy>/hosts/parity/codex.test.mjs:90:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a commit closing a stage with an unticked check is denied:
+      step 2 (tool Bash): expected deny, got allow: ""
+    a stage close without an evidence report is denied:
+      step 2 (tool Bash): expected deny, got allow: ""
+    a secret in a staged commit is denied, named by kind and never by value:
+      step 2 (tool Bash): expected deny, got allow: ""
+    under attended autopilot, an edit in a held risky stage is denied, the plan itself is not:
+      step 2 (tool Edit): expected deny, got allow: ""
+    under attended autopilot, a builder agent in a held risky stage is denied:
+      step 2 (tool Agent): expected deny, got allow: ""
+    an outward command under autopilot is denied:
+      step 2 (tool Bash): expected deny, got allow: ""
+    + actual - expected
+    
+    + [
+    +   {
+    +     name: 'a commit closing a stage with an unticked check is denied',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Bash): expected deny, got allow: ""'
+    +     ]
+    +   },
+    +   {
+    +     name: 'a stage close without an evidence report is denied',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Bash): expected deny, got allow: ""'
+    +     ]
+    +   },
+    +   {
+    +     name: 'a secret in a staged commit is denied, named by kind and never by value',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Bash): expected deny, got allow: ""'
+    +     ]
+    +   },
+    +   {
+    +     name: 'under attended autopilot, an edit in a held risky stage is denied, the plan itself is not',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Edit): expected deny, got allow: ""'
+    +     ]
+    +   },
+    +   {
+    +     name: 'under attended autopilot, a builder agent in a held risky stage is denied',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Agent): expected deny, got allow: ""'
+    +     ]
+    +   },
+    +   {
+    +     name: 'an outward command under autopilot is denied',
+    +     ok: false,
+    +     problems: [
+    +       'step 2 (tool Bash): expected deny, got allow: ""'
+    +     ]
+    +   }
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0:
+      name: 'a commit closing a stage with an unticked check is denied'
+      ok: false
+      problems:
+        0: 'step 2 (tool Bash): expected deny, got allow: ""'
+    1:
+      name: 'a stage close without an evidence report is denied'
+      ok: false
+      problems:
+        0: 'step 2 (tool Bash): expected deny, got allow: ""'
+    2:
+      name: 'a secret in a staged commit is denied, named by kind and never by value'
+      ok: false
+      problems:
+        0: 'step 2 (tool Bash): expected deny, got allow: ""'
+    3:
+      name: 'under attended autopilot, an edit in a held risky stage is denied, the plan itself is not'
+      ok: false
+      problems:
+        0: 'step 2 (tool Edit): expected deny, got allow: ""'
+    4:
+      name: 'under attended autopilot, a builder agent in a held risky stage is denied'
+      ok: false
+      problems:
+        0: 'step 2 (tool Agent): expected deny, got allow: ""'
+    5:
+      name: 'an outward command under autopilot is denied'
+      ok: false
+      problems:
+        0: 'step 2 (tool Bash): expected deny, got allow: ""'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file://<tempcopy>/hosts/parity/codex.test.mjs:94:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1637.436893
+exit=1

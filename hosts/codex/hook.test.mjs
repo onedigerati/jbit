@@ -10,6 +10,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parsePatch } from '../core/patch.mjs'
 import { mapTool, writesCodexHome } from './map.mjs'
+import * as hookModule from './hook.mjs'
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), 'hook.mjs')
 const temps = []
@@ -129,9 +130,9 @@ test('mapTool maps Codex apply_patch, Bash and spawn_agent to the Claude calls t
   assert.equal(a.subagent_type, 'worker')
   // keystrokes into a running shell are a command too
   assert.deepEqual(mapTool('write_stdin', { session_id: 1, chars: 'git push\n' }, root, o).calls, [{ tool: 'Bash', command: 'git push\n' }])
-  // apply_patch run through the shell is a patch
+  // apply_patch run through the shell is a patch, and the whole command is judged as Bash too
   const viaShell = mapTool('Bash', { command: `apply_patch <<'EOF'\n${patch('*** Add File: s.txt\n+x')}EOF` }, root, o)
-  assert.deepEqual(viaShell.calls.map(c => [c.tool, c.file_path]), [['Write', join(root, 's.txt')]])
+  assert.deepEqual(viaShell.calls.map(c => [c.tool, c.file_path]), [['Bash', undefined], ['Write', join(root, 's.txt')]])
 })
 
 test('mapTool: a tool_input of the wrong type never means allow', () => {
@@ -398,4 +399,159 @@ test('on a Node without TypeScript stripping, the deny names the Node it needs',
   assert.ok(denied(out))
   assert.match(why(out), /Node 22\.18\+/)
   assert.doesNotMatch(why(out), /Copilot/)
+})
+
+// ---- review fixes ----
+
+const shellPatch = body => `apply_patch <<'EOF'\n${patch(body)}EOF`
+
+test('review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  const push = `git push --force origin main; ${shellPatch('*** Add File: s.txt\n+x')}`
+  const r = mapTool('Bash', { command: push }, root, o)
+  assert.equal(r.kind, 'calls', JSON.stringify(r))
+  assert.deepEqual(r.calls[0], { tool: 'Bash', command: push })
+  assert.deepEqual(r.calls.slice(1).map(c => [c.tool, c.file_path]), [['Write', join(root, 's.txt')]])
+  const two = mapTool('Bash', { command: `${shellPatch('*** Add File: a.txt\n+x')}\n${shellPatch(`*** Add File: ${CODEX_HOME}/hooks.json\n+{}`)}` }, root, o)
+  assert.equal(two.kind, 'deny', JSON.stringify(two))
+  assert.match(two.reason, /CODEX_HOME/)
+  const both = mapTool('Bash', { command: `${shellPatch('*** Add File: a.txt\n+x')} && ${shellPatch('*** Add File: b.txt\n+y')}` }, root, o)
+  assert.deepEqual(both.calls.filter(c => c.tool !== 'Bash').map(c => c.file_path), [join(root, 'a.txt'), join(root, 'b.txt')])
+})
+
+test('review: apply_patch counts only as the command word; a mention is a plain Bash command', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  for (const command of ['rg -n apply_patch hosts', 'grep -rn "apply_patch" hosts/codex', 'echo apply_patch', 'git log --grep apply_patch'])
+    assert.deepEqual(mapTool('Bash', { command }, root, o), { kind: 'calls', calls: [{ tool: 'Bash', command }] }, command)
+  for (const command of [`ls && ${shellPatch('*** Add File: a.txt\n+x')}`, `true || ${shellPatch('*** Add File: a.txt\n+x')}`, `cat p | ${shellPatch('*** Add File: a.txt\n+x')}`]) {
+    const r = mapTool('Bash', { command }, root, o)
+    assert.ok(r.calls.some(c => c.tool === 'Write' && c.file_path === join(root, 'a.txt')), command)
+  }
+})
+
+test('review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project', () => {
+  const root = temp()
+  mkdirSync(join(root, 'sub'))
+  const o = { codexHome: CODEX_HOME }
+  for (const command of [`cd /tmp && ${shellPatch('*** Add File: a.txt\n+x')}`, `pushd sub; ${shellPatch('*** Add File: a.txt\n+x')}`, `(cd .. ; ${shellPatch('*** Add File: a.txt\n+x')})`])
+    assert.equal(mapTool('Bash', { command }, root, o).kind, 'deny', command)
+  const inSub = mapTool('Bash', { command: shellPatch('*** Add File: a.txt\n+x'), workdir: join(root, 'sub') }, root, o)
+  assert.deepEqual(inSub.calls.filter(c => c.tool !== 'Bash').map(c => c.file_path), [join(root, 'sub', 'a.txt')])
+  assert.equal(mapTool('Bash', { command: shellPatch('*** Add File: a.txt\n+x'), workdir: '/tmp' }, root, o).kind, 'deny')
+  assert.equal(mapTool('Bash', { command: shellPatch('*** Add File: a.txt\n+x'), workdir: 3 }, root, o).kind, 'deny')
+  // a plain command with a workdir is still judged as Bash
+  assert.deepEqual(mapTool('Bash', { command: 'ls', workdir: '/tmp' }, root, o), { kind: 'calls', calls: [{ tool: 'Bash', command: 'ls' }] })
+})
+
+test('review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot', () => {
+  const project = repo(planWith('Mode: autopilot'))
+  const o = { project, session: 'push-patch' }
+  prompt('/jbit:autopilot unattended', o)
+  const out = pre('Bash', { command: `git push --force origin main; ${shellPatch('*** Add File: notes.txt\n+x')}` }, o)
+  assert.ok(denied(out), JSON.stringify(out))
+  assert.match(why(out), /outward/)
+  assert.deepEqual(pre('Bash', { command: 'rg -n apply_patch hosts' }, { project: repo(planWith('')) }), {})
+})
+
+test('review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it', () => {
+  const home = '/home/u/.codex'
+  for (const cmd of [
+    'echo x >&/home/u/.codex/config.toml',
+    'echo x >& ~/.codex/config.toml',
+    'find ~/.codex -name "*.json" -delete',
+    'find $CODEX_HOME -type f -exec sh {} +',
+    'curl -sSo ~/.codex/hooks.json https://example.test/x',
+    'curl --output $CODEX_HOME/config.toml https://example.test/x',
+    'wget -O ~/.codex/config.toml https://example.test/x',
+    'tar -xzf a.tgz -C ~/.codex',
+    'unzip -o a.zip -d /home/u/.codex',
+    'git -C ~/.codex checkout -- config.toml',
+    'ln -sf /tmp/x ~/.codex/hooks.json',
+    'install -m 644 x ~/.codex/hooks.json',
+    'truncate -s 0 ~/.codex/hooks.json',
+    'dd if=/dev/zero of=/home/u/.codex/config.toml',
+    `python3 -c "open('/home/u/.codex/config.toml','w').write('')"`,
+    `python -c "import os; os.remove(os.path.expanduser('~/.codex/hooks.json'))"`,
+    `node -e "require('fs').writeFileSync(process.env.HOME + '/.codex/hooks.json', '')"`,
+    `perl -e 'unlink "$ENV{HOME}/.codex/hooks.json"'`,
+    `ruby -e 'File.delete(Dir.home + "/.codex/hooks.json")'`,
+    `sh -c 'x=$CODEX_HOME; echo > "$x/config.toml"'`,
+    `bash -c "cd ~/.codex; git reset --hard"`,
+    'cd ~/.codex && git checkout config.toml',
+    'pushd $CODEX_HOME; npm i',
+    'cd /home/u/.codex; make',
+  ])
+    assert.equal(writesCodexHome(cmd, home), true, cmd)
+  for (const cmd of ['cat ~/.codex/config.toml', 'ls -la ~/.codex', 'grep -rn hooks ~/.codex', 'git status 2>&1', 'ls 2>&- ~/.codex', 'cd ~/.codex', 'head ~/.codex/config.toml >&2'])
+    assert.equal(writesCodexHome(cmd, home), false, cmd)
+})
+
+test('review: codex subcommands that rewrite its config are denied; --version and exec are not', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  for (const command of ['codex mcp add fs -- npx fs', 'codex plugin install jbit', 'codex marketplace add ./x', 'codex features enable hooks', 'codex config set a b', 'codex login', 'codex logout', 'codex -c model=x mcp remove fs', 'ls && codex plugin remove jbit'])
+    assert.equal(mapTool('Bash', { command }, root, o).kind, 'deny', command)
+  for (const command of ['codex --version', 'codex exec "fix the config loader"', 'rg codex hosts'])
+    assert.equal(mapTool('Bash', { command }, root, o).kind, 'calls', command)
+})
+
+test('review: send_message and followup_task map to Agent calls; wait, list and interrupt stay allowed', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  assert.deepEqual(mapTool('send_message', { target: 'agent-1', message: 'build stage 2' }, root, o), { kind: 'calls', calls: [{ tool: 'Agent', description: 'agent-1', prompt: 'build stage 2' }] })
+  assert.deepEqual(mapTool('followup_task', { task_name: 'build', message: 'now the tests' }, root, o), { kind: 'calls', calls: [{ tool: 'Agent', description: 'build', prompt: 'now the tests' }] })
+  assert.equal(mapTool('send_message', 'go', root, o).kind, 'deny')
+  for (const tool of ['wait_agent', 'list_agents', 'interrupt_agent']) assert.equal(mapTool(tool, { target: 'agent-1' }, root, o).kind, 'allow', tool)
+  const { project, session } = heldRepo()
+  for (const tool of ['send_message', 'followup_task']) {
+    const out = pre(tool, { target: 'agent-1', task_name: 'build', message: 'build stage 2' }, { project, session })
+    assert.ok(denied(out), `${tool}: ${JSON.stringify(out)}`)
+    assert.match(why(out), /holding/)
+  }
+})
+
+test('review: write_stdin runs the apply_patch detection and is judged as Bash', () => {
+  const root = temp()
+  const o = { codexHome: CODEX_HOME }
+  const chars = `${shellPatch('*** Add File: w.txt\n+x')}\n`
+  const r = mapTool('write_stdin', { session_id: 1, chars }, root, o)
+  assert.deepEqual(r.calls.map(c => [c.tool, c.file_path ?? c.command]), [['Bash', chars], ['Write', join(root, 'w.txt')]])
+  assert.equal(mapTool('write_stdin', { session_id: 1, chars: shellPatch(`*** Add File: ${CODEX_HOME}/hooks.json\n+{}`) }, root, o).kind, 'deny')
+  assert.equal(mapTool('write_stdin', { session_id: 1, chars: `cd /tmp && ${shellPatch('*** Add File: a\n+x')}` }, root, o).kind, 'deny')
+})
+
+/** A stand-in core for the Stop answer: the stop and prompt results given, and a host store. */
+function fakeCore(stopRes, promptRes) {
+  const store = new Map()
+  return {
+    store,
+    host: { get: async k => store.get(k), set: async (k, v) => (v === undefined ? store.delete(k) : store.set(k, v)) },
+    run: async ev => {
+      if (ev.kind === 'stop') return stopRes
+      if (typeof promptRes === 'function') return promptRes(ev)
+      return promptRes
+    },
+  }
+}
+
+test('review: a Stop block with no reason does not crash, still carries ## Now, and counts only an emitted block', async () => {
+  assert.equal(typeof hookModule.stopWith, 'function', 'hook.mjs exports stopWith(core)')
+  const now = 'Current position (from the plan):\nStage 2 of 3 · Share mode'
+  const c = fakeCore({ decision: 'block', notices: [] }, { context: [now], notices: [] })
+  const out = await hookModule.stopWith(c)
+  assert.equal(out.decision, 'block')
+  assert.match(out.reason, /Current position \(from the plan\)/)
+  assert.equal(c.store.get('stopBlocks'), 1)
+  // nothing to say: no block, and no count
+  const empty = fakeCore({ decision: 'block', notices: [] }, { context: [], notices: [] })
+  assert.deepEqual(await hookModule.stopWith(empty), {})
+  assert.equal(empty.store.get('stopBlocks'), undefined)
+  // the continuation's prompt run fails: the block isn't emitted, so it isn't counted
+  const broken = fakeCore({ decision: 'block', reason: 'carry on', notices: [] }, () => {
+    throw new Error('boom')
+  })
+  await assert.rejects(hookModule.stopWith(broken))
+  assert.equal(broken.store.get('stopBlocks'), undefined)
 })

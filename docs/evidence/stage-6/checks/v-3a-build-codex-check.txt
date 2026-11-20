@@ -1,0 +1,3 @@
+$ node hosts/build.mjs codex --check
+codex: up to date (28 files)
+exit=0

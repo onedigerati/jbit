@@ -1,0 +1,4 @@
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin ; git status --porcelain -- plugins/jbit .claude-plugin
+diff-lines=0
+?? plugins/jbit/evals-ablation/
+exit=0

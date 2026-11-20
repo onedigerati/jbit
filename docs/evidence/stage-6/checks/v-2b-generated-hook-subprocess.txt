@@ -1,0 +1,60 @@
+$ node scratchpad/drv/drive.mjs plugins/jbit-codex   # copies the generated package to $TMP/v6-*/pkg and runs its scripts/hook.mjs
+# UserPromptSubmit carries ## Now
+OK   [ups-now] UserPromptSubmit exit=0 verdict=context (want context) :: # JBIT This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and upd
+# held risky stage (RISKY plan, "/jbit:autopilot attended")
+OK   [arm-attended] UserPromptSubmit exit=0 verdict=context :: JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, `attended`. This entry supersedes the JBIT section of th
+OK   [patch-add] PreToolUse exit=0 verdict=deny (want deny) :: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with "yes", "go", "approve", "procee
+OK   [patch-update] PreToolUse exit=0 verdict=deny (want deny) :: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with "yes", "go", "approve", "procee
+OK   [patch-delete] PreToolUse exit=0 verdict=deny (want deny) :: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with "yes", "go", "approve", "procee
+OK   [patch-move-plan-to-src] PreToolUse exit=0 verdict=deny (want deny) :: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with "yes", "go", "approve", "procee
+OK   [patch-plan-only(control)] PreToolUse exit=0 verdict=allow/empty (want allow/empty) :: 
+FAIL [bash-write-held] PreToolUse exit=0 verdict=allow/empty (want deny) :: 
+# outward Bash under autopilot (DRIVING plan, "/jbit:autopilot")
+OK   [arm] UserPromptSubmit exit=0 verdict=context :: JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, unattended. This entry supersedes the JBIT section of th
+OK   [bash-push] PreToolUse exit=0 verdict=deny (want deny) :: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and a
+OK   [bash-status(control)] PreToolUse exit=0 verdict=allow/empty (want allow/empty) :: 
+# unknown tool carrying a path / CODEX_HOME writes (no autopilot)
+OK   [ups] UserPromptSubmit exit=0 verdict=context :: # JBIT This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and upd
+OK   [unknown-tool-path] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked `mcp__fs__write_file`: it doesn't know this tool, and its input carries a path or a command (`path`) that the plan's gates can't check. Use the she
+OK   [unknown-tool-command] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked `mcp__sh__exec`: it doesn't know this tool, and its input carries a path or a command (`command`) that the plan's gates can't check. Use the shell 
+OK   [bash-codexhome-var] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps its config, hooks.json and the plugin cache, and a
+OK   [bash-codexhome-literal] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps its config, hooks.json and the plugin cache, and a
+OK   [patch-codexhome] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (`/tmp/v6-DL5ZYR/codexhome-pwlCmm/hooks.json`), where Codex keeps its config, hooks.j
+OK   [bash-ls(control)] PreToolUse exit=0 verdict=allow/empty (want allow/empty) :: 
+# Stop: block with ## Now, cap 8 per prompt
+OK   [arm] UserPromptSubmit exit=0 verdict=context :: JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, unattended. This entry supersedes the JBIT section of th
+OK   [stop-1] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-2] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-3] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-4] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-5] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-6] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-7] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-8] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [stop-9] Stop exit=0 verdict=allow/empty (want allow/empty) :: 
+OK   [stop-10] Stop exit=0 verdict=allow/empty (want allow/empty) :: 
+blocks before cap: 8
+OK   [new-prompt] UserPromptSubmit exit=0 verdict=context :: # JBIT This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and upd
+OK   [stop-after-new-prompt] Stop exit=0 verdict=block (want block) :: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Share mode. # JBIT This project keeps its plan in `docs/PLAN.md`: the source of trut
+OK   [ups] UserPromptSubmit exit=0 verdict=context :: # JBIT This project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and upd
+OK   [stop-no-autopilot(control)] Stop exit=0 verdict=allow/empty (want allow/empty) :: 
+# crash cases
+OK   [bad-json-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user.
+OK   [array-json-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user.
+OK   [empty-stdin-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user.
+OK   [no-cwd-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked `Bash`: the hook couldn't tell which project this is (no usable `cwd` on the event), so it can't check the plan's gates and fails closed.
+OK   [relative-cwd-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked `Bash`: the hook couldn't tell which project this is (no usable `cwd` on the event), so it can't check the plan's gates and fails closed.
+OK   [no-plugin-data-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT blocked `Bash`: the hook has no data folder (Codex sets PLUGIN_DATA for a plugin's hooks), so it can't keep the session's state and fails closed. Tell the 
+OK   [no-tool-name-pre] PreToolUse exit=0 verdict=deny (want deny) :: JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user.
+OK   [bad-json-ups] UserPromptSubmit exit=0 verdict=allow/empty :: 
+OK   [bad-json-stop] Stop exit=0 verdict=allow/empty :: 
+OK   [no-plugin-data-ups] UserPromptSubmit exit=0 verdict=allow/empty :: 
+OK   [unknown-event] Bogus exit=0 verdict=allow/empty :: 
+
+SUMMARY fails=1 exit1=0 runs=see above
+exit=0
+
+# verifier note on the one FAIL (bash-write-held): `echo b > src/login.ts` in a held stage is allowed. This is my
+# expectation going beyond the plan, not a Codex divergence: the Claude hook's hold gate
+# (plugins/jbit/hooks/register.ts ~L2352) only covers Edit/Write/NotebookEdit/Agent, so Claude allows the same Bash
+# write. The Codex hook matches Claude here (parity). The guarded-Bash check is met by bash-push (deny under autopilot).

@@ -1,0 +1,18 @@
+$ node --test hosts/parity/codex.test.mjs
+TAP version 13
+# Subtest: codex parity: the shared scenarios through runScenarios
+ok 1 - codex parity: the shared scenarios through runScenarios
+  ---
+  duration_ms: 2184.679985
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2211.933502
+exit=0

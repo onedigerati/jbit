@@ -666,3 +666,64 @@ test('codex: the committed package is current (once the adapter has landed)', t 
   const r = codex('--check')
   assert.equal(r.status, 0, r.stdout + r.stderr)
 })
+
+// ---- review fixes ----
+
+const setFront = (src, skill, from, to) => {
+  const p = join(src, `plugins/jbit/skills/${skill}/SKILL.md`)
+  const text = readFileSync(p, 'utf8')
+  assert.ok(text.includes(from), `${skill} has ${from}`)
+  writeFileSync(p, text.replace(from, to))
+}
+const editCap = (src, fn) => {
+  const p = join(src, 'hosts/codex/capability.json')
+  const cap = JSON.parse(readFileSync(p, 'utf8'))
+  fn(cap)
+  writeFileSync(p, JSON.stringify(cap))
+}
+
+test('review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml', () => {
+  const src = codexSources()
+  setFront(src, 'approve', 'disable-model-invocation: true\n', 'disable-model-invocation: "true"  # only the user types it\n')
+  let { files } = generate({ src, host: 'codex' })
+  assert.ok(files.get(`${PKG}/skills/approve/agents/openai.yaml`), 'quoted true with a comment still keeps approve from implicit use')
+  assert.doesNotMatch(files.get(`${PKG}/skills/approve/SKILL.md`), /disable-model-invocation/)
+  setFront(src, 'approve', 'disable-model-invocation: "true"  # only the user types it\n', 'disable-model-invocation: false\n')
+  ;({ files } = generate({ src, host: 'codex' }))
+  assert.equal(files.get(`${PKG}/skills/approve/agents/openai.yaml`), undefined)
+})
+
+test('review: dropping disable-model-invocation: true with no openai.yaml written fails the build', () => {
+  const src = codexSources()
+  editCap(src, cap => delete cap.frontmatter.noImplicit)
+  assert.throws(() => generate({ src, host: 'codex' }), /approve.*disable-model-invocation|disable-model-invocation.*approve/)
+})
+
+test('review: the codex build requires the hook EVENTS table, and the real hook has one it reads', () => {
+  assert.notEqual(loadCapability(ROOT, 'codex').hooks.requireEventsTable, false)
+  const src = codexSources()
+  const p = join(src, 'hosts/codex/hook.mjs')
+  writeFileSync(p, readFileSync(p, 'utf8').replaceAll('EVENTS', 'HANDLERS'))
+  const r = codex('--src', src, '--out', temp())
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /EVENTS table/)
+  // an event dropped from the real table is caught
+  const src2 = codexSources()
+  const p2 = join(src2, 'hosts/codex/hook.mjs')
+  const text = readFileSync(p2, 'utf8')
+  const m = /const EVENTS = \{([^}]*)\}/.exec(text)
+  assert.ok(m && /\bSessionStart\b/.test(m[1]), 'the table names SessionStart')
+  writeFileSync(p2, text.replace(m[0], m[0].replace(/,?\s*SessionStart\b[^,}]*/, '')))
+  const r2 = codex('--src', src2, '--out', temp())
+  assert.notEqual(r2.status, 0)
+  assert.match(r2.stderr, /not handled by hook\.mjs: SessionStart/)
+})
+
+test('review: a dropped frontmatter key takes its indented continuation lines with it', () => {
+  const src = codexSources()
+  setFront(src, 'resume', '\n---\n', '\nmetadata:\n  owner: jbit\n  tier: 2\n---\n')
+  editCap(src, cap => cap.frontmatter.drop.push('metadata'))
+  const { files } = generate({ src, host: 'codex' })
+  const front = files.get(`${PKG}/skills/resume/SKILL.md`).split('\n---\n')[0].split('\n').slice(1)
+  assert.deepEqual(front.map(l => l.split(':')[0]), ['name', 'description'])
+})

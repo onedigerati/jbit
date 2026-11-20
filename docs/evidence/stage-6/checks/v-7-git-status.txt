@@ -1,0 +1,25 @@
+$ git status --porcelain; git stash list | wc -l
+ M docs/PLAN.md
+ M hosts/build.mjs
+ M hosts/build.test.mjs
+ M hosts/codex/capability.json
+ M hosts/codex/hook.mjs
+ M hosts/codex/hook.test.mjs
+ M hosts/codex/map.mjs
+ M plugins/jbit-codex/GENERATED.json
+ M plugins/jbit-codex/scripts/hook.mjs
+ M plugins/jbit-codex/scripts/map.mjs
+ M plugins/jbit-copilot/GENERATED.json
+?? CLAUDE.md
+?? docs/evidence/stage-6/04a-review-fixes-red.txt
+?? docs/evidence/stage-6/review.md
+?? docs/research/vanilla-claude-code-2026-11.md
+?? plugins/jbit/evals-ablation/
+
+$ stat -c "%y %n" on untracked files
+2026-11-17 13:16:26.628163299 -0600 CLAUDE.md
+2026-11-17 12:44:02.956177031 -0600 docs/research/vanilla-claude-code-2026-11.md
+2026-11-17 08:18:44.215845344 -0600 plugins/jbit/evals-ablation
+2026-11-20 15:55:19.350458526 -0600 docs/evidence/stage-6/01-tests-red-before-adapter.txt
+2026-11-20 16:06:32.870374133 -0600 docs/evidence/stage-6/04a-review-fixes-red.txt
+2026-11-20 16:06:49.732824862 -0600 docs/evidence/stage-6/review.md

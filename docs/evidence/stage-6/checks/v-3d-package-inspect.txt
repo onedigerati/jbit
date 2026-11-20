@@ -1,0 +1,172 @@
+$ inspect plugins/jbit-codex (plugin.json, skills frontmatter + On Codex CLI sections, hooks.json, marketplace, openai.yaml, capability gaps)
+## .codex-plugin/plugin.json
+{
+  "name": "jbit",
+  "version": "2.0.0",
+  "description": "Just build it. Plans it. Proves it. Sees it through. JBIT (jay-bit, for Just Build It) turns a goal into one plan file of stages with acceptance checks; builds each stage, verifies it against the running product with evidence kept in the repo, has fresh eyes review it and commits it. Your own command, /jbit:autopilot or a message opening with \"JBIT\" such as \"JBIT, just build it. Autopilot, lean.\", sees the plan through unattended, logging the calls it makes for you; say attended to keep the stops for risky stages and your decisions, and outward to let push, publish and deploy through. Plain words without the name never set the level: they run at the one that stands, attended unless your own command set one for this plan. Also a roadmap of milestones for projects too big for one plan, a quick-fix path for small low-risk changes, a choice of how widely work fans out to agents, and a secret guard on commits.",
+  "author": {
+    "name": "jonah"
+  },
+  "license": "MIT",
+  "skills": "./skills/"
+}
+
+## skills: dir | name: line | "On Codex CLI" headings | has $jbit: | has spawn_agent
+approve | name: approve | 1 | 2 | 4
+autopilot | name: autopilot | 1 | 2 | 5
+charter | name: charter | 1 | 2 | 4
+fix | name: fix | 1 | 2 | 4
+plan | name: plan | 1 | 2 | 5
+resume | name: resume | 1 | 2 | 4
+review | name: review | 1 | 2 | 6
+stage | name: stage | 1 | 2 | 5
+verify | name: verify | 1 | 2 | 5
+skill count: 9
+
+## hooks.json: ${PLUGIN_ROOT} uses / additionalContextLimit
+4
+33:            "additionalContextLimit": 16000
+45:            "additionalContextLimit": 16000
+
+## .agents/plugins/marketplace.json
+{
+  "name": "jbit-local",
+  "interface": {
+    "displayName": "JBIT (local)"
+  },
+  "plugins": [
+    {
+      "name": "jbit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jbit-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+
+## skills/approve/agents/openai.yaml
+drwxr-xr-x 2 user user 4096 Nov 20 15:55 .
+drwxr-xr-x 3 user user 4096 Nov 20 15:55 ..
+-rw-r--r-- 1 user user   43 Nov 20 15:55 openai.yaml
+policy:
+  allow_implicit_invocation: false
+
+## capability.json gaps
+[
+ {
+  "id": "hook-trust",
+  "what": "Hooks need trusting after every install and update",
+  "why": "Codex runs a plugin's hooks only once the user trusts them, at startup or through `/hooks`, and any change to the hook script voids that trust silently. Until they're trusted again, JBIT has no `## Now` in context, no gates and no carry-on, and nothing says so; `codex exec` skips untrusted hooks without a warning. The trust prompt warns that trusted hooks run outside the sandbox."
+ },
+ {
+  "id": "role-agents",
+  "what": "No role agents",
+  "why": "A Codex plugin can't register agents (none of the routes the spike tried did), so the package ships none; builders, verifiers and reviewers are plain `spawn_agent` calls briefed with the role."
+ },
+ {
+  "id": "dollar-invocation",
+  "what": "Typing `/jbit:<name>`",
+  "why": "Codex recognises a skill only as `$jbit:<name>` (for example `$jbit:autopilot`). A typed `/jbit:plan` or `$plan` reaches the model as plain text, which may still find the skill from its description, with no guarantee."
+ },
+ {
+  "id": "approve-implicit",
+  "what": "`approve` may be visible to the model",
+  "why": "On Claude Code the model can't invoke `approve`. The package sets `allow_implicit_invocation: false` in its `agents/openai.yaml`, which isn't proven live yet. Either way the hook releases a held stage only on the user's own typed approval."
+ },
+ {
+  "id": "hook-timeout-unproven",
+  "what": "A hook killed on timeout",
+  "why": "Unproven: a PreToolUse hook that exits 1 lets the call run on Codex, and what Codex does with a hook it kills on its 30-second timeout wasn't tested. The shipped hook refuses by its own 25-second watchdog first, so this bites only if the hook's event loop blocks."
+ },
+ {
+  "id": "subagent-hooks-unproven",
+  "what": "The guard inside `spawn_agent` children, `write_stdin` and MCP tools",
+  "why": "Live runs saw PreToolUse fire only for `Bash` and `apply_patch` in the main session; whether it fires for tool calls in a child agent, for input written into a running shell, or for MCP tools is unproven."
+ },
+ {
+  "id": "stall-detection",
+  "what": "Stall detection",
+  "why": "Each hook event is a fresh process, so nothing counts repeated turn ends; the hook's own cap on Stop blocks per prompt bounds the loop instead."
+ },
+ {
+  "id": "long-runs",
+  "what": "Long unattended runs under `codex exec`",
+  "why": "Codex has no cap on Stop blocks, so the hook keeps its own per prompt; an unattended run stops quietly when it's reached. Prompt again to carry on."
+ },
+ {
+  "id": "lean-agent-count",
+  "what": "Lean's count of agents already running",
+  "why": "The Claude hook keeps it in memory across events; a command hook has no running process to keep it in."
+ },
+ {
+  "id": "background-agents",
+  "what": "Tracking background agents",
+  "why": "Same reason: no in-memory agent list between events."
+ },
+ {
+  "id": "post-commit-reopen",
+  "what": "The reopen check after a commit",
+  "why": "It runs before the commit lands, since there's no in-memory state carried to the next event."
+ },
+ {
+  "id": "node-22-18",
+  "what": "Node older than 22.18",
+  "why": "The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused."
+ },
+ {
+  "id": "review-commands",
+  "what": "`/code-review` and `/security-review`",
+  "why": "They are Claude Code built-ins; on Codex the review runs as a fresh `spawn_agent` briefed with the same lenses."
+ },
+ {
+  "id": "worktree-isolation",
+  "what": "Worktree isolation for parallel builders",
+  "why": "Codex's `spawn_agent` has none, so parallel builders must own separate files or run one at a time."
+ },
+ {
+  "id": "compaction",
+  "what": "Compacting the context before autopilot carries on",
+  "why": "Codex gives a command hook no context gauge and no compact call; Codex manages its own context."
+ },
+ {
+  "id": "claude-md",
+  "what": "`CLAUDE.md` loaded at startup",
+  "why": "Codex loads `AGENTS.md`, not `CLAUDE.md`; the skills tell the model to read `CLAUDE.md` itself."
+ },
+ {
+  "id": "hook-wording",
+  "what": "The hook's own messages",
+  "why": "They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them."
+ }
+]
+
+## per skill: inside the "On Codex CLI" section only (to next ## heading): $jbit: / spawn_agent counts
+approve | $jbit: 2 | spawn_agent 4 | lines 12
+autopilot | $jbit: 2 | spawn_agent 4 | lines 12
+charter | $jbit: 2 | spawn_agent 4 | lines 12
+fix | $jbit: 2 | spawn_agent 4 | lines 12
+plan | $jbit: 2 | spawn_agent 4 | lines 12
+resume | $jbit: 2 | spawn_agent 4 | lines 12
+review | $jbit: 2 | spawn_agent 4 | lines 12
+stage | $jbit: 2 | spawn_agent 4 | lines 12
+verify | $jbit: 2 | spawn_agent 4 | lines 12
+
+## sample section (verify):
+## On Codex CLI
+
+JBIT was written for Claude Code; this copy is generated for OpenAI Codex CLI. Where the text or the hook's messages use Claude's names, read them this way:
+
+- **Skills.** Invoke a `jbit:<name>` skill by typing `$jbit:<name>` (for example `$jbit:plan`); that is the form Codex recognises. A typed `/jbit:<name>` or `$<name>` isn't an invocation: the model may find the skill from its description, but nothing guarantees it. When a skill says to run another JBIT skill, open that skill's `SKILL.md` and follow it.
+- **Agents.** An Agent call is Codex's `spawn_agent`: `task_name` (lowercase letters, digits and underscores) and `message` (the brief) are required. Pass `model` and `reasoning_effort` only as the plan's Models line sets them, and leave out what it doesn't set; the child then inherits the session's. Give a verifier or reviewer `fork_turns: "none"`, so it starts without this session's history and sees only the brief and the code. Wait with `wait_agent`; `send_message`, `followup_task`, `list_agents` and `interrupt_agent` steer it. JBIT's role agents don't ship on Codex: brief a plain `spawn_agent` with the role.
+- **No worktree isolation.** `spawn_agent` has no `isolation: "worktree"`. Build leaves one at a time in the main tree, or in parallel only when each builder owns files no other touches; there is no branch to merge back.
+- **Questions.** Where a skill says to ask the user (AskUserQuestion on Claude Code), ask in the chat and wait for the reply.
+- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a fresh `spawn_agent` with `fork_turns: "none"`, briefed with the same lenses (correctness, then security), and triage what it finds.
+- **Instructions.** Codex loads `AGENTS.md`, not `CLAUDE.md`. Where a skill reads or writes `CLAUDE.md`, use that file, and read it yourself at the start of a session.
+- **Hooks.** JBIT's hooks run only once the user trusts them (at startup or through `/hooks`), and again after every JBIT update. Without trust there is no `## Now` in context, no gates and no carry-on, and nothing says so.
+- **Tools.** Bash → `exec_command` (hooks see it as `Bash`); Edit → `apply_patch`; Write → `apply_patch` (`*** Add File:`); Read → `exec_command` (`cat`, `sed -n`); Glob → `exec_command` (`rg --files`, `find`); Grep → `exec_command` (`rg`); Agent → `spawn_agent`; Skill → `$jbit:<name>` (or open the skill's SKILL.md and follow it). Edits go through `apply_patch`; the guard covers it and the shell alike.

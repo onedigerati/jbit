@@ -1,0 +1,328 @@
+$ node --test --test-reporter=spec --test-name-pattern='^review' hosts/codex/hook.test.mjs hosts/build.test.mjs
+✖ review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml (12.632087ms)
+✖ review: dropping disable-model-invocation: true with no openai.yaml written fails the build (6.672593ms)
+✖ review: the codex build requires the hook EVENTS table, and the real hook has one it reads (0.2266ms)
+✖ review: a dropped frontmatter key takes its indented continuation lines with it (2.323997ms)
+✖ review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read (3.979896ms)
+✖ review: apply_patch counts only as the command word; a mention is a plain Bash command (0.471099ms)
+✖ review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project (0.3394ms)
+✖ review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot (167.682124ms)
+✖ review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it (0.4185ms)
+✖ review: codex subcommands that rewrite its config are denied; --version and exec are not (0.1605ms)
+✖ review: send_message and followup_task map to Agent calls; wait, list and interrupt stay allowed (0.456899ms)
+✖ review: write_stdin runs the apply_patch detection and is judged as Bash (0.2515ms)
+✖ review: a Stop block with no reason does not crash, still carries ## Now, and counts only an emitted block (0.411899ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 0
+ℹ fail 13
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 213.005278
+
+✖ failing tests:
+
+test at hosts/build.test.mjs:685:1
+✖ review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml (12.632087ms)
+  AssertionError [ERR_ASSERTION]: quoted true with a comment still keeps approve from implicit use
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:689:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at hosts/build.test.mjs:696:1
+✖ review: dropping disable-model-invocation: true with no openai.yaml written fails the build (6.672593ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:699:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /approve.*disable-model-invocation|disable-model-invocation.*approve/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at hosts/build.test.mjs:702:1
+✖ review: the codex build requires the hook EVENTS table, and the real hook has one it reads (0.2266ms)
+  AssertionError [ERR_ASSERTION]: Expected "actual" to be strictly unequal to: false
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:703:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: false,
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/build.test.mjs:722:1
+✖ review: a dropped frontmatter key takes its indented continuation lines with it (2.323997ms)
+  Error: skills/resume/SKILL.md: frontmatter line isn't a plain `key: value`:   owner: jbit
+      at fail (file://$HOME/src/repos/jbit/hosts/build.mjs:28:9)
+      at file://$HOME/src/repos/jbit/hosts/build.mjs:61:14
+      at Array.map (<anonymous>)
+      at quoteFrontmatter (file://$HOME/src/repos/jbit/hosts/build.mjs:59:34)
+      at generate (file://$HOME/src/repos/jbit/hosts/build.mjs:239:12)
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/build.test.mjs:726:21)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+
+test at hosts/codex/hook.test.mjs:408:1
+✖ review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read (3.979896ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   content: 'x\n',
+  +   file_path: '/tmp/jbit-codex-t5TS7i/s.txt',
+  +   tool: 'Write'
+  -   command: "git push --force origin main; apply_patch <<'EOF'\n" +
+  -     '*** Begin Patch\n' +
+  -     '*** Add File: s.txt\n' +
+  -     '+x\n' +
+  -     '*** End Patch\n' +
+  -     'EOF',
+  -   tool: 'Bash'
+    }
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:414:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.start (node:internal/test_runner/test:944:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { tool: 'Write', file_path: '/tmp/jbit-codex-t5TS7i/s.txt', content: 'x\n' },
+    expected: { tool: 'Bash', command: "git push --force origin main; apply_patch <<'EOF'\n*** Begin Patch\n*** Add File: s.txt\n+x\n*** End Patch\nEOF" },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:423:1
+✖ review: apply_patch counts only as the command word; a mention is a plain Bash command (0.471099ms)
+  AssertionError [ERR_ASSERTION]: rg -n apply_patch hosts
+  + actual - expected
+  
+    {
+  +   kind: 'deny',
+  +   reason: "JBIT blocked this `apply_patch` call: it couldn't read the patch (the patch does not open with `*** Begin Patch`), and a patch it can't check doesn't run. Send a well-formed patch: `*** Begin Patch`, `*** Add File:`/`*** Update File:`/`*** Delete File:` headers, `*** End Patch`."
+  -   calls: [
+  -     {
+  -       command: 'rg -n apply_patch hosts',
+  -       tool: 'Bash'
+  -     }
+  -   ],
+  -   kind: 'calls'
+    }
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:427:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'deny', reason: "JBIT blocked this `apply_patch` call: it couldn't read the patch (the patch does not open with `*** Begin Patch`), and a patch it can't check doesn't run. Send a well-formed patch: `*** Begin Patch`, `*** Add File:`/`*** Update File:`/`*** Delete File:` headers, `*** End Patch`." },
+    expected: { kind: 'calls', calls: [ [Object] ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:434:1
+✖ review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project (0.3394ms)
+  AssertionError [ERR_ASSERTION]: cd /tmp && apply_patch <<'EOF'
+  *** Begin Patch
+  *** Add File: a.txt
+  +x
+  *** End Patch
+  EOF
+  
+  'calls' !== 'deny'
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:439:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'calls',
+    expected: 'deny',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:448:1
+✖ review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot (167.682124ms)
+  AssertionError [ERR_ASSERTION]: {}
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:453:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:458:1
+✖ review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it (0.4185ms)
+  AssertionError [ERR_ASSERTION]: echo x >&/home/u/.codex/config.toml
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:486:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:491:1
+✖ review: codex subcommands that rewrite its config are denied; --version and exec are not (0.1605ms)
+  AssertionError [ERR_ASSERTION]: codex mcp add fs -- npx fs
+  
+  'calls' !== 'deny'
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:495:12)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'calls',
+    expected: 'deny',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:500:1
+✖ review: send_message and followup_task map to Agent calls; wait, list and interrupt stay allowed (0.456899ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   kind: 'allow'
+  -   calls: [
+  -     {
+  -       description: 'agent-1',
+  -       prompt: 'build stage 2',
+  -       tool: 'Agent'
+  -     }
+  -   ],
+  -   kind: 'calls'
+    }
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:503:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'allow' },
+    expected: { kind: 'calls', calls: [ [Object] ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:515:1
+✖ review: write_stdin runs the apply_patch detection and is judged as Bash (0.2515ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      [
+        'Bash',
+        "apply_patch <<'EOF'\n" +
+          '*** Begin Patch\n' +
+  ...
+      ],
+  -   [
+  -     'Write',
+  -     '/tmp/jbit-codex-v0cfkn/w.txt'
+  -   ]
+    ]
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:520:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ 'Bash', "apply_patch <<'EOF'\n*** Begin Patch\n*** Add File: w.txt\n+x\n*** End Patch\nEOF\n" ] ],
+    expected: [ [ 'Bash', "apply_patch <<'EOF'\n*** Begin Patch\n*** Add File: w.txt\n+x\n*** End Patch\nEOF\n" ], [ 'Write', '/tmp/jbit-codex-v0cfkn/w.txt' ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at hosts/codex/hook.test.mjs:539:1
+✖ review: a Stop block with no reason does not crash, still carries ## Now, and counts only an emitted block (0.411899ms)
+  AssertionError [ERR_ASSERTION]: hook.mjs exports stopWith(core)
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file://$HOME/src/repos/jbit/hosts/codex/hook.test.mjs:540:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1047:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+      at Test.postRun (node:internal/test_runner/test:1173:19)
+      at Test.run (node:internal/test_runner/test:1101:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

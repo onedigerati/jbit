@@ -1,0 +1,11 @@
+$ node hosts/build.mjs codex --out $S/outA; node hosts/build.mjs codex --out $S/outB; diff -r outA outB; then diff -r outA/plugins/jbit-codex <repo>/plugins/jbit-codex, and marketplace
+codex: wrote 28, removed 0, unchanged 0 (plugins/jbit-codex, .agents/plugins/marketplace.json)
+exitA=0
+codex: wrote 28, removed 0, unchanged 0 (plugins/jbit-codex, .agents/plugins/marketplace.json)
+exitB=0
+28
+outA == outB (identical)
+outA package == committed plugins/jbit-codex
+marketplace identical
+treehash A: 360f943c2134836cd960d07c6747de89f6efbd46e8ecce4eff2ce8c14fdef3bf  -
+treehash B: 360f943c2134836cd960d07c6747de89f6efbd46e8ecce4eff2ce8c14fdef3bf  -

@@ -1,0 +1,4 @@
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin
+[exit 0]
+$ git status --short plugins/jbit .claude-plugin
+?? plugins/jbit/evals-ablation/

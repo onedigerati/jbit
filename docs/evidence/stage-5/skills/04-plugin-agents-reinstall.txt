@@ -1,0 +1,15 @@
+# plugin.json now: {"name":"jbit","version":"0.0.2",...,"skills":"./skills/","agents":"./agents/"}; added plugin .codex/agents/plugcheck2.toml
+$ codex plugin remove jbit@spikemkt && codex plugin add jbit@spikemkt
+Removed plugin `jbit` from marketplace `spikemkt`.
+Added plugin `jbit` from marketplace `spikemkt`.
+Installed plugin root: $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2
+$ find installed plugin root
+$SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/.codex-plugin/plugin.json
+$SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/agents/plugcheck.toml
+$SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/.codex/agents/plugcheck2.toml
+
+$ cd $SCRATCH/work && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json "Reply with just OK." < /dev/null
+# reply: OK
+# role list in spawn_agent.agent_type description (from rollout additional_tools):
+['homecheck', 'default', 'explorer', 'worker']
+# grep counts: plugcheck=0 plugcheck2=0 homecheck=2 -> neither plugin agents/ (even with manifest "agents" key) nor plugin .codex/agents/ register

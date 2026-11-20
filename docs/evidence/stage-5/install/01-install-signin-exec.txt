@@ -1,0 +1,30 @@
+$ npm ls -g @openai/codex
+└── @openai/codex@0.171.0
+
+
+$ codex --version
+codex-cli 0.171.0
+
+$ codex login status
+Logged in using ChatGPT
+
+$ cd $SCRATCH && codex exec --skip-git-repo-check "Reply with exactly: PONG"
+Reading additional input from stdin...
+OpenAI Codex v0.171.0
+--------
+workdir: $SCRATCH
+model: gpt-6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: none
+reasoning summaries: none
+session id: 01a1fae2-6d67-7540-a942-ccb7cad5a529
+--------
+user
+Reply with exactly: PONG
+codex
+PONG
+tokens used
+2,258
+PONG

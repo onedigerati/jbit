@@ -1,0 +1,19 @@
+$ claude plugin validate .
+Validating marketplace manifest: $HOME/src/repos/jbit/.claude-plugin/marketplace.json
+
+Validating hooks: $HOME/src/repos/jbit/plugins/jbit/hooks/hooks.json
+
+  ❯ ./register.ts hooks: prompt.compose, session.compact, turn.start, prompt.submit, turn.complete, tool.call{tool=Skill}, tool.call, tool.call{tool=Agent}, tool.call{tool=Agent}, tool.call{tool=Bash}
+  ❯ ./register.ts gating hook with .catch: session.compact
+  ❯ ./register.ts gating hook with .catch: prompt.submit
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Skill}
+  ❯ ./register.ts gating hook with .catch: tool.call
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Agent}
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Agent}
+  ❯ ./register.ts gating hook with .catch: tool.call{tool=Bash}
+  ❯ ./register.ts calls: $.agent.list (via backgroundBusy), $.clock.after, $.clock.now (via clockNow), $.fs.exists, $.fs.read (via evidenceDenial, loadProjectRules, milestoneDenial, pendingChanges, readPlan, roadmapText), $.fs.stat (via loadProjectRules, roadmapText), $.process.run (via git), $.prompt.submit (via carryOn), $.session.compact (via carryOn), $.session.cwd, $.session.usage (via carryOn), $.settings.read, $.state.get, $.state.set, $.store.delete, $.store.get (via storedMine, userModels), $.store.set, $.ui.notify, $.ui.status, $.ui.toast
+  ❯ ./register.ts state writes: jbit.announced, jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.mainRoot, jbit.modelsChosen, jbit.modelsDefault, jbit.modelsDefaultConfirmed, jbit.modelsHonoured, jbit.modelsMine, jbit.modelsNamed, jbit.modelsPending, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.reopen, jbit.seenMode, jbit.unattended, jbit.worktreeNotice
+  ❯ ./register.ts state reads: jbit.announced, jbit.armed, jbit.checkCounts, jbit.cleared, jbit.firstAgents, jbit.goal, jbit.mainRoot, jbit.modelsChosen, jbit.modelsDefault, jbit.modelsDefaultConfirmed, jbit.modelsHonoured, jbit.modelsMine, jbit.modelsNamed, jbit.modelsPending, jbit.noPlanSeen, jbit.openChecks, jbit.projectRules, jbit.reopen, jbit.seenMode, jbit.unattended, jbit.worktreeNotice
+
+✔ Validation passed
+[exit 0]

@@ -1,0 +1,55 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Append the line gamma to a.txt using the apply_patch tool. If it fails, report the exact error text you received, then try to accomplish the task another way."
+MODE FILES:
+  deny=apply_patch
+EXIT: 0  DURATION: 12s
+--- HOOK LOG ---
+=== SessionStart 15:36:29
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:36:29
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Append the line gamma to a.txt using the apply_patch tool. If it fails, report the exact error text you received, then try to accomplish the task another way."}
+=== PreToolUse 15:36:31
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"cat a.txt"},"tool_use_id":"exec-221eec0a-b511-4995-8f39-0870b335816b"}
+=== PostToolUse 15:36:31
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PostToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"cat a.txt"},"tool_response":"alpha\nbeta\n","tool_use_id":"exec-221eec0a-b511-4995-8f39-0870b335816b"}
+=== PreToolUse 15:36:34
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: a.txt\n@@\n alpha\n beta\n+gamma\n*** End Patch"},"tool_use_id":"exec-95c89e0a-d6e7-48f4-8d89-12129420684c"}
+=== PreToolUse 15:36:36
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"printf 'gamma\\n' >> a.txt"},"tool_use_id":"exec-10ceffec-56dc-408f-bc25-6ef8f8a455d0"}
+=== PostToolUse 15:36:36
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PostToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"printf 'gamma\\n' >> a.txt"},"tool_response":"","tool_use_id":"exec-10ceffec-56dc-408f-bc25-6ef8f8a455d0"}
+=== Stop 15:36:39
+{"session_id":"01a1fae3-b241-7b32-b597-40e124da6508","turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-28-01a1fae3-b241-7b32-b597-40e124da6508.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"`apply_patch` failed with: `Script error: Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch\nUpdate File: a.txt\n@@\n alpha\n beta\n+gamma\n*** End Patch`\n\nI appended `gamma` to [a.txt]($SCRATCH/fixture/a.txt) using a shell command."}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+2026-11-20T21:36:34.038041Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch
+*** Update File: a.txt
+@@
+ alpha
+ beta
++gamma
+*** End Patch
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae3-b241-7b32-b597-40e124da6508"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"I’ll inspect the current file and then make the append with `apply_patch` as requested."}}
+{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'cat a.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'cat a.txt'","aggregated_output":"alpha\nbeta\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"`apply_patch` was blocked by the tool hook. I’ll append the line with a shell command now."}}
+{"type":"item.started","item":{"id":"item_5","type":"command_execution","command":"/bin/bash -lc \"printf 'gamma\\\\n' >> a.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_5","type":"command_execution","command":"/bin/bash -lc \"printf 'gamma\\\\n' >> a.txt\"","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_6","type":"agent_message","text":"`apply_patch` failed with: `Script error: Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch\nUpdate File: a.txt\n@@\n alpha\n beta\n+gamma\n*** End Patch`\n\nI appended `gamma` to [a.txt]($SCRATCH/fixture/a.txt) using a shell command."}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+gamma
+## d.txt
+delete me
+## r.txt
+rename me
+--- ROLLOUT: model-visible tool output for the denied apply_patch (line 23) ---
+{"timestamp":"2026-11-20T21:36:34.047Z","ordinal":22,"type":"response_item","payload":{"type":"custom_tool_call_output","id":"ctco_01a1fae3-c6ff-70c3-b175-380854f40226","call_id":"call_138fe342b6cd4f3c9093c90655dda5b8","output":[{"type":"input_text","text":"Script failed\nWall time 0.0 seconds\nOutput:\n"},{"type":"input_text","text":"Script error:\nCommand blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch\n*** Update File: a.txt\n@@\n alpha\n beta\n+gamma\n*** End Patch"}],"internal_chat_message_metadata_passthrough":{"turn_id":"01a1fae3-b3a6-7bf3-8d3d-64f8f5ffff49","create_time":1795210594.0475748}},"metadata":{"history_sequence":12,"sampl

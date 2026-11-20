@@ -1,0 +1,20 @@
+$ echo "(restored plugin log.mjs to trusted content; wrote \$CODEX_HOME/hooks.json:)"; cat $CODEX_HOME/hooks.json; codex exec --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-300; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -E "^##|^\(" | cut -c1-200
+---
+(restored plugin log.mjs to trusted content; wrote $CODEX_HOME/hooks.json:)
+{ "hooks": {
+  "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "node $SCRATCH/logger.mjs cfg-UPS" } ] } ],
+  "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node $SCRATCH/logger.mjs cfg-PRE" } ] } ]
+} }
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae9-24d1-7730-a227-13afd631e7b2"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run the requested shell command now."}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+## spike-agents-START
+## spike-agents-UPS
+## spike-agents-PRE
+--- exit: 0

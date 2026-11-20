@@ -1,0 +1,17 @@
+$ grep PRE $CODEX_HOME/hooks.json; codex exec --dangerously-bypass-hook-trust --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | grep -v hook-trust | cut -c1-500; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -E "^##" | cut -c1-200
+---
+  "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node $SCRATCH/logger.mjs cfg-PRE crash 1" } ] } ]
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae9-9801-7860-a3f5-aed4563c6981"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+## spike-agents-START
+## cfg-UPS
+## spike-agents-UPS
+## cfg-PRE
+## spike-agents-PRE
+--- exit: 0

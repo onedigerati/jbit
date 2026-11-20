@@ -1,0 +1,12 @@
+$ echo "// edited" >> $CODEX_HOME/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/log.mjs; codex exec --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-300; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -E "^##|^\(|stdin" | cut -c1-200
+---
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae8-f2f3-7592-bf02-64eae47e885a"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+(hook log empty)
+--- exit: 0

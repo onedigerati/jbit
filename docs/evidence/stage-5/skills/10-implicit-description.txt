@@ -1,0 +1,7 @@
+$ cd $SCRATCH/work && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json I\ am\ back\ after\ a\ break.\ Where\ do\ things\ stand\ on\ this\ project\ and\ what\ is\ next\? < /dev/null
+# --json items:
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll use the project’s resume workflow to check its plan, recent commits, and any uncommitted work, then summarize the current position and next step."}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'cat $SCRATCH/work/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/resume/SKILL.md 2>/dev/null || cat $SCRATCH/home/.co
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"ZEBRA-RESUME-4417"}}
+# rollout analysis:
+TOOL exec const r = await tools.exec_command({cmd:"cat $SCRATCH/work/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/re

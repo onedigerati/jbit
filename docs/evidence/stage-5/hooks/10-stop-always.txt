@@ -1,0 +1,296 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Reply with only the word READY."
+MODE FILES:
+  stop=1000
+EXIT: 143  DURATION: 146s
+--- HOOK LOG ---
+=== SessionStart 15:38:01
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:38:01
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Reply with only the word READY."}
+=== Stop 15:38:04
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"READY"}
+=== Stop 15:38:08
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE1"}
+=== Stop 15:38:09
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE2"}
+=== Stop 15:38:10
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE3"}
+=== Stop 15:38:12
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE4"}
+=== Stop 15:38:14
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE5"}
+=== Stop 15:38:15
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE6"}
+=== Stop 15:38:16
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE7"}
+=== Stop 15:38:17
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE8"}
+=== Stop 15:38:19
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE9"}
+=== Stop 15:38:20
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE10"}
+=== Stop 15:38:22
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE11"}
+=== Stop 15:38:24
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE12"}
+=== Stop 15:38:25
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE13"}
+=== Stop 15:38:26
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE14"}
+=== Stop 15:38:28
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE15"}
+=== Stop 15:38:29
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE16"}
+=== Stop 15:38:37
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE17"}
+=== Stop 15:38:38
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE18"}
+=== Stop 15:38:39
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE19"}
+=== Stop 15:38:40
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE20"}
+=== Stop 15:38:44
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE21"}
+=== Stop 15:38:46
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE22"}
+=== Stop 15:38:48
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE23"}
+=== Stop 15:38:49
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE24"}
+=== Stop 15:38:51
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE25"}
+=== Stop 15:38:53
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE26"}
+=== Stop 15:38:54
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE27"}
+=== Stop 15:38:56
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE28"}
+=== Stop 15:38:58
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE29"}
+=== Stop 15:38:59
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE30"}
+=== Stop 15:39:00
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE31"}
+=== Stop 15:39:02
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE32"}
+=== Stop 15:39:03
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE33"}
+=== Stop 15:39:04
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE34"}
+=== Stop 15:39:06
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE35"}
+=== Stop 15:39:07
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE36"}
+=== Stop 15:39:09
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE37"}
+=== Stop 15:39:10
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE38"}
+=== Stop 15:39:11
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE39"}
+=== Stop 15:39:12
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE40"}
+=== Stop 15:39:13
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE41"}
+=== Stop 15:39:14
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE42"}
+=== Stop 15:39:15
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE43"}
+=== Stop 15:39:17
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE44"}
+=== Stop 15:39:18
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE45"}
+=== Stop 15:39:19
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE46"}
+=== Stop 15:39:20
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE47"}
+=== Stop 15:39:22
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE48"}
+=== Stop 15:39:23
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE49"}
+=== Stop 15:39:24
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE50"}
+=== Stop 15:39:25
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE51"}
+=== Stop 15:39:27
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE52"}
+=== Stop 15:39:28
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE53"}
+=== Stop 15:39:29
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE54"}
+=== Stop 15:39:31
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE55"}
+=== Stop 15:39:32
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE56"}
+=== Stop 15:39:34
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE57"}
+=== Stop 15:39:35
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE58"}
+=== Stop 15:39:36
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE59"}
+=== Stop 15:39:37
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE60"}
+=== Stop 15:39:39
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE61"}
+=== Stop 15:39:41
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE62"}
+=== Stop 15:39:43
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE63"}
+=== Stop 15:39:44
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE64"}
+=== Stop 15:39:45
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE65"}
+=== Stop 15:39:47
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE66"}
+=== Stop 15:39:48
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE67"}
+=== Stop 15:39:49
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE68"}
+=== Stop 15:39:50
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE69"}
+=== Stop 15:39:51
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE70"}
+=== Stop 15:39:53
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE71"}
+=== Stop 15:39:55
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE72"}
+=== Stop 15:39:58
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE73"}
+=== Stop 15:40:00
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE74"}
+=== Stop 15:40:04
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE75"}
+=== Stop 15:40:05
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE76"}
+=== Stop 15:40:07
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE77"}
+=== Stop 15:40:08
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE78"}
+=== Stop 15:40:09
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE79"}
+=== Stop 15:40:12
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE80"}
+=== Stop 15:40:14
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE81"}
+=== Stop 15:40:15
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE82"}
+=== Stop 15:40:16
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE83"}
+=== Stop 15:40:17
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE84"}
+=== Stop 15:40:18
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE85"}
+=== Stop 15:40:21
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE86"}
+=== Stop 15:40:23
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE87"}
+=== Stop 15:40:24
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE88"}
+=== Stop 15:40:25
+{"session_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad","turn_id":"01a1fae5-1a80-70e1-8c06-82b19b83674f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-38-00-01a1fae5-18b7-7372-a3d0-0f95eb0e36ad.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE89"}
+--- stopcount: 90
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae5-18b7-7372-a3d0-0f95eb0e36ad"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"READY"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"CONTINUE1"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"CONTINUE2"}}
+{"type":"item.completed","item":{"id":"item_5","type":"agent_message","text":"CONTINUE3"}}
+{"type":"item.completed","item":{"id":"item_6","type":"agent_message","text":"CONTINUE4"}}
+{"type":"item.completed","item":{"id":"item_7","type":"agent_message","text":"CONTINUE5"}}
+{"type":"item.completed","item":{"id":"item_8","type":"agent_message","text":"CONTINUE6"}}
+{"type":"item.completed","item":{"id":"item_9","type":"agent_message","text":"CONTINUE7"}}
+{"type":"item.completed","item":{"id":"item_10","type":"agent_message","text":"CONTINUE8"}}
+{"type":"item.completed","item":{"id":"item_11","type":"agent_message","text":"CONTINUE9"}}
+{"type":"item.completed","item":{"id":"item_12","type":"agent_message","text":"CONTINUE10"}}
+{"type":"item.completed","item":{"id":"item_13","type":"agent_message","text":"CONTINUE11"}}
+{"type":"item.completed","item":{"id":"item_14","type":"agent_message","text":"CONTINUE12"}}
+{"type":"item.completed","item":{"id":"item_15","type":"agent_message","text":"CONTINUE13"}}
+{"type":"item.completed","item":{"id":"item_16","type":"agent_message","text":"CONTINUE14"}}
+{"type":"item.completed","item":{"id":"item_17","type":"agent_message","text":"CONTINUE15"}}
+{"type":"item.completed","item":{"id":"item_18","type":"agent_message","text":"CONTINUE16"}}
+{"type":"item.completed","item":{"id":"item_19","type":"agent_message","text":"CONTINUE17"}}
+{"type":"item.completed","item":{"id":"item_20","type":"agent_message","text":"CONTINUE18"}}
+{"type":"item.completed","item":{"id":"item_21","type":"agent_message","text":"CONTINUE19"}}
+{"type":"item.completed","item":{"id":"item_22","type":"agent_message","text":"CONTINUE20"}}
+{"type":"item.completed","item":{"id":"item_23","type":"agent_message","text":"CONTINUE21"}}
+{"type":"item.completed","item":{"id":"item_24","type":"agent_message","text":"CONTINUE22"}}
+{"type":"item.completed","item":{"id":"item_25","type":"agent_message","text":"CONTINUE23"}}
+{"type":"item.completed","item":{"id":"item_26","type":"agent_message","text":"CONTINUE24"}}
+{"type":"item.completed","item":{"id":"item_27","type":"agent_message","text":"CONTINUE25"}}
+{"type":"item.completed","item":{"id":"item_28","type":"agent_message","text":"CONTINUE26"}}
+{"type":"item.completed","item":{"id":"item_29","type":"agent_message","text":"CONTINUE27"}}
+{"type":"item.completed","item":{"id":"item_30","type":"agent_message","text":"CONTINUE28"}}
+{"type":"item.completed","item":{"id":"item_31","type":"agent_message","text":"CONTINUE29"}}
+{"type":"item.completed","item":{"id":"item_32","type":"agent_message","text":"CONTINUE30"}}
+{"type":"item.completed","item":{"id":"item_33","type":"agent_message","text":"CONTINUE31"}}
+{"type":"item.completed","item":{"id":"item_34","type":"agent_message","text":"CONTINUE32"}}
+{"type":"item.completed","item":{"id":"item_35","type":"agent_message","text":"CONTINUE33"}}
+{"type":"item.completed","item":{"id":"item_36","type":"agent_message","text":"CONTINUE34"}}
+{"type":"item.completed","item":{"id":"item_37","type":"agent_message","text":"CONTINUE35"}}
+{"type":"item.completed","item":{"id":"item_38","type":"agent_message","text":"CONTINUE36"}}
+{"type":"item.completed","item":{"id":"item_39","type":"agent_message","text":"CONTINUE37"}}
+{"type":"item.completed","item":{"id":"item_40","type":"agent_message","text":"CONTINUE38"}}
+{"type":"item.completed","item":{"id":"item_41","type":"agent_message","text":"CONTINUE39"}}
+{"type":"item.completed","item":{"id":"item_42","type":"agent_message","text":"CONTINUE40"}}
+{"type":"item.completed","item":{"id":"item_43","type":"agent_message","text":"CONTINUE41"}}
+{"type":"item.completed","item":{"id":"item_44","type":"agent_message","text":"CONTINUE42"}}
+{"type":"item.completed","item":{"id":"item_45","type":"agent_message","text":"CONTINUE43"}}
+{"type":"item.completed","item":{"id":"item_46","type":"agent_message","text":"CONTINUE44"}}
+{"type":"item.completed","item":{"id":"item_47","type":"agent_message","text":"CONTINUE45"}}
+{"type":"item.completed","item":{"id":"item_48","type":"agent_message","text":"CONTINUE46"}}
+{"type":"item.completed","item":{"id":"item_49","type":"agent_message","text":"CONTINUE47"}}
+{"type":"item.completed","item":{"id":"item_50","type":"agent_message","text":"CONTINUE48"}}
+{"type":"item.completed","item":{"id":"item_51","type":"agent_message","text":"CONTINUE49"}}
+{"type":"item.completed","item":{"id":"item_52","type":"agent_message","text":"CONTINUE50"}}
+{"type":"item.completed","item":{"id":"item_53","type":"agent_message","text":"CONTINUE51"}}
+{"type":"item.completed","item":{"id":"item_54","type":"agent_message","text":"CONTINUE52"}}
+{"type":"item.completed","item":{"id":"item_55","type":"agent_message","text":"CONTINUE53"}}
+{"type":"item.completed","item":{"id":"item_56","type":"agent_message","text":"CONTINUE54"}}
+{"type":"item.completed","item":{"id":"item_57","type":"agent_message","text":"CONTINUE55"}}
+{"type":"item.completed","item":{"id":"item_58","type":"agent_message","text":"CONTINUE56"}}
+{"type":"item.completed","item":{"id":"item_59","type":"agent_message","text":"CONTINUE57"}}
+{"type":"item.completed","item":{"id":"item_60","type":"agent_message","text":"CONTINUE58"}}
+{"type":"item.completed","item":{"id":"item_61","type":"agent_message","text":"CONTINUE59"}}
+{"type":"item.completed","item":{"id":"item_62","type":"agent_message","text":"CONTINUE60"}}
+{"type":"item.completed","item":{"id":"item_63","type":"agent_message","text":"CONTINUE61"}}
+{"type":"item.completed","item":{"id":"item_64","type":"agent_message","text":"CONTINUE62"}}
+{"type":"item.completed","item":{"id":"item_65","type":"agent_message","text":"CONTINUE63"}}
+{"type":"item.completed","item":{"id":"item_66","type":"agent_message","text":"CONTINUE64"}}
+{"type":"item.completed","item":{"id":"item_67","type":"agent_message","text":"CONTINUE65"}}
+{"type":"item.completed","item":{"id":"item_68","type":"agent_message","text":"CONTINUE66"}}
+{"type":"item.completed","item":{"id":"item_69","type":"agent_message","text":"CONTINUE67"}}
+{"type":"item.completed","item":{"id":"item_70","type":"agent_message","text":"CONTINUE68"}}
+{"type":"item.completed","item":{"id":"item_71","type":"agent_message","text":"CONTINUE69"}}
+{"type":"item.completed","item":{"id":"item_72","type":"agent_message","text":"CONTINUE70"}}
+{"type":"item.completed","item":{"id":"item_73","type":"agent_message","text":"CONTINUE71"}}
+{"type":"item.completed","item":{"id":"item_74","type":"agent_message","text":"CONTINUE72"}}
+{"type":"item.completed","item":{"id":"item_75","type":"agent_message","text":"CONTINUE73"}}
+{"type":"item.completed","item":{"id":"item_76","type":"agent_message","text":"CONTINUE74"}}
+{"type":"item.completed","item":{"id":"item_77","type":"agent_message","text":"CONTINUE75"}}
+{"type":"item.completed","item":{"id":"item_78","type":"agent_message","text":"CONTINUE76"}}
+{"type":"item.completed","item":{"id":"item_79","type":"agent_message","text":"CONTINUE77"}}
+{"type":"item.completed","item":{"id":"item_80","type":"agent_message","text":"CONTINUE78"}}
+{"type":"item.completed","item":{"id":"item_81","type":"agent_message","text":"CONTINUE79"}}
+{"type":"item.completed","item":{"id":"item_82","type":"agent_message","text":"CONTINUE80"}}
+{"type":"item.completed","item":{"id":"item_83","type":"agent_message","text":"CONTINUE81"}}
+{"type":"item.completed","item":{"id":"item_84","type":"agent_message","text":"CONTINUE82"}}
+{"type":"item.completed","item":{"id":"item_85","type":"agent_message","text":"CONTINUE83"}}
+{"type":"item.completed","item":{"id":"item_86","type":"agent_message","text":"CONTINUE84"}}
+{"type":"item.completed","item":{"id":"item_87","type":"agent_message","text":"CONTINUE85"}}
+{"type":"item.completed","item":{"id":"item_88","type":"agent_message","text":"CONTINUE86"}}
+{"type":"item.completed","item":{"id":"item_89","type":"agent_message","text":"CONTINUE87"}}
+{"type":"item.completed","item":{"id":"item_90","type":"agent_message","text":"CONTINUE88"}}
+{"type":"item.completed","item":{"id":"item_91","type":"agent_message","text":"CONTINUE89"}}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me

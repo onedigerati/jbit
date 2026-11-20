@@ -1,0 +1,8 @@
+$ command grep -rnoE "$HOME|/tmp/claude-1000|eyJ[A-Za-z0-9_-]{8,}|access_token|refresh_token|id_token|account_id|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|sk-[A-Za-z0-9]{16,}|\"usage\":\{|gh[opsu]_[A-Za-z0-9]{20,}" docs/evidence/stage-5/
+[exit 1 — 1 means no hits]
+$ command grep -rnoE "\"usage\": ?\"[^<]" docs/evidence/stage-5/ ; usage counts
+     20 "usage":"<removed>"
+$ command grep -rnoE "/home/[a-z]+|jonah" docs/evidence/stage-5/
+[exit 1]
+$ command grep -rnE "input_tokens|cached_input_tokens|\"usage\" *: *\{|encrypted_content\":\"[^<]" docs/evidence/stage-5/ | cut -c1-160
+[exit 0]

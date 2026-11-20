@@ -1,0 +1,5 @@
+$ cd $SCRATCH/work && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json \$jbit:jbit:probe < /dev/null
+# --json items:
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"ZEBRA-PROBE-4417"}}
+# rollout analysis:
+INJECTED user-role item: <skill>\n<name>jbit:jbit:probe</name>\n<path>$SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/probe/SKILL.md</path>\n---\nname: jbit:probe\ndescription: Spike probe skill whose frontmatter name already

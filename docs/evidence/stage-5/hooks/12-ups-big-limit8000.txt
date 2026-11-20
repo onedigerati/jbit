@@ -1,0 +1,31 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Reply with the head codeword and the tail codeword from your context, as HEAD=<word> TAIL=<word>; write MISSING for any you cannot see. Do not run any tools."
+MODE FILES:
+  ups=big
+EXIT: 0  DURATION: 3s
+--- HOOK LOG ---
+=== SessionStart 15:41:09
+{"session_id":"01a1fae7-f647-7282-afd1-66caf5191b5e","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-41-08-01a1fae7-f647-7282-afd1-66caf5191b5e.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:41:09
+{"session_id":"01a1fae7-f647-7282-afd1-66caf5191b5e","turn_id":"01a1fae7-f775-7961-b6a2-0365d36750a2","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-41-08-01a1fae7-f647-7282-afd1-66caf5191b5e.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Reply with the head codeword and the tail codeword from your context, as HEAD=<word> TAIL=<word>; write MISSING for any you cannot see. Do not run any tools."}
+=== Stop 15:41:11
+{"session_id":"01a1fae7-f647-7282-afd1-66caf5191b5e","turn_id":"01a1fae7-f775-7961-b6a2-0365d36750a2","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-41-08-01a1fae7-f647-7282-afd1-66caf5191b5e.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"HEAD=ALPHAHEAD TAIL=OMEGATAIL"}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae7-f647-7282-afd1-66caf5191b5e"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"HEAD=ALPHAHEAD TAIL=OMEGATAIL"}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me
+developer msg len 16120 NOT truncated
+hooks.json UPS handler: {'type': 'command', 'command': 'python3 $SCRATCH/hooks/hook.py UserPromptSubmit', 'timeout': 30, 'additionalContextLimit': 8000}

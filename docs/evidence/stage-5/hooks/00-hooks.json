@@ -1,0 +1,61 @@
+{
+ "hooks": {
+  "PreToolUse": [
+   {
+    "matcher": "*",
+    "hooks": [
+     {
+      "type": "command",
+      "command": "python3 $SCRATCH/hooks/hook.py PreToolUse",
+      "timeout": 30
+     }
+    ]
+   }
+  ],
+  "PostToolUse": [
+   {
+    "matcher": "*",
+    "hooks": [
+     {
+      "type": "command",
+      "command": "python3 $SCRATCH/hooks/hook.py PostToolUse",
+      "timeout": 30
+     }
+    ]
+   }
+  ],
+  "UserPromptSubmit": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "python3 $SCRATCH/hooks/hook.py UserPromptSubmit",
+      "timeout": 30
+     }
+    ]
+   }
+  ],
+  "Stop": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "python3 $SCRATCH/hooks/hook.py Stop",
+      "timeout": 30
+     }
+    ]
+   }
+  ],
+  "SessionStart": [
+   {
+    "hooks": [
+     {
+      "type": "command",
+      "command": "python3 $SCRATCH/hooks/hook.py SessionStart",
+      "timeout": 30
+     }
+    ]
+   }
+  ]
+ }
+}

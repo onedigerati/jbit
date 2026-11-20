@@ -1,0 +1,7 @@
+$ cd $SCRATCH/work && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json JBIT\,\ resume < /dev/null
+# --json items:
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll use the JBIT resume workflow to check the project plan, recent commits, and any uncommitted work, then summarize where things stand."}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc \"cat $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/resume/SKILL.md && pwd && rg --files -g 'PLAN.md' -g 'ROADMAP.md' -g 'AGENTS.md' -g 'CLAUDE.md' -g 'README*' -g '.git'\"","aggregated_output":
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"ZEBRA-RESUME-4417"}}
+# rollout analysis:
+TOOL exec const x = await tools.exec_command({cmd:"cat $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/re

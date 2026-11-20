@@ -1,0 +1,33 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "What is the session codeword? Reply with only the codeword, or NONE if you have none."
+MODE FILES:
+  ups=json
+EXIT: 0  DURATION: 3s
+--- HOOK LOG ---
+=== SessionStart 15:37:33
+{"session_id":"01a1fae4-abca-7dd1-ac47-08700c84b79c","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-32-01a1fae4-abca-7dd1-ac47-08700c84b79c.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:37:33
+{"session_id":"01a1fae4-abca-7dd1-ac47-08700c84b79c","turn_id":"01a1fae4-acf5-72f1-a823-ef75507983a7","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-32-01a1fae4-abca-7dd1-ac47-08700c84b79c.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"What is the session codeword? Reply with only the codeword, or NONE if you have none."}
+=== Stop 15:37:35
+{"session_id":"01a1fae4-abca-7dd1-ac47-08700c84b79c","turn_id":"01a1fae4-acf5-72f1-a823-ef75507983a7","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-32-01a1fae4-abca-7dd1-ac47-08700c84b79c.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"JSONPELICAN"}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae4-abca-7dd1-ac47-08700c84b79c"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"JSONPELICAN"}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me
+.249Z","ordinal":14,"type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1fae4-abca-7dd1-ac47-08700c84b79c","turn_id":"01a1fae4-acf5-72f1-a823-ef75507983a7","item":{"type":"AgentMessage","id":"msg_002cd536c1bdbc18016b00bd9f472487d1aa9ae3a7bad516fc","content":[{"type":"Text","text":"JSONPELICAN"}],"phase":"final_answer"},"content_token_count":5,"started_at_ms":1795210655137,"completed_at_ms":
+--- ROLLOUT framing of injected context ---
+message developer [{"type": "input_text", "text": "Session codeword: JSONPELICAN. If asked for the codeword, reply with it."}]
+item_completed None {"type": "AgentMessage", "id": "msg_002cd536c1bdbc18016b00bd9f472487d1aa9ae3a7bad516fc", "content": [{"type": "Text", "text": "JSONPELICAN"}], "phase": "final_answer"}

@@ -1,0 +1,24 @@
+$ HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex codex plugin marketplace add $SCRATCH/repo
+Added marketplace `spikemkt` from $SCRATCH/repo.
+Installed marketplace root: $SCRATCH/repo
+$ codex plugin list
+Marketplace `spikemkt`
+$SCRATCH/repo/.agents/plugins/marketplace.json
+
+PLUGIN         STATUS         VERSION  SOURCE
+jbit@spikemkt  not installed           $SCRATCH/repo/plugins/jbit
+
+Marketplace `openai-curated-remote`
+Remote catalog
+[... remote curated catalog rows trimmed ...]
+$ codex plugin add jbit@spikemkt
+Added plugin `jbit` from marketplace `spikemkt`.
+Installed plugin root: $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.1
+$ codex plugin list (after add, spikemkt rows)
+$ cat $CODEX_HOME/config.toml
+[marketplaces.spikemkt]
+source_type = "local"
+source = "$SCRATCH/repo"
+
+[plugins."jbit@spikemkt"]
+enabled = true

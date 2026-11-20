@@ -1,0 +1,39 @@
+$ codex exec --dangerously-bypass-hook-trust --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-300; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -vE "^ env inherited" | sed "s#\"CLAUDE_CODE_MESSAGING_TOKEN\":\"[0-9a-f]*\"#[REDACTED]#" | cut -c1-900
+---
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae9-45fc-7740-8fbc-c497a9172add"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"I’ll run the requested shell command now."}}
+{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+## spike-agents-START
+ argv: ["$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/log.mjs","spike-agents-START"]
+ cwd: $SCRATCH/repo
+ env (Codex-relevant): {"CODEX_MANAGED_PACKAGE_ROOT":"$HOME/.nvm/versions/node/v22.23.5/lib/node_modules/@openai/codex","PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","CODEX_MANAGED_BY_NPM":"1","CLAUDE_PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","PLUGIN_DATA":"$SCRATCH/home/.codex/plugins/data/spike-agents-spike-agents-mkt","CODEX_HOME":"$SCRATCH/home/.codex","CLAUDE_PLUGIN_DATA":"$CLAUDE_TMP
+ stdin: {"session_id":"01a1fae9-45fc-7740-8fbc-c497a9172add","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+## cfg-UPS
+ argv: ["$SCRATCH/logger.mjs","cfg-UPS"]
+ cwd: $SCRATCH/repo
+ env (Codex-relevant): {"CODEX_MANAGED_PACKAGE_ROOT":"$HOME/.nvm/versions/node/v22.23.5/lib/node_modules/@openai/codex","CODEX_MANAGED_BY_NPM":"1","CODEX_HOME":"$SCRATCH/home/.codex"}
+ stdin: {"session_id":"01a1fae9-45fc-7740-8fbc-c497a9172add","turn_id":"01a1fae9-4738-70b0-950e-05d510ed7f20","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Run `echo hi` with the shell tool, then reply DONE."}
+## spike-agents-UPS
+ argv: ["$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/log.mjs","spike-agents-UPS"]
+ cwd: $SCRATCH/repo
+ env (Codex-relevant): {"CODEX_MANAGED_PACKAGE_ROOT":"$HOME/.nvm/versions/node/v22.23.5/lib/node_modules/@openai/codex","PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","CODEX_MANAGED_BY_NPM":"1","CLAUDE_PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","PLUGIN_DATA":"$SCRATCH/home/.codex/plugins/data/spike-agents-spike-agents-mkt","CODEX_HOME":"$SCRATCH/home/.codex","CLAUDE_PLUGIN_DATA":"$CLAUDE_TMP
+ stdin: {"session_id":"01a1fae9-45fc-7740-8fbc-c497a9172add","turn_id":"01a1fae9-4738-70b0-950e-05d510ed7f20","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Run `echo hi` with the shell tool, then reply DONE."}
+## cfg-PRE
+ argv: ["$SCRATCH/logger.mjs","cfg-PRE"]
+ cwd: $SCRATCH/repo
+ env (Codex-relevant): {"CODEX_MANAGED_PACKAGE_ROOT":"$HOME/.nvm/versions/node/v22.23.5/lib/node_modules/@openai/codex","CODEX_MANAGED_BY_NPM":"1","CODEX_HOME":"$SCRATCH/home/.codex"}
+ stdin: {"session_id":"01a1fae9-45fc-7740-8fbc-c497a9172add","turn_id":"01a1fae9-4738-70b0-950e-05d510ed7f20","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"echo hi"},"tool_use_id":"exec-34e206ea-57ed-4569-b08f-36ffd5da723f"}
+## spike-agents-PRE
+ argv: ["$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/log.mjs","spike-agents-PRE"]
+ cwd: $SCRATCH/repo
+ env (Codex-relevant): {"CODEX_MANAGED_PACKAGE_ROOT":"$HOME/.nvm/versions/node/v22.23.5/lib/node_modules/@openai/codex","PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","CODEX_MANAGED_BY_NPM":"1","CLAUDE_PLUGIN_ROOT":"$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1","PLUGIN_DATA":"$SCRATCH/home/.codex/plugins/data/spike-agents-spike-agents-mkt","CODEX_HOME":"$SCRATCH/home/.codex","CLAUDE_PLUGIN_DATA":"$CLAUDE_TMP
+ stdin: {"session_id":"01a1fae9-45fc-7740-8fbc-c497a9172add","turn_id":"01a1fae9-4738-70b0-950e-05d510ed7f20","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"echo hi"},"tool_use_id":"exec-34e206ea-57ed-4569-b08f-36ffd5da723f"}
+--- exit: 0

@@ -1,0 +1,13 @@
+$ codex plugin marketplace add $S/repo-noagents; codex plugin list 2>&1 | grep -iE "spike|^Marketplace|marketplace.json"; codex plugin marketplace remove spike-claude-mkt
+---
+Added marketplace `spike-claude-mkt` from $SCRATCH/repo-noagents.
+Installed marketplace root: $SCRATCH/repo-noagents
+Marketplace `spike-agents-mkt`
+$SCRATCH/repo/.agents/plugins/marketplace.json
+spike-agents@spike-agents-mkt  not installed           $SCRATCH/repo/plugins/spike-agents
+Marketplace `spike-claude-mkt`
+$SCRATCH/repo-noagents/.claude-plugin/marketplace.json
+spike-claude@spike-claude-mkt  not installed           $SCRATCH/repo-noagents/plugins/spike-claude
+Marketplace `openai-curated-remote`
+Removed marketplace `spike-claude-mkt`.
+--- exit: 0

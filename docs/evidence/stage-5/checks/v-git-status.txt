@@ -1,0 +1,8 @@
+$ git status --short
+ M docs/PLAN.md
+?? CLAUDE.md
+?? docs/evidence/stage-5/
+?? docs/research/codex-spike-2026-11.md
+?? docs/research/vanilla-claude-code-2026-11.md
+?? plugins/jbit/evals-ablation/
+[exit 0]

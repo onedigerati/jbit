@@ -1,0 +1,44 @@
+$ (extracted from $SCRATCH/home/.codex/sessions/.../rollout-*.jsonl of run 02, payload.type=additional_tools)
+# namespaces/tools: functions{exec,wait,request_user_input,request_user_input_async} clock{sleep} collaboration{followup_task,interrupt_agent,list_agents,send_message,spawn_agent,wait_agent}
+# plugcheck (plugin agents/plugcheck.toml) occurrences in rollout: 0; homecheck ($CODEX_HOME/agents/homecheck.toml): listed as role
+{
+ "type": "function",
+ "name": "spawn_agent",
+ "description": "\n        Available model overrides (optional; inherited parent model is preferred):\n- `gpt-6-luna`: Fast and affordable model for easier tasks. Reasoning efforts: low, medium (default), high, xhigh, max.\n- `gpt-5.6-terra`: Legacy balanced model for agentic coding. Reasoning efforts: low, medium (default), high, xhigh, max, ultra.\n- `gpt-5.6-luna`: Legacy fast model for simpler tasks. Reasoning efforts: low, medium (default), high, xhigh, max.\n        Spawns an agent to work on the specified task. If your current task is `/root/task1` and you spawn_agent with task_name \"task_3\" the agent will have canonical task name `/root/task1/task_3`.\nYou are then able to refer to this agent as `task_3` or `/root/task1/task_3` interchangeably. However an agent `/root/task2/task_3` would only be able to communicate with this agent via its canonical name `/root/task1/task_3`.\nThe spawned agent will have the same tools as you and the ability to spawn its own subagents.\n\nIt will be able to send you and other running agents messages, and its final answer will be provided to you when it finishes.\nThe new agent's canonical task name will be provided to it along with the message.\n\nNote that passing `fork_turns=\"none\"` will not pass any surrounding context to the spawned subagent, which may cause the agent to lack the context it needs to complete its task, whereas `fork_turns=\"all\"` will provide the subagent with all surrounding context.",
+ "strict": false,
+ "parameters": {
+  "type": "object",
+  "properties": {
+   "agent_type": {
+    "type": "string",
+    "description": "Agent type override for the new agent. Omit unless explicitly asked. The selected role applies regardless of how much parent history is inherited.\nAvailable roles:\nhomecheck: {\nHome-config spike agent. Use when asked to spawn homecheck.\n}\ndefault: {\nDefault agent.\n}\nexplorer: {\nUse `explorer` for specific codebase questions.\nExplorers are fast and authoritative.\nThey must be used to ask specific, well-scoped questions on the codebase.\nRules:\n- In order to avoid redundant work, you should avoid exploring the same problem that explorers have already covered. Typically, you should trust the explorer results without additional verification. You are still allowed to inspect the code yourself to gain the needed context!\n- You are encouraged to spawn up multiple explorers in parallel when you have multiple distinct questions to ask about the codebase that can be answered independently. This allows you to get more information faster without waiting for one question to finish before asking the next. While waiting for the explorer results, you can continue working on other local tasks that do not depend on those results. This parallelism is a key advantage of delegation, so use it whenever you have multiple questions to ask.\n- Reuse existing explorers for related questions.\n}\nworker: {\nUse for execution and production work.\nTypical tasks:\n- Implement part of a feature\n- Fix tests or bugs\n- Split large refactors into independent chunks\nRules:\n- Explicitly assign **ownership** of the task (files / responsibility). When the subtask involves code changes, you should clearly specify which files or modules the worker is responsible for. This helps avoid merge conflicts and ensures accountability. For example, you can say \"Worker 1 is responsible for updating the authentication module, while Worker 2 will handle the database layer.\" By defining clear ownership, you can delegate more effectively and reduce coordination overhead.\n- Always tell workers they are **not alone in the codebase**, and they should not revert the edits made by others, and they should adjust their implementation to accommodate the changes made by others. This is important because there may be multiple workers making changes in parallel, and they need to be aware of each other's work to avoid conflicts and ensure a cohesive final product.\n}"
+   },
+   "fork_turns": {
+    "type": "string",
+    "description": "Parent history to inherit. Defaults to `all`; use `none` to start without parent history. Only `all` and `none` are supported."
+   },
+   "message": {
+    "type": "string",
+    "description": "Initial plain-text task for the new agent.",
+    "encrypted": true
+   },
+   "model": {
+    "type": "string",
+    "description": "Model override for the new agent. Omit unless an explicit override is needed."
+   },
+   "reasoning_effort": {
+    "type": "string",
+    "description": "Reasoning effort override for the new agent. Omit to inherit the parent effort."
+   },
+   "task_name": {
+    "type": "string",
+    "description": "Task name for the new agent. Use lowercase letters, digits, and underscores."
+   }
+  },
+  "required": [
+   "task_name",
+   "message"
+  ],
+  "additionalProperties": false
+ }
+}

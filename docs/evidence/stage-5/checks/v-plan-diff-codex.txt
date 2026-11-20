@@ -1,0 +1,7 @@
+$ git diff docs/PLAN.md | command grep -E "^[-+]" | command grep -i "codex"
+-- [ ] The Codex CLI is installed here, signed in, and `codex exec` answers a prompt headlessly (proof: run)
++- [x] The Codex CLI is installed here, signed in, and `codex exec` answers a prompt headlessly (proof: run; [install/01](evidence/stage-5/install/01-install-signin-exec.txt))
+-Open: the user's Codex sign-in
++- 2026-11-20 · (unattended) Codex plugin hooks: settled, yes. The CLI runs a plugin's `hooks/hooks.json` once the user trusts them (TUI prompt or `/hooks`), and a script change voids that trust; untrusted, they're silently off. So `plugins/jbit-codex/` ships its hooks, and the README says first that they need trusting after each install and update ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
++- 2026-11-20 · (unattended) Codex: `## Now` on UserPromptSubmit `additionalContext` with a raised `additionalContextLimit`, and the Stop block's `reason` carries it on continuations, since UserPromptSubmit doesn't fire there; the adapter caps Stop blocks itself (Codex has none) and never exits 1 on PreToolUse (that fails open). Skills keep bare names, invoked as `$jbit:<name>`; no agent files ship, since a plugin can't register them ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
+-- Does the Codex CLI run hooks bundled in a plugin? The docs conflict ([codex-cli-2026-11.md](research/codex-cli-2026-11.md) §2). If not, Codex gets the skills without the gates, and the README says so — the user decides at stage 5; that's the default I'd pick.

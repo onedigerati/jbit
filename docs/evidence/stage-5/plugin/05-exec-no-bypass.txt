@@ -1,0 +1,13 @@
+$ codex exec --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-600; echo "== hook log lines:"; wc -l < $S/logs/hooks.log; cut -c1-300 $S/logs/hooks.log
+---
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae7-5caf-7182-a41d-dc4edcf12613"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll run the requested shell command now."}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log lines:
+0
+--- exit: 0

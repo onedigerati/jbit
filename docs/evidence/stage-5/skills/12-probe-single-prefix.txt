@@ -1,0 +1,7 @@
+$ cd $SCRATCH/work && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json \$jbit:probe < /dev/null
+# --json items:
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"I’ll read the probe instructions and inspect the current workspace context, then run the probe as specified."}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"/bin/bash -lc \"cat $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/probe/SKILL.md && rg --files -g 'AGENTS.md' -g 'docs/PLAN.md' -g 'README*' -g 'package.json' | head -80\"","aggregated_output":"---\nname: jbi
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"ZEBRA-PROBE-4417"}}
+# rollout analysis:
+TOOL exec const r = await tools.exec_command({cmd:"cat $SCRATCH/home/.codex/plugins/cache/spikemkt/jbit/0.0.2/skills/pr

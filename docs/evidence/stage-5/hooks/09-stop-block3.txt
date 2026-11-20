@@ -1,0 +1,43 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Reply with only the word READY."
+MODE FILES:
+  stop=3
+  ups=json
+EXIT: 0  DURATION: 7s
+--- HOOK LOG ---
+=== SessionStart 15:37:45
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:37:45
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","turn_id":"01a1fae4-dad5-73b0-ae16-e83a04756220","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Reply with only the word READY."}
+=== Stop 15:37:46
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","turn_id":"01a1fae4-dad5-73b0-ae16-e83a04756220","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"READY"}
+=== Stop 15:37:48
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","turn_id":"01a1fae4-dad5-73b0-ae16-e83a04756220","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE1"}
+=== Stop 15:37:49
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","turn_id":"01a1fae4-dad5-73b0-ae16-e83a04756220","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE2"}
+=== Stop 15:37:51
+{"session_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2","turn_id":"01a1fae4-dad5-73b0-ae16-e83a04756220","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-44-01a1fae4-d9a6-7061-9a87-ec4553a263e2.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":true,"last_assistant_message":"CONTINUE3"}
+--- stopcount: 4
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae4-d9a6-7061-9a87-ec4553a263e2"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"READY"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"CONTINUE1"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"CONTINUE2"}}
+{"type":"item.completed","item":{"id":"item_5","type":"agent_message","text":"CONTINUE3"}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me
+--- ROLLOUT framing of Stop reason ---
+message user {"type": "message", "id": "msg_01a1fae4-e18c-7df1-8c13-c1c4a8ff4561", "role": "user", "content": [{"type": "input_text", "text": "<hook_prompt hook_run_id=\"stop:4:$SCRATCH/home/.codex/hooks.json\">Stop-block #1: reply with exactly the word CONTINUE1 and nothing else.</hook_prompt>"}], "internal_chat_message_metadata_passthrough": {"turn_id": "01a1fae4-dad5-73b0-ae16-e83a04756220", "create_time": 1795210666.3807433, "content_item_kinds": ["unknown"], "content_item_metadata": [{"provenance": {"type": "har
+item_completed None {"type": "item_completed", "thread_id": "01a1fae4-d9a6-7061-9a87-ec4553a263e2", "turn_id": "01a1fae4-dad5-73b0-ae16-e83a04756220", "item": {"type": "HookPrompt", "id": "msg_01a1fae4-e18c-7df1-8c13-c1c4a8ff4561", "fragments": [{"text": "Stop-block #1: reply with exactly the word CONTINUE1 and nothing else.", "hookRunId": "stop:4:$SCRATCH/home/.codex/hooks.json"}]}, "started_at_ms": 1795210666382, "completed_at_ms": 1795210666382}

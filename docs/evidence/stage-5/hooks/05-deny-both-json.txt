@@ -1,0 +1,46 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Append the line gamma to a.txt. If a tool is blocked, report the exact error text and try other tools. Be brief."
+MODE FILES:
+  deny=apply_patch Bash
+EXIT: 0  DURATION: 15s
+--- HOOK LOG ---
+=== SessionStart 15:36:53
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:36:53
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","turn_id":"01a1fae4-10e2-7792-8444-81c9b61a980f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Append the line gamma to a.txt. If a tool is blocked, report the exact error text and try other tools. Be brief."}
+=== PreToolUse 15:36:55
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","turn_id":"01a1fae4-10e2-7792-8444-81c9b61a980f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"printf 'gamma\\n' >> a.txt"},"tool_use_id":"exec-130c9158-7a38-4f4e-87ee-4efd65f15af6"}
+=== PreToolUse 15:37:00
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","turn_id":"01a1fae4-10e2-7792-8444-81c9b61a980f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"cat a.txt"},"tool_use_id":"exec-e15aed50-c268-433d-a5ea-cc6e23eb8c91"}
+=== PreToolUse 15:37:04
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","turn_id":"01a1fae4-10e2-7792-8444-81c9b61a980f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"apply_patch","tool_input":{"command":"*** Begin Patch\n*** Update File: a.txt\n@@\n+gamma\n*** End Patch"},"tool_use_id":"exec-bb197166-0e84-47fc-9fee-c5c656bc7f4a"}
+=== Stop 15:37:06
+{"session_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7","turn_id":"01a1fae4-10e2-7792-8444-81c9b61a980f","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-52-01a1fae4-0fb2-7c91-aa09-6446135d53b7.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"I couldn’t append the line. The tools were blocked:\n\n- `exec_command`: `JBIT-DENY: blocked by spike hook (Bash).`\n- `apply_patch`: `JBIT-DENY: blocked by spike hook (apply_patch).`"}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+2026-11-20T21:36:55.696259Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (Bash). Command: printf 'gamma\n' >> a.txt
+2026-11-20T21:37:00.141070Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (Bash). Command: cat a.txt
+2026-11-20T21:37:04.623382Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch
+*** Update File: a.txt
+@@
++gamma
+*** End Patch
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae4-0fb2-7c91-aa09-6446135d53b7"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"I’ll check the file and append the line."}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"I couldn’t append the line. The tools were blocked:\n\n- `exec_command`: `JBIT-DENY: blocked by spike hook (Bash).`\n- `apply_patch`: `JBIT-DENY: blocked by spike hook (apply_patch).`"}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me
+"output":[{"type":"input_text","text":"Script failed\nWall time 0.0 seconds\nOutput:\n"},{"type":"input_text","text":"Script error:\nCommand blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (Bash). Command: printf 'gamma\\n' >> a.txt"}
+"output":[{"type":"input_text","text":"Script failed\nWall time 0.0 seconds\nOutput:\n"},{"type":"input_text","text":"Script error:\nCommand blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (Bash). Command: cat a.txt"}
+"output":[{"type":"input_text","text":"Script failed\nWall time 0.0 seconds\nOutput:\n"},{"type":"input_text","text":"Script error:\nCommand blocked by PreToolUse hook: JBIT-DENY: blocked by spike hook (apply_patch). Command: *** Begin Patch\n*** Update File: a.txt\n@@\n+gamma\n*** End Patch"}

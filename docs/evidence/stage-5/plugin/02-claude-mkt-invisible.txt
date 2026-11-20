@@ -1,0 +1,11 @@
+$ codex plugin list 2>&1 | grep -iE "spike|claude|^Marketplace"; echo "== add claude-side plugin:"; codex plugin add spike-claude@spike-claude-mkt; codex plugin add spike-claude --marketplace spike-agents-mkt
+---
+Marketplace `spike-agents-mkt`
+$SCRATCH/repo/.agents/plugins/marketplace.json
+spike-agents@spike-agents-mkt  not installed           $SCRATCH/repo/plugins/spike-agents
+Marketplace `openai-curated-remote`
+claude-code-playbooks@openai-curated-remote                               not installed       1.0.0                                               plugin_asdk_app_6aea38db02588191ad18713e24a110ca
+== add claude-side plugin:
+Error: plugin `spike-claude` was not found in marketplace `spike-claude-mkt`
+Error: plugin `spike-claude` was not found in marketplace `spike-agents-mkt`
+--- exit: 1

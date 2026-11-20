@@ -1,0 +1,21 @@
+$ codex exec --skip-git-repo-check "Reply with exactly: PONG" < /dev/null
+Reading additional input from stdin...
+OpenAI Codex v0.171.0
+--------
+workdir: $SCRATCH/verify5
+model: gpt-6-luna
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: none
+reasoning summaries: none
+session id: 01a1faec-2046-73f0-ab82-84440b751f40
+--------
+user
+Reply with exactly: PONG
+codex
+PONG
+tokens used
+2,264
+PONG
+[exit 0]

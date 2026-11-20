@@ -1,0 +1,37 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "Append the line gamma to a.txt. Be brief."
+MODE FILES:
+  deny=apply_patch
+EXIT: 0  DURATION: 7s
+--- HOOK LOG ---
+=== SessionStart 15:36:09
+{"session_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-08-01a1fae3-63c1-7271-bebc-02b6a595ca23.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:36:09
+{"session_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23","turn_id":"01a1fae3-6519-7a10-aaa9-7e73545aa63e","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-08-01a1fae3-63c1-7271-bebc-02b6a595ca23.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Append the line gamma to a.txt. Be brief."}
+=== PreToolUse 15:36:12
+{"session_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23","turn_id":"01a1fae3-6519-7a10-aaa9-7e73545aa63e","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-08-01a1fae3-63c1-7271-bebc-02b6a595ca23.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"printf '%s\\n' gamma >> a.txt"},"tool_use_id":"exec-71ce4c63-2b61-4c7a-9ee4-1d2c6295432a"}
+=== PostToolUse 15:36:12
+{"session_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23","turn_id":"01a1fae3-6519-7a10-aaa9-7e73545aa63e","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-08-01a1fae3-63c1-7271-bebc-02b6a595ca23.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"PostToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"printf '%s\\n' gamma >> a.txt"},"tool_response":"","tool_use_id":"exec-71ce4c63-2b61-4c7a-9ee4-1d2c6295432a"}
+=== Stop 15:36:14
+{"session_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23","turn_id":"01a1fae3-6519-7a10-aaa9-7e73545aa63e","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-36-08-01a1fae3-63c1-7271-bebc-02b6a595ca23.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"Appended `gamma` to [a.txt]($SCRATCH/fixture/a.txt)."}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae3-63c1-7271-bebc-02b6a595ca23"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"I’ll append `gamma` to `a.txt`."}}
+{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc \"printf '%s\\\\n' gamma >> a.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"/bin/bash -lc \"printf '%s\\\\n' gamma >> a.txt\"","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"Appended `gamma` to [a.txt]($SCRATCH/fixture/a.txt)."}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+gamma
+## d.txt
+delete me
+## r.txt
+rename me

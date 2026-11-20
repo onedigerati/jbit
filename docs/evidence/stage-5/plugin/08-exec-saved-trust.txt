@@ -1,0 +1,17 @@
+$ codex exec --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-400; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -E "^##|stdin"
+---
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae8-ccdc-7b33-8d58-2d781c3abed0"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/bin/bash -lc 'echo hi'","aggregated_output":"hi\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+## spike-agents-START
+ stdin: {"session_id":"01a1fae8-ccdc-7b33-8d58-2d781c3abed0","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+## spike-agents-UPS
+ stdin: {"session_id":"01a1fae8-ccdc-7b33-8d58-2d781c3abed0","turn_id":"01a1fae8-ce14-7660-b39c-a15805c3b3b6","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"Run `echo hi` with the shell tool, then reply DONE."}
+## spike-agents-PRE
+ stdin: {"session_id":"01a1fae8-ccdc-7b33-8d58-2d781c3abed0","turn_id":"01a1fae8-ce14-7660-b39c-a15805c3b3b6","transcript_path":null,"cwd":"$SCRATCH/repo","hook_event_name":"PreToolUse","model":"gpt-6-luna","permission_mode":"bypassPermissions","tool_name":"Bash","tool_input":{"command":"echo hi"},"tool_use_id":"exec-568bff12-b1cd-4fc4-956e-caaa57924cac"}
+--- exit: 0

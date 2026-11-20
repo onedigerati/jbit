@@ -1,0 +1,28 @@
+$ codex plugin add spike-agents@spike-agents-mkt 2>&1 | grep -v WARNING; cat $CODEX_HOME/config.toml; find $CODEX_HOME/plugins $CODEX_HOME/cache -maxdepth 6 2>/dev/null | grep -i spike | head; codex features list 2>&1 | grep -iE "hook|plugin"
+---
+Added plugin `spike-agents` from marketplace `spike-agents-mkt`.
+Installed plugin root: $SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1
+[marketplaces.spike-agents-mkt]
+source_type = "local"
+source = "$SCRATCH/repo"
+
+[plugins."spike-agents@spike-agents-mkt"]
+enabled = true
+$SCRATCH/home/.codex/plugins
+$SCRATCH/home/.codex/plugins/cache
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/.codex-plugin
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/.codex-plugin/plugin.json
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/log.mjs
+$SCRATCH/home/.codex/plugins/cache/spike-agents-mkt/spike-agents/0.0.1/hooks/hooks.json
+hooks                                    stable             true
+plugin_discovery_prefetch                removed            false
+plugin_hooks                             removed            false
+plugin_sharing                           stable             true
+plugins                                  stable             true
+recommended_plugins                      stable             false
+remote_plugin                            stable             true
+--- exit: 0

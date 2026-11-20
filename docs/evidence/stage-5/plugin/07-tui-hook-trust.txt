@@ -1,0 +1,63 @@
+$ (tmux) cd $SCRATCH/repo && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex codex   # interactive TUI
+--- screen 1: "Folder access ... Trust this folder?" -> Enter (Trust and continue)
+--- screen 2 (startup prompt, unprompted):
+  Hooks need review / 3 hooks are new or changed. / Hooks can run outside the sandbox after you trust them.
+  1. Review hooks  2. Trust all and continue  3. Continue without trusting (hooks won't run)
+--- Enter (Review) -> Enter on PreToolUse:
+  >_ OpenAI Codex (v0.171.0)
+     $SCRATCH/repo
+  PreToolUse hooks
+  1 hook needs review before it can run.
+› [!]  1  Unnamed hook · new
+  Event     PreToolUse
+  Matcher   .*
+  Source    Plugin - spike-agents@spike-agents-mkt
+  Command   node "$SCRATCH/home/.codex/plugins/cache/spike-agents-
+            mkt/spike-agents/0.0.1/hooks/log.mjs" spike-agents-PRE
+  Mode      Sync
+  Timeout   600s
+  Trust     New hook - review required
+  t trust · esc back
+--- Esc, then t (trust all):
+  >_ OpenAI Codex (v0.171.0)
+     $SCRATCH/repo
+  Hooks
+  Lifecycle hooks from config and enabled plugins.
+  Event                 Installed   Active      Description
+› PreToolUse            1           1           Before a tool executes
+  PermissionRequest     0           0           When permission is requested
+  PostToolUse           0           0           After a tool executes
+  PreCompact            0           0           Before context compaction
+  PostCompact           0           0           After context compaction
+  SessionStart          1           1           When a new session starts
+  SessionEnd            0           0           Right before a session ends
+  UserPromptSubmit      1           1           When the user submits a prompt
+↓
+  enter details · esc close
+--- $CODEX_HOME/config.toml after trusting:
+[marketplaces.spike-agents-mkt]
+source_type = "local"
+source = "$SCRATCH/repo"
+
+[plugins."spike-agents@spike-agents-mkt"]
+enabled = true
+
+[tui]
+screen_reader_detection_done = true
+
+[projects."$SCRATCH/repo"]
+trust_level = "trusted"
+
+[hooks.state]
+
+[hooks.state."spike-agents@spike-agents-mkt:hooks/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:a3ac56df01c9fb6c9ef142b54a3944c87dd44cfb4ae4984592136fc91df5ae24"
+trusted_content_hash = "sha256:2e47068cc40abd52fffc47727805ad5d11e6bbc436b71953c8d505be135a0af9"
+
+[hooks.state."spike-agents@spike-agents-mkt:hooks/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:26a9d5eda99a43a0ec958bc610893f940b594df1c8161b218f2bdeae1fb13c6c"
+trusted_content_hash = "sha256:2e47068cc40abd52fffc47727805ad5d11e6bbc436b71953c8d505be135a0af9"
+
+[hooks.state."spike-agents@spike-agents-mkt:hooks/hooks.json:user_prompt_submit:0:0"]
+trusted_hash = "sha256:470167eb9847d7cc65e7a356f06c12d9e837e1eebc0725b7c6140c54de4e9b2a"
+trusted_content_hash = "sha256:2e47068cc40abd52fffc47727805ad5d11e6bbc436b71953c8d505be135a0af9"

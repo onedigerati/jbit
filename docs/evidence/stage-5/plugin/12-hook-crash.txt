@@ -1,0 +1,21 @@
+$ cat $CODEX_HOME/hooks.json; codex exec --dangerously-bypass-hook-trust --skip-git-repo-check --sandbox workspace-write --ephemeral --json "Run \`echo hi\` with the shell tool, then reply DONE." < /dev/null 2>&1 | grep -v WARNING | cut -c1-500; echo "== hook log:"; node $S/fmt.mjs $S/logs/hooks.log | grep -E "^##" | cut -c1-200
+---
+{ "hooks": {
+  "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "node $SCRATCH/logger.mjs cfg-UPS crash 1" } ] } ],
+  "PreToolUse": [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node $SCRATCH/logger.mjs cfg-PRE crash 2" } ] } ]
+} }
+Reading additional input from stdin...
+{"type":"thread.started","thread_id":"01a1fae9-7618-75c1-b09b-acd48d4783f3"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+2026-11-20T21:42:48.923345Z ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: spike hook crashing on purpose. Command: echo hi
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"DONE"}}
+{"type":"turn.completed","usage":"<removed>"}
+== hook log:
+## spike-agents-START
+## cfg-UPS
+## spike-agents-UPS
+## spike-agents-PRE
+## cfg-PRE
+--- exit: 0

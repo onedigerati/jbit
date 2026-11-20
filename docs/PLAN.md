@@ -7,24 +7,35 @@ Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI 
 2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
 
 ## Now
-Stage 5 of 7 · Spike: Codex CLI
-Risk: external services (installs the Codex CLI, needs the user's sign-in, runs on their account); no product code
+Stage 6 of 7 · Codex adapter + package
+Risk: user input and permissions (the guard parses `apply_patch` text and shell commands from the model, and decides deny or allow; a gap fails open); runs no external service
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-20 10:45
-Scope: install `@openai/codex` with npm and get the user's sign-in. Then prove, on a throwaway plugin in the scratchpad with an isolated `CODEX_HOME` and `HOME`, each "Open for the spike" item in [codex-cli-2026-11.md](research/codex-cli-2026-11.md). Prototypes stay in the scratchpad.
+Scope: a Codex adapter on `hosts/core/`, with Codex's events and payloads as [codex-spike-2026-11.md](research/codex-spike-2026-11.md) found them. `node hosts/build.mjs codex` generates `plugins/jbit-codex/` from `plugins/jbit/` and `hosts/codex/capability.json`. `.agents/plugins/marketplace.json` points at it. The shared parity scenarios run against all three hooks. The live install is stage 7.
 Checks:
-- [ ] The Codex CLI is installed here, signed in, and `codex exec` answers a prompt headlessly (proof: run)
-- [ ] `docs/research/codex-spike-2026-11.md` answers each "Open for the spike" item from what a throwaway plugin showed: plugin hooks in the CLI and their trust, marketplace precedence over `.claude-plugin/`, skill naming and invocation, `spawn_agent` and agent files, the Stop block loop under `codex exec`, UserPromptSubmit and PreToolUse firing under `codex exec`, `tool_input` for `apply_patch` and shell, and the 2,500-token context cap (proof: the note, with commands and output saved under `docs/evidence/stage-5/`, scrubbed as stage 4's was)
-- [ ] The note ends with what it changes for stages 6–7, and settles the open question on Codex plugin hooks; the prototype is not in the repo (proof: `git status`)
+- [ ] The shared parity scenarios pass against the Claude hook, the Copilot hook and the Codex command hook (proof: test)
+- [ ] The Codex hook handles the spike's event shapes (proof: subprocess runs against temp repos, plus `hosts/` tests):
+  - UserPromptSubmit `additionalContext` carries `## Now`;
+  - PreToolUse denies guarded `Bash` and `apply_patch` (Add, Update, Delete, Move to), unknown tools carrying a path or command, and writes under `$CODEX_HOME`;
+  - Stop blocks with a `reason` that carries `## Now`, capped per prompt;
+  - every crash, unparseable input or missing project dir denies, and the hook never exits 1.
+- [ ] `node hosts/build.mjs codex [--check]` is deterministic and generates `plugins/jbit-codex/` (proof: test):
+  - `.codex-plugin/plugin.json` named `jbit`;
+  - 9 skills with bare names and an "On Codex CLI" section (`$jbit:<name>`, `spawn_agent`);
+  - `hooks/hooks.json` using `${PLUGIN_ROOT}` and a raised `additionalContextLimit`;
+  - `.agents/plugins/marketplace.json`;
+  - drift and leak checks;
+  - `approve` kept from implicit use, or the gap listed.
+- [ ] Guard and parsing tests come before the adapter code, and `/code-review` and `/security-review` run with each finding triaged (proof: `docs/evidence/stage-6/`)
 - [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate, hosts tests, Claude parity and `node hosts/build.mjs copilot --check` green (proof: test)
-Open: the user's Codex sign-in
+Open: none
 
 ## Stages
 - [x] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
 - [x] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
 - [x] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
 - [x] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
-- [ ] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
+- [x] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
 - [ ] 6. Codex adapter + package — Codex adapter on the core, generated `plugins/jbit-codex/`, `.agents/plugins/marketplace.json`, parity scenarios
 - [ ] 7. Codex end to end — isolated install; headless stage close, refusals, carry-on; README "Codex CLI" with its gaps
 
@@ -59,9 +70,10 @@ Open: the user's Codex sign-in
 - 2026-11-20 · (unattended) Copilot: `## Now` rides on `userPromptTransformed` every turn, continuations included — settles the open question; the spike showed it honoured ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) Copilot skills keep bare names (`name: plan`) under a plugin and marketplace entry named `jbit`, reversing the research note's `name: jbit:<skill>`. Why: Copilot prefixes plugin skills itself and `jbit:plan` came out double-prefixed ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
 - 2026-11-20 · (unattended) The Copilot guard covers `edit` and `create` on their documented shape with fixture tests only, and the README says so. Why: no model this account offers writes through them, so a live run can't prove them; `bash` and `apply_patch` are proven ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
+- 2026-11-20 · (unattended) Codex plugin hooks: settled, yes. The CLI runs a plugin's `hooks/hooks.json` once the user trusts them (TUI prompt or `/hooks`), and a script change voids that trust; untrusted, they're silently off. So `plugins/jbit-codex/` ships its hooks, and the README says first that they need trusting after each install and update ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
+- 2026-11-20 · (unattended) Codex: `## Now` on UserPromptSubmit `additionalContext` with a raised `additionalContextLimit`, and the Stop block's `reason` carries it on continuations, since UserPromptSubmit doesn't fire there; the adapter caps Stop blocks itself (Codex has none) and never exits 1 on PreToolUse (that fails open). Skills keep bare names, invoked as `$jbit:<name>`; no agent files ship, since a plugin can't register them ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
 
 ## Open questions
-- Does the Codex CLI run hooks bundled in a plugin? The docs conflict ([codex-cli-2026-11.md](research/codex-cli-2026-11.md) §2). If not, Codex gets the skills without the gates, and the README says so — the user decides at stage 5; that's the default I'd pick.
 - What users lose (they get 0.18.1's behaviour):
   - role agents and any `.claude/agents/<role>.md` overrides
   - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)

@@ -1,0 +1,20 @@
+$ codex plugin marketplace add $S/repo; codex plugin marketplace list; codex plugin list; cat $CODEX_HOME/config.toml
+---
+Added marketplace `spike-agents-mkt` from $SCRATCH/repo.
+Installed marketplace root: $SCRATCH/repo
+MARKETPLACE       ROOT
+spike-agents-mkt  $SCRATCH/repo
+Marketplace `spike-agents-mkt`
+$SCRATCH/repo/.agents/plugins/marketplace.json
+
+PLUGIN                         STATUS         VERSION  SOURCE
+spike-agents@spike-agents-mkt  not installed           $SCRATCH/repo/plugins/spike-agents
+
+Marketplace `openai-curated-remote`
+[... remote catalog of 15698 lines trimmed ...]
+[marketplaces.spike-agents-mkt]
+source_type = "local"
+source = "$SCRATCH/repo"
+source_type = "local"
+source = "$SCRATCH/repo"
+--- exit: 0

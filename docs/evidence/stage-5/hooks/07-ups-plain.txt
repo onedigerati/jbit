@@ -1,0 +1,33 @@
+COMMAND: cd $SCRATCH/fixture && HOME=$SCRATCH/home CODEX_HOME=$SCRATCH/home/.codex timeout 300 codex exec --skip-git-repo-check --json --sandbox workspace-write --dangerously-bypass-hook-trust "What is the session codeword? Reply with only the codeword, or NONE if you have none."
+MODE FILES:
+  ups=plain
+EXIT: 0  DURATION: 3s
+--- HOOK LOG ---
+=== SessionStart 15:37:30
+{"session_id":"01a1fae4-a0ae-7da3-a62b-c50b1aa87355","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-29-01a1fae4-a0ae-7da3-a62b-c50b1aa87355.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"SessionStart","model":"gpt-6-luna","permission_mode":"bypassPermissions","source":"startup"}
+=== UserPromptSubmit 15:37:30
+{"session_id":"01a1fae4-a0ae-7da3-a62b-c50b1aa87355","turn_id":"01a1fae4-a1bd-7871-9241-6b6264379991","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-29-01a1fae4-a0ae-7da3-a62b-c50b1aa87355.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"UserPromptSubmit","model":"gpt-6-luna","permission_mode":"bypassPermissions","prompt":"What is the session codeword? Reply with only the codeword, or NONE if you have none."}
+=== Stop 15:37:31
+{"session_id":"01a1fae4-a0ae-7da3-a62b-c50b1aa87355","turn_id":"01a1fae4-a1bd-7871-9241-6b6264379991","transcript_path":"$SCRATCH/home/.codex/sessions/2026/11/20/rollout-2026-11-20T15-37-29-01a1fae4-a0ae-7da3-a62b-c50b1aa87355.jsonl","cwd":"$SCRATCH/fixture","hook_event_name":"Stop","model":"gpt-6-luna","permission_mode":"bypassPermissions","stop_hook_active":false,"last_assistant_message":"PLAINWOMBAT"}
+--- STDERR (tail) ---
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("$SCRATCH/home/.codex"))
+Reading additional input from stdin...
+--- JSONL (items) ---
+{"type":"thread.started","thread_id":"01a1fae4-a0ae-7da3-a62b-c50b1aa87355"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"item.completed","item":{"id":"item_1","type":"error","message":"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."}}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"PLAINWOMBAT"}}
+{"type":"turn.completed","usage":"<removed>"}
+--- FIXTURE AFTER ---
+## a.txt
+alpha
+beta
+## d.txt
+delete me
+## r.txt
+rename me
+.621Z","ordinal":14,"type":"event_msg","payload":{"type":"item_completed","thread_id":"01a1fae4-a0ae-7da3-a62b-c50b1aa87355","turn_id":"01a1fae4-a1bd-7871-9241-6b6264379991","item":{"type":"AgentMessage","id":"msg_0e624011474ca9cc016b00bd9ba08c87d19fb05e4757728727","content":[{"type":"Text","text":"PLAINWOMBAT"}],"phase":"final_answer"},"content_token_count":6,"started_at_ms":1795210651485,"completed_at_ms":
+--- ROLLOUT framing of injected context ---
+message developer [{"type": "input_text", "text": "Session codeword: PLAINWOMBAT. If asked for the codeword, reply with it."}]
+item_completed None {"type": "AgentMessage", "id": "msg_0e624011474ca9cc016b00bd9ba08c87d19fb05e4757728727", "content": [{"type": "Text", "text": "PLAINWOMBAT"}], "phase": "final_answer"}

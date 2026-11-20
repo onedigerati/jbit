@@ -68,3 +68,37 @@ claude plugin install jbit@jbit-local
 ```
 
 See [plugins/jbit/README.md](plugins/jbit/README.md) for the full story, every skill and hook, project risk rules, the secret guard, evidence, roadmaps, Agents levels, Models and evals.
+
+## Copilot CLI
+
+JBIT also runs on GitHub Copilot CLI. `plugins/jbit-copilot/` is the same plugin, version 2.0.0, generated from this one by `node hosts/build.mjs copilot`: the same skills with a note on Copilot's tool names, and the hook ported to a Node script. It needs Node 22.18 or later.
+
+```
+copilot plugin marketplace add onedigerati/jbit
+copilot plugin install jbit@jbit-local
+```
+
+The GitHub form works once the Copilot package is pushed; from a local clone, use `copilot plugin marketplace add /path/to/jbit`. Copilot reads its own marketplace file, `.github/plugin/marketplace.json`, so it installs the Copilot package, not the Claude one.
+
+Type `/jbit:plan`, `/jbit:stage`, `/jbit:autopilot` and so on. A typed `/plan`, `/review` or `/autopilot` is Copilot's own command, not JBIT's.
+
+What works, proven headless on Copilot CLI 1.0.114: the plan's `## Now` reaches the model with every prompt, a stage runs to its close and commit, the commit gate refuses a stage close with an unticked check, the secret guard refuses a commit carrying a key, a `git push` under autopilot is held, an edit in a held stage is refused, autopilot carries on into the next stage (proven with a run told to end its turn after stage 1, since a model often finishes small stages in one turn), and the commit gate holds inside a `task` subagent.
+
+What Copilot can't do:
+
+<!-- copilot-gaps:start: generated from hosts/copilot/capability.json by node hosts/build.mjs copilot; don't edit -->
+- **Stall detection.** Each hook event is a fresh process, so nothing counts repeated turn ends; Copilot's cap of 8 agentStop blocks per prompt bounds the loop instead.
+- **Lean's count of agents already running.** The Claude hook keeps it in memory across events; a command hook has no running process to keep it in.
+- **Tracking background agents.** Same reason: no in-memory agent list between events.
+- **The reopen check after a commit.** It runs before the commit lands, since there's no in-memory state carried to the next event.
+- **The guard on `edit` and `create`.** Covered on their documented shape with fixture tests only: no model this account offers writes through them, so no live run proved them. `bash` and `apply_patch` are proven.
+- **Long unattended runs under `copilot -p`.** agentStop gets 8 blocks per prompt, so an unattended run stops quietly at its 9th turn end; use Copilot's --autopilot or prompt again.
+- **Typed `/plan`, `/review`, `/autopilot`.** They are Copilot's own commands; type `/jbit:plan`, `/jbit:review`, `/jbit:autopilot`.
+- **Node older than 22.18.** The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused.
+- **`/code-review` and `/security-review`.** They are Claude Code built-ins; on Copilot the review runs as a `task` agent (`code-review`, `security-review`) or a fresh agent with the same lenses.
+- **Worktree isolation for parallel builders.** Copilot's `task` has none, so parallel builders must own separate files or run one at a time.
+- **Compacting the context before autopilot carries on.** Copilot gives a command hook no context gauge and no compact call (the shim reports 0% and skips compaction); Copilot manages its own context.
+- **The stage hold and the secret guard inside a `task` subagent.** Only the commit gate was proven inside a subagent (stage 4, run 12); in the runs meant to test the hold and the secret guard there, the model declined to delegate, so those two are unproven in a subagent.
+- **A hook that hangs or prints junk.** Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks.
+- **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
+<!-- copilot-gaps:end -->

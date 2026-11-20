@@ -11,11 +11,11 @@ TOOL bash {"command":"git --no-pager log --oneline -10","description":"Inspect r
   -> true "fatal: your current branch 'master' does not have any commits yet\n<shellId: 2 completed with exit code 128>" {}
   -> true "## No commits yet on master\n<shellId: 0 completed with exit code 0>" {}
   -> true "\n<shellId: 1 completed with exit code 0>" {}
-TOOL glob {"pattern":"**/*","paths":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj"}
+TOOL glob {"pattern":"**/*","paths":"$SCRATCH/spike-skills/proj"}
 TOOL bash {"command":"git --no-pager diff --stat --no-index /dev/null 2>/dev/null || true; git --no-pager status --porcelain=v1","description":"Confirm whether there are any changed files"}
-  -> true "No files matched the pattern." {"path":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj","pattern":"**/*"}
+  -> true "No files matched the pattern." {"path":"$SCRATCH/spike-skills/proj","pattern":"**/*"}
   -> true "\n<shellId: 3 completed with exit code 0>" {}
 SAID mai-code-2-flash "No significant issues found in the reviewed changes."
-EV subagent.completed {"toolCallId":"call_91v1itgGsSTAoCHVeMdNwfcM","agentName":"code-review","agentDisplayName":"code-review","model":"mai-code-2-flash","firstDispatchedModel":"mai-code-2-flash","modelSelectionSource":"session_inheritance","totalToolCalls":5,"totalTokens":40036,"durationMs":14146}
+EV subagent.completed {"toolCallId":"call_91v1itgGsSTAoCHVeMdNwfcM","agentName":"code-review","agentDisplayName":"code-review","model":"mai-code-2-flash","firstDispatchedModel":"mai-code-2-flash","modelSelectionSource":"session_inheritance","totalToolCalls":5,"totalTokens":"<removed>","durationMs":14146}
   -> true "No significant issues found in the reviewed changes." {"agent_name":"code-review","agent_id":"ca85dbf1-0d49-46c5-98df-da99da717df4"}
 SAID mai-code-2-flash "No significant issues found in the reviewed changes."

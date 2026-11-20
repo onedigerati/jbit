@@ -4,5 +4,5 @@ Built-in plugins:
   • browser-use (v0.1.0) [disabled]
 Live Plugins (loaded from a local marketplace directory, never copied):
   • jbit-copilot@spike-gh (v0.0.1) (enabled)
-      from /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt
+      from $SCRATCH/spike-skills/mkt
 [exit 0]

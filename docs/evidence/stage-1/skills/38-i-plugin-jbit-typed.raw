@@ -12,7 +12,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; plugin jbit@spike3 with skills name: 
 │[m [1mConfirm folder trust[97C[0;90m│
 │[m [90m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[m [90m│
 │[m [90m╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮[m [90m│
-│[m [90m│[m /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj    [90m│[m [90m│
+│[m [90m│[m $SCRATCH/spike-skills/proj    [90m│[m [90m│
 │[m [90m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[m [90m│
 │[118C│
 │[m Copilot can read files in this folder and, with your permission, edit them or run code and shell commands. It will   [90m│
@@ -28,7 +28,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; plugin jbit@spike3 with skills name: 
 │[m   3. No (Esc)[104C[90m│
 │[118C│
 │[m [1m↑/↓[m to navigate · [1menter[m to select · [1mesc[m to cancel[68C[90m│
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[?7l╯[?7h[m[7;43Hinit — Initialize Copilot instructions for this repository[8;42H/model — Switch models across providers, or use Auto[4B [34m●[m No Copilot instructions found for this repository. Run /init to generate them.[8;90HCopilot Fusion[7;6H[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[13B[J[16B /tmp/claude-1000/-home-jonah-src-repos-jbit/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[?7l╯[?7h[m[7;43Hinit — Initialize Copilot instructions for this repository[8;42H/model — Switch models across providers, or use Auto[4B [34m●[m No Copilot instructions found for this repository. Run /init to generate them.[8;90HCopilot Fusion[7;6H[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[13B[J[16B $CLAUDE_TMP/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
 [2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [m❯
 [2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; plugin jbit@spike3 with skills name: 
 
 ❯ /jbit:plan
 
- Interactive · Manual Approval · [1m/help[m show help                                    [38;13H[?25h[?25l[7A[K[5B /tmp/claude-1000/-home-jonah-src-repos-jbit/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
+ Interactive · Manual Approval · [1m/help[m show help                                    [38;13H[?25h[?25l[7A[K[5B $CLAUDE_TMP/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
 
 ❯ [K
 
@@ -160,7 +160,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; plugin jbit@spike3 with skills name: 
 
 ❯ /jbit:review
 
- Interactive · Manual Approval · [1m/help[m show help                                    [38;15H[?25h[?25l[7A[K[5B /tmp/claude-1000/-home-jonah-src-repos-jbit/.../proj [⎇ master][36;98HSession: 0.16 AIC used
+ Interactive · Manual Approval · [1m/help[m show help                                    [38;15H[?25h[?25l[7A[K[5B $CLAUDE_TMP/.../proj [⎇ master][36;98HSession: 0.16 AIC used
 
 ❯ [K
 
@@ -300,7 +300,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; plugin jbit@spike3 with skills name: 
 [K
 
 
- /tmp/claude-1000/-home-jonah-src-repos-jbit/.../proj [⎇ master][36;98HSession: 0.18 AIC used
+ $CLAUDE_TMP/.../proj [⎇ master][36;98HSession: 0.18 AIC used
 
 ❯ [K
 

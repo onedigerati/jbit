@@ -1,13 +1,18 @@
 {
   "host": "copilot",
   "hostName": "GitHub Copilot CLI",
-  "testedWith": "GitHub Copilot CLI 1.0.114 (stage 1 spike)",
+  "testedWith": "GitHub Copilot CLI 1.0.114 (stage 1 spike; stage 4 end-to-end runs from the marketplace install)",
   "pluginDir": "plugins/jbit-copilot",
   "marketplace": {
     "path": ".github/plugin/marketplace.json",
     "name": "jbit-local",
     "entry": "jbit",
     "description": "Just build it. Plans it. Proves it. Sees it through. JBIT for GitHub Copilot CLI, generated from the JBIT plugin: one plan file, evidence for every stage, and autopilot that sees the plan through."
+  },
+  "readme": {
+    "path": "README.md",
+    "start": "<!-- copilot-gaps:start: generated from hosts/copilot/capability.json by node hosts/build.mjs copilot; don't edit -->",
+    "end": "<!-- copilot-gaps:end -->"
   },
   "hooks": {
     "events": ["agentStop", "postToolUse", "preToolUse", "sessionStart", "userPromptTransformed"],
@@ -109,6 +114,8 @@
     { "id": "review-commands", "what": "`/code-review` and `/security-review`", "why": "They are Claude Code built-ins; on Copilot the review runs as a `task` agent (`code-review`, `security-review`) or a fresh agent with the same lenses." },
     { "id": "worktree-isolation", "what": "Worktree isolation for parallel builders", "why": "Copilot's `task` has none, so parallel builders must own separate files or run one at a time." },
     { "id": "compaction", "what": "Compacting the context before autopilot carries on", "why": "Copilot gives a command hook no context gauge and no compact call (the shim reports 0% and skips compaction); Copilot manages its own context." },
+    { "id": "subagent-hold-unproven", "what": "The stage hold and the secret guard inside a `task` subagent", "why": "Only the commit gate was proven inside a subagent (stage 4, run 12); in the runs meant to test the hold and the secret guard there, the model declined to delegate, so those two are unproven in a subagent." },
+    { "id": "hook-crash", "what": "A hook that hangs or prints junk", "why": "Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks." },
     { "id": "hook-wording", "what": "The hook's own messages", "why": "They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them." }
   ]
 }

@@ -12,7 +12,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj; settings.json trustedFolders=[proj]) 
 │[m [1mConfirm folder trust[97C[0;90m│
 │[m [90m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[m [90m│
 │[m [90m╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮[m [90m│
-│[m [90m│[m /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj    [90m│[m [90m│
+│[m [90m│[m $SCRATCH/spike-skills/proj    [90m│[m [90m│
 │[m [90m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[m [90m│
 │[118C│
 │[m Copilot can read files in this folder and, with your permission, edit them or run code and shell commands. It will   [90m│

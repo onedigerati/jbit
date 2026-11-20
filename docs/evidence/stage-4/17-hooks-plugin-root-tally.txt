@@ -1,0 +1,73 @@
+$ node -e <tally hook.end by hookType and success, main jbit install runs 02-12> (script inline below)
+{
+ "sessionStart": {
+  "ok": 11,
+  "fail": 0,
+  "withOutput": 11
+ },
+ "userPromptTransformed": {
+  "ok": 17,
+  "fail": 0,
+  "withOutput": 17
+ },
+ "preToolUse": {
+  "ok": 98,
+  "fail": 0,
+  "withOutput": 10
+ },
+ "postToolUse": {
+  "ok": 128,
+  "fail": 0,
+  "withOutput": 0
+ },
+ "agentStop": {
+  "ok": 17,
+  "fail": 0,
+  "withOutput": 2
+ }
+}
+
+$ cat $REPO/plugins/jbit-copilot/hooks/hooks.json   (every entry uses ${PLUGIN_ROOT})
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" agentStop",
+        "timeoutSec": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" postToolUse",
+        "timeoutSec": 30
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" preToolUse",
+        "timeoutSec": 30
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" sessionStart",
+        "timeoutSec": 30
+      }
+    ],
+    "userPromptTransformed": [
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" userPromptTransformed",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}
+
+$ grep -o "Hook command timed out after 30 seconds: node \\\"[^…]*" 16-crash-sleep.events.jsonl   (Copilot shows the expanded ${PLUGIN_ROOT} path)
+Hook command timed out after 30 seconds: node \"$CLAUDE_TMP/85ea5585-cff8-4585-b029-f1589

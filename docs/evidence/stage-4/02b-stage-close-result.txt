@@ -1,0 +1,51 @@
+$ git -C $WORK/p1 show --stat HEAD
+commit 78c9cbd0b0a4568889f63b9c0895e9bda04b02c8
+Author: JBIT test <test@example.invalid>
+Date:   Fri Nov 20 12:01:42 2026 -0600
+
+    Add the JBIT hello file
+    
+    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+ docs/PLAN.md                    |  4 ++--
+ docs/evidence/.gitignore        | 11 +++++++++++
+ docs/evidence/stage-1/hello.txt |  2 ++
+ docs/evidence/stage-1/report.md |  8 ++++++++
+ hello.txt                       |  1 +
+ 5 files changed, 24 insertions(+), 2 deletions(-)
+
+$ cat docs/PLAN.md
+# Hello plan
+
+## Goal
+A `hello.txt` file in the repo root holding exactly the line `hello from jbit`. Done when it exists with that content and is committed.
+
+## Now
+Stage 1 of 1 · Hello file
+Risk: none
+Mode: stage
+Checks:
+- [x] `hello.txt` exists in the repo root and its content is exactly `hello from jbit` followed by a newline (proof: `cat hello.txt`)
+Open: none
+
+## Stages
+- [x] 1. Hello file — create `hello.txt` with the line `hello from jbit`
+
+## Decisions
+- 2026-11-20 · Plain text file, no build or tests — the user's choice.
+
+## Open questions
+- none
+
+$ cat docs/evidence/stage-1/report.md
+# Stage 1 · Hello file — evidence
+Verified 2026-11-20 on 45030f4, plus uncommitted changes
+
+| Check | Result | Evidence |
+|---|---|---|
+| `hello.txt` exists in the repo root and its content is exactly `hello from jbit` followed by a newline (proof: `cat hello.txt`) | pass | [hello.txt](hello.txt) |
+
+Project checks: none configured · Audit: not applicable (no dependency manifest or runtime ecosystem)
+
+$ cat hello.txt
+hello from jbit

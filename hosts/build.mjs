@@ -4,12 +4,13 @@
 // `hosts/<host>/capability.json` drives it: the package folder, the marketplace file, the hook events, the scripts to
 // copy and the import rewrites that keep them inside the package, the skill substitutions (each must still match its
 // source), the mapping section appended to every skill, and the leak terms: Claude-only names that must not be left
-// outside that section. Output is deterministic (sorted, no timestamps), and only changed files are written.
+// outside that section, and the gap list: what the host can't do, written between two markers in the root README
+// (`readme` in the capability file; the rest of the README is hand-written and kept as is). Output is deterministic (sorted, no timestamps), and only changed files are written.
 // --check writes nothing and exits 1 when the files on disk differ from what the build would make (drift), or when the
 // generated output or the files on disk (the package folder and the marketplace file) leak. --src reads sources from another root and --out writes under another root (both default to the repo), for tests.
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, posix, relative } from 'node:path'
+import { dirname, isAbsolute, join, normalize, posix, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const SELF = fileURLToPath(import.meta.url)
@@ -68,6 +69,22 @@ function mappingSection(cap) {
   return [cap.mapping.heading, '', ...cap.mapping.lines.map(l => l.replace('{tools}', tools))].join('\n')
 }
 
+/** The README's gap list: one bullet per capability.json gap, in its order. */
+export function gapBlock(cap) {
+  return cap.gaps.map(g => `- **${g.what}.** ${g.why}`).join('\n')
+}
+
+/** `text` (the root README) with the block between the capability file's markers replaced by the gap list. */
+function withGapBlock(text, cap) {
+  const { path, start, end } = cap.readme
+  const a = text.indexOf(start)
+  const b = text.indexOf(end)
+  if (a === -1 || b === -1 || b < a || text.indexOf(start, a + 1) !== -1 || text.indexOf(end, b + 1) !== -1) {
+    fail(`${path} needs exactly one gap block: a line \`${start}\` followed by a line \`${end}\``)
+  }
+  return `${text.slice(0, a + start.length)}\n${gapBlock(cap)}\n${text.slice(b)}`
+}
+
 /** The events `hook.mjs` answers, read from its `EVENTS` table. */
 function handledEvents(hookSource) {
   const m = /const EVENTS = \{([^}]*)\}/.exec(hookSource)
@@ -94,7 +111,8 @@ export function findLeaks(files, cap) {
   const terms = cap.leakTerms.map(t => [t, new RegExp(t)])
   const leaks = []
   for (const [file, content] of files) {
-    if (!/\.(md|json)$/.test(file) || /\/scripts\//.test(file) || file.endsWith('/GENERATED.json')) continue
+    // the README is for people on every host, so it names Claude Code freely
+    if (!/\.(md|json)$/.test(file) || /\/scripts\//.test(file) || file.endsWith('/GENERATED.json') || file === cap.readme?.path) continue
     const cut = file.endsWith('SKILL.md') ? content.indexOf(`\n${cap.mapping.heading}\n`) : -1
     const text = cut === -1 ? content : content.slice(0, cut)
     text.split('\n').forEach((line, i) => {
@@ -196,6 +214,14 @@ export function generate({ src = REPO, host }) {
     }),
   )
 
+  // the README's gap list; the README itself isn't a source of the package, so it stays out of GENERATED.json
+  if (cap.readme) {
+    const rp = cap.readme.path
+    if (typeof rp !== 'string' || !rp || isAbsolute(rp) || rp.split(/[\\/]/).includes('..')) fail(`readme.path must be a relative path inside the repo, not ${JSON.stringify(rp)}`)
+    if (!existsSync(join(src, cap.readme.path))) fail(`no ${cap.readme.path} to write the gap list into`)
+    files.set(cap.readme.path, withGapBlock(read(src, cap.readme.path), cap))
+  }
+
   const sorted = {}
   for (const k of Object.keys(sources).sort()) sorted[k] = sources[k]
   files.set(
@@ -291,7 +317,7 @@ function main(argv) {
       const leaks = findLeaks(onDisk, cap).map(l => `leak: ${l.file}:${l.line} ${l.term}`)
       if (leaks.length) process.stderr.write(`leak: files on disk name Claude-only terms outside the mapping section\n${leaks.join('\n')}\n`)
       if (found.length) {
-        process.stderr.write(`drift: ${cap.pluginDir} lags its sources; run node hosts/build.mjs ${host}\n${found.join('\n')}\n`)
+        process.stderr.write(`drift: ${cap.pluginDir}${cap.readme ? ` or the ${cap.readme.path} gap list` : ""} lags its sources; run node hosts/build.mjs ${host}\n${found.join('\n')}\n`)
         return 1
       }
       if (leaks.length) return 1
@@ -299,7 +325,7 @@ function main(argv) {
       return 0
     }
     const r = write(files, out, cap)
-    process.stdout.write(`${host}: wrote ${r.wrote}, removed ${r.removed}, unchanged ${r.unchanged} (${cap.pluginDir}, ${cap.marketplace.path})\n`)
+    process.stdout.write(`${host}: wrote ${r.wrote}, removed ${r.removed}, unchanged ${r.unchanged} (${[cap.pluginDir, cap.marketplace.path, cap.readme?.path].filter(Boolean).join(", ")})\n`)
     return 0
   } catch (err) {
     if (!(err instanceof BuildError)) throw err

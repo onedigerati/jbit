@@ -1,0 +1,22 @@
+$ git -C $WORK/p3b log --format="%h %s" && cat docs/PLAN.md
+42bf902 Complete stage 2: add two.txt
+08fa72b Complete stage 1: add one.txt
+8603c9f Plan
+
+# Greetings plan
+
+## Goal
+Two text files in the repo root: `one.txt` holding exactly the line `one`, and `two.txt` holding exactly the line `two`. Done when both exist with that content and each stage is committed.
+
+## Now
+All stages done
+
+## Stages
+- [x] 1. One file — create `one.txt` with the line `one`
+- [x] 2. Two file — create `two.txt` with the line `two`; check: `two.txt` exists in the repo root and its content is exactly `two` followed by a newline (proof: `cat two.txt`)
+
+## Decisions
+- 2026-11-20 · Plain text files, no build or tests — the user's choice.
+
+## Open questions
+- none

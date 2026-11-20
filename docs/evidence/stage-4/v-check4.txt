@@ -1,0 +1,11 @@
+$ node --test 'hosts/**/*.test.mjs'
+# tests 70
+# pass 70
+# fail 0
+$ node hosts/build.mjs copilot --check
+copilot: up to date (27 files)
+exit 0
+$ (scratch copy of README.md hosts plugins .github) sed -i "s/- \*\*Stall detection.\*\*/- **Stall detection (EDITED).**/" README.md && node hosts/build.mjs copilot --check
+drift: plugins/jbit-copilot or the README.md gap list lags its sources; run node hosts/build.mjs copilot
+differs: README.md
+exit 1

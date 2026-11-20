@@ -7,24 +7,23 @@ Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI 
 2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
 
 ## Now
-Stage 4 of 7 · Copilot end to end
-Risk: external services (runs Copilot headlessly on the user's account and spends AI credits); no new guard logic
+Stage 5 of 7 · Spike: Codex CLI
+Risk: external services (installs the Codex CLI, needs the user's sign-in, runs on their account); no product code
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-20 10:45
-Scope: everything runs from this repo's marketplace (a local path, not `owner/repo`, which waits for the push), installed into an isolated `COPILOT_HOME`, with throwaway projects in the scratchpad. The root `README.md` gets a "Copilot CLI" section; its gap list is generated from `hosts/copilot/capability.json`. Model calls are kept small.
+Scope: install `@openai/codex` with npm and get the user's sign-in. Then prove, on a throwaway plugin in the scratchpad with an isolated `CODEX_HOME` and `HOME`, each "Open for the spike" item in [codex-cli-2026-11.md](research/codex-cli-2026-11.md). Prototypes stay in the scratchpad.
 Checks:
-- [ ] Headless, a small one-stage JBIT plan in a throwaway project runs to a stage close under the installed plugin. The plan's `## Now` reaches the model, and the stage commit lands with ticked checks and evidence (proof: run, with the transcript, hook log and `git log` saved)
-- [ ] Headless in the same install, each refusal reaches the model with the hook's reason: a commit closing a stage with an unticked check, a commit carrying a fake secret assembled at run time, `git push` under autopilot, and an edit in a held stage (proof: run)
-- [ ] Under the user's `/jbit:autopilot` with two small stages, `agentStop` carries the run into the second stage. Hooks fire through `${PLUGIN_ROOT}` on every event under the marketplace install. A deny inside a `task` subagent and a crashing hook are each either proven or recorded as a gap (proof: run)
-- [ ] The root `README.md` has a "Copilot CLI" section: install, what works, and the gaps from `capability.json`. A test fails when the gap list and `capability.json` disagree (proof: test)
+- [ ] The Codex CLI is installed here, signed in, and `codex exec` answers a prompt headlessly (proof: run)
+- [ ] `docs/research/codex-spike-2026-11.md` answers each "Open for the spike" item from what a throwaway plugin showed: plugin hooks in the CLI and their trust, marketplace precedence over `.claude-plugin/`, skill naming and invocation, `spawn_agent` and agent files, the Stop block loop under `codex exec`, UserPromptSubmit and PreToolUse firing under `codex exec`, `tool_input` for `apply_patch` and shell, and the 2,500-token context cap (proof: the note, with commands and output saved under `docs/evidence/stage-5/`, scrubbed as stage 4's was)
+- [ ] The note ends with what it changes for stages 6–7, and settles the open question on Codex plugin hooks; the prototype is not in the repo (proof: `git status`)
 - [ ] `plugins/jbit/` and `.claude-plugin/` unchanged from `c087d40`; suite, docs check, validate, hosts tests, Claude parity and `node hosts/build.mjs copilot --check` green (proof: test)
-Open: none
+Open: the user's Codex sign-in
 
 ## Stages
 - [x] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
 - [x] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
 - [x] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
-- [ ] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
+- [x] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
 - [ ] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
 - [ ] 6. Codex adapter + package — Codex adapter on the core, generated `plugins/jbit-codex/`, `.agents/plugins/marketplace.json`, parity scenarios
 - [ ] 7. Codex end to end — isolated install; headless stage close, refusals, carry-on; README "Codex CLI" with its gaps
@@ -75,6 +74,7 @@ Open: none
 - Stage 2 review, deferred:
   - `hosts/parity/claude.test.ts` sends a prompt before composing it. No current scenario depends on that order, so settle Claude Code's real order when a scenario judges an arming prompt's context.
   - On Claude Code, `register.ts`'s commit guard also steps aside when git fails (a huge diff, a timeout). Copilot's shim now fails closed. Fixing the Claude side means changing `plugins/jbit/`, which is for the user ([review](evidence/stage-2/review.md)).
+- Stage 4 review, deferred: the commit gate trusts any tick it has seen, so a model can tick a check in one commit and close the stage in the next (Copilot run 05; Claude Code behaves the same). Whether a tick needs its own proof is for the user ([review](evidence/stage-4/review.md)).
 - `plugins/jbit/evals-ablation/` (untracked) — carried; for the user.
 - `CLAUDE.md` (untracked, in the repo root before this plan's stage 1) — left alone; for the user to commit or drop.
 

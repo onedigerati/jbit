@@ -8,15 +8,15 @@ $ cat $COPILOT_HOME/config.json $COPILOT_HOME/settings.json (token fields redact
       "marketplace": "",
       "version": "0.0.1",
       "installed_at": "2026-11-20T16:47:47.434676162Z",
-      "cache_path": "/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627",
+      "cache_path": "$SCRATCH/spike-hooks/home/installed-plugins/_direct/plugin-7b631627",
       "installed_source": {
         "source": "local",
-        "path": "/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin"
+        "path": "$SCRATCH/spike-hooks/plugin"
       },
       "enabled": true,
       "source": {
         "source": "local",
-        "path": "/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin"
+        "path": "$SCRATCH/spike-hooks/plugin"
       }
     }
   ],

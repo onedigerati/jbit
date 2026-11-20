@@ -1,4 +1,4 @@
 $ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin uninstall jbit-copilot@spike-gh
 
-Plugin "jbit-copilot@spike-gh" disabled. It is still on disk at /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt — nothing was removed.
+Plugin "jbit-copilot@spike-gh" disabled. It is still on disk at $SCRATCH/spike-skills/mkt — nothing was removed.
 [exit 0]

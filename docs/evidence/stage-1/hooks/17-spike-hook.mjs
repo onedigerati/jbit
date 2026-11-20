@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const WORK = '/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks';
+const WORK = '$SCRATCH/spike-hooks';
 const LOG = path.join(WORK, 'hooklog.jsonl');
 const event = process.argv[2] || 'unknown';
 const tag = process.argv[3] || 'main';

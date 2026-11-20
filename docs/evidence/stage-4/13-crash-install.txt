@@ -1,0 +1,34 @@
+$ COPILOT_HOME=$WORK/home-f copilot plugin marketplace add $WORK/crashmkt
+Marketplace "crash-local" added successfully.
+$ copilot plugin install jbit-crash@crash-local
+Plugin "jbit-crash" installed successfully. Installed 9 skills.
+Enabled "jbit-crash@crash-local". It is loaded live from $SCRATCH/stage4/crashmkt/plugins/jbit-crash, so edits take effect on the next session — nothing was copied.
+$ copilot plugin list
+Built-in plugins:
+  • browser-use (v0.1.0) [disabled]
+Live Plugins (loaded from a local marketplace directory, never copied):
+  • jbit-crash@crash-local (v2.0.0) (enabled)
+      from $SCRATCH/stage4/crashmkt
+
+## scratch copy: $WORK/crashmkt/plugins/jbit-crash (cp -r of plugins/jbit-copilot; plugin.json name → jbit-crash; scripts/hook.mjs renamed hook-real.mjs and replaced by this wrapper; mode in $WORK/crashmkt/crashmode)
+$ cat $WORK/crashmkt/plugins/jbit-crash/scripts/hook.mjs
+#!/usr/bin/env node
+// SCRATCH crash test wrapper (not the shipped hook). preToolUse misbehaves per the mode file; other events run the real hook.
+import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+const event = process.argv[2]
+const here = dirname(fileURLToPath(import.meta.url))
+const input = readFileSync(0)
+if (event === 'preToolUse') {
+  const mode = readFileSync(join(here, '..', '..', '..', 'crashmode'), 'utf8').trim()
+  if (mode === 'exit1') { process.stderr.write('crash test: exiting 1\n'); process.exit(1) }
+  if (mode === 'junk') { process.stdout.write('this is not json {{{\n'); process.exit(0) }
+  if (mode === 'sleep') { setTimeout(() => process.exit(0), 45000) }
+} else {
+  const r = spawnSync(process.execPath, [join(here, 'hook-real.mjs'), event], { input })
+  process.stdout.write(r.stdout); process.stderr.write(r.stderr); process.exit(r.status ?? 1)
+}
+$ cat $WORK/crashmkt/.github/plugin/marketplace.json
+{"name":"crash-local","owner":{"name":"test"},"description":"Scratch crash-test copy of jbit","plugins":[{"name":"jbit-crash","source":"./plugins/jbit-crash","description":"Scratch crash-test copy of jbit","version":"2.0.0"}]}

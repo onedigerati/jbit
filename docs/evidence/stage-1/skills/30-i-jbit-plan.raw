@@ -12,7 +12,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj) (sleep 8; Enter for folder trust) | s
 │[m [1mConfirm folder trust[97C[0;90m│
 │[m [90m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[m [90m│
 │[m [90m╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮[m [90m│
-│[m [90m│[m /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/proj    [90m│[m [90m│
+│[m [90m│[m $SCRATCH/spike-skills/proj    [90m│[m [90m│
 │[m [90m╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯[m [90m│
 │[118C│
 │[m Copilot can read files in this folder and, with your permission, edit them or run code and shell commands. It will   [90m│
@@ -28,7 +28,7 @@ $ COPILOT_HOME=$WORK/home (cwd $WORK/proj) (sleep 8; Enter for folder trust) | s
 │[m   3. No (Esc)[104C[90m│
 │[118C│
 │[m [1m↑/↓[m to navigate · [1menter[m to select · [1mesc[m to cancel[68C[90m│
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[?7l╯[?7h[m[7;43Hinit — Initialize Copilot instructions for this repository[8;42H/model — Switch models across providers, or use Auto[4B [34m●[m No Copilot instructions found for this repository. Run /init to generate them.[8;90HCopilot Fusion[7;6H[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[13B[J[6A [31m✗[m [1mUnknown command: /jbit:plan [36;2H[m/tmp/claude-1000/-home-jonah-src-repos-jbit/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[?7l╯[?7h[m[7;43Hinit — Initialize Copilot instructions for this repository[8;42H/model — Switch models across providers, or use Auto[4B [34m●[m No Copilot instructions found for this repository. Run /init to generate them.[8;90HCopilot Fusion[7;6H[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[96m╴╶[35m [m[96m  [35m [m[96m╴╶[35m [m[96m▘▝[35m [m[13B[J[6A [31m✗[m [1mUnknown command: /jbit:plan [36;2H[m$CLAUDE_TMP/.../proj [⎇ master][36;73HRun on: This computer [1mctrl+e[m change environment
 [2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [m❯
 [2m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

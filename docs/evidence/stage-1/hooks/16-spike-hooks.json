@@ -2,23 +2,112 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs sessionStart main","timeoutSec":20},
-      {"type":"command","bash":"node \"${PLUGIN_ROOT}/scripts/hook.mjs\" sessionStart probe-brace-PLUGIN_ROOT"},
-      {"type":"command","bash":"node \"$COPILOT_PLUGIN_ROOT/scripts/hook.mjs\" sessionStart probe-COPILOT_PLUGIN_ROOT"},
-      {"type":"command","bash":"node \"$CLAUDE_PLUGIN_ROOT/scripts/hook.mjs\" sessionStart probe-CLAUDE_PLUGIN_ROOT"},
-      {"type":"command","bash":"node scripts/hook.mjs sessionStart probe-relative-bash"},
-      {"type":"command","exec":"node","args":["scripts/hook.mjs","sessionStart","probe-relative-exec"]},
-      {"type":"command","exec":"node","args":["${PLUGIN_ROOT}/scripts/hook.mjs","sessionStart","probe-exec-brace-PLUGIN_ROOT"]},
-      {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs sessionStart probe-env-field","env":{"MYROOT":"${PLUGIN_ROOT}"}},
-      {"type":"command","bash":"{ echo \"PWD=$(pwd)\"; env | grep -i -E 'plugin|copilot|claude' | grep -v -i token; } > /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/probe-shell-env.txt"}
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs sessionStart main",
+        "timeoutSec": 20
+      },
+      {
+        "type": "command",
+        "bash": "node \"${PLUGIN_ROOT}/scripts/hook.mjs\" sessionStart probe-brace-PLUGIN_ROOT"
+      },
+      {
+        "type": "command",
+        "bash": "node \"$COPILOT_PLUGIN_ROOT/scripts/hook.mjs\" sessionStart probe-COPILOT_PLUGIN_ROOT"
+      },
+      {
+        "type": "command",
+        "bash": "node \"$CLAUDE_PLUGIN_ROOT/scripts/hook.mjs\" sessionStart probe-CLAUDE_PLUGIN_ROOT"
+      },
+      {
+        "type": "command",
+        "bash": "node scripts/hook.mjs sessionStart probe-relative-bash"
+      },
+      {
+        "type": "command",
+        "exec": "node",
+        "args": [
+          "scripts/hook.mjs",
+          "sessionStart",
+          "probe-relative-exec"
+        ]
+      },
+      {
+        "type": "command",
+        "exec": "node",
+        "args": [
+          "${PLUGIN_ROOT}/scripts/hook.mjs",
+          "sessionStart",
+          "probe-exec-brace-PLUGIN_ROOT"
+        ]
+      },
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs sessionStart probe-env-field",
+        "env": {
+          "MYROOT": "${PLUGIN_ROOT}"
+        }
+      },
+      {
+        "type": "command",
+        "bash": "{ echo \"PWD=$(pwd)\"; env | grep -i -E 'plugin|copilot|claude' | grep -v -i token; } > $SCRATCH/spike-hooks/probe-shell-env.txt"
+      }
     ],
-    "sessionEnd": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs sessionEnd main","timeoutSec":20} ],
-    "userPromptSubmitted": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs userPromptSubmitted main","timeoutSec":20} ],
-    "userPromptTransformed": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs userPromptTransformed main","timeoutSec":20} ],
-    "preToolUse": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs preToolUse main","timeoutSec":20} ],
-    "postToolUse": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs postToolUse main","timeoutSec":20} ],
-    "agentStop": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs agentStop main","timeoutSec":20} ],
-    "subagentStop": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs subagentStop main","timeoutSec":20} ],
-    "errorOccurred": [ {"type":"command","bash":"node /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin/scripts/hook.mjs errorOccurred main","timeoutSec":20} ]
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs sessionEnd main",
+        "timeoutSec": 20
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs userPromptSubmitted main",
+        "timeoutSec": 20
+      }
+    ],
+    "userPromptTransformed": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs userPromptTransformed main",
+        "timeoutSec": 20
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs preToolUse main",
+        "timeoutSec": 20
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs postToolUse main",
+        "timeoutSec": 20
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs agentStop main",
+        "timeoutSec": 20
+      }
+    ],
+    "subagentStop": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs subagentStop main",
+        "timeoutSec": 20
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "node $SCRATCH/spike-hooks/plugin/scripts/hook.mjs errorOccurred main",
+        "timeoutSec": 20
+      }
+    ]
   }
 }

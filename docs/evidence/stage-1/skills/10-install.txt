@@ -1,5 +1,5 @@
 $ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin install jbit-copilot@spike-gh
 
 Plugin "jbit-copilot" installed successfully. Installed 6 skills.
-Enabled "jbit-copilot@spike-gh". It is loaded live from /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt/plugins/jbit-copilot, so edits take effect on the next session — nothing was copied.
+Enabled "jbit-copilot@spike-gh". It is loaded live from $SCRATCH/spike-skills/mkt/plugins/jbit-copilot, so edits take effect on the next session — nothing was copied.
 [exit 0]

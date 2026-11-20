@@ -1,4 +1,4 @@
-$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin marketplace add /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt
+$ COPILOT_HOME=$WORK/home (cwd $WORK/proj) copilot plugin marketplace add $SCRATCH/spike-skills/mkt
 
 Marketplace "spike-gh" added successfully.
 [exit 0]

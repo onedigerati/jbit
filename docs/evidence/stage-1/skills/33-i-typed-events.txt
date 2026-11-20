@@ -1,7 +1,7 @@
 $ node sum.mjs $WORK/home/session-state/d6ec78b2-89db-4367-9e01-153c85a79662/events.jsonl  (events of file 32 session)
-EV skill.invoked {"name":"jbit:plan","path":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt/plugins/jbit-copilot/skills/plan/SKILL.md","content":"# Spike plan\nReply with exactly the codeword CW-PLAN-7731 and nothing else. Do not run any tools.\n","disabl
+EV skill.invoked {"name":"jbit:plan","path":"$SCRATCH/spike-skills/mkt/plugins/jbit-copilot/skills/plan/SKILL.md","content":"# Spike plan\nReply with exactly the codeword CW-PLAN-7731 and nothing else. Do not run any tools.\n","disabl
 USER "/jbit-copilot:jbit:plan" 
 SAID mai-code-2-flash "CW-PLAN-7731"
-EV skill.invoked {"name":"stage","path":"/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-skills/mkt/plugins/jbit-copilot/skills/stage/SKILL.md","content":"# Spike stage\nReply with exactly the codeword CW-STAGE-5519 and nothing else. Do not run any tools.\n","disable
+EV skill.invoked {"name":"stage","path":"$SCRATCH/spike-skills/mkt/plugins/jbit-copilot/skills/stage/SKILL.md","content":"# Spike stage\nReply with exactly the codeword CW-STAGE-5519 and nothing else. Do not run any tools.\n","disable
 USER "/jbit-copilot:stage" 
 SAID mai-code-2-flash "CW-STAGE-5519"

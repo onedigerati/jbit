@@ -1,4 +1,4 @@
-$ find /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home -path '*spikehooks*' -not -path '*/.git/*'; copilot plugin list; cat config
+$ find $SCRATCH/spike-hooks/home -path '*spikehooks*' -not -path '*/.git/*'; copilot plugin list; cat config
 Built-in plugins:
   • browser-use (v0.1.0) [disabled]
 
@@ -10,5 +10,5 @@ installed-plugins.lock
 logs
 settings.json
 settings.json.lock
-/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/config.json
-/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home/installed-plugins/_direct/plugin-7b631627/plugin.json
+$SCRATCH/spike-hooks/home/config.json
+$SCRATCH/spike-hooks/home/installed-plugins/_direct/plugin-7b631627/plugin.json

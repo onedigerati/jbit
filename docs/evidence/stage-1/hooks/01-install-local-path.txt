@@ -1,4 +1,4 @@
-$ cd /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/proj; COPILOT_HOME=/tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/home copilot plugin install /tmp/claude-1000/-home-jonah-src-repos-jbit/85ea5585-cff8-4585-b029-f1589ec3abd5/scratchpad/spike-hooks/plugin
+$ cd $SCRATCH/spike-hooks/proj; COPILOT_HOME=$SCRATCH/spike-hooks/home copilot plugin install $SCRATCH/spike-hooks/plugin
 # mode.json: {}
 ----- output -----
 Plugin "spikehooks" installed successfully.

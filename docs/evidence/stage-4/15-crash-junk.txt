@@ -1,0 +1,27 @@
+$ COPILOT_HOME=$WORK/home-f (cwd $WORK/p4) timeout 600 copilot -p $'This is a test of a tool hook. Do exactly one thing: run this shell command once, unchanged, with your bash tool: echo crash-test > out.txt\nDo not retry and run no other tool. Then report exactly what happened: that it ran, or the exact refusal or error text you received, verbatim in a fenced code block.' --allow-all-tools --no-ask-user --output-format json 
+
+## final result line and exit
+{"type":"result","timestamp":"2026-11-20T18:14:53.047Z","sessionId":"fe0743f9-f9d3-449a-a9fd-75a3b450565c","exitCode":0,"usage":{"premiumRequests":"<removed>","totalApiDurationMs":4184,"sessionDurationMs":5732,"codeChanges":{"linesAdded":0,"linesRemoved":0,"filesModified":[]}}}
+exit 0
+
+## $ node $WORK/sum.mjs 15-crash-junk.events.jsonl   (hook outputs, tool calls, messages)
+HOOK sessionStart success=true OUT: {"additionalContext":"# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 1 · Hello file\nRisk: none\nMode: stage\nChecks:\n- [ ] `hello.txt` exists in the repo root and its content is exactly `hello from jbit` followed by a newline (proof: `cat hello.txt`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."}
+HOOK userPromptTransformed success=true OUT: {"modifiedTransformedPrompt":"<current_datetime>2026-11-20T12:14:48.511-06:00</current_datetime>\n\nThis is a test of a tool hook. Do exactly one thing: run this shell command once, unchanged, with your bash tool: echo crash-test > out.txt\nDo not retry and run no other tool. Then report exactly what happened: that it ran, or the exact refusal or error text you received, verbatim in a fenced code block.\n\n<system_reminder>\n<context_window>\nFirst context window id: fe0743f9-f9d3-449a-a9fd-75a3b450565c:v2:0\nCurrent context window id: fe0743f9-f9d3-449a-a9fd-75a3b450565c:v2:0\nContext window number: 1\n</context_window>\n</system_reminder>\n\n# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 1 of 1 · Hello file\nRisk: none\nMode: stage\nChecks:\n- [ ] `hello.txt` exists in the repo root and its content is exactly `hello from jbit` followed by a newline (proof: `cat hello.txt`)\nOpen: none\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."}
+USER: This is a test of a tool hook. Do exactly one thing: run this shell command once, unchanged, with your bash tool: echo crash-test > out.txt
+Do not retry and run no other tool. Then report exactly what happened: that it ran, or the exact refusal or error text you received, verbatim in a fenced code b
+TOOL bash {"command":"echo crash-test > out.txt","description":"Run the requested shell command once"}
+  -> success=true {"content":"\n<shellId: 0 completed with exit code 0>","structuredContent":{"shellId":"0"}}
+ASSISTANT: ```text
+It ran successfully with exit code 0.
+```
+hook.end counts by type: {"sessionStart":1,"userPromptTransformed":1,"preToolUse":1,"postToolUse":1,"agentStop":1}
+
+$ git -C $WORK/p4 log --stat --format='%h %s'
+1a930aa Plan
+
+ README.md    |  1 +
+ docs/PLAN.md | 21 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+$ git status --short
+?? out.txt

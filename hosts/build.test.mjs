@@ -8,7 +8,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { findLeaks, generate, loadCapability } from './build.mjs'
+import { findLeaks, gapBlock, generate, loadCapability } from './build.mjs'
 
 const HOSTS = dirname(fileURLToPath(import.meta.url))
 const ROOT = dirname(HOSTS)
@@ -25,7 +25,7 @@ const temp = (tag = 'jbit-build-') => {
 /** A copy of everything the Copilot build reads, so a test can change a source without touching the repo. */
 function sources() {
   const dir = temp('jbit-build-src-')
-  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/copilot', 'hosts/core']) {
+  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/copilot', 'hosts/core', 'README.md']) {
     cpSync(join(ROOT, p), join(dir, p), { recursive: true, filter: s => !s.endsWith('.test.mjs') })
   }
   return dir
@@ -180,6 +180,103 @@ test('drift: a stray file in the package, or an edited generated file, fails --c
   r = build('--out', out, '--check')
   assert.notEqual(r.status, 0)
   assert.match(r.stderr, /differs: plugins\/jbit-copilot\/skills\/plan\/SKILL\.md/)
+})
+
+// ---- README gap list ----
+
+/** The README's generated block, between its markers. */
+function readmeBlock(text, cap) {
+  const { start, end } = cap.readme
+  const a = text.indexOf(start)
+  const b = text.indexOf(end)
+  assert.ok(a !== -1 && b > a, 'README.md lacks the gap block markers')
+  return text.slice(a + start.length, b)
+}
+
+test('README gap list: the root README\'s block lists every capability.json gap, in order, and nothing else', () => {
+  const cap = loadCapability(ROOT, 'copilot')
+  const block = readmeBlock(readFileSync(join(ROOT, 'README.md'), 'utf8'), cap)
+  assert.equal(block, `\n${gapBlock(cap)}\n`)
+  const items = block.split('\n').filter(l => l.startsWith('- '))
+  assert.equal(items.length, cap.gaps.length)
+  cap.gaps.forEach((g, i) => {
+    assert.ok(items[i].includes(g.what), `item ${i + 1} lacks ${g.what}`)
+    assert.ok(items[i].includes(g.why), `item ${i + 1} lacks the why of ${g.id}`)
+  })
+  // the stage-4 gaps the README must carry: present in capability.json, so present in the block by the loop above
+  for (const id of ['hook-crash', 'subagent-hold-unproven']) assert.ok(cap.gaps.some(g => g.id === id), `capability.json lacks the ${id} gap`)
+  // the build owns only the block: the rest of the README is the repo's own text
+  const { files } = generate({ src: ROOT, host: 'copilot' })
+  assert.equal(files.get('README.md'), readFileSync(join(ROOT, 'README.md'), 'utf8'))
+})
+
+test('README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it', () => {
+  const src = sources()
+  const out = temp()
+  assert.equal(build('--src', src, '--out', out).status, 0)
+  assert.equal(build('--src', src, '--out', out, '--check').status, 0)
+  const p = join(src, 'hosts/copilot/capability.json')
+  const cap = JSON.parse(readFileSync(p, 'utf8'))
+  cap.gaps[0].why = 'A changed reason.'
+  writeFileSync(p, JSON.stringify(cap, null, 2))
+  const r = build('--src', src, '--out', out, '--check')
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /differs: README\.md/)
+  const outside = text => {
+    const a = text.indexOf(cap.readme.start)
+    const b = text.indexOf(cap.readme.end)
+    return [text.slice(0, a), text.slice(b)]
+  }
+  const before = outside(readFileSync(join(out, 'README.md'), 'utf8'))
+  assert.equal(build('--src', src, '--out', out).status, 0)
+  assert.equal(build('--src', src, '--out', out, '--check').status, 0)
+  const after = readFileSync(join(out, 'README.md'), 'utf8')
+  assert.ok(readmeBlock(after, cap).includes('A changed reason.'))
+  // only the block changed: the text before and after it is byte-identical
+  assert.deepEqual(outside(after), before)
+})
+
+test('README gap list: a hand edit inside the block fails --check; prose outside it is the README\'s own', () => {
+  const src = sources()
+  const cap = loadCapability(src, 'copilot')
+  const readme = join(src, 'README.md')
+  const text = readFileSync(readme, 'utf8')
+  writeFileSync(readme, text.replace(cap.readme.end, `- a hand-added gap\n${cap.readme.end}`))
+  let r = build('--src', src, '--out', src, '--check')
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /differs: README\.md/)
+  assert.equal(build('--src', src, '--out', src).status, 0)
+  assert.equal(readFileSync(readme, 'utf8'), text)
+  const edited = text.replace('## Install', 'Some new prose.\n\n## Install')
+  assert.notEqual(edited, text, 'the prose edit must change the README')
+  writeFileSync(readme, edited)
+  r = build('--src', src, '--out', src, '--check')
+  assert.equal(r.status, 0, r.stderr)
+})
+
+for (const bad of ['/etc/README.md', '../README.md', 'docs/../../README.md']) {
+  test(`README gap list: readme.path ${bad} (absolute or with ..) fails the build`, () => {
+    const src = sources()
+    const p = join(src, 'hosts/copilot/capability.json')
+    const cap = JSON.parse(readFileSync(p, 'utf8'))
+    cap.readme.path = bad
+    writeFileSync(p, JSON.stringify(cap, null, 2))
+    const out = temp()
+    const r = build('--src', src, '--out', out)
+    assert.notEqual(r.status, 0)
+    assert.match(r.stderr, /readme\.path must be a relative path inside the repo/)
+    assert.deepEqual(readdirSync(out), [])
+  })
+}
+
+test('README gap list: a README without the markers fails the build', () => {
+  const src = sources()
+  const cap = loadCapability(src, 'copilot')
+  const readme = join(src, 'README.md')
+  writeFileSync(readme, readFileSync(readme, 'utf8').replace(cap.readme.start, ''))
+  const r = build('--src', src, '--out', temp())
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /README\.md/)
 })
 
 // ---- leaks ----

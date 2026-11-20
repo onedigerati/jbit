@@ -1,0 +1,72 @@
+# Stage 4 review fixes (2026-11-20T18:25:19Z)
+
+## 1. evidence scrub (script: $SCRATCH/scrub.mjs, outside the repo; see the note atop 00-setup.txt)
+first run: scrubbed: 79 files changed (after it, the note was added to 00-setup.txt)
+$ node $SCRATCH/scrub.mjs docs/evidence/stage-1 docs/evidence/stage-4   (again: idempotent, expect 0)
+scrubbed: 0 files changed
+
+$ # unscrubbed values left (key followed by anything but "<removed>"); expect 0 each
+encryptedContent: 0
+encrypted_content: 0
+reasoningOpaque: 0
+accountingSnapshot: 0
+totalNanoAiu: 0
+aiCreditsStatus: 0
+premiumRequests: 0
+tokenCount: 0
+inputTokens: 0
+outputTokens: 0
+$ # files naming the home directory, the per-user Claude temp dir, or the user name (this file excluded: written after the check); expect 0 each
+pattern 1: 0 files
+pattern 2: 0 files
+pattern 3: 0 files
+
+$ # JSON still valid: every line/file that parsed before still parses (originals copied to $SCRATCH before the scrub)
+json units: 833, broken after scrub: 0
+line count differs $SCRATCH/orig-stage-4/00-setup.txt
+json units: 1075, broken after scrub: 0
+(00-setup.txt's line count differs by the 8-line scrub note)
+
+$ # claims still readable: occurrences before -> after
+Denied by preToolUse hook: 84 -> 84
+JBIT blocked this commit: 41 -> 41
+permissionDecision: 22 -> 22
+decision":"block: 40 -> 40
+success=false: 16 -> 16
+Denied by preToolUse hook: JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`:
+
+## 2-5. gap, testedWith, README, readme.path guard, tests
+testedWith: GitHub Copilot CLI 1.0.114 (stage 1 spike; stage 4 end-to-end runs from the marketplace install)
+gaps: stall-detection, lean-agent-count, background-agents, post-commit-reopen, edit-create-unproven, eight-blocks, builtin-commands, node-22-18, review-commands, worktree-isolation, compaction, subagent-hold-unproven, hook-crash, hook-wording
+README carry-on note: 1
+
+$ node --test 'hosts/**/*.test.mjs'
+exit 0
+ok 12 - README gap list: the root README's block lists every capability.json gap, in order, and nothing else
+ok 13 - README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it
+ok 14 - README gap list: a hand edit inside the block fails --check; prose outside it is the README's own
+ok 15 - README gap list: readme.path /etc/README.md (absolute or with ..) fails the build
+ok 16 - README gap list: readme.path ../README.md (absolute or with ..) fails the build
+ok 17 - README gap list: readme.path docs/../../README.md (absolute or with ..) fails the build
+ok 18 - README gap list: a README without the markers fails the build
+# tests 73
+# pass 73
+# fail 0
+
+$ node hosts/build.mjs copilot --check
+copilot: up to date (27 files)
+exit 0
+
+$ node --test plugins/jbit/tests/docs.check.mjs
+exit 0
+# tests 51
+# pass 51
+# fail 0
+
+$ claude plugin validate .
+Validating marketplace manifest: $REPO/.claude-plugin/marketplace.json
+Validating hooks: $REPO/plugins/jbit/hooks/hooks.json
+✔ Validation passed
+exit 0
+
+$ git diff --stat c087d40 -- plugins/jbit .claude-plugin   (empty: unchanged)

@@ -1,7 +1,7 @@
 $ claude plugin validate .
-Validating marketplace manifest: /home/jonah/src/repos/jbit/.claude-plugin/marketplace.json
+Validating marketplace manifest: $REPO/.claude-plugin/marketplace.json
 
-Validating hooks: /home/jonah/src/repos/jbit/plugins/jbit/hooks/hooks.json
+Validating hooks: $REPO/plugins/jbit/hooks/hooks.json
 
   ❯ ./register.ts hooks: prompt.compose, session.compact, turn.start, prompt.submit, turn.complete, tool.call{tool=Skill}, tool.call, tool.call{tool=Agent}, tool.call{tool=Agent}, tool.call{tool=Bash}
   ❯ ./register.ts gating hook with .catch: session.compact

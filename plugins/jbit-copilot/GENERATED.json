@@ -3,7 +3,7 @@
   "host": "copilot",
   "version": "2.0.0",
   "sources": {
-    "hosts/build.mjs": "ce3a1c10afbeee7b7af2ed9c78454808dec7af951967a3ce95c1c539d8d4ba45",
+    "hosts/build.mjs": "6bd9db8ffa20bc8c0120525897d12be1034160280a0b1eea1ad79f76c035e833",
     "hosts/copilot/capability.json": "9a7182a6659739bbaa2e9de9fbf7185a2ff9816d33467381caa552899cdf3a55",
     "hosts/copilot/hook.mjs": "580b02c9841a89838a6e7b4e9993f91327b0d7b0d16bfd33770e3383fc1844f8",
     "hosts/copilot/map.mjs": "70eb613509fd5c22e743047b1570cba3a52d158cd3bfc754551b8219ae30cb2d",

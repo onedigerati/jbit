@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Builds a host's generated JBIT package from the Claude plugin (the source) and `hosts/`:
 //   node hosts/build.mjs <host> [--check] [--src DIR] [--out DIR]
-// `hosts/<host>/capability.json` drives it: the package folder, the marketplace file, the hook events, the scripts to
-// copy and the import rewrites that keep them inside the package, the skill substitutions (each must still match its
+// `hosts/<host>/capability.json` drives it: the format (`copilot`, the default, or `codex`: manifest path, hooks.json
+// and marketplace shapes), the package folder, the marketplace file, the hook events, the scripts to copy (listed or
+// globbed, some required) and the import rewrites (or `relink`) that keep them inside the package, frontmatter keys to
+// drop and the `agents/openai.yaml` for a skill the model mustn't invoke, the skill substitutions (each must still match its
 // source), the mapping section appended to every skill, and the leak terms: Claude-only names that must not be left
 // outside that section, and the gap list: what the host can't do, written between two markers in the root README
 // (`readme` in the capability file; the rest of the README is hand-written and kept as is). Output is deterministic (sorted, no timestamps), and only changed files are written.
@@ -65,7 +67,7 @@ export function quoteFrontmatter(text, where) {
 }
 
 function mappingSection(cap) {
-  const tools = cap.tools.map(t => `${t.claude} → ${t.copilot.map(n => `\`${n}\``).join(', ')}`).join('; ')
+  const tools = cap.tools.map(t => `${t.claude} → ${t[cap.host].map(n => `\`${n}\``).join(', ')}${t.note ? ` (${t.note})` : ''}`).join('; ')
   return [cap.mapping.heading, '', ...cap.mapping.lines.map(l => l.replace('{tools}', tools))].join('\n')
 }
 
@@ -85,9 +87,10 @@ function withGapBlock(text, cap) {
   return `${text.slice(0, a + start.length)}\n${gapBlock(cap)}\n${text.slice(b)}`
 }
 
-/** The events `hook.mjs` answers, read from its `EVENTS` table. */
-function handledEvents(hookSource) {
+/** The events `hook.mjs` answers, read from its `EVENTS` table; null when it has none and the capability allows that. */
+function handledEvents(hookSource, required = true) {
   const m = /const EVENTS = \{([^}]*)\}/.exec(hookSource)
+  if (!m && !required) return null
   if (!m) fail('hook.mjs has no EVENTS table to check hooks.json against')
   return m[1].split(',').map(s => s.trim().split(':')[0].trim()).filter(Boolean).sort()
 }
@@ -112,7 +115,7 @@ export function findLeaks(files, cap) {
   const leaks = []
   for (const [file, content] of files) {
     // the README is for people on every host, so it names Claude Code freely
-    if (!/\.(md|json)$/.test(file) || /\/scripts\//.test(file) || file.endsWith('/GENERATED.json') || file === cap.readme?.path) continue
+    if (!/\.(md|json|yaml)$/.test(file) || /\/scripts\//.test(file) || file.endsWith('/GENERATED.json') || file === cap.readme?.path) continue
     const cut = file.endsWith('SKILL.md') ? content.indexOf(`\n${cap.mapping.heading}\n`) : -1
     const text = cut === -1 ? content : content.slice(0, cut)
     text.split('\n').forEach((line, i) => {
@@ -120,6 +123,87 @@ export function findLeaks(files, cap) {
     })
   }
   return leaks
+}
+
+/** `text` with the frontmatter keys in `drop` removed. */
+function dropFrontmatter(text, drop) {
+  if (!drop?.length) return text
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(text)
+  const lines = m[1].split('\n').filter(l => !drop.includes(l.split(':')[0]))
+  return `---\n${lines.join('\n')}\n---\n${text.slice(m[0].length)}`
+}
+
+/**
+ * The scripts the capability copies, as source path → package path: `files` as listed, every `globs` match (a folder's
+ * files, read now, so a module added later is picked up), each `required` one present or the build fails.
+ */
+function scriptPlan(src, scripts) {
+  const plan = { ...scripts.files }
+  for (const g of scripts.globs ?? []) {
+    const dir = join(src, g.dir)
+    if (!existsSync(dir)) continue
+    for (const name of readdirSync(dir).sort()) {
+      if (!new RegExp(g.match).test(name) || (g.exclude && new RegExp(g.exclude).test(name))) continue
+      if (statSync(join(dir, name)).isDirectory()) continue
+      plan[`${g.dir}/${name}`] = `${g.to}${name}`
+    }
+  }
+  for (const req of scripts.required ?? []) {
+    if (!existsSync(join(src, req))) fail(`missing script ${req}: capability.json requires it, and the package can't be built without it`)
+    if (!plan[req]) fail(`required script ${req} isn't copied by capability.json`)
+  }
+  const dests = Object.values(plan)
+  const dup = dests.find((d, i) => dests.indexOf(d) !== i)
+  if (dup) fail(`two scripts are copied to ${dup}`)
+  return plan
+}
+
+/** `text` (copied from `from` to `to`) with each relative import of another copied script pointed at its package path. */
+function relink(text, from, to, plan) {
+  for (const spec of specifiers(text).rel) {
+    const target = posix.normalize(posix.join(posix.dirname(from), spec))
+    if (!plan[target]) continue
+    let next = posix.relative(posix.dirname(to), plan[target])
+    if (!next.startsWith('.')) next = `./${next}`
+    if (next === spec) continue
+    for (const q of ["'", '"']) text = text.split(`${q}${spec}${q}`).join(`${q}${next}${q}`)
+  }
+  return text
+}
+
+/** The package's hooks.json, in the host's format. */
+function hooksFile(cap, events) {
+  const h = cap.hooks
+  if (cap.format === 'codex') {
+    const hooks = {}
+    for (const e of events) {
+      const handler = { type: 'command', command: h.command.replace('<event>', e), timeout: h.timeoutSec }
+      if (h.additionalContextLimit?.[e]) handler.additionalContextLimit = h.additionalContextLimit[e]
+      hooks[e] = [{ ...(h.matchers?.[e] ? { matcher: h.matchers[e] } : {}), hooks: [handler] }]
+    }
+    return { hooks }
+  }
+  const hooks = {}
+  for (const e of events) hooks[e] = [{ type: 'command', bash: h.command.replace('<event>', e), timeoutSec: h.timeoutSec }]
+  return { version: 1, hooks }
+}
+
+/** The marketplace file, in the host's format. */
+function marketplaceFile(cap, pkg, srcPlugin, description) {
+  const m = cap.marketplace
+  if (cap.format === 'codex') {
+    return {
+      name: m.name,
+      interface: { displayName: m.displayName },
+      plugins: [{ name: m.entry, source: { source: 'local', path: `./${pkg}` }, policy: m.policy, category: m.category }],
+    }
+  }
+  return {
+    name: m.name,
+    owner: srcPlugin.author,
+    description: m.description,
+    plugins: [{ name: m.entry, source: `./${pkg}`, description, version: srcPlugin.version }],
+  }
 }
 
 /** Every file the host's package is made of, as out-root-relative path → text, sorted by path. */
@@ -149,43 +233,40 @@ export function generate({ src = REPO, host }) {
     let text = adapted[n]
     if (!new RegExp(`^---\\nname: ${n}\\n`).test(text)) fail(`skills/${n}/SKILL.md must open with frontmatter naming it "${n}"`)
     if (text.includes(cap.mapping.heading)) fail(`skills/${n}/SKILL.md already has a "${cap.mapping.heading}" heading`)
+    const ni = cap.frontmatter?.noImplicit
+    if (ni && /^---\n[\s\S]*?\n---\n/.exec(text)[0].split('\n').includes(ni.when)) files.set(`${pkg}/skills/${n}/${ni.file}`, ni.text)
+    text = dropFrontmatter(text, cap.frontmatter?.drop)
     text = quoteFrontmatter(text, `skills/${n}/SKILL.md`)
     if (!text.endsWith('\n')) text += '\n'
     files.set(`${pkg}/skills/${n}/SKILL.md`, `${text}\n${section}\n`)
   }
 
-  files.set(
-    `${pkg}/plugin.json`,
-    json({
-      name: cap.marketplace.entry,
-      version: srcPlugin.version,
-      description: adapted[''],
-      author: srcPlugin.author,
-      license: srcPlugin.license,
-      skills: 'skills/',
-      hooks: 'hooks/hooks.json',
-    }),
-  )
+  const manifest = cap.manifest
+    ? { name: cap.marketplace.entry, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: cap.manifest.skills }
+    : { name: cap.marketplace.entry, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: 'skills/', hooks: 'hooks/hooks.json' }
+  files.set(`${pkg}/${cap.manifest?.path ?? 'plugin.json'}`, json(manifest))
   if (existsSync(join(src, SOURCE_PLUGIN, 'LICENSE'))) files.set(`${pkg}/LICENSE`, source(`${SOURCE_PLUGIN}/LICENSE`))
 
   // hooks.json: one command entry per event the hook answers
-  const hookSrc = Object.keys(cap.scripts.files).find(k => cap.scripts.files[k] === 'scripts/hook.mjs')
+  const plan = scriptPlan(src, cap.scripts)
+  const hookSrc = Object.keys(plan).find(k => plan[k] === 'scripts/hook.mjs')
   if (!hookSrc) fail('capability.json copies no scripts/hook.mjs')
-  const handled = handledEvents(read(src, hookSrc))
   const events = [...cap.hooks.events].sort()
-  const unhandled = events.filter(e => !handled.includes(e))
-  const unlisted = handled.filter(e => !events.includes(e))
-  if (unhandled.length || unlisted.length) {
-    fail(`hooks.json events and the hook disagree: not handled by hook.mjs: ${unhandled.join(', ') || 'none'}; handled but not listed: ${unlisted.join(', ') || 'none'}`)
+  const handled = handledEvents(read(src, hookSrc), cap.hooks.requireEventsTable !== false)
+  if (handled) {
+    const unhandled = events.filter(e => !handled.includes(e))
+    const unlisted = handled.filter(e => !events.includes(e))
+    if (unhandled.length || unlisted.length) {
+      fail(`hooks.json events and the hook disagree: not handled by hook.mjs: ${unhandled.join(', ') || 'none'}; handled but not listed: ${unlisted.join(', ') || 'none'}`)
+    }
   }
-  const hooks = {}
-  for (const e of events) hooks[e] = [{ type: 'command', bash: cap.hooks.command.replace('<event>', e), timeoutSec: cap.hooks.timeoutSec }]
-  files.set(`${pkg}/hooks/hooks.json`, json({ version: 1, hooks }))
+  files.set(`${pkg}/hooks/hooks.json`, json(hooksFile(cap, events)))
 
-  // scripts: copied, with the import rewrites that keep them inside the package
+  // scripts: copied, with the import rewrites (or, with `relink`, every import of another copied script repointed)
+  // that keep them inside the package
   const scripts = {}
-  for (const from of Object.keys(cap.scripts.files).sort()) scripts[cap.scripts.files[from]] = source(from)
-  for (const { file, from, to } of cap.scripts.rewrites) {
+  for (const from of Object.keys(plan).sort()) scripts[plan[from]] = cap.scripts.relink ? relink(source(from), from, plan[from], plan) : source(from)
+  for (const { file, from, to } of cap.scripts.rewrites ?? []) {
     if (scripts[file] === undefined) fail(`rewrite names a script that isn't copied: ${file}`)
     const n = scripts[file].split(from).length - 1
     if (n !== 1) fail(`rewrite in ${file} matches ${n} times, not once: ${from}`)
@@ -204,15 +285,7 @@ export function generate({ src = REPO, host }) {
   }
   for (const [file, text] of Object.entries(scripts)) files.set(`${pkg}/${file}`, text)
 
-  files.set(
-    cap.marketplace.path,
-    json({
-      name: cap.marketplace.name,
-      owner: srcPlugin.author,
-      description: cap.marketplace.description,
-      plugins: [{ name: cap.marketplace.entry, source: `./${pkg}`, description: adapted[''], version: srcPlugin.version }],
-    }),
-  )
+  files.set(cap.marketplace.path, json(marketplaceFile(cap, pkg, srcPlugin, adapted[''])))
 
   // the README's gap list; the README itself isn't a source of the package, so it stays out of GENERATED.json
   if (cap.readme) {

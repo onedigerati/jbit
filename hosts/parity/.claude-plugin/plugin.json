@@ -1,0 +1,1 @@
+{ "name": "jbit", "version": "0.0.0", "description": "JBIT parity scenarios: runs the Claude hook (copied from plugins/jbit/hooks) against the shared scenarios." }

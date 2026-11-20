@@ -1,47 +1,60 @@
 # JBIT plan
 
 ## Goal
-Release 0.18.1's plugin, unchanged in behaviour, as JBIT 2.0.0. The user chose this after comparing eval scores: 0.18.1 scored higher (0.88 against 1.0.0's 0.75, single runs) and its hook enforces the commit gates that 1.x only asks for. Anyone on 1.2.0 moves forward with a normal update, since 2.0.0 is above 1.2.0. A plan in progress under 1.x can still close its stage, and the README says what changes for them. Done when `plugins/jbit/` matches 0.18.1 apart from version strings and the migration note, its suite, docs check and validate are green, an isolated install updates from 1.2.0 to 2.0.0, a headless run shows a 1.x plan mid-stage closing under 2.0.0, and `docs/decisions.md` says which decisions stand again. Pushing is a separate step that waits for the user.
+Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI Codex CLI, with no change at all to the Claude Code plugin. `plugins/jbit/` stays the source, untouched; a build step generates `plugins/jbit-copilot/` and `plugins/jbit-codex/` from it, each with its own capability file, its own marketplace entry, and the hook ported to a Node command-hook script. Done when, for each host, an isolated install from this repo runs a plan through a stage close headlessly, the commit gate and secret guard refuse what they refuse on Claude Code, and the README lists what that host can't do; and throughout, `plugins/jbit/` and `.claude-plugin/` are byte-identical to `c087d40`, with the suite, docs check and validate green. Pushing is a separate step that waits for the user.
 
 ## Baseline
-2026-11-17 · at 1.2.0 (`b132341` and later): tests: 43 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 33 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`). At 0.18.1 (`bdd4c76`) its own record was 561 tests and 47 docs checks passing.
+2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
 
 ## Now
-All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is wanted.
+Stage 1 of 7 · Spike: Copilot CLI
+Risk: external services (installs the Copilot CLI, runs on the user's account); no product code
+Agents: wide — confirmed 2026-11-20 10:38
+Checks:
+- [ ] The Copilot CLI is installed here, signed in, and `copilot -p` answers a prompt headlessly (proof: run, a CLI install and sign-in can't be a test)
+- [ ] `docs/research/copilot-spike-2026-11.md` answers each "Open for the spike" item in [copilot-cli-2026-11.md](research/copilot-cli-2026-11.md) from what a throwaway plugin in the scratchpad showed: hook command path resolution, `preToolUse` deny on bash and on each edit tool, `agentStop` block-and-continue, context on every prompt (`userPromptTransformed`, `sessionStart`, `postToolUse`), plugin hooks under `-p`, `jbit:`-prefixed skill names, the `task` tool's arguments, `.github/plugin/marketplace.json` winning over `.claude-plugin/` (proof: the note, with the commands run and their output saved under `docs/evidence/stage-1/`)
+- [ ] The note ends with what it changes for stages 2–4, and the prototype is not in the repo (proof: `git status`, nothing outside `docs/`)
+- [ ] `plugins/jbit/` and `.claude-plugin/` are unchanged from `c087d40`; suite, docs check and validate green (proof: test)
+Open: none
 
 ## Stages
-- [x] 1. Restore 0.18.1 as 2.0.0 — plugin, root README and marketplace back to `bdd4c76`; version 2.0.0; suite and validate green · 2026-11-17 · evidence: [docs/evidence/stage-1/report.md](evidence/stage-1/report.md)
-- [x] 2. Moving from 1.x — README "Moving from 1.x" note; decisions restored and 1.x's retired; isolated 1.2.0 → 2.0.0 update; headless proof that a 1.x plan mid-stage closes under 2.0.0; 1.2.0's verifier handback ported to `verify` · 2026-11-17 · evidence: [docs/evidence/stage-2/report.md](evidence/stage-2/report.md) (the stage-1 re-run row fails only because of stage 2's planned changes)
+- [ ] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
+- [ ] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
+- [ ] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
+- [ ] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
+- [ ] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
+- [ ] 6. Codex adapter + package — Codex adapter on the core, generated `plugins/jbit-codex/`, `.agents/plugins/marketplace.json`, parity scenarios
+- [ ] 7. Codex end to end — isolated install; headless stage close, refusals, carry-on; README "Codex CLI" with its gaps
 
 ## Decisions
-- 2026-11-17 · Release 0.18.1's code as 2.0.0, not as 0.18.1 — the user's choice. Why: a version below the installed 1.2.0 might never reach users through `claude plugin update`; 2.0.0 is a clean forward update, and a major number marks the change of approach.
-- 2026-11-17 · (pm) "Unchanged in behaviour" means the files at `bdd4c76`, with only the version, the description and the README's migration note changed. A compatibility fix goes in only if stage 2's headless run shows a 1.x plan can't close its stage, and it gets logged as a decision. Why: the point is 0.18.1's proven behaviour, not a new mix.
-- 2026-11-17 · (pm) The evals return to 0.18.1's set too. Why: they grade 0.18.1's behaviour (Agents levels, Models lines, approvals), and 1.x's evals would fail against it.
-- 2026-11-17 · (pm) `docs/decisions.md`: 0.18.1's decisions under "Retired in 1.0.0" stand again, and the 1.x decisions move under "Retired in 2.0.0", struck through rather than deleted, as the plan rules ask. Why: the file has to say what's true for the code that ships.
-- 2026-11-17 · (pm) Stage 1's diff against 0.18.1 is version strings only, so `/code-review` reviews that diff, not the restored code. Why: the restored code is 0.18.1's, already reviewed and shipped. Stage 2's `/security-review` covers any compatibility fix.
-- 2026-11-17 · (pm) Scale: two stages, one plan. No outside research; the update path is tested directly with an isolated install.
-- 2026-11-17 · The 1.2.0 plan was archived with check 4's report row still fail, as the verifier gave it, and the user's acceptance noted in its Goal line.
-- 2026-11-17 · The field guide goes back to 0.18.1's at 2.0.0, and the user's uncommitted edits to it are dropped (the user's choice).
-- 2026-11-17 · (autopilot) Check 3 corrected from 477 to 561 tests, plus 47 docs checks. Why: 477 was my count of `test(` lines, not the suite's recorded count; 0.18.1's own plan and the 1.0.0 plan's Baseline both record 561 and 47.
-- 2026-11-17 · (autopilot) Stage 1 review: I read the version-only diff in full (8 lines) and found nothing. `/code-review` didn't run over the restored code, which is 0.18.1's as shipped (see the stage-1 review decision above).
-- 2026-11-17 · The commit gate stays as 0.18.1 had it: a plan edit and commit in one shell command is guarded only under autopilot. Check 4 and the README were reworded to say so — the user's choice, after a headless run closed a stage with an unticked check that way outside autopilot. This is 0.18.1's accepted "a guardrail, not a sandbox" design.
-- 2026-11-17 · 2.0.0 carries 1.2.0's verify fix: a verifier agent hands back its table under `## Report`, and the main session writes `report.md` — the user's choice, since Claude Code refuses a subagent's report file. This is the one rule in which 2.0.0 differs from 0.18.1; check 5 covers it.
-- 2026-11-17 · (autopilot) decisions.md's restored lines use 0.18.1's wording, without the "Retired" notes 1.0.0 added to six of them; those notes stay in git history (`65e4047`). Why: they claimed things 2.0.0 contradicts. The dated-line count is unchanged (122).
-
-- 2026-11-17 · (autopilot) At the last stage, the re-run of stage 1's diff check fails against stage 1's own wording, because the diff now includes stage 2's planned changes: the migration note, the ported verify rule and their docs-check tests. It's recorded as fail in the stage 2 report, with the reason, not rounded up.
+- 2026-11-20 · Copilot CLI then Codex CLI; Google (Gemini CLI, Antigravity) dropped — the user's choice.
+- 2026-11-20 · No change or degradation on Claude Code: `plugins/jbit/` and `.claude-plugin/` stay byte-identical to `c087d40`, checked in every stage, and anything for the other hosts lives beside them — the user's goal ("keep the full capability … no degradation there").
+- 2026-11-20 · Agents: wide — the user's choice, confirmed in this session.
+- 2026-11-20 · I install each host CLI with npm when its spike starts; the user signs in — the user's choice.
+- 2026-11-20 · (pm) Claude's plugin is the source and the other hosts get generated packages, committed in the repo and shipped through each host's own plugin marketplace, not an installer that writes into users' config. Why: GSD does the same conversion but from a 15,800-line installer whose bugs were mostly config rewrites ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)); Copilot and Codex now have native plugins ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
+- 2026-11-20 · (pm) Each host has a `hosts/<host>/capability.json` that the build reads: tool and event names, paths, and the features it can't carry, which the README's gap list is generated from. Why: GSD's descriptors keep host differences in data and out of branching code ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)).
+- 2026-11-20 · (pm) Claude-specific skill text is adapted with a short per-host mapping section added to each generated skill plus a few tested substitutions, not a hand-maintained second copy. Why: GSD's mapping-section approach, and a drift check can then fail a generated copy that falls behind its source ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)).
+- 2026-11-20 · (pm) The hook is ported as a Node command script reading the host's event on stdin; the hook's pure modules are copied into each package at build, since an installed plugin can't import across plugin folders. The Claude hook keeps its in-process module. Why: both hosts run command hooks with a deny decision and a stop-block ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
+- 2026-11-20 · (pm) Shared parity scenarios (a commit closing a stage with an unticked check, a secret in a commit, an edit in a held stage, autopilot at turn end, …) run against the Claude hook and each command hook, from outside `plugins/jbit/`. If the Claude side can only run from inside it, stage 2 stops for the user. Why: two copies of the gate logic must not drift, and the Claude plugin stays untouched.
+- 2026-11-20 · (pm) Generated packages carry the version of the source they were built from (2.0.0 now). Why: one release line; the drift check ties each package to its source.
+- 2026-11-20 · (pm) Each host gets its own marketplace file where that host looks first (`.github/plugin/marketplace.json`, `.agents/plugins/marketplace.json`), so neither falls back to `.claude-plugin/` and loads the Claude package, whose `hooks.json` it can't run. Why: both hosts fall back to `.claude-plugin/` ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
+- 2026-11-20 · (pm) Spikes before builds, one per host, with prototypes kept in the scratchpad. Why: the notes leave the load-bearing questions (per-prompt context on Copilot, plugin hooks in the Codex CLI) to a real run.
+- 2026-11-20 · (pm) Scale: seven stages, one plan; no charter. Why: under eight stages and one goal.
+- 2026-11-20 · (pm) Risk: stages 2 and 6 touch secrets and user input (the secret guard and shell parsing move to a new hook), so they get tests first, `/code-review` and `/security-review`; the spikes and end-to-end stages touch external services.
 
 ## Open questions
-- 2026-11-17 · Shipped: `main` pushed (2.0.0) and the installed plugin updated from 1.2.0 to 2.0.0; takes effect after a Claude Code restart.
+- Does the Codex CLI run hooks bundled in a plugin? The docs conflict ([codex-cli-2026-11.md](research/codex-cli-2026-11.md) §2). If not, Codex gets the skills without the gates, and the README says so — the user decides at stage 5; that's the default I'd pick.
+- Can a Copilot hook add the plan's `## Now` to every prompt? `userPromptSubmitted` output is dropped ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md) §4). If not, it rides in at `sessionStart` and after tool calls instead — settled at stage 1.
 - What users lose (they get 0.18.1's behaviour):
   - role agents and any `.claude/agents/<role>.md` overrides
   - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)
   - 1.2.0's handoff overflow rule and the reviewer's `review.md`
   - 0.18.1 still assumes the verifier subagent writes `report.md`, which Claude Code refuses (see the 1.2.0 plan); it worked around this by running verify in the main session
 
-  The README note will say this; carrying any of it into 2.0.x is for a later plan.
-- Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs, so the reason for this change rests on one run per case — for the user.
-- The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts — carried; 0.18.1 has the same gap.
-- `plugins/jbit/evals-ablation/` (untracked) and five leftover worktrees in `.claude/worktrees/` — carried; for the user.
+  The README note will say this; carrying any of it into 2.0.x is for a later plan. (carried)
+- Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs, so the reason for this change rests on one run per case — for the user. (carried)
+- The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts — carried; 0.18.1 has the same gap, and the ported hook will too.
+- `plugins/jbit/evals-ablation/` (untracked) — carried; for the user.
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).
@@ -50,3 +63,4 @@ All stages done: the goal is met. Next: a new plan (`jbit:plan`) if more is want
 - 2026-11-07 · Verification evidence: verify saves a per-check report and its output to `docs/evidence/stage-<n>/`, stage and autopilot link it, archiving carries it along, and the commit guard refuses to close a stage without it (keel 0.5.0–0.5.2) — [plan](plans/2026-11-07-verification-evidence.md) · [evidence](plans/2026-11-07-verification-evidence/evidence/)
 - 2026-11-17 · Fan-out limit: `stage`, `autopilot` and `plan` follow a `CLAUDE.md` limit on agents at once and worktrees; README "Slower machines" (1.1.0, pushed) — [plan](plans/2026-11-17-fan-out-limit.md) · [evidence](plans/2026-11-17-fan-out-limit/evidence/)
 - 2026-11-17 · Handoff overflow: role agents hand back 20 lines at most and say what they cut; the reviewer saves `review.md`; the verifier hands back its table for the main session to write `report.md` (1.2.0, pushed) — [plan](plans/2026-11-17-handoff-overflow.md) · [evidence](plans/2026-11-17-handoff-overflow/evidence/)
+- 2026-11-17 · Restore 0.18.1 as 2.0.0: 0.18.1's plugin back, unchanged in behaviour, with a "Moving from 1.x" note and 1.2.0's verifier handback (2.0.0, pushed) — [plan](plans/2026-11-17-restore-2-0-0.md) · [evidence](plans/2026-11-17-restore-2-0-0/evidence/)

@@ -111,6 +111,8 @@
 - ~~2026-11-17 · The six skills stay at most 5,000 words together, none over 1,500 (a docs check holds it) (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))~~ — replaced 2026-11-17: the 5,000-word total is lifted, and each skill stays at most 1,500 words.
 - ~~2026-11-17 · No limit on the six skills' total words; each skill stays at most 1,500 (a docs check holds it). Why: the user's call ("let's lift that cap"). The total was at exactly 5,000 after 1.2.0 and was forcing cuts to `verify` to pay for new rules.~~ — replaced 2026-11-17: the per-skill limit is lifted too.
 - 2026-11-17 · No word limit on the skills, total or per skill; no docs check counts their words. Why: the user's call, lifting the total first and then the per-skill limit ("lift the cap on the skills as well").
+- 2026-11-17 · The commit gate stays as 0.18.1 had it: a plan edit and commit in one shell command is guarded only under autopilot — 0.18.1's accepted "a guardrail, not a sandbox" design (the user's choice) (from [Restore 0.18.1 as 2.0.0](plans/2026-11-17-restore-2-0-0.md))
+- 2026-11-17 · A verifier agent hands back its table under `## Report`, and the main session writes `report.md`, since Claude Code refuses a subagent's report file (the user's choice; the one rule where 2.0.0 differs from 0.18.1) (from [Restore 0.18.1 as 2.0.0](plans/2026-11-17-restore-2-0-0.md))
 
 ## Retired in 1.0.0
 
@@ -118,7 +120,7 @@ These stopped holding with the 1.0.0 cut ([plan](plans/2026-11-17-cut-down-1-0-0
 
 ## Retired in 2.0.0
 
-These stopped holding when 2.0.0 restored 0.18.1's plugin ([plan](PLAN.md)): role agents and their override files, the `CLAUDE.md` fan-out limit, model and effort in agent files, the 20-line handoff overflow and the reviewer's `review.md`, and the 1.0.0 cut's two-job hook. Each is struck with the reason, none deleted.
+These stopped holding when 2.0.0 restored 0.18.1's plugin ([plan](plans/2026-11-17-restore-2-0-0.md)): role agents and their override files, the `CLAUDE.md` fan-out limit, model and effort in agent files, the 20-line handoff overflow and the reviewer's `review.md`, and the 1.0.0 cut's two-job hook. Each is struck with the reason, none deleted.
 
 - ~~2026-11-17 · The hook keeps only the `## Now` section and the secret guard on commits; the evidence rule and running stages in a row are skill instructions, and continuing across turns uses `/loop` or the user's go (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))~~ — *Retired in 2.0.0: 2.0.0's hook has its commit gates (ticked checks, the evidence report, milestone ticks), the outward check, holds and autopilot again.*
 - ~~2026-11-17 · `charter` is a plain skill, with no hook checking the roadmap table or milestone ticks (from [Cut JBIT down, 1.0.0](plans/2026-11-17-cut-down-1-0-0.md))~~ — *Retired in 2.0.0: 2.0.0's hook gates milestone ticks and shows the roadmap line again.*

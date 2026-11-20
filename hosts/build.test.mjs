@@ -431,3 +431,238 @@ test('the repo\'s own generated hook denies `git push` under armed autopilot', (
   const out = runHook(script, tmpdir(), 'preToolUse', { sessionId: 'r', cwd: project, toolName: 'bash', toolArgs: { command: 'git push origin main' } }, env)
   assert.equal(out.permissionDecision, 'deny', JSON.stringify(out))
 })
+
+// ---- codex ----
+// The Codex build reads the real adapter (hosts/codex/), plus the Copilot map it reuses, from a temp copy of the sources.
+
+/** A copy of everything the Codex build reads. */
+function codexSources() {
+  const dir = temp('jbit-build-codex-src-')
+  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/core', 'hosts/codex', 'hosts/copilot/map.mjs', 'README.md']) {
+    cpSync(join(ROOT, p), join(dir, p), { recursive: true, filter: s => !s.endsWith('.test.mjs') })
+  }
+  return dir
+}
+const codex = (...args) => spawnSync(process.execPath, [BUILD, 'codex', ...args], { encoding: 'utf8', timeout: 60000 })
+const PKG = 'plugins/jbit-codex'
+
+test('codex: building twice gives identical bytes, and the second run writes nothing', () => {
+  const src = codexSources()
+  const out = temp()
+  const a = codex('--src', src, '--out', out)
+  assert.equal(a.status, 0, a.stderr)
+  const first = snapshot(out)
+  const b = codex('--src', src, '--out', out)
+  assert.equal(b.status, 0, b.stderr)
+  assert.match(b.stdout, /wrote 0\b/)
+  assert.deepEqual(snapshot(out), first)
+  const g1 = generate({ src, host: 'codex' }).files
+  const g2 = generate({ src, host: 'codex' }).files
+  assert.deepEqual([...g1], [...g2])
+  assert.deepEqual([...g1.keys()], [...g1.keys()].sort())
+  assert.equal(codex('--src', src, '--out', out, '--check').status, 0)
+})
+
+test('codex: .codex-plugin/plugin.json names the plugin jbit at the source version, with LICENSE and GENERATED.json', () => {
+  const src = codexSources()
+  const { files } = generate({ src, host: 'codex' })
+  const srcPlugin = JSON.parse(readFileSync(join(ROOT, 'plugins/jbit/.claude-plugin/plugin.json'), 'utf8'))
+  const plugin = JSON.parse(files.get(`${PKG}/.codex-plugin/plugin.json`))
+  assert.equal(plugin.name, 'jbit')
+  assert.equal(plugin.version, srcPlugin.version)
+  assert.equal(plugin.skills, './skills/')
+  assert.equal(files.has(`${PKG}/plugin.json`), false)
+  assert.ok(files.has(`${PKG}/LICENSE`))
+  const manifest = JSON.parse(files.get(`${PKG}/GENERATED.json`))
+  assert.equal(manifest.host, 'codex')
+  assert.match(manifest.sources['hosts/codex/capability.json'], /^[0-9a-f]{64}$/)
+  assert.ok(![...files.keys()].some(k => k.includes('.claude-plugin')), 'the package must not carry a .claude-plugin folder')
+})
+
+test('codex: 9 skills with bare names, no Claude-only frontmatter, and one "On Codex CLI" section', () => {
+  const src = codexSources()
+  const { files, cap } = generate({ src, host: 'codex' })
+  const names = readdirSync(join(ROOT, 'plugins/jbit/skills')).sort()
+  assert.equal(names.length, 9)
+  for (const name of names) {
+    const text = files.get(`${PKG}/skills/${name}/SKILL.md`)
+    assert.ok(text, name)
+    assert.match(text, new RegExp(`^---\\nname: ${name}\\n`))
+    const front = text.split('\n---\n')[0].split('\n').slice(1)
+    assert.deepEqual(front.map(l => l.split(':')[0]), ['name', 'description'], name)
+    const desc = /^description: (.*)$/m.exec(text)[1]
+    if (desc.startsWith('"')) assert.equal(typeof JSON.parse(desc), 'string')
+    const parts = text.split(`\n${cap.mapping.heading}\n`)
+    assert.equal(parts.length, 2, name)
+    const section = parts[1]
+    assert.match(section, /`\$jbit:<name>`/)
+    assert.match(section, /`spawn_agent`/)
+    assert.match(section, /`task_name`.*`message`/)
+    assert.match(section, /`model`.*only as the plan's Models line sets them/)
+    assert.match(section, /Bash → `exec_command`/)
+    assert.match(section, /`apply_patch`/)
+  }
+})
+
+test('codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false, and the gap is listed', () => {
+  const src = codexSources()
+  const { files, cap } = generate({ src, host: 'codex' })
+  const yamls = [...files.keys()].filter(k => k.endsWith('openai.yaml'))
+  assert.deepEqual(yamls, [`${PKG}/skills/approve/agents/openai.yaml`])
+  assert.match(files.get(yamls[0]), /^policy:\n {2}allow_implicit_invocation: false\n$/)
+  assert.doesNotMatch(files.get(`${PKG}/skills/approve/SKILL.md`), /disable-model-invocation/)
+  assert.ok(cap.gaps.some(g => g.id === 'approve-implicit' && /visible to the model/.test(g.what)))
+})
+
+test('codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with raised context limits', () => {
+  const src = codexSources()
+  const { files } = generate({ src, host: 'codex' })
+  const { hooks, ...rest } = JSON.parse(files.get(`${PKG}/hooks/hooks.json`))
+  assert.deepEqual(rest, {})
+  assert.deepEqual(Object.keys(hooks).sort(), ['PreToolUse', 'SessionStart', 'Stop', 'UserPromptSubmit'])
+  for (const [event, groups] of Object.entries(hooks)) {
+    assert.equal(groups.length, 1)
+    const [group] = groups
+    assert.equal(group.matcher, event === 'PreToolUse' ? '*' : undefined, event)
+    assert.equal(group.hooks.length, 1)
+    const [h] = group.hooks
+    assert.equal(h.type, 'command')
+    assert.equal(h.command, `node "\${PLUGIN_ROOT}/scripts/hook.mjs" ${event}`)
+    assert.ok(h.timeout > 25, `${event}: timeout ${h.timeout} must outlast the hook's 25 s watchdog`)
+    if (event === 'UserPromptSubmit' || event === 'Stop') assert.ok(h.additionalContextLimit >= 16000, event)
+    else assert.equal(h.additionalContextLimit, undefined, event)
+  }
+})
+
+test('codex: .agents/plugins/marketplace.json points at the package under its own name', () => {
+  const src = codexSources()
+  const { files } = generate({ src, host: 'codex' })
+  const mkt = JSON.parse(files.get('.agents/plugins/marketplace.json'))
+  assert.equal(mkt.name, 'jbit-local')
+  assert.ok(mkt.interface.displayName)
+  assert.equal(mkt.plugins.length, 1)
+  const [p] = mkt.plugins
+  assert.equal(p.name, 'jbit')
+  assert.deepEqual(p.source, { source: 'local', path: './plugins/jbit-codex' })
+  assert.deepEqual(p.policy, { installation: 'AVAILABLE', authentication: 'ON_INSTALL' })
+})
+
+test('codex: scripts are globbed from hosts/core and hosts/codex, with imports repointed inside the package', () => {
+  const src = codexSources()
+  // a module added to hosts/core later is picked up with no capability change; tests are never shipped
+  writeFileSync(join(src, 'hosts/core/extra.mjs'), 'export const x = 1\n')
+  writeFileSync(join(src, 'hosts/codex/hook.test.mjs'), 'not shipped\n')
+  const { files } = generate({ src, host: 'codex' })
+  const scripts = [...files.keys()].filter(k => k.startsWith(`${PKG}/scripts/`)).map(k => k.slice(PKG.length + 9))
+  assert.deepEqual(scripts, [
+    'copilot/map.mjs', 'core/dispatch.mjs', 'core/engine.mjs', 'core/extra.mjs', 'core/index.mjs', 'core/patch.mjs', 'hook.mjs',
+    'hooks/models.ts', 'hooks/project.ts', 'hooks/register.ts', 'hooks/secrets.ts', 'hooks/shell.ts',
+    'map.mjs', 'package.json',
+  ])
+  const hook = files.get(`${PKG}/scripts/hook.mjs`)
+  assert.match(hook, /import\('\.\/core\/index\.mjs'\)/)
+  assert.match(hook, /from '\.\/map\.mjs'/)
+  assert.match(files.get(`${PKG}/scripts/map.mjs`), /from '\.\/copilot\/map\.mjs'/)
+  assert.match(files.get(`${PKG}/scripts/copilot/map.mjs`), /from '\.\.\/core\/patch\.mjs'/)
+  assert.match(files.get(`${PKG}/scripts/core/dispatch.mjs`), /'\.\.\/hooks\/register\.ts'/)
+  for (const [path, text] of files) if (path.includes('/scripts/')) assert.doesNotMatch(text, /['"](\.\.\/)+(plugins|hosts)\//, path)
+})
+
+test('codex: a missing hook.mjs fails the build with a clear message and writes nothing', () => {
+  const src = codexSources()
+  rmSync(join(src, 'hosts/codex/hook.mjs'))
+  const out = temp()
+  for (const r of [codex('--src', src, '--out', out), codex('--src', src, '--out', out, '--check')]) {
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /missing script hosts\/codex\/hook\.mjs/)
+  }
+  assert.deepEqual(readdirSync(out), [])
+})
+
+for (const [what, change] of [
+  ['a skill', src => appendFileSync(join(src, 'plugins/jbit/skills/fix/SKILL.md'), '\nOne more line.\n')],
+  ['a core module', src => appendFileSync(join(src, 'hosts/core/engine.mjs'), '\n// changed\n')],
+  ['the hook', src => appendFileSync(join(src, 'hosts/codex/hook.mjs'), '\n// changed\n')],
+  [
+    'the capability file',
+    src => {
+      const p = join(src, 'hosts/codex/capability.json')
+      const cap = JSON.parse(readFileSync(p, 'utf8'))
+      cap.hooks.additionalContextLimit.Stop = 12000
+      writeFileSync(p, JSON.stringify(cap, null, 2))
+    },
+  ],
+]) {
+  test(`codex drift: --check fails when ${what} changed, and passes after a rebuild`, () => {
+    const src = codexSources()
+    const out = temp()
+    assert.equal(codex('--src', src, '--out', out).status, 0)
+    assert.equal(codex('--src', src, '--out', out, '--check').status, 0)
+    change(src)
+    const r = codex('--src', src, '--out', out, '--check')
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /drift: plugins\/jbit-codex/)
+    assert.equal(codex('--src', src, '--out', out).status, 0)
+    const again = codex('--src', src, '--out', out, '--check')
+    assert.equal(again.status, 0, again.stderr)
+  })
+}
+
+test('codex drift: a stray file in the package or a hand-edited marketplace fails --check', () => {
+  const src = codexSources()
+  const out = temp()
+  assert.equal(codex('--src', src, '--out', out).status, 0)
+  writeFileSync(join(out, PKG, 'skills/stray.md'), 'x')
+  let r = codex('--src', src, '--out', out, '--check')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /extra: plugins\/jbit-codex\/skills\/stray\.md/)
+  assert.equal(codex('--src', src, '--out', out).status, 0)
+  const mkt = join(out, '.agents/plugins/marketplace.json')
+  writeFileSync(mkt, readFileSync(mkt, 'utf8').replace('jbit-local', 'other'))
+  r = codex('--src', src, '--out', out, '--check')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /differs: \.agents\/plugins\/marketplace\.json/)
+})
+
+test('codex leak check: the output has none, and a Claude-only name planted outside the mapping section fails', () => {
+  const src = codexSources()
+  const { files, cap } = generate({ src, host: 'codex' })
+  assert.deepEqual(findLeaks(files, cap), [])
+  const out = temp()
+  assert.equal(codex('--src', src, '--out', out).status, 0)
+  appendFileSync(join(src, 'plugins/jbit/skills/resume/SKILL.md'), '\nAsk with AskUserQuestion, or run /security-review.\n')
+  for (const r of [codex('--src', src, '--out', out), codex('--src', src, '--out', out, '--check')]) {
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /leak: plugins\/jbit-codex\/skills\/resume\/SKILL\.md:\d+ AskUserQuestion/)
+    assert.match(r.stderr, /security-review/)
+  }
+  // on disk too: a term planted in the generated yaml is caught by --check
+  const src2 = codexSources()
+  const out2 = temp()
+  assert.equal(codex('--src', src2, '--out', out2).status, 0)
+  appendFileSync(join(out2, PKG, 'skills/approve/agents/openai.yaml'), '# disable-model-invocation\n')
+  const r = codex('--src', src2, '--out', out2, '--check')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /leak: plugins\/jbit-codex\/skills\/approve\/agents\/openai\.yaml:\d+ disable-model-invocation/)
+})
+
+test('codex gaps: the capability lists the gaps the stage-7 README must carry', () => {
+  const cap = loadCapability(ROOT, 'codex')
+  const ids = cap.gaps.map(g => g.id)
+  assert.equal(ids[0], 'hook-trust', 'hook trust comes first')
+  for (const id of ['hook-trust', 'role-agents', 'dollar-invocation', 'approve-implicit', 'hook-timeout-unproven', 'stall-detection', 'lean-agent-count', 'background-agents', 'compaction']) {
+    assert.ok(ids.includes(id), `missing gap ${id}`)
+  }
+  assert.equal(new Set(ids).size, ids.length)
+  for (const g of cap.gaps) assert.ok(g.what && g.why, g.id)
+  assert.match(gapBlock(cap), /^- \*\*Hooks need trusting after every install and update\.\*\*/)
+})
+
+test('codex: the committed package is current (once the adapter has landed)', t => {
+  if (!readdirSync(join(HOSTS, 'codex')).includes('hook.mjs')) {
+    t.skip('hosts/codex/hook.mjs is not in this tree yet')
+    return
+  }
+  const r = codex('--check')
+  assert.equal(r.status, 0, r.stdout + r.stderr)
+})

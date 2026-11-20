@@ -1,0 +1,20 @@
+{
+  "name": "jbit-local",
+  "interface": {
+    "displayName": "JBIT (local)"
+  },
+  "plugins": [
+    {
+      "name": "jbit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jbit-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

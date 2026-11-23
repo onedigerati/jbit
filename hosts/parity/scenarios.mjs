@@ -20,6 +20,9 @@ export const reportWith = rows =>
   ['# Stage 2 · Share mode — evidence', '', '| Check | Result | Evidence |', '|---|---|---|', ...Array.from({ length: rows }, (_, i) => `| check ${i + 1} | pass | out-${i + 1}.txt |`), '', 'Project checks: tests pass', ''].join('\n')
 
 const REPORT = 'docs/evidence/stage-2/report.md'
+const SHOT = 'docs/evidence/stage-2/shot-390-light.png'
+/** A two-row report whose second row links a screenshot, with its `Screenshots:` line. */
+const reportWithShot = () => reportWith(2).replace('| check 2 | pass | out-2.txt |', '| check 2 | pass | [390 light](shot-390-light.png) |') + 'Screenshots: shot-390-light.png shows the board read-only at 390px\n'
 const TICKED = planOn2('Checks:', '- [x] link opens read-only', '- [x] controls work on touch')
 const UNTICKED = planOn2('Checks:', '- [x] link opens read-only', '- [ ] controls work on touch')
 const RISKY = planOn2('Risk: auth, user input', 'Mode: autopilot', 'Checks:', '- [ ] login works')
@@ -45,6 +48,16 @@ export const SCENARIOS = [
   {
     name: 'a stage close with its checks ticked and its report passes',
     fixture: { committed: { 'docs/PLAN.md': TICKED, [REPORT]: reportWith(2) }, staged: { 'docs/PLAN.md': closed(TICKED) } },
+    steps: [user('close stage 2'), { ...commit('Stage 2: share mode'), expect: { kind: 'allow' } }],
+  },
+  {
+    name: 'a stage close whose report links a missing screenshot is denied, naming the file',
+    fixture: { committed: { 'docs/PLAN.md': TICKED, [REPORT]: reportWithShot() }, staged: { 'docs/PLAN.md': closed(TICKED) } },
+    steps: [user('close stage 2'), { ...commit('Stage 2: share mode'), expect: { kind: 'deny', has: ['closes stage 2', SHOT, 'jbit:verify'] } }],
+  },
+  {
+    name: 'the same stage close passes once the screenshot exists',
+    fixture: { committed: { 'docs/PLAN.md': TICKED, [REPORT]: reportWithShot(), [SHOT]: '\x89PNG\r\n' }, staged: { 'docs/PLAN.md': closed(TICKED) } },
     steps: [user('close stage 2'), { ...commit('Stage 2: share mode'), expect: { kind: 'allow' } }],
   },
   {

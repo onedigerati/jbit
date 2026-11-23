@@ -815,3 +815,14 @@ test('no ${CLAUDE_ text is left anywhere in a generated skill, and the capture s
     }
   }
 })
+
+test('screenshot gaps: Copilot and Codex each list what they lose of screenshot evidence, in their README block', () => {
+  const readme = readFileSync(join(ROOT, 'README.md'), 'utf8')
+  for (const host of ['copilot', 'codex']) {
+    const cap = loadCapability(ROOT, host)
+    const gap = cap.gaps.find(g => g.id === 'capture-path-unproven')
+    assert.ok(gap, `${host} lacks the capture-path-unproven gap`)
+    assert.match(gap.why, /<verify skill folder>\/scripts\/capture\.mjs/)
+    assert.ok(readmeBlock(readme, cap).includes(`- **${gap.what}.** ${gap.why}`), `${host}'s README block lacks the screenshot gap`)
+  }
+})

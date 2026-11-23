@@ -1,0 +1,30 @@
+$ # Setup (E = <scratchpad>/e2e-claude-r2): a NEW CLAUDE_CONFIG_DIR=$E/config holding only a copy of ~/.claude/.credentials.json (never printed; deleted at the end); plugin reinstalled so it is current HEAD
+$ CLAUDE_CONFIG_DIR=$E/config claude --version && claude plugin marketplace add ~/src/repos/jbit && claude plugin install jbit@jbit-local && claude plugin list && claude plugin list --json
+2.1.328 (Claude Code)
+Adding marketplace…✔ Successfully added marketplace: jbit-local (declared in user settings)
+Installing plugin "jbit@jbit-local"...✔ Successfully installed plugin: jbit@jbit-local (scope: user)
+Installed plugins:
+
+  ❯ jbit@jbit-local
+    Version: 2.0.0
+    Read from: ~/src/repos/jbit/plugins/jbit
+    Scope: user
+    Status: ✔ enabled
+
+[
+  {
+    "id": "jbit@jbit-local",
+    "version": "2.0.0",
+    "scope": "user",
+    "enabled": true,
+    "installPath": "<scratchpad>/e2e-claude-r2/config/plugins/cache/jbit-local/jbit/2.0.0",
+    "readFromFolder": "~/src/repos/jbit/plugins/jbit",
+    "folderVersion": "2.0.0",
+    "installedAt": "2026-11-23T18:51:04.182Z",
+    "lastUpdated": "2026-11-23T18:51:04.182Z",
+    "projectEnabled": false
+  }
+]
+
+Repo HEAD: 4e10cf8; plugins/jbit/ clean against HEAD apart from untracked evals-ablation/ (not loaded by the plugin).
+The init event of both runs lists plugin jbit 2.0.0 from ~/src/repos/jbit/plugins/jbit; JBIT ui_status events fire.

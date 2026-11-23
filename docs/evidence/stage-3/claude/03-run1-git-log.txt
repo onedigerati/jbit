@@ -1,0 +1,110 @@
+$ git log --stat (run 1 app)
+commit 4d706ce80d35d264698b3244c0e0ba792fc8c2db
+Author: JBIT test <test@example.invalid>
+Date:   Mon Nov 23 12:38:26 2026 -0600
+
+    Stage 1: Sign-in button in the site header
+    
+    Adds a "Sign in" link to /signin at the right end of the header, filled
+    with the accent colour; text uses the background colour so it reads in
+    both themes. It never wraps or shrinks, and the header stays on one row
+    at 390 wide.
+    
+    Verified by screenshots at 390 and 1280, light and dark (kept local,
+    gitignored); report in docs/evidence/stage-1/report.md.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/PLAN.md                                   |  9 ++++-----
+ docs/evidence/.gitignore                       | 11 +++++++++++
+ docs/evidence/stage-1/compare-before-after.txt |  7 +++++++
+ docs/evidence/stage-1/home-console.txt         |  4 ++++
+ docs/evidence/stage-1/report.md                | 17 +++++++++++++++++
+ index.html                                     |  1 +
+ style.css                                      |  3 +++
+ 7 files changed, 47 insertions(+), 5 deletions(-)
+
+commit 63893e611de10d820465e3584e5ab81c817f9672
+Author: JBIT test <test@example.invalid>
+Date:   Mon Nov 23 12:37:21 2026 -0600
+
+    Plan: sign-in button
+
+ README.md    |  1 +
+ docs/PLAN.md | 23 +++++++++++++++++++++++
+ index.html   | 22 ++++++++++++++++++++++
+ style.css    | 11 +++++++++++
+ 4 files changed, 57 insertions(+)
+
+$ git status --short
+?? docs/evidence/stage-1/before/
+
+$ git show HEAD -- docs/PLAN.md index.html style.css
+commit 4d706ce80d35d264698b3244c0e0ba792fc8c2db
+Author: JBIT test <test@example.invalid>
+Date:   Mon Nov 23 12:38:26 2026 -0600
+
+    Stage 1: Sign-in button in the site header
+    
+    Adds a "Sign in" link to /signin at the right end of the header, filled
+    with the accent colour; text uses the background colour so it reads in
+    both themes. It never wraps or shrinks, and the header stays on one row
+    at 390 wide.
+    
+    Verified by screenshots at 390 and 1280, light and dark (kept local,
+    gitignored); report in docs/evidence/stage-1/report.md.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/PLAN.md b/docs/PLAN.md
+index cc7aeda..41ecae7 100644
+--- a/docs/PLAN.md
++++ b/docs/PLAN.md
+@@ -4,20 +4,19 @@
+ Let visitors find sign-in from any page: the site header carries a "Sign in" button. Done when the header shows it at phone and desktop widths, in light and dark themes.
+ 
+ ## Now
+-Stage 1 of 1 · Sign-in button
+-Risk: UI only
+-Checks:
+-- [ ] The header shows a "Sign in" button at the right end, at 390 and 1280 wide, light and dark, nothing cut off or overlapping (proof: screenshot, a test can't judge the layout)
++All stages done — goal met (stage 1 evidence: `docs/evidence/stage-1/report.md`). Next: a new plan via jbit:plan.
+ Open: none
+ Mode: stage
+ 
+ ## Stages
+-- [ ] 1. Sign-in button — a "Sign in" button (a link to `/signin`) at the right end of the site header, styled with the accent colour in both themes
++- [x] 1. Sign-in button — a "Sign in" button (a link to `/signin`) at the right end of the site header, styled with the accent colour in both themes
+ 
+ ## Decisions
+ - 2026-11-23 · Static site, no build step: `index.html` and `style.css`, served as files. Screenshots stay local (gitignored). Playwright comes from the JBIT cache (`JBIT_CAPTURE_CACHE`), already installed; the user said yes to using it.
++- 2026-11-23 · The button's text uses `var(--bg)` on an `var(--accent)` fill: white on blue in light, near-black on light blue in dark. White text on the dark theme's light-blue accent would read poorly. It is pushed right with `margin-left: auto` and never shrinks or wraps, so at 390 wide the header stays on one row.
+ 
+ ## Open questions
+ - none
+ 
+ ## Shipped
++- 2026-11-23 · Stage 1: "Sign in" button in the site header
+diff --git a/index.html b/index.html
+index 242daad..9220b83 100644
+--- a/index.html
++++ b/index.html
+@@ -13,6 +13,7 @@
+     <a href="#features">Features</a>
+     <a href="#pricing">Pricing</a>
+   </nav>
++  <a class="signin" href="/signin">Sign in</a>
+ </header>
+ <main>
+   <h1>Notes that keep up with you</h1>
+diff --git a/style.css b/style.css
+index e390f0f..8bc691b 100644
+--- a/style.css
++++ b/style.css
+@@ -9,3 +9,6 @@ body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); col
+ .nav { display: flex; gap: 12px; }
+ .nav a { color: var(--muted); text-decoration: none; }
+ main { padding: 32px 16px; max-width: 720px; margin: 0 auto; }
++.signin { margin-left: auto; flex-shrink: 0; white-space: nowrap; padding: 6px 14px; border-radius: 6px; background: var(--accent); color: var(--bg); font-weight: 600; text-decoration: none; }
++.signin:hover { filter: brightness(1.1); }
++.signin:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

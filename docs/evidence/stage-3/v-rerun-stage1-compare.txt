@@ -1,0 +1,27 @@
+$ JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node plugins/jbit/skills/verify/scripts/capture.mjs compare docs/evidence/stage-1 <scratchpad>/cmp/same   # re-run of stage 1 cli-compare-*.txt at c9ac7cc
+Comparing ~/src/repos/jbit/docs/evidence/stage-1 (before) with <scratchpad>/cmp/same (after), threshold 0.001
+unchanged  fixture-1280-dark.png: fraction 0.000000 (0 of 1024000 px)
+unchanged  fixture-1280-light.png: fraction 0.000000 (0 of 1024000 px)
+unchanged  fixture-390-dark.png: fraction 0.000000 (0 of 312000 px)
+unchanged  fixture-390-light.png: fraction 0.000000 (0 of 312000 px)
+4 image(s) compared; none over the threshold 0.001
+exit 0
+
+$ JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node plugins/jbit/skills/verify/scripts/capture.mjs compare docs/evidence/stage-1 <scratchpad>/cmp/chg   # re-run of stage 1 cli-compare-*.txt at c9ac7cc
+Comparing ~/src/repos/jbit/docs/evidence/stage-1 (before) with <scratchpad>/cmp/chg (after), threshold 0.001
+changed    fixture-1280-dark.png: fraction 0.000857 (878 of 1024000 px)
+changed    fixture-1280-light.png: fraction 0.069202 (70863 of 1024000 px) — over threshold
+changed    fixture-390-dark.png: fraction 0.002814 (878 of 312000 px) — over threshold
+changed    fixture-390-light.png: fraction 0.199240 (62163 of 312000 px) — over threshold
+FAILED: 3 of 4 image(s) changed more than the threshold 0.001
+exit 1
+
+$ JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node plugins/jbit/skills/verify/scripts/capture.mjs compare docs/evidence/stage-1 <scratchpad>/cmp/miss   # re-run of stage 1 cli-compare-*.txt at c9ac7cc
+Comparing ~/src/repos/jbit/docs/evidence/stage-1 (before) with <scratchpad>/cmp/miss (after), threshold 0.001
+unchanged  fixture-1280-light.png: fraction 0.000000 (0 of 1024000 px)
+unchanged  fixture-390-dark.png: fraction 0.000000 (0 of 312000 px)
+unchanged  fixture-390-light.png: fraction 0.000000 (0 of 312000 px)
+missing from after: fixture-1280-dark.png
+FAILED: 1 image(s) in before are missing from after: fixture-1280-dark.png
+exit 1
+

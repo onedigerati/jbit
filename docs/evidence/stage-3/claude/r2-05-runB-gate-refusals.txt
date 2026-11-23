@@ -1,0 +1,233 @@
+$ # appB: a second fresh copy of the pristine app at 63893e6, served by python3 -m http.server 47312; same config and env as run A
+$ cd <appB> && CLAUDE_CONFIG_DIR=$E/config JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache claude -p "$(cat promptB.txt)" --permission-mode bypassPermissions --output-format stream-json --verbose > runB.jsonl
+--- promptB.txt
+JBIT stage
+The app is served at http://127.0.0.1:47312/ (a static server on this folder; it is already running). For screenshots, Playwright is already installed in the JBIT capture cache (JBIT_CAPTURE_CACHE is set in this shell); I already said yes to using it.
+This run also tests the commit gate. Once report.md is written and the plan is updated, and the stage is ready to close, pick one after shot that report.md links (say which). Then:
+1. Delete that image and commit the stage close in ONE Bash command, e.g. `rm docs/evidence/stage-1/<image>.png && git add -A && git commit -m "Stage 1: Sign-in button in the site header"`. If it is refused, quote the refusal verbatim.
+2. Then delete the same image in a Bash command of its own (just the `rm`), check with `ls` that it is gone, and in a separate Bash command run `git add -A` and attempt the closing commit once. If it is refused, quote the refusal verbatim and stop there: don't recapture the image, don't edit the report, don't retry.
+--- RESULT: (1) rm + git add + git commit on ONE line refused by the same-line rule before anything ran (the standalone rm that followed succeeded, so the file was still there). (2) rm on its own, ls shows it gone, git add -A, then git commit on its own refused by the missing-image gate naming docs/evidence/stage-1/home-390-dark.png. No commit landed.
+--- after the run: git log --oneline; git status --short; ls docs/evidence/stage-1
+63893e6 Plan: sign-in button
+M  docs/PLAN.md
+A  docs/evidence/.gitignore
+A  docs/evidence/stage-1/before/home-console.txt
+A  docs/evidence/stage-1/compare-before-after.txt
+A  docs/evidence/stage-1/home-console.txt
+A  docs/evidence/stage-1/report.md
+M  index.html
+M  style.css
+before
+compare-before-after.txt
+home-1280-dark.png
+home-1280-light.png
+home-390-light.png
+home-console.txt
+report.md
+--- trimmed transcript
+[system:ui_status] {"subtype": "ui_status", "plugin": "jbit", "text": "jbit \u00b7 0/1 done \u00b7 next: 1. Sign-in button"}
+[init] model=claude-opus-5-5 plugins=[{'name': 'jbit', 'path': '~/src/repos/jbit/plugins/jbit', 'source': 'jbit@jbit-local', 'version': '2.0.0'}, {'name': 'cc-plugin-agents-md', 'path': 'builtin', 'source': 'cc-plugin-agents-md@builtin'}, {'name': 'cc-plugin-telemetry', 'path': 'builtin', 'source': 'cc-plugin-telemetry@builtin'}, {'name': 'cc-plugin-privacy', 'path': 'builtin', 'source': 'cc-plugin-privacy@builtin'}, {'name': 'cc-plugin-plugin-authoring', 'path': 'builtin', 'source': 'cc-plugin-plugin-authoring@builtin'}] cwd=<scratchpad>/e2e-claude-r2/appB
+[tool_use Skill] {"skill": "jbit:stage"}
+[tool_result] Launching skill: jbit:stage
+[tool_use Bash] {"command": "cat docs/PLAN.md; ls -la; git ls-files; cat docs/evidence/.gitignore 2>/dev/null; echo $JBIT_CAPTURE_CACHE", "description": "Read plan and list project files"}
+[tool_result] # Tidepool plan
+
+## Goal
+Let visitors find sign-in from any page: the site header carries a "Sign in" button. Done when the header shows it at phone and desktop widths, in light and dark themes.
+
+## Now
+Stage 1 of 1 · Sign-in button
+Risk: UI only
+Checks:
+- [ ] The header shows a "Sign in" button at the right end, at 390 and 1280 wide, light and dark, nothing cut off or overlapping (proof: screenshot, a test can't judge the layout)
+Open: none
+Mode: stage
+
+## Stages
+- [ ] 1. Sign-in button — a "Sign in" button (a link to `/signin`) at the right end of the site header, styled with the accent colour in both themes
+
+## Decisions
+- 2026-11-23 · Static site, no build step: `index.html` and `style.css`, served as files. Screenshots stay local (gitignored). Playwright comes from the JBIT cache (`JBIT_CAPTURE_CACHE`), already installed; the user said yes to using it.
+
+## Open questions
+- none
+
+## Shipped
+total 12
+drwxr-xr-x 4 [user] [user] 140 Nov 23 12:37 .
+drwxr-xr-x 5 [user] [user] 320 Nov 23 12:51 ..
+drwxr-xr-x 7 [user] [user] 240 Nov 23 12:50 .git
+-rw-r--r-- 1 [user] [user]  11 Nov 23 12:37 README.md
+drwxr-xr-x 2 [user] [user]  60 Nov 23 12:37 docs
+-rw-r--r-- 1 [user] [user] 515 Nov 23 12:37 index. …[211 more chars]
+[tool_use Bash] {"command": "cat index.html style.css; node ~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs --help 2>&1 | head -40", "description": "Read source files and capture script help"}
+[tool_result] <!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidepool</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="/">Tidepool</a>
+  <nav class="nav">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+  </nav>
+</header>
+<main>
+  <h1>Notes that keep up with you</h1>
+  <p>Tidepool is a small notes app for testing.</p>
+</main>
+</body>
+</html>
+:root { --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5a5a; --accent: #0b6bcb; --line: #e3e3e3; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121417; --fg: #f0f0f0; --muted: #a8a8a8; --accent: #5aa9ff; --line: #2a2d31; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+.site-header { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; color: var(--fg); text-decoration: none; font-size: 1.2rem; }
+.nav { display: flex; gap: 12px; }
+.nav a { color: var(--muted); text-decoration: none; }
+main { padding: 32px 16px;  …[2854 more chars]
+[assistant] Scope is clear; `## Now` already holds the stage. Before shots first.
+[tool_use Bash] {"command": "node ~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47312/ --name home --out docs/evidence/stage-1/before/ --viewport-only 2>&1 | tail -8", "description": "Capture before screenshots of home page"}
+[tool_result] Using cache Playwright playwright-core@1.65.0
+wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before/home-390-light.png
+wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before/home-390-dark.png
+wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before/home-1280-light.png
+wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before/home-1280-dark.png
+wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before/home-console.txt
+4 of 4 screenshots taken
+No load failures, console errors or page errors.
+[assistant] Now the build: one small leaf, done in the main session.
+[tool_use Bash] {"command": "python3 - <<'EOF'\np='index.html'; s=open(p).read()\ns=s.replace('''    <a href=\"#pricing\">Pricing</a>\n  </nav>\n''','''    <a href=\"#pricing\">Pricing</a>\n  </nav>\n  <a class=\"signin\" href=\"/signin\">Sign in</a>\n''')\nopen(p,'w').write(s)\np='style.css'; s=open(p).read()\ns+='''.signin { margin-left: auto; flex-shrink: 0; padding: 6px 14px; border-radius: 6px; background: var(--accent); color: var(--bg); font-weight: 600; text-decoration: none; white-space: nowrap; }\n.signin:hover { filter: brightness(1.1); }\n.signin:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }\n'''\nopen(p,'w').write(s)\nEOF\ngit diff --stat", "description": "Add sign-in link and its styles"}
+[tool_result]  index.html | 1 +
+ style.css  | 3 +++
+ 2 files changed, 4 insertions(+)
+[tool_use Skill] {"skill": "jbit:verify"}
+[tool_result] Launching skill: jbit:verify
+[tool_use Bash] {"command": "C=~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs\nnode $C shot http://127.0.0.1:47312/ --name home --out docs/evidence/stage-1 --viewport-only 2>&1 | tail -3; echo \"exit $?\"\nnode $C compare docs/evidence/stage-1/before docs/evidence/stage-1 2>&1; echo \"exit $?\"\nls package.json Makefile pyproject.toml .github 2>&1 | head", "description": "Capture after shots and compare to before"}
+[tool_result] wrote <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/home-console.txt
+4 of 4 screenshots taken
+No load failures, console errors or page errors.
+exit 0
+Comparing <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/before (before) with <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1 (after), threshold 0.001
+changed    home-1280-dark.png: fraction 0.019359 (19824 of 1024000 px) — over threshold
+changed    home-1280-light.png: fraction 0.019027 (19484 of 1024000 px) — over threshold
+changed    home-390-dark.png: fraction 0.057830 (18043 of 312000 px) — over threshold
+changed    home-390-light.png: fraction 0.056776 (17714 of 312000 px) — over threshold
+FAILED: 4 of 4 image(s) changed more than the threshold 0.001
+exit 1
+ls: cannot access 'package.json': No such file or directory
+ls: cannot access 'Makefile': No such file or directory
+ls: cannot access 'pyproject.toml': No such file or directory
+ls: cannot access '.github': No such file or …[10 more chars]
+[assistant] Changes are expected (the new button). Now looking at each shot.
+[tool_use Read] {"file_path": "<scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/home-390-light.png"}
+[tool_result] [image]
+[tool_use Read] {"file_path": "<scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/home-390-dark.png"}
+[tool_result] [image]
+[tool_use Read] {"file_path": "<scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/home-1280-light.png"}
+[tool_result] [image]
+[tool_use Read] {"file_path": "<scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/home-1280-dark.png"}
+[tool_result] [image]
+[assistant] All four look right. Saving the comparison output, `.gitignore` and the report.
+[tool_use Bash] {"command": "C=~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs\n{ echo \"node capture.mjs compare docs/evidence/stage-1/before docs/evidence/stage-1\"; node $C compare docs/evidence/stage-1/before docs/evidence/stage-1 2>&1 | sed \"s#$PWD/##g\"; } > docs/evidence/stage-1/compare-before-after.txt\ncat > docs/evidence/.gitignore <<'EOF'\n# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.\n*.png\n*.jpg\n*.jpeg\n*.webp\n*.gif\n*.zip\n*.webm\n*.mp4\n*.trace\n*.har\nEOF\ngit rev-parse --short HEAD; cat docs/evidence/stage-1/home-console.txt", "description": "Save compare output and create evidence gitignore"}
+[tool_result] 63893e6
+== home 390px light — http://127.0.0.1:47312/
+== home 390px dark — http://127.0.0.1:47312/
+== home 1280px light — http://127.0.0.1:47312/
+== home 1280px dark — http://127.0.0.1:47312/
+[tool_use Write] {"file_path": "<scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/report.md", "content": "# Stage 1 \u00b7 Sign-in button \u2014 evidence\nVerified 2026-11-23 on 63893e6, plus uncommitted changes (index.html, style.css)\n\n| Check | Result | Evidence |\n|---|---|---|\n| The header shows a \"Sign in\" button at the right end, at 390 and 1280 wide, light and dark, nothing cut off or overlapping (proof: screenshot, a test can't judge the layout) | pass | [home-390-light.png](home-390-light.png), [home-390-dark.png](home-390-dark.png), [home-1280-light.png](home-1280-light.png), [home-1280-dark.png](home-1280-dark.png) (all local), described below; [home-console.txt](home-console.txt): no console errors; [compare-before-after.txt](compare-before-after.txt): all four shots changed versus `before/`, as expected |\n\nProject checks: none exist (static site, no package.json, Makefile or CI): no type check, lint, tests or build to run\nAudit: no dependencies, nothing to audit\n\nScreenshots:\n- [home-390-light.png](home-390-light.png) (local): phone width, light; header reads Tidepool \u00b7 Features \u00b7 Pricing, then a blue \"Sign in\" button with white text at the right edge, 16px inset; all on one line, nothing clipped or overlapping.\n- [home-390-dark.png](home-390-dark.png) (local): phone width, dark; same \u2026[453 more chars]"}
+[tool_result] File created successfully at: <scratchpad>/e2e-claude-r2/appB/docs/evidence/stage-1/report.md (file state is current in your context — no need to Read it back)
+[assistant] Tick the check in its own edit:
+[tool_use Edit] {"replace_all": false, "file_path": "<scratchpad>/e2e-claude-r2/appB/docs/PLAN.md", "old_string": "- [ ] The header shows", "new_string": "- [x] The header shows"}
+[tool_result] The file <scratchpad>/e2e-claude-r2/appB/docs/PLAN.md has been updated successfully.
+[assistant] Risk line holds (diff is markup + CSS only), so no `jbit:review` needed. Now close the plan.
+[tool_use Bash] {"command": "python3 - <<'EOF'\np='docs/PLAN.md'; s=open(p).read()\ns=s.replace('- [ ] 1. Sign-in button','- [x] 1. Sign-in button')\nstart=s.index('## Now'); end=s.index('## Stages')\ns=s[:start]+'''## Now\nAll stages done: the plan's goal is met. Next: `jbit:plan` to archive this plan and start the next.\nMode: stage\n\n'''+s[end:]\ns=s.replace('## Shipped','## Shipped\\n- 2026-11-23 \u00b7 Stage 1 \u00b7 Sign-in button: accent-coloured \"Sign in\" link to `/signin` at the right end of the header ([evidence](evidence/stage-1/report.md))')\ns=s.replace(\"the user said yes to using it.\",\"the user said yes to using it.\\n- 2026-11-23 \u00b7 Sign-in button sits after the nav and is pushed right with `margin-left: auto`; accent background with `--bg` text so it inverts correctly in dark mode. Why: keeps one header row at 390 wide without a menu.\")\nopen(p,'w').write(s)\nEOF\ncat docs/PLAN.md; git status --short", "description": "Close stage in plan and show status"}
+[tool_result] # Tidepool plan
+
+## Goal
+Let visitors find sign-in from any page: the site header carries a "Sign in" button. Done when the header shows it at phone and desktop widths, in light and dark themes.
+
+## Now
+All stages done: the plan's goal is met. Next: `jbit:plan` to archive this plan and start the next.
+Mode: stage
+
+## Stages
+- [x] 1. Sign-in button — a "Sign in" button (a link to `/signin`) at the right end of the site header, styled with the accent colour in both themes
+
+## Decisions
+- 2026-11-23 · Static site, no build step: `index.html` and `style.css`, served as files. Screenshots stay local (gitignored). Playwright comes from the JBIT cache (`JBIT_CAPTURE_CACHE`), already installed; the user said yes to using it.
+- 2026-11-23 · Sign-in button sits after the nav and is pushed right with `margin-left: auto`; accent background with `--bg` text so it inverts correctly in dark mode. Why: keeps one header row at 390 wide without a menu.
+
+## Open questions
+- none
+
+## Shipped
+- 2026-11-23 · Stage 1 · Sign-in button: accent-coloured "Sign in" link to `/signin` at the right end of the header ([evidence](evidence/stage-1/report.md))
+ M docs/PLAN.md
+ M index.html
+ M style.css
+?? docs/evide …[4 more chars]
+[assistant] Stage is ready to close. For the commit-gate test I'm picking the after shot **`home-390-dark.png`** (linked in report.md).
+
+Step 1: delete and commit in one command.
+[tool_use Bash] {"command": "rm docs/evidence/stage-1/home-390-dark.png && git add -A && git commit -m \"Stage 1: Sign-in button in the site header\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\"", "description": "Delete one after shot and commit stage close"}
+[tool_result ERROR] <tool_use_error>JBIT blocked this command: it changes files under `docs/evidence/` (`rm docs/evidence/stage-1/home-390-dark.png`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.
+Make the evidence change in its own command first, then run the commit on its own line.</tool_use_error>
+[assistant] Step 2: the `rm` on its own, then check.
+[tool_use Bash] {"command": "rm docs/evidence/stage-1/home-390-dark.png", "description": "Delete the chosen after screenshot"}
+[tool_result] (Bash completed with no output)
+[tool_use Bash] {"command": "ls docs/evidence/stage-1/", "description": "List stage 1 evidence folder"}
+[tool_result] before
+compare-before-after.txt
+home-1280-dark.png
+home-1280-light.png
+home-390-light.png
+home-console.txt
+report.md
+[assistant] `home-390-dark.png` is gone. Now the closing commit, once.
+[tool_use Bash] {"command": "git add -A", "description": "Stage all changes"}
+[tool_result] (Bash completed with no output)
+[tool_use Bash] {"command": "git commit -m \"Stage 1: Sign-in button in the site header\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\"", "description": "Attempt the stage-closing commit"}
+[tool_result ERROR] <tool_use_error>JBIT blocked this commit: it closes stage 1, but `docs/evidence/stage-1/report.md` links screenshots that can't back it.
+Not in the working tree: `docs/evidence/stage-1/home-390-dark.png`. Run jbit:verify to re-capture each one, or drop its link from the report.
+Then close the stage again.</tool_use_error>
+[assistant] Stage 1 is built and verified, but it is not committed: the commit gate refused both closing commits, as the test intended. I stopped there as you asked.
+
+**What the stage delivers:** the header now has an accent-coloured "Sign in" button linking to `/signin`, at the right end after Features and Pricing. The change is one line in `index.html` and three CSS rules in `style.css`.
+
+**How it was checked:** I took before and after screenshots at 390 and 1280 wide, light and dark, and looked at each one. In all four the button sits at the right end, nothing is cut off or overlapping, and it's readable in both themes. The page logged no console errors. The project has no tests, lint, build or dependencies, so there was nothing else to run. The risk is UI only, so I skipped the separate review. The report is at `docs/evidence/stage-1/report.md`. The plan has the check and the stage ticked, a dated decision on how the button is laid out, and a "Shipped" line. `docs/evidence/.gitignore` is new and keeps screenshots out of git.
+
+**Commit gate test.** The image I picked was `home-390-dark.png`, which report.md links.
+
+1. Deleting it and committing in one command was refused:
+   > JBIT blocked this command: it changes files under `docs/evidence/` (`rm docs/evidence/stage-1/home-390-dark.png`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.
+   > Make the evidence change in its own command firs …[869 more chars]
+[result] subtype=success is_error=False turns=23 duration_ms=58601
+Stage 1 is built and verified, but it is not committed: the commit gate refused both closing commits, as the test intended. I stopped there as you asked.
+
+**What the stage delivers:** the header now has an accent-coloured "Sign in" button linking to `/signin`, at the right end after Features and Pricing. The change is one line in `index.html` and three CSS rules in `style.css`.
+
+**How it was checked:** I took before and after screenshots at 390 and 1280 wide, light and dark, and looked at each one. In all four the button sits at the right end, nothing is cut off or overlapping, and it's readable in both themes. The page logged no console errors. The project has no tests, lint, build or dependencies, so there was nothing else to run. The risk is UI only, so I skipped the separate review. The report is at `docs/evidence/stage-1/report.md`. The plan has the check and the stage ticked, a dated decision on how the button is laid out, and a "Shipped" line. `docs/evidence/.gitignore` is new and keeps screenshots out of git.
+
+**Commit gate test.** The image I picked was `home-390-dark.png`, which report.md links.
+
+1. Deleting it and committing in one command was refused:
+   > JBIT blocked this command: it changes files under `docs/evidence/` (`rm docs/evidence/stage-1/home-390-dark.png`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.
+   > Make the evidence change in its own command first, then run the commit on its own line.
+
+   Nothing ran, so the image was still there.
+2. I deleted it with its own `rm`, and `ls` showed it gone. `git add -A` then succeeded, and the single commit attempt was refused:
+   > JBIT blocked this commit: it closes stage 1, but `docs/evidence/stage-1/report.md` links screenshots that can't back it.
+   > Not in the working tree: `docs/evidence/stage-1/home-390-dark.png`. Run jbit:verify to re-capture each one, or drop its link from the report.
+   > Then close the stage again.
+
+**Current state:** all the stage's changes are staged but not committed. `home-390-dark.png` is missing, and report.md still links it. To close the stage, re-run `jbit:verify` to re-capture that shot, then commit. This was the plan's only stage, so once it's committed the plan's goal is met, and `jbit:plan` can archive it and start the next.
+[system:ui_status] {"subtype": "ui_status", "plugin": "jbit", "text": "jbit \u00b7 all 1 stages done \u00b7 next feature: jbit:plan"}

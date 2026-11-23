@@ -1,0 +1,26 @@
+$ node hosts/parity/run-claude.mjs
+
+claude.test.ts:
+(pass) parity · claude · a commit closing a stage with an unticked check is denied [149.53ms]
+(pass) parity · claude · a stage close without an evidence report is denied [86.15ms]
+(pass) parity · claude · a stage close with its checks ticked and its report passes [104.63ms]
+(pass) parity · claude · a stage close whose report links a missing screenshot is denied, naming the file [85.98ms]
+(pass) parity · claude · the same stage close passes once the screenshot exists [77.13ms]
+(pass) parity · claude · removing a screenshot and committing on the same line is denied before it runs [75.13ms]
+(pass) parity · claude · a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs [83.25ms]
+(pass) parity · claude · a secret in a staged commit is denied, named by kind and never by value [77.61ms]
+(pass) parity · claude · a clean commit passes [68.49ms]
+(pass) parity · claude · under attended autopilot, an edit in a held risky stage is denied, the plan itself is not [126.34ms]
+(pass) parity · claude · under attended autopilot, a builder agent in a held risky stage is denied [78.84ms]
+(pass) parity · claude · the user's approval releases a held stage [94.33ms]
+(pass) parity · claude · an outward command under autopilot is denied [90.15ms]
+(pass) parity · claude · turn end under armed autopilot with stages left keeps the run going [76.90ms]
+(pass) parity · claude · a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held [87.74ms]
+(pass) parity · claude · turn end without autopilot lets the turn end [70.94ms]
+(pass) parity · claude · a prompt carries the plan's ## Now into context [74.35ms]
+(pass) parity · the fixture diff is a -U0 diff git would print [0.34ms]
+
+ 18 pass
+ 0 fail
+Ran 18 tests across 1 file. [1.67s]
+EXIT 0

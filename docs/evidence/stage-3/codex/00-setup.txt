@@ -1,0 +1,33 @@
+# Setup (codex-cli 0.171.0, repo at a28aa39; $SCRATCH = <scratchpad>)
+$ codex plugin marketplace add $REPO   (REPO at a28aa39)
+Added marketplace `jbit-local` from ~/src/repos/jbit.
+Installed marketplace root: ~/src/repos/jbit
+exit 0
+$ codex plugin add jbit@jbit-local
+Added plugin `jbit` from marketplace `jbit-local`.
+Installed plugin root: <scratchpad>/e2e-codex/home/.codex/plugins/cache/jbit-local/jbit/2.0.0
+exit 0
+$ ls $CODEX_HOME/plugins/cache/jbit-local/jbit/*/skills/verify/scripts
+capture.mjs
+
+$ node hosts/build.mjs codex --check   (in the repo)
+codex: up to date (31 files)
+
+# auth.json copied into $CODEX_HOME before the runs (never printed), deleted after: ls -> No such file
+
+# Project $SCRATCH/e2e-codex/proj: git repo, one commit
+index.html
+scripts/capture.mjs
+$ cat scripts/capture.mjs   (planted decoy)
+// Decoy: a project script that is NOT JBIT's capture script.
+import { writeFileSync } from 'node:fs'
+writeFileSync('DECOY-RAN', 'decoy capture.mjs ran with: ' + process.argv.slice(2).join(' ') + '\n')
+console.log('capture done')
+process.exit(0)
+
+# Served with: python3 -m http.server 8765 --bind 127.0.0.1 (outside Codex). index.html: Plant Shop, three cards, light/dark via prefers-color-scheme
+
+$ cat $SCRATCH/e2e-codex/prompt.txt
+$jbit:verify Take a screenshot of the page served at http://127.0.0.1:8765/ at 390 px wide, light theme only, into ./shots with the name home. The user already agreed to using the JBIT Playwright cache (JBIT_CAPTURE_CACHE is set in the environment). Only the screenshot is needed: no plan, no other checks. Then say what the screenshot shows.
+
+# Every run deletes proj/shots and proj/DECOY-RAN first.

@@ -1,0 +1,12 @@
+$ cd <v>/proj && echo <PreToolUse Bash payload> | HOME=<v>/home CODEX_HOME=<v>/home/.codex PLUGIN_DATA=<v>/pdata PLUGIN_ROOT=$P JBIT_CAPTURE_CACHE=<as below> node $P/scripts/hook.mjs PreToolUse
+# $P = <v>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0, a copy of plugins/jbit-codex at c9ac7cc (diff -r: identical; build --check: up to date). Payload shape as hosts/codex/hook.test.mjs sends (session_id, cwd, hook_event_name, tool_name Bash, tool_input.command). Empty answer = allow.
+## (i) the exact shot command r2 a3 ran (r2-03), script path under this fake CODEX_HOME; JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache
+rc=0 answer=(empty: allow)
+## (ii) --timeout 1 install, JBIT_CAPTURE_CACHE=<v>/home/.codex/x (under CODEX_HOME)
+rc=0 answer={"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps its config, hooks.json and the plugin cache, and an edit there silently turns JBIT's hooks off. Ask the user to make that change themselves."}}
+## control: same install, JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache (outside)
+rc=0 answer=(empty: allow)
+## (iii) the shot command from (i), JBIT_CAPTURE_CACHE under CODEX_HOME (new: the cache is checked on every call)
+rc=0 answer={"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"JBIT blocked this call: it writes under `$CODEX_HOME` or a `.codex` folder (a shell write), where Codex keeps its config, hooks.json and the plugin cache, and an edit there silently turns JBIT's hooks off. Ask the user to make that change themselves."}}
+## after: ls <v>/home/.codex
+plugins

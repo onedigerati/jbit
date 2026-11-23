@@ -1,0 +1,8 @@
+$ ls <appA>/docs/evidence/stage-1/*.png <appA>/docs/evidence/stage-1/before/*.png   # copied to r2-runA-screenshots/; read by the verifier with the Read tool
+Before (before/): home-390-light, home-390-dark, home-1280-light, home-1280-dark. After: the same four names in stage-1/.
+report.md (r2-runA-app-report.md) has a `Screenshots:` section with one line per after image (4 lines), each linking the image and saying what it shows.
+
+Read by the verifier:
+- r2-runA-screenshots/before/home-1280-light.png: light theme, 1280 wide; header "Tidepool  Features  Pricing", no Sign in button. Matches the pre-change app.
+- r2-runA-screenshots/home-1280-light.png: same page after; a blue "Sign in" button with white text at the far right of the header, aligned with the nav row; nothing else changed. Matches its Screenshots: line.
+- r2-runA-screenshots/home-390-dark.png: dark theme, 390 wide; "Tidepool Features Pricing" then a light-blue "Sign in" button with dark text flush right, one row, nothing cut off or overlapping. Matches its Screenshots: line.

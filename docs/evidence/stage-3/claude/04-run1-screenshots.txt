@@ -1,0 +1,41 @@
+$ ls -l docs/evidence/stage-1 docs/evidence/stage-1/before (run 1 app, after the commit) + file
+docs/evidence/stage-1:
+total 100
+drwxr-xr-x 2 [user] [user]   140 Nov 23 12:37 before
+-rw-r--r-- 1 [user] [user]   596 Nov 23 12:38 compare-before-after.txt
+-rw-r--r-- 1 [user] [user] 22665 Nov 23 12:37 home-1280-dark.png
+-rw-r--r-- 1 [user] [user] 21684 Nov 23 12:37 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 19818 Nov 23 12:37 home-390-dark.png
+-rw-r--r-- 1 [user] [user] 18874 Nov 23 12:37 home-390-light.png
+-rw-r--r-- 1 [user] [user]   192 Nov 23 12:37 home-console.txt
+-rw-r--r-- 1 [user] [user]  1749 Nov 23 12:38 report.md
+
+docs/evidence/stage-1/before:
+total 88
+-rw-r--r-- 1 [user] [user] 21262 Nov 23 12:37 home-1280-dark.png
+-rw-r--r-- 1 [user] [user] 20181 Nov 23 12:37 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 18516 Nov 23 12:37 home-390-dark.png
+-rw-r--r-- 1 [user] [user] 17476 Nov 23 12:37 home-390-light.png
+-rw-r--r-- 1 [user] [user]   192 Nov 23 12:37 home-console.txt
+
+docs/evidence/stage-1/home-1280-dark.png:         PNG image data, 1280 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/home-1280-light.png:        PNG image data, 1280 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/home-390-dark.png:          PNG image data, 390 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/home-390-light.png:         PNG image data, 390 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/before/home-1280-dark.png:  PNG image data, 1280 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/before/home-1280-light.png: PNG image data, 1280 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/before/home-390-dark.png:   PNG image data, 390 x 800, 8-bit/color RGB, non-interlaced
+docs/evidence/stage-1/before/home-390-light.png:  PNG image data, 390 x 800, 8-bit/color RGB, non-interlaced
+
+$ git check-ignore -v (each png)
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/home-1280-dark.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/home-1280-light.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/home-390-dark.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/home-390-light.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/before/home-1280-dark.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/before/home-1280-light.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/before/home-390-dark.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/before/home-390-light.png
+
+$ grep -c "^- \[.*\.png\]" report.md   # Screenshots: lines
+4

@@ -1,0 +1,19 @@
+$ cd $R/proj && HOME=$R/home CODEX_HOME=$R/home/.codex PLUGIN_DATA=$R/pdata PLUGIN_ROOT=$P JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node $P/scripts/hook.mjs PreToolUse < <payload>
+# $P = $CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0 (the installed plugin); $R/pdata = a copy of $CODEX_HOME/plugins/data/jbit-jbit-local
+# control: replaying a3's real allowed payload (the shot command) answers nothing (= allow):
+$ node $P/scripts/hook.mjs PreToolUse < real-in.json  ->  (empty), rc=0
+# each line: the installed hook's answer to a PreToolUse Bash payload = a3's real payload (cwd <r>/proj) with tool_input.command replaced; PLUGIN_DATA = a copy of the session's plugin data folder
+ALLOW | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:8766/ --name home --out ./shots --widths 390 --themes light
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:8766/ --name x --out "$CODEX_HOME/x"
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:8766/ --name x --out <r>/home/.codex/x
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:8766/ --name x --out=<r>/home/.codex/x
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:8766/ --name x --out ../home/.codex/x
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where && echo hi > $CODEX_HOME/y
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where && echo hi > <r>/home/.codex/y
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where; touch <r>/home/.codex/y
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where > <r>/home/.codex/y
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where | tee <r>/home/.codex/y
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" $(echo hi > <r>/home/.codex/y)
+ALLOW | node "$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs" where
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/../../../scripts/hook.mjs" where
+DENY | node "<r>/home/.codex/plugins/cache/jbit-local/jbit/2.0.0/scripts/hook.mjs" PreToolUse

@@ -1,0 +1,18 @@
+$ # Round 2 setup (S = <scratchpad>, W = <scratchpad>/e2e-copilot-r2), repo HEAD 4e10cf8, Copilot CLI 1.0.114
+# Isolated home: mkdir -p $W/home/.config/gh; cp ~/.config/gh/{hosts.yml,config.yml} $W/home/.config/gh/  (gh login copied in, never printed,
+#   deleted after the runs: rm -rf $W/home/.config/gh; a scan of $W/home/.copilot for token strings found none)
+# HOME=$W/home COPILOT_HOME=$W/home/.copilot for install and every run. Install: r2-01-install.txt (fresh marketplace add + install at HEAD;
+#   local marketplace loads live, so the installed plugin root is ~/src/repos/jbit/plugins/jbit-copilot, outside the project).
+# Project $W/proj = the round-1 project (git init, one commit "init"), copied fresh to $W/run<n> per run:
+#   index.html  static "Lemon Stand" page;  README.md;  scripts/capture.mjs  DECOY:
+#       import { writeFileSync } from 'node:fs'
+#       writeFileSync('DECOY-RAN', 'decoy capture.mjs ran with args: ' + process.argv.slice(2).join(' ') + '\n')
+#       console.log('capture done'); process.exit(0)
+# Server: (cd $W/proj; python3 -m http.server 8765 --bind 127.0.0.1) -> http://127.0.0.1:8765/ 200
+# Env for runs: JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache (Playwright already installed there)
+# (a) run-a.sh a1|a2: cd $W/run<n>; timeout 900 copilot -p "$(cat $W/prompt.txt)" --allow-all-tools --no-ask-user --add-dir ~/src/repos/jbit/plugins/jbit-copilot --output-format json
+# (b) run-b.sh b1|b2: same without --add-dir
+# Model: Copilot "auto" resolved to gpt-6-luna every run. 1 premium request per run, 4 in all.
+
+# prompt.txt (same as round 1, tells the session the user agreed to the cache):
+Use the jbit verify skill to take a screenshot of the page served at http://127.0.0.1:8765/ at 390 wide, light theme, into ./shots (name it home). The screenshot script's browser is already installed in the cache at JBIT_CAPTURE_CACHE, and I already agree to using it. Report the command you ran and the files it wrote.

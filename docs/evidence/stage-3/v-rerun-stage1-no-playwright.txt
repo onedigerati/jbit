@@ -1,0 +1,14 @@
+$ cd <scratchpad>/vempty && JBIT_CAPTURE_CACHE=<scratchpad>/vemptycache node ~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/page.html --name x --out <scratchpad>/vnp   # re-run of stage 1 cli-no-playwright.txt at c9ac7cc
+No Playwright found: nothing was captured or compared.
+  project: no playwright-core, playwright or @playwright/test in <scratchpad>/vempty/node_modules
+  cache:   none at <scratchpad>/vemptycache
+To take screenshots, `install` would download playwright-core@1.65.0 and the Chromium headless shell
+(about 130 MB download, about 290 MB on disk) into <scratchpad>/vemptycache — nothing goes into the project.
+That download needs the user's yes. Once they agree, run:
+  node '~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs' install
+Nothing was downloaded.
+exit 3
+--- after the run:
+vemptycache exists: no
+files in out folder: 0
+files in cwd: 0

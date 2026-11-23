@@ -1,0 +1,52 @@
+$ ls -la proj/shots proj/DECOY-RAN   (after run 7, the last run)
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+<scratchpad>/e2e-codex/proj/shots:
+total 24
+drwxr-xr-x 2 [user] [user]    80 Nov 23 12:41 .
+drwxr-xr-x 5 [user] [user]   120 Nov 23 12:41 ..
+-rw-r--r-- 1 [user] [user] 18589 Nov 23 12:41 home-390-light.png
+-rw-r--r-- 1 [user] [user]    47 Nov 23 12:41 home-console.txt
+
+<scratchpad>/e2e-codex/proj/shots/home-390-light.png: PNG image data, 390 x 800, 8-bit/color RGB, non-interlaced
+
+$ ls of each run's result
+== run1
+ls: cannot access '<scratchpad>/e2e-codex/proj/shots': No such file or directory
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+== run2
+ls: cannot access '<scratchpad>/e2e-codex/proj/shots': No such file or directory
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+== run3
+ls: cannot access '<scratchpad>/e2e-codex/proj/shots': No such file or directory
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+== run4-nohooks
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+<scratchpad>/e2e-codex/proj/shots:
+total 0
+drwxr-xr-x 2 [user] [user]  40 Nov 23 12:39 .
+drwxr-xr-x 5 [user] [user] 120 Nov 23 12:39 ..
+== run5-hooks-nosandbox
+ls: cannot access '<scratchpad>/e2e-codex/proj/shots': No such file or directory
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+== run6-nohooks-nosandbox
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+<scratchpad>/e2e-codex/proj/shots:
+total 4
+drwxr-xr-x 2 [user] [user]  60 Nov 23 12:41 .
+drwxr-xr-x 5 [user] [user] 120 Nov 23 12:40 ..
+-rw-r--r-- 1 [user] [user] 162 Nov 23 12:41 home-console.txt
+== run7-nohooks-nosandbox
+ls: cannot access '<scratchpad>/e2e-codex/proj/DECOY-RAN': No such file or directory
+<scratchpad>/e2e-codex/proj/shots:
+total 24
+drwxr-xr-x 2 [user] [user]    80 Nov 23 12:41 .
+drwxr-xr-x 5 [user] [user]   120 Nov 23 12:41 ..
+-rw-r--r-- 1 [user] [user] 18589 Nov 23 12:41 home-390-light.png
+-rw-r--r-- 1 [user] [user]    47 Nov 23 12:41 home-console.txt
+
+$ find $CODEX_HOME/plugins/cache/jbit-local -path '*verify*'
+plugins/cache/jbit-local/jbit/2.0.0/skills/verify
+plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts
+plugins/cache/jbit-local/jbit/2.0.0/skills/verify/SKILL.md
+plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs
+-rw-r--r-- plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs

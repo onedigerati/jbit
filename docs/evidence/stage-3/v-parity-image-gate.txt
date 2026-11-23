@@ -1,0 +1,22 @@
+$ node hosts/parity/run-claude.mjs; node --test hosts/parity/copilot.test.mjs hosts/parity/codex.test.mjs   # image-gate scenarios from hosts/parity/scenarios.mjs, at c9ac7cc
+# 17 shared scenarios (node -e SCENARIOS.length = 17); the image-gate ones:
+## claude (run-claude.mjs):
+(pass) parity · claude · a stage close whose report links a missing screenshot is denied, naming the file [85.98ms]
+(pass) parity · claude · the same stage close passes once the screenshot exists [77.13ms]
+(pass) parity · claude · removing a screenshot and committing on the same line is denied before it runs [75.13ms]
+(pass) parity · claude · a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs [83.25ms]
+ 18 pass
+ 0 fail
+## copilot:
+ok 4 - copilot parity: a stage close whose report links a missing screenshot is denied, naming the file
+ok 5 - copilot parity: the same stage close passes once the screenshot exists
+ok 6 - copilot parity: removing a screenshot and committing on the same line is denied before it runs
+ok 7 - copilot parity: a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs
+# tests 17
+# pass 17
+# fail 0
+## codex (one test runs all 17 through runScenarios and asserts 17 results, none failed):
+ok 1 - codex parity: the shared scenarios through runScenarios
+# tests 1
+# pass 1
+# fail 0

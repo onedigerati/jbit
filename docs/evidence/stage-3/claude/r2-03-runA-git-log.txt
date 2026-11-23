@@ -1,0 +1,88 @@
+$ cd <appA> && git log --stat && git show HEAD:docs/PLAN.md && git status --short --ignored && ls -la docs/evidence/stage-1 docs/evidence/stage-1/before
+commit 17e1122c9baab9ae8acf047e42836ac32466628c
+Author: JBIT test <test@example.invalid>
+Date:   Mon Nov 23 12:52:15 2026 -0600
+
+    Stage 1: Sign-in button in the site header
+    
+    Adds a "Sign in" link to /signin at the right end of the header, styled
+    with the accent colour; works in light and dark themes at 390 and 1280 wide.
+    Verified by screenshot (local, gitignored); report in docs/evidence/stage-1/.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/PLAN.md                                   |  9 ++++-----
+ docs/evidence/.gitignore                       | 11 +++++++++++
+ docs/evidence/stage-1/before/home-console.txt  |  4 ++++
+ docs/evidence/stage-1/compare-before-after.txt |  7 +++++++
+ docs/evidence/stage-1/home-console.txt         |  4 ++++
+ docs/evidence/stage-1/report.md                | 17 +++++++++++++++++
+ index.html                                     |  1 +
+ style.css                                      |  3 +++
+ 8 files changed, 51 insertions(+), 5 deletions(-)
+
+commit 63893e611de10d820465e3584e5ab81c817f9672
+Author: JBIT test <test@example.invalid>
+Date:   Mon Nov 23 12:37:21 2026 -0600
+
+    Plan: sign-in button
+
+ README.md    |  1 +
+ docs/PLAN.md | 23 +++++++++++++++++++++++
+ index.html   | 22 ++++++++++++++++++++++
+ style.css    | 11 +++++++++++
+ 4 files changed, 57 insertions(+)
+--- HEAD:docs/PLAN.md
+# Tidepool plan
+
+## Goal
+Let visitors find sign-in from any page: the site header carries a "Sign in" button. Done when the header shows it at phone and desktop widths, in light and dark themes.
+
+## Now
+All stages done — goal met (stage 1 verified, see `docs/evidence/stage-1/report.md`). Next: a new plan via jbit:plan.
+Open: none
+Mode: stage
+
+## Stages
+- [x] 1. Sign-in button — a "Sign in" button (a link to `/signin`) at the right end of the site header, styled with the accent colour in both themes
+
+## Decisions
+- 2026-11-23 · Static site, no build step: `index.html` and `style.css`, served as files. Screenshots stay local (gitignored). Playwright comes from the JBIT cache (`JBIT_CAPTURE_CACHE`), already installed; the user said yes to using it.
+- 2026-11-23 · Sign-in button text uses `var(--bg)` on `var(--accent)`, so it inverts with the theme without new colour tokens; `margin-left: auto` pins it right and `white-space: nowrap` keeps it on one line at 390.
+
+## Open questions
+- none
+
+## Shipped
+- 2026-11-23 · Stage 1 · Sign-in button in the site header
+--- status (ignored shown)
+!! docs/evidence/stage-1/before/home-1280-dark.png
+!! docs/evidence/stage-1/before/home-1280-light.png
+!! docs/evidence/stage-1/before/home-390-dark.png
+!! docs/evidence/stage-1/before/home-390-light.png
+!! docs/evidence/stage-1/home-1280-dark.png
+!! docs/evidence/stage-1/home-1280-light.png
+!! docs/evidence/stage-1/home-390-dark.png
+!! docs/evidence/stage-1/home-390-light.png
+docs/evidence/stage-1:
+total 100
+drwxr-xr-x 3 [user] [user]   200 Nov 23 12:51 .
+drwxr-xr-x 3 [user] [user]    80 Nov 23 12:51 ..
+drwxr-xr-x 2 [user] [user]   140 Nov 23 12:51 before
+-rw-r--r-- 1 [user] [user]   647 Nov 23 12:51 compare-before-after.txt
+-rw-r--r-- 1 [user] [user] 22665 Nov 23 12:51 home-1280-dark.png
+-rw-r--r-- 1 [user] [user] 21684 Nov 23 12:51 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 19818 Nov 23 12:51 home-390-dark.png
+-rw-r--r-- 1 [user] [user] 18874 Nov 23 12:51 home-390-light.png
+-rw-r--r-- 1 [user] [user]   192 Nov 23 12:51 home-console.txt
+-rw-r--r-- 1 [user] [user]  1677 Nov 23 12:51 report.md
+
+docs/evidence/stage-1/before:
+total 88
+drwxr-xr-x 2 [user] [user]   140 Nov 23 12:51 .
+drwxr-xr-x 3 [user] [user]   200 Nov 23 12:51 ..
+-rw-r--r-- 1 [user] [user] 21262 Nov 23 12:51 home-1280-dark.png
+-rw-r--r-- 1 [user] [user] 20181 Nov 23 12:51 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 18516 Nov 23 12:51 home-390-dark.png
+-rw-r--r-- 1 [user] [user] 17476 Nov 23 12:51 home-390-light.png
+-rw-r--r-- 1 [user] [user]   192 Nov 23 12:51 home-console.txt

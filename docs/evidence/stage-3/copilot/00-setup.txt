@@ -1,0 +1,20 @@
+$ # Setup (S = <scratchpad>, W = <scratchpad>/e2e-copilot)
+# Isolated home: mkdir -p $W/home/.config/gh; cp ~/.config/gh/{hosts.yml,config.yml} $W/home/.config/gh/  (gh login copied in, deleted after the runs, never printed)
+# HOME=$W/home COPILOT_HOME=$W/home/.copilot for install and every run. Install: 01-install.txt (marketplace = this repo at a28aa39,
+#   .github/plugin/marketplace.json -> plugins/jbit-copilot; Copilot loads a local marketplace "live", so the installed plugin root
+#   is ~/src/repos/jbit/plugins/jbit-copilot -- outside the project, which is what matters here).
+# Project $W/proj (git init, one commit "init"), copied fresh to $W/run<n> per run:
+#   index.html   static "Lemon Stand" page (h1, a line of text, a bordered "Today's special" card, an "Order now" button)
+#   README.md    "# Lemon Stand"
+#   scripts/capture.mjs  DECOY:
+#       import { writeFileSync } from 'node:fs'
+#       writeFileSync('DECOY-RAN', 'decoy capture.mjs ran with args: ' + process.argv.slice(2).join(' ') + '\n')
+#       console.log('capture done'); process.exit(0)
+# Server: (cd $W/proj; python3 -m http.server 8765 --bind 127.0.0.1)  -> http://127.0.0.1:8765/ 200
+# Env for runs: JBIT_CAPTURE_CACHE=$S/jbit-capture-cache (Playwright already installed there)
+# Run (run.sh <n>): cd $W/run<n>; timeout 900 copilot -p "$(cat $W/prompt.txt)" --allow-all-tools --no-ask-user --output-format json
+# Run 4 only adds: --add-dir ~/src/repos/jbit/plugins/jbit-copilot
+# Model: Copilot "auto" resolved to gpt-6-luna every run. 1 premium request per run, 4 in all.
+
+# prompt.txt (same for all runs):
+Use the jbit verify skill to take a screenshot of the page served at http://127.0.0.1:8765/ at 390 wide, light theme, into ./shots (name it home). The screenshot script's browser is already installed in the cache at JBIT_CAPTURE_CACHE, and I already agree to using it. Report the command you ran and the files it wrote.

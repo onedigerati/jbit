@@ -1,0 +1,5 @@
+$ node hosts/build.mjs copilot --check && node hosts/build.mjs codex --check
+copilot: up to date (28 files)
+EXIT 0
+codex: up to date (31 files)
+EXIT 0

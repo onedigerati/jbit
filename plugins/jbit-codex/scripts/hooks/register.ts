@@ -1815,16 +1815,63 @@ async function evidenceDenial(
 }
 
 const IMAGE_EXT = /\.(?:png|jpe?g|webp|gif)$/i
-/** Links the image check reads per report: enough for any real report, and a bound on the exists checks. */
+/** Image links the check reads per report: enough for any real report, and a bound on the exists checks. */
 const IMAGE_LINKS_MAX = 500
 
-/** Targets of the report's markdown links `[text](target)`, as written: `<…>` unwrapped, a title dropped. */
-function linkTargets(text: string): string[] {
-  const targets: string[] = []
-  for (const m of text.matchAll(/\]\(\s*(?:<([^<>\n]*)>|([^\s()<>]+))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?\s*\)/g)) {
-    targets.push(m[1] ?? m[2] ?? '')
-    if (targets.length >= IMAGE_LINKS_MAX) break
+/** The report's text with fenced code blocks and inline code spans blanked: links quoted there aren't links. */
+function withoutCode(text: string): string {
+  const out: string[] = []
+  let fence: string | undefined
+  for (const line of text.split('\n')) {
+    const open = /^ {0,3}(`{3,}|~{3,})/.exec(line)
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length && /^ {0,3}[`~]+\s*$/.test(line)) fence = undefined
+      out.push('')
+    } else if (open && !(open[1][0] === '`' && line.slice(open[0].length).includes('`'))) {
+      fence = open[1]
+      out.push('')
+    } else out.push(line)
   }
+  return out.join('\n').replace(/(?<!`)(`+)(?!`)[\s\S]*?(?<!`)\1(?!`)/g, '')
+}
+
+/** An inline link's target from the text after `](`, up to its `)`: brackets balanced, spaces kept, a title dropped. */
+function inlineTarget(text: string, start: number): string | undefined {
+  let i = start
+  while (text[i] === ' ' || text[i] === '\t') i++
+  if (text[i] === '<') {
+    const end = text.indexOf('>', i)
+    if (end < 0 || text.slice(i, end).includes('\n')) return undefined
+    return text.slice(i + 1, end)
+  }
+  let depth = 0
+  for (let j = i; j < text.length; j++) {
+    const c = text[j]
+    if (c === '\n') return undefined
+    if (c === '\\') j++
+    else if (c === '(') depth++
+    else if (c === ')' && depth-- === 0) {
+      const raw = text.slice(i, j).trim()
+      return raw.replace(/\s+(?:"[^"]*"|'[^']*'|\([^()]*\))$/, '').trim()
+    }
+  }
+  return undefined
+}
+
+/**
+ * Targets of the report's links outside code, as written: inline `[text](target)` (`<…>` unwrapped, a title
+ * dropped), reference definitions `[r]: target`, and HTML `<img src="…">`.
+ */
+function linkTargets(text: string): string[] {
+  const prose = withoutCode(text)
+  const targets: string[] = []
+  for (const m of prose.matchAll(/\]\(/g)) {
+    const target = inlineTarget(prose, m.index + 2)
+    if (target !== undefined) targets.push(target)
+  }
+  for (const m of prose.matchAll(/^ {0,3}\[[^\]\n]+\]:[ \t]*(?:<([^<>\n]*)>|(\S+))(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/gm))
+    targets.push(m[1] ?? m[2] ?? '')
+  for (const m of prose.matchAll(/<img\b[^>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi)) targets.push(m[1] ?? m[2] ?? m[3] ?? '')
   return targets
 }
 
@@ -1834,7 +1881,9 @@ function linkTargets(text: string): string[] {
  */
 function linkedImage(reportPath: string, target: string): string | 'outside' | undefined {
   const bare = target.replace(/[#?].*$/s, '')
-  if (!bare || /^[a-z][a-z0-9+.-]*:/i.test(bare) || bare.startsWith('//')) return undefined
+  // a Windows drive letter reads as a one-letter scheme: test it first, so `C:\…` is a path, not a URL
+  const drive = /^[a-z]:[\\/]/i.test(bare)
+  if (!bare || (!drive && /^[a-z][a-z0-9+.-]*:/i.test(bare)) || bare.startsWith('//')) return undefined
   let name = bare
   try {
     name = decodeURIComponent(bare)
@@ -1859,19 +1908,28 @@ function linkedImage(reportPath: string, target: string): string | 'outside' | u
  * Why stage n can't close for a screenshot its report links that isn't in the working tree, or one that leaves the
  * stage folder. Screenshots are gitignored by default, so only the working tree counts, never the commit's diff.
  */
-async function imageDenial($: EngineInterface, path: string, stage: string, text: string): Promise<string | undefined> {
+export async function imageDenial($: EngineInterface, path: string, stage: string, text: string): Promise<string | undefined> {
   const missing = new Set<string>()
   const outside = new Set<string>()
+  let images = 0
   for (const target of linkTargets(text)) {
     const image = linkedImage(path, target)
     if (image === undefined) continue
+    // only image links count toward the cap, so text and URL links can't push a screenshot past it
+    if (++images > IMAGE_LINKS_MAX) break
     if (image === 'outside') {
       outside.add(target)
       continue
     }
     if (missing.has(image)) continue
-    // an exists check that fails counts as missing, never as a pass
-    if (!(await $.fs.exists(image).catch(() => false))) missing.add(image)
+    // an exists check that fails, rejecting or throwing outright, counts as missing, never as a pass
+    let found = false
+    try {
+      found = await $.fs.exists(image)
+    } catch {
+      found = false
+    }
+    if (!found) missing.add(image)
   }
   if (!missing.size && !outside.size) return undefined
   const folder = path.slice(0, path.lastIndexOf('/') + 1)

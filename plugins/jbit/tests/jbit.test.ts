@@ -10,6 +10,7 @@ import {
   evidenceIds,
   evidencePath,
   firstAgentsOf,
+  imageDenial,
   isApproval,
   milestoneEvidencePath,
   milestoneRequirements,
@@ -1491,6 +1492,77 @@ test('a missing screenshot is named without its fragment, and a URL-encoded name
   expect(deny).not.toContain('gone.png#top')
   expect(deny).not.toContain('my shot.png')
   expect(deny).not.toContain('with space.png')
+})
+
+test('a Windows absolute image link is refused as outside the stage folder, not skipped as a URL scheme', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![a](C:\\Users\\x\\a.png)', '![b](C:/b.png)', '![c](<D:\\shots\\c.png>)'))
+  expect(deny).toContain('outside')
+  expect(deny).toContain('C:\\Users\\x\\a.png')
+  expect(deny).toContain('C:/b.png')
+  expect(deny).toContain('D:\\shots\\c.png')
+})
+
+test('image links inside inline code or a fenced code block are not checked', async ($, on) => {
+  const report = reportLinking(
+    'History: the report once quoted `![home](gone.png)` and ``![x](`gone2.png`)``.',
+    '```md',
+    '![old](gone3.png)',
+    '[r]: gone4.png',
+    '```',
+    '~~~~',
+    '<img src="gone5.png">',
+    '```',
+    '~~~~',
+  )
+  expect(await closeWithImages($, on, report)).toBeUndefined()
+})
+
+test('a code fence does not hide image links after it closes', async ($, on) => {
+  expect(await closeWithImages($, on, reportLinking('```', '![a](a.png)', '```', '![b](after.png)'))).toContain('docs/evidence/stage-2/after.png')
+})
+
+test('reference-style definitions and HTML img tags are checked', async ($, on) => {
+  const deny = await closeWithImages(
+    $,
+    on,
+    reportLinking('![home][r1]', '[r1]: ref-one.png', '[r2]: <ref two.png> "a title"', "  [r3]: ok.png 'kept'", '<img src="html-dq.png" alt="x">', "<IMG alt='y' src='html-sq.png'>", '<img src="here.webp">'),
+    ['docs/evidence/stage-2/ok.png', 'docs/evidence/stage-2/here.webp'],
+  )
+  expect(deny).toContain('docs/evidence/stage-2/ref-one.png')
+  expect(deny).toContain('docs/evidence/stage-2/ref two.png')
+  expect(deny).toContain('docs/evidence/stage-2/html-dq.png')
+  expect(deny).toContain('docs/evidence/stage-2/html-sq.png')
+  expect(deny).not.toContain('ok.png')
+  expect(deny).not.toContain('here.webp')
+})
+
+test('an inline link whose target has spaces or balanced brackets is checked', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![s](my shot.png)', '![p](shot(1).png)', '![t](titled.png "title")', '![q](there(2).png)'), ['docs/evidence/stage-2/there(2).png'])
+  expect(deny).toContain('docs/evidence/stage-2/my shot.png')
+  expect(deny).toContain('docs/evidence/stage-2/shot(1).png')
+  expect(deny).toContain('docs/evidence/stage-2/titled.png`')
+  expect(deny).not.toContain('there(2).png')
+})
+
+test('text and URL links before the screenshots do not push them past the link cap', async ($, on) => {
+  const filler = Array.from({ length: 600 }, (_, i) => `[l${i}](https://example.com/${i}) [t${i}](out-${i}.txt)`)
+  expect(await closeWithImages($, on, reportLinking(...filler, '![late](late.png)'))).toContain('docs/evidence/stage-2/late.png')
+})
+
+test('an exists check on a screenshot that throws synchronously counts as missing', async () => {
+  // an engine whose exists throws before it returns a promise, for one screenshot, and finds the other
+  const fake = {
+    fs: {
+      exists: (path: string) => {
+        if (path.endsWith('/shot.png')) throw new Error('EACCES')
+        return Promise.resolve(true)
+      },
+    },
+  } as unknown as Parameters<typeof imageDenial>[0]
+  const deny = await imageDenial(fake, REPORT, '2', reportLinking('![shot](shot.png)', '![ok](ok.png)'))
+  expect(deny).toContain('docs/evidence/stage-2/shot.png')
+  expect(deny).not.toContain('ok.png')
+  expect(deny).toContain('re-capture')
 })
 
 test('re-run rows from earlier stages, past the row per check, still let the stage close', async ($, on) => {

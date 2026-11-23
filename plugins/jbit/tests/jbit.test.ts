@@ -22,6 +22,7 @@ import {
   parseModels,
   namedModels,
   namesPlan,
+  changesEvidence,
   parsePlan,
   parseRoadmap,
   reportRows,
@@ -2260,6 +2261,95 @@ test('without autopilot driving, a line that writes the plan and commits runs', 
   const r = await $.tool.call({ tool: 'Bash', command: SED_AND_COMMIT })
   expect(r.deny).toBeUndefined()
   expect(r.result).toEqual({ text: 'ran' })
+})
+
+// ---- a line that changes the evidence and commits: refused in any session, since the gates read the evidence first ----
+
+const RM_AND_COMMIT = 'rm docs/evidence/stage-2/home-390.png && git add -A && git commit -qm "Stage 2"'
+
+const EVIDENCE_WRITE_DENIAL = [
+  "JBIT blocked this command: it changes files under `docs/evidence/` (`rm docs/evidence/stage-2/home-390.png`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.",
+  'Make the evidence change in its own command first, then run the commit on its own line.',
+].join('\n')
+
+test('changes the evidence: removing, moving, writing into it or a script naming it; git add, readers and mkdir do not count', () => {
+  const changes = (line: string) => parseCommands(line).some(c => changesEvidence(c, 'docs/PLAN.md', '/repo'))
+  for (const line of [
+    'rm docs/evidence/stage-1/home-390-dark.png',
+    'rm -rf docs/evidence',
+    'git rm docs/evidence/stage-1/a.png',
+    'git -C . rm -q ./docs/evidence/stage-1/a.png',
+    'git mv docs/evidence/stage-1/a.png docs/evidence/stage-1/b.png',
+    'git checkout -- docs/evidence/stage-1/a.png',
+    'mv /tmp/a.png docs/evidence/stage-1/a.png',
+    'cp shot.png docs/evidence/stage-1/',
+    'cd docs/evidence/stage-1 && rm a.png',
+    'echo ok > docs/evidence/stage-1/report.md',
+    'cat notes | tee docs/evidence/stage-1/report.md',
+    "cat > docs/evidence/stage-1/report.md <<'EOF'\n# Stage 1\nEOF",
+    "python3 - <<'EOF'\nopen('docs/evidence/stage-1/report.md', 'w').write('x')\nEOF",
+    "find docs/evidence -name '*.png' -delete",
+    'rm /repo/docs/evidence/stage-1/a.png',
+  ])
+    expect([line, changes(line)]).toEqual([line, true])
+  for (const line of [
+    'git add docs/evidence/stage-1/report.md docs/evidence/stage-1/a.png',
+    'git add -A docs/evidence',
+    'ls docs/evidence/stage-1',
+    'cat docs/evidence/stage-1/report.md',
+    "find docs/evidence -name '*.png'",
+    'mkdir -p docs/evidence/stage-1',
+    'rm docs/evidence-old/a.png',
+    "echo 'see docs/evidence/stage-1'",
+    'git commit -m "Stage 1 (docs/evidence/stage-1)"',
+  ])
+    expect([line, changes(line)]).toEqual([line, false])
+})
+
+test('a line that changes the evidence and commits is refused before it runs, with or without autopilot', async ($, on) => {
+  const stage = closingStage(2, 'Open: none')
+  engine(on, { text: stage.before, files: stage.report })
+  closingGit(on, () => '', () => stage.before)
+  await $.turn.complete(ended('t1'))
+  const r = await $.tool.call({ tool: 'Bash', command: RM_AND_COMMIT })
+  expect(r.deny).toBe(EVIDENCE_WRITE_DENIAL)
+  expect(r.result).toBeUndefined()
+  for (const command of [
+    'git rm -q docs/evidence/stage-2/home-390.png && git commit -qm "Stage 2"',
+    "cat > docs/evidence/stage-2/report.md <<'EOF'\n# Stage 2\nEOF\ngit add docs/evidence && git commit -qm 'Stage 2'",
+    "python3 - <<'EOF'\nimport os; os.remove('docs/evidence/stage-2/home-390.png')\nEOF\ngit commit -qam x",
+  ]) {
+    const denied = await $.tool.call({ tool: 'Bash', command })
+    expect([command, denied.deny?.split('\n')[1], denied.result]).toEqual([command, 'Make the evidence change in its own command first, then run the commit on its own line.', undefined])
+  }
+})
+
+test('under autopilot, a line that changes the evidence and commits is refused too', async ($, on) => {
+  const stage = closingStage(2)
+  const plan = { text: stage.before, files: stage.report as Record<string, string> }
+  engine(on, plan)
+  on('process.run', () => ({ value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  await arm($, plan)
+  await $.turn.complete(ended('t1'))
+  expect((await $.tool.call({ tool: 'Bash', command: RM_AND_COMMIT })).deny).toBe(EVIDENCE_WRITE_DENIAL)
+})
+
+test('staging the evidence with the commit, changing it in a separate command, or after the commit, still runs', async ($, on) => {
+  const stage = closingStage(2, 'Open: none')
+  engine(on, { text: stage.before, files: stage.report })
+  closingGit(on, () => '', () => stage.before)
+  await $.turn.complete(ended('t1'))
+  for (const command of [
+    'git add docs/evidence/stage-2/report.md docs/evidence/stage-2/home-390.png && git commit -qm "Stage 2"',
+    'git add -A docs/evidence && git commit -qm "Stage 2"',
+    'rm docs/evidence/stage-2/home-390.png',
+    'git commit -qm "Stage 2"',
+    'git commit -qm wip && rm docs/evidence/stage-2/scratch.png',
+    'mkdir -p docs/evidence/stage-2 && git commit -qm wip',
+  ]) {
+    const r = await $.tool.call({ tool: 'Bash', command })
+    expect([command, r.deny, r.result]).toEqual([command, undefined, { text: 'ran' }])
+  }
 })
 
 const REOPEN_STAGE_2 =

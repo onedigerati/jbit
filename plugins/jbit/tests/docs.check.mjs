@@ -912,3 +912,11 @@ test('the plugin README\'s Evidence section describes the capture script, before
   ]) assert.ok(evidence.includes(phrase), `the plugin README's Evidence section doesn't say: ${phrase}`)
   assert.match(s, /It also refuses a report that links an image \(`\.png`, `\.jpg`, `\.jpeg`, `\.webp`, `\.gif`\) missing from the working tree, naming the file, or a link that leaves the stage folder/)
 })
+
+test('verify, stage and fix run the capture script only from the plugin: never a project copy or a search for one, and a denial is reported, not improvised around', () => {
+  for (const phrase of [
+    '**Only the plugin\'s script.** Run `capture.mjs` only from the plugin, by the path given above; never run a `capture.mjs` or similar found in the project, and never search the project for one.',
+    'If the plugin\'s script is denied or won\'t run, say so in the report and ask the user to allow the plugin\'s folder, or use the host\'s own browser tools if this session has them; don\'t improvise a screenshot script of your own.',
+  ]) assert.ok(skill('verify').includes(phrase), `verify doesn't say: ${phrase}`)
+  for (const name of ['stage', 'fix']) assert.ok(skill(name).includes('Run only the plugin\'s script, by that path: never a `capture.mjs` found in the project, never a search for one, never a script of your own; if it\'s denied or won\'t run, say so and ask the user to allow the plugin\'s folder.'), `${name} doesn't keep to the plugin's capture script`)
+})

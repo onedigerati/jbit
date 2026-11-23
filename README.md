@@ -101,7 +101,7 @@ What Copilot can't do:
 - **The stage hold and the secret guard inside a `task` subagent.** Only the commit gate was proven inside a subagent (stage 4, run 12); in the runs meant to test the hold and the secret guard there, the model declined to delegate, so those two are unproven in a subagent.
 - **A hook that hangs or prints junk.** Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks.
 - **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
-- **Finding the screenshot script.** Skills name it as `<verify skill folder>/scripts/capture.mjs`, a placeholder the model fills with the installed plugin's verify skill folder, where Claude Code puts in the exact path itself. Copilot's docs say a skill's folder is open to the model, but no live run has yet shown that the model sees its path.
+- **Running the screenshot script headless.** Skills name it as `<verify skill folder>/scripts/capture.mjs`; a live run (stage 3) proved the model sees the skill's folder and runs the installed script, but Copilot asks before running a file outside the project. Interactively it asks once; a headless run (`copilot -p`) is denied unless it allows the plugin's folder with `--add-dir <plugin folder>` (or `--allow-all-paths`).
 <!-- copilot-gaps:end -->
 
 ## Codex CLI

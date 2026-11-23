@@ -101,6 +101,7 @@ What Copilot can't do:
 - **The stage hold and the secret guard inside a `task` subagent.** Only the commit gate was proven inside a subagent (stage 4, run 12); in the runs meant to test the hold and the secret guard there, the model declined to delegate, so those two are unproven in a subagent.
 - **A hook that hangs or prints junk.** Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks.
 - **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
+- **Finding the screenshot script.** Skills name it as `<verify skill folder>/scripts/capture.mjs`, a placeholder the model fills with the installed plugin's verify skill folder, where Claude Code puts in the exact path itself. Copilot's docs say a skill's folder is open to the model, but no live run has yet shown that the model sees its path.
 <!-- copilot-gaps:end -->
 
 ## Codex CLI
@@ -145,4 +146,5 @@ What Codex can't do:
 - **Worktree isolation for parallel builders.** Codex's `spawn_agent` has none, so parallel builders must own separate files or run one at a time.
 - **Compacting the context before autopilot carries on.** Codex gives a command hook no context gauge and no compact call; Codex manages its own context.
 - **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
+- **Finding the screenshot script.** Skills name it as `<verify skill folder>/scripts/capture.mjs`, a placeholder the model fills from the `SKILL.md` path Codex lists for each skill, where Claude Code puts in the exact path itself. Codex tells its model to resolve a skill's paths that way, but no live run has proven it yet.
 <!-- codex-gaps:end -->

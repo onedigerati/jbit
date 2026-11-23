@@ -2201,6 +2201,7 @@ const READERS = new Set(['cat', 'head', 'tail', 'less', 'more', 'grep', 'egrep',
  */
 function readsOnly(name: string, args: string[]): 'all' | 'operands' | undefined {
   if (READERS.has(name)) return 'all'
+  if (name === 'find') return args.some(a => /^-(?:delete|exec|execdir|ok|okdir|fprint0?|fprintf|fls)$/.test(a)) ? undefined : 'all'
   if (name === 'sed') return args.some(a => /^-[A-Za-z]*i/.test(a) || a.startsWith('--in-place')) ? undefined : 'operands'
   if (/^[gmn]?awk$/.test(name)) {
     const inPlace = args.some((a, k) => ((a === '-i' || a === '--include') && /^inplace/.test(args[k + 1] ?? '')) || /^(?:-i|--include=)inplace/.test(a))
@@ -2221,16 +2222,23 @@ function readsOnly(name: string, args: string[]): 'all' | 'operands' | undefined
 export function namesPlan(cmd: Command, planPath: string, root?: string): boolean {
   const head = cmd.words[0] ?? ''
   if (head === 'git' || head.endsWith('/git')) return false
-  const plan = joinPath('.', planPath).toLowerCase()
-  const absolute = root ? joinPath(root, plan).toLowerCase() : undefined
+  return namesPath(cmd, planPath, root, false)
+}
+
+/** `namesPlan`'s test for any path, or (`under`) for anything inside a directory. */
+function namesPath(cmd: Command, path: string, root: string | undefined, under: boolean): boolean {
+  const head = cmd.words[0] ?? ''
+  const target = joinPath('.', path).toLowerCase()
+  const absolute = root ? joinPath(root, target).toLowerCase() : undefined
   const escape = (p: string) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const paths = [plan, ...(absolute ? [absolute] : [])].map(escape).join('|')
-  const inside = new RegExp(`(?:^|[^\\w./-])(?:${paths})(?:$|[^\\w.-])`)
+  const paths = [target, ...(absolute ? [absolute] : [])].map(escape).join('|')
+  const inside = new RegExp(`(?:^|[^\\w./-])(?:${paths})(?:$|${under ? '/|' : ''}[^\\w.-])`)
   const dir = cmd.dir === null ? '.' : cmd.dir.toLowerCase()
-  /** The word is the plan's path, from where the command runs (or the repo, when that's unknown). */
+  const within = (p: string, at: string) => at === p || (under && at.startsWith(`${p}/`))
+  /** The word is the path (or, `under`, inside it), from where the command runs (or the repo, when that's unknown). */
   const exact = (word: string) => {
     const at = joinPath(dir, word.toLowerCase())
-    return at === plan || at === absolute
+    return within(target, at) || (absolute !== undefined && within(absolute, at))
   }
   // `./docs/PLAN.md` inside a longer word reads as `docs/PLAN.md`
   const embedded = (text: string) => inside.test(text.toLowerCase().replace(/(?<![\w.])\.\//g, ''))
@@ -2240,6 +2248,36 @@ export function namesPlan(cmd: Command, planPath: string, root?: string): boolea
   const reads = readsOnly(name, args)
   const named = reads === 'all' ? false : reads === 'operands' ? args.some(a => !exact(a) && embedded(a)) : args.some(hit)
   return named || (cmd.targets ?? []).some(hit) || (reads !== 'all' && cmd.input !== undefined && embedded(cmd.input))
+}
+
+/** Git subcommands that change the working-tree files they name; `git add` only stages them. */
+const GIT_FILE_WRITERS = new Set(['rm', 'mv', 'restore', 'checkout', 'clean'])
+
+/** The evidence directory beside the plan: `docs/evidence` for every plan path jbit reads. */
+export function evidenceDir(planPath: string): string {
+  return evidencePath(planPath, 'x').replace(/\/stage-x\/report\.md$/, '')
+}
+
+/**
+ * Whether a command changes something under the evidence directory, as `namesPlan` reads a line: `rm`, `mv`, `cp`,
+ * `find -delete` or a redirection into it, a script or heredoc naming it, `git rm`/`mv`/`restore`/`checkout`/`clean`
+ * on it. Readers, `find` without a writing action, `mkdir`, and `git add` (how a stage commits its evidence) don't.
+ */
+export function changesEvidence(cmd: Command, planPath: string, root?: string): boolean {
+  const dir = evidenceDir(planPath)
+  const call = gitCall(cmd)
+  if (call) return GIT_FILE_WRITERS.has(call.sub) && namesPath({ words: [call.sub, ...call.args], dir: call.dir }, dir, root, true)
+  const head = cmd.words[0] ?? ''
+  if (head.slice(head.lastIndexOf('/') + 1) === 'mkdir') return false
+  return namesPath(cmd, dir, root, true)
+}
+
+function evidenceWriteDenial(dir: string, cmd: Command): string {
+  const shown = cutAt(oneLine(cmd.words.join(' ')), 80)
+  return [
+    `JBIT blocked this command: it changes files under \`${dir}/\` (\`${shown}\`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.`,
+    'Make the evidence change in its own command first, then run the commit on its own line.',
+  ].join('\n')
 }
 
 function planWriteDenial(planPath: string, cmd: Command): string {
@@ -2621,6 +2659,11 @@ export const register: Register = on => {
     if (plan && drives) {
       const writer = commands.slice(0, commits[commits.length - 1]).find(c => namesPlan(c, plan.path, root))
       if (writer) return { deny: planWriteDenial(plan.path, writer) }
+    }
+    // in any session, a line that changes the evidence and then commits would pass gates that read it before it changed
+    if (plan) {
+      const changer = commands.slice(0, commits[commits.length - 1]).find(c => changesEvidence(c, plan.path, root))
+      if (changer) return { deny: evidenceWriteDenial(evidenceDir(plan.path), changer) }
     }
     // every commit on the line is scanned for secrets before any stage gate runs, so nothing a gate does can skip a scan
     const pendings = []

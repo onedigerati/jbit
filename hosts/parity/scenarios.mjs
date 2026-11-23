@@ -61,6 +61,19 @@ export const SCENARIOS = [
     steps: [user('close stage 2'), { ...commit('Stage 2: share mode'), expect: { kind: 'allow' } }],
   },
   {
+    name: 'removing a screenshot and committing on the same line is denied before it runs',
+    fixture: { committed: { 'docs/PLAN.md': TICKED, [REPORT]: reportWithShot(), [SHOT]: '\x89PNG\r\n' }, staged: { 'docs/PLAN.md': closed(TICKED) } },
+    steps: [
+      user('close stage 2'),
+      {
+        kind: 'tool',
+        tool: 'Bash',
+        input: { command: `rm ${SHOT} && git add -A && git commit -m "Stage 2: share mode"` },
+        expect: { kind: 'deny', has: ['changes files under `docs/evidence/`', 'commits on the same line', 'its own command first'] },
+      },
+    ],
+  },
+  {
     name: 'a secret in a staged commit is denied, named by kind and never by value',
     fixture: { committed: { 'docs/PLAN.md': TICKED }, staged: { 'src/client.ts': `export const token = "${FAKE_KEYS.GH}"\n` } },
     steps: [user('commit the client'), { ...commit('wire client'), expect: { kind: 'deny', has: ['src/client.ts:1: a GitHub token', 'environment variable'], lacks: [FAKE_KEYS.GH] } }],

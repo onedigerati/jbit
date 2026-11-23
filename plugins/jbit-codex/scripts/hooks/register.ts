@@ -3,7 +3,7 @@ import type { JbitStore } from '../types/index.d.ts'
 import { keptRules, loadProjectRules, mergeRules, NO_RULES, projectOutward, projectRisky, type ProjectRules } from './project.ts'
 import { findSecrets, type Finding } from './secrets.ts'
 import { MODEL_ROLES, MODELS_FORM, modelsText, modelsValues, parseModels, settingText, type ModelRole, type Models } from './models.ts'
-import { addScope, commitScope, gitCall, joinPath, networkReason, outwardReason, parseCommands, type Command } from './shell.ts'
+import { addScope, commitScope, gitCall, joinPath, networkReason, outwardReason, parseCommands, type Command, type GitCall } from './shell.ts'
 
 /** Where a project's plan can live; the first that exists wins. */
 const PLAN_PATHS = ['docs/PLAN.md', 'PLAN.md', 'docs/BUILD_PLAN.md']
@@ -2259,16 +2259,90 @@ export function evidenceDir(planPath: string): string {
 }
 
 /**
- * Whether a command changes something under the evidence directory, as `namesPlan` reads a line: `rm`, `mv`, `cp`,
- * `find -delete` or a redirection into it, a script or heredoc naming it, `git rm`/`mv`/`restore`/`checkout`/`clean`
- * on it. Readers, `find` without a writing action, `mkdir`, and `git add` (how a stage commits its evidence) don't.
+ * Whether a path a command acts on may be the evidence directory, inside it or a parent of it (the repo root, `..`,
+ * `/`), from where the command runs. A word that may change before it runs (a glob, brace, variable, substitution or
+ * `~`) counts by its literal start: `docs/evid*` and `docs/{a,b}` may reach it, `src/*.js` can't. A relative word where
+ * the command runs somewhere unknown may reach it. An absolute path is compared with the evidence under `root` when
+ * `root` is absolute; otherwise only `/` reaches it.
+ */
+function reachesEvidence(word: string, dir: string | null, evidence: string, root?: string): boolean {
+  const w = word.toLowerCase()
+  const cut = w.search(/[$`*?[{]/)
+  const literal = cut < 0 ? w : w.slice(0, cut)
+  if (literal.startsWith('~')) return true
+  if (!literal.startsWith('/') && dir === null) return true
+  const base = (dir ?? '.').toLowerCase()
+  let path: string
+  if (cut < 0) path = joinPath(base, w)
+  else {
+    // the literal start as a string prefix: its directory part resolved, its last part kept as written (`evid` of `docs/evid*`)
+    const slash = literal.lastIndexOf('/')
+    const at = joinPath(base, slash < 0 ? '.' : literal.slice(0, slash) || '/')
+    const tail = literal.slice(slash + 1)
+    path = at === '.' ? tail : at === '/' ? `/${tail}` : `${at}/${tail}`
+  }
+  if (path === '..' || path.startsWith('../')) return true
+  const ev = path.startsWith('/') ? (root?.startsWith('/') ? joinPath(root, evidence).toLowerCase() : undefined) : evidence.toLowerCase()
+  if (ev === undefined) return path === '/'
+  if (path === '.' || path === '' || path === '/' || path === ev || path.startsWith(`${ev}/`)) return true
+  // a parent of it, or (for a word that may expand) a prefix that may grow into it
+  return cut < 0 ? ev.startsWith(`${path}/`) : ev.startsWith(path)
+}
+
+/** A command's operands: its words after the head that aren't options, and every word after `--`. */
+function operands(args: string[]): string[] {
+  const end = args.indexOf('--')
+  const before = (end < 0 ? args : args.slice(0, end)).filter(a => !a.startsWith('-'))
+  return end < 0 ? before : [...before, ...args.slice(end + 1)]
+}
+
+/** Commands that delete, move or overwrite the files they're given. */
+const FILE_CHANGERS = new Set(['rm', 'rmdir', 'unlink', 'mv', 'cp', 'shred'])
+
+/** Whether a git call may change the evidence in the working tree: conservatively, anything that may reach it. */
+function gitChangesEvidence(call: GitCall, evidence: string, root?: string): boolean {
+  const reach = (paths: string[]) => paths.some(p => reachesEvidence(p, call.dir, evidence, root))
+  const { sub, args } = call
+  if (sub === 'clean') return true
+  if (sub === 'stash') return args.some(a => a === '--include-untracked' || a === '--all' || /^-[A-Za-z]*[ua]/.test(a))
+  if (sub === 'reset') return args.some(a => a === '--hard' || a === '--merge' || a === '--keep')
+  if (sub === 'restore' || sub === 'checkout') {
+    const dash = args.indexOf('--')
+    const valued = sub === 'restore' ? new Set(['-s', '--source']) : new Set(['-b', '-B', '--orphan'])
+    const words = (dash < 0 ? args : args.slice(0, dash)).filter((a, k, all) => !a.startsWith('-') && !valued.has(all[k - 1] ?? ''))
+    // `git checkout <tree-ish> -- paths`: the words before `--` name a commit, not files
+    const paths = dash < 0 ? words : sub === 'restore' ? [...words, ...args.slice(dash + 1)] : args.slice(dash + 1)
+    const newBranch = sub === 'checkout' && args.some(a => a === '-b' || a === '-B' || a === '--orphan')
+    return paths.length ? reach(paths) : !newBranch
+  }
+  if (sub === 'rm' || sub === 'mv') return reach(operands(args))
+  return false
+}
+
+/**
+ * Whether a command may change something under the evidence directory, as `namesPlan` reads a line, and on the
+ * cautious side: `rm`, `mv`, `cp` or `find -delete`/`-exec` on it, a parent of it, or a glob, brace or variable that
+ * may expand into it; such a command fed its targets (`… | xargs rm`); a redirection that may land in it, on any
+ * command; a script or heredoc naming it; `git clean`, `git stash -u`/`--all`, `git reset --hard`, and `git restore`,
+ * `checkout`, `rm` or `mv` on it, a parent of it, `.` or no path at all. Readers, `find` without a writing action,
+ * `mkdir`'s own arguments, a plain `git stash` and `git add` (how a stage commits its evidence) don't.
  */
 export function changesEvidence(cmd: Command, planPath: string, root?: string): boolean {
   const dir = evidenceDir(planPath)
+  if ((cmd.targets ?? []).some(t => reachesEvidence(t, cmd.dir, dir, root))) return true
   const call = gitCall(cmd)
-  if (call) return GIT_FILE_WRITERS.has(call.sub) && namesPath({ words: [call.sub, ...call.args], dir: call.dir }, dir, root, true)
+  if (call)
+    return gitChangesEvidence(call, dir, root) || (GIT_FILE_WRITERS.has(call.sub) && namesPath({ words: [call.sub, ...call.args], dir: call.dir }, dir, root, true))
   const head = cmd.words[0] ?? ''
-  if (head.slice(head.lastIndexOf('/') + 1) === 'mkdir') return false
+  const name = head.slice(head.lastIndexOf('/') + 1)
+  if (name === 'mkdir') return false
+  const args = cmd.words.slice(1)
+  if (FILE_CHANGERS.has(name) && (cmd.fed || operands(args).some(a => reachesEvidence(a, cmd.dir, dir, root)))) return true
+  if (name === 'find' && readsOnly(name, args) === undefined) {
+    const at = args.findIndex(a => a.startsWith('-') || a === '(' || a === '!')
+    const starts = at < 0 ? args : args.slice(0, at)
+    if (!starts.length || starts.some(a => reachesEvidence(a, cmd.dir, dir, root))) return true
+  }
   return namesPath(cmd, dir, root, true)
 }
 

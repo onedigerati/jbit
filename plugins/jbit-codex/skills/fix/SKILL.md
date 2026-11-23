@@ -33,7 +33,7 @@ The plan's Agents line doesn't apply to a fix: there's nothing to fan out, so it
 ## 3. Check it, in proportion
 
 - Run the project's quick checks: type check, lint, the test suite, and the build if the change could break it. All green, or the fix isn't done.
-- If the change shows in the product, look at it once in the running app: a screenshot of what changed, plus each theme and the phone width where the project has them. One pass; fix what it shows, then look once more only if you changed something.
+- If the change shows in the product, look at it once in the running app: a screenshot of what changed, plus each theme and the phone width where the project has them, taken with the same script as `jbit:verify` (`node "../verify/scripts/capture.mjs" shot <url> --name <screen> --out <scratchpad>`), and Read each one. Captures go in the scratchpad: a fix has no evidence folder. Where Playwright comes from, and the user's yes before any install, follow `jbit:verify`. One pass; fix what it shows, then look once more only if you changed something.
 - No `jbit:verify`, no `docs/evidence/` folder, no report. The commit and the plan line are the record.
 
 **Escalate when it grows.** If the change turns out to touch something the bar rules out, spreads past a few files, needs a decision from the user, or a check fails in a way the fix didn't cause, stop. Leave the work uncommitted (or stash it), say in one or two lines what you found, and offer `jbit:plan` to stage it. Don't finish a stage's worth of work on the fix path.
@@ -59,4 +59,5 @@ JBIT was written for Claude Code; this copy is generated for OpenAI Codex CLI. W
 - **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a fresh `spawn_agent` with `fork_turns: "none"`, briefed with the same lenses (correctness, then security), and triage what it finds.
 - **Instructions.** Codex loads `AGENTS.md`, not `CLAUDE.md`. Where a skill reads or writes `CLAUDE.md`, use that file, and read it yourself at the start of a session.
 - **Hooks.** JBIT's hooks run only once the user trusts them (at startup or through `/hooks`), and again after every JBIT update. Without trust there is no `## Now` in context, no gates and no carry-on, and nothing says so.
+- **Script paths.** A script path in a skill (`scripts/capture.mjs`, `../verify/scripts/capture.mjs`) is relative to the folder holding that skill's `SKILL.md`, not the working directory: run it by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project.
 - **Tools.** Bash → `exec_command` (hooks see it as `Bash`); Edit → `apply_patch`; Write → `apply_patch` (`*** Add File:`); Read → `exec_command` (`cat`, `sed -n`); Glob → `exec_command` (`rg --files`, `find`); Grep → `exec_command` (`rg`); Agent → `spawn_agent`; Skill → `$jbit:<name>` (or open the skill's SKILL.md and follow it). Edits go through `apply_patch`; the guard covers it and the shell alike.

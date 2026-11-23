@@ -50,7 +50,8 @@
       "plugins/jbit/hooks/project.ts": "scripts/hooks/project.ts",
       "plugins/jbit/hooks/register.ts": "scripts/hooks/register.ts",
       "plugins/jbit/hooks/secrets.ts": "scripts/hooks/secrets.ts",
-      "plugins/jbit/hooks/shell.ts": "scripts/hooks/shell.ts"
+      "plugins/jbit/hooks/shell.ts": "scripts/hooks/shell.ts",
+      "plugins/jbit/skills/verify/scripts/capture.mjs": "skills/verify/scripts/capture.mjs"
     },
     "rewrites": []
   },
@@ -78,7 +79,9 @@
     { "from": "(created if missing; `.claude/CLAUDE.md` when that exists and the root one doesn't)", "to": "(at the repo root, created if missing; Codex loads `AGENTS.md`, not this file, so read it at the start of a session)" },
     { "from": "it compacts the context if it's past 65% full, then prompts you to carry on", "to": "it prompts you to carry on (the hook doesn't compact the context on Codex, which manages its own context)" },
     { "from": "`Explore` agents", "to": "`explorer` agents" },
-    { "from": "run the built-in `security-review` skill (and `code-review` for a broad correctness sweep)", "to": "run a fresh `spawn_agent` reviewer briefed with the security lens (and one with the correctness lens for a broad sweep)" }
+    { "from": "run the built-in `security-review` skill (and `code-review` for a broad correctness sweep)", "to": "run a fresh `spawn_agent` reviewer briefed with the security lens (and one with the correctness lens for a broad sweep)" },
+    { "from": "${CLAUDE_SKILL_DIR}/scripts/capture.mjs", "to": "scripts/capture.mjs" },
+    { "from": "${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs", "to": "../verify/scripts/capture.mjs" }
   ],
   "leakTerms": [
     "\\bClaude\\b",
@@ -100,7 +103,8 @@
     "/security-review",
     "`Explore`",
     "past 65% full",
-    "disable-model-invocation"
+    "disable-model-invocation",
+    "\\$\\{CLAUDE_"
   ],
   "mapping": {
     "heading": "## On Codex CLI",
@@ -114,6 +118,7 @@
       "- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a fresh `spawn_agent` with `fork_turns: \"none\"`, briefed with the same lenses (correctness, then security), and triage what it finds.",
       "- **Instructions.** Codex loads `AGENTS.md`, not `CLAUDE.md`. Where a skill reads or writes `CLAUDE.md`, use that file, and read it yourself at the start of a session.",
       "- **Hooks.** JBIT's hooks run only once the user trusts them (at startup or through `/hooks`), and again after every JBIT update. Without trust there is no `## Now` in context, no gates and no carry-on, and nothing says so.",
+      "- **Script paths.** A script path in a skill (`scripts/capture.mjs`, `../verify/scripts/capture.mjs`) is relative to the folder holding that skill's `SKILL.md`, not the working directory: run it by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project.",
       "- **Tools.** {tools}. Edits go through `apply_patch`; the guard covers it and the shell alike."
     ]
   },

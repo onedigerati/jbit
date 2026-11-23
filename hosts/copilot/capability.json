@@ -68,8 +68,9 @@
     { "from": "it compacts the context if it's past 65% full, then prompts you to carry on", "to": "it prompts you to carry on (the hook doesn't compact the context on Copilot, which manages its own context)" },
     { "from": "`Explore` agents", "to": "`explore` agents" },
     { "from": "run the built-in `security-review` skill (and `code-review` for a broad correctness sweep)", "to": "run Copilot's built-in `security-review` agent through `task` (and its `code-review` agent for a broad correctness sweep)" },
-    { "from": "${CLAUDE_SKILL_DIR}/scripts/capture.mjs", "to": "scripts/capture.mjs" },
-    { "from": "${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs", "to": "../verify/scripts/capture.mjs" }
+    { "from": "`node \"${CLAUDE_SKILL_DIR}/scripts/capture.mjs\"`", "to": "`node \"<verify skill folder>/scripts/capture.mjs\"` (`<verify skill folder>` is the folder holding the verify skill's `SKILL.md` in the installed JBIT plugin, never a path inside the project)" },
+    { "from": "`node \"${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs\" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/`", "to": "`node \"<verify skill folder>/scripts/capture.mjs\" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/` (`<verify skill folder>` is the folder holding the verify skill's `SKILL.md` in the installed JBIT plugin, never a path inside the project)" },
+    { "from": "`node \"${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs\" shot <url> --name <screen> --out <scratchpad>`", "to": "`node \"<verify skill folder>/scripts/capture.mjs\" shot <url> --name <screen> --out <scratchpad>`; `<verify skill folder>` is the folder holding the verify skill's `SKILL.md` in the installed JBIT plugin, never a path inside the project" }
   ],
   "leakTerms": [
     "\\bClaude\\b",
@@ -104,7 +105,7 @@
       "- **Questions.** Where a skill says to ask the user (AskUserQuestion on Claude Code), ask in the chat and wait for the reply.",
       "- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a `task` agent with `agent_type: \"code-review\"` (seen working), or a fresh `general-purpose` agent briefed with the same lenses. `security-review` is listed in the `task` tool's agent types but wasn't seen called; if it fails, brief a fresh `general-purpose` agent with the security lens.",
       "- **Instructions.** Copilot reads `CLAUDE.md` too; also read `AGENTS.md` and `.github/copilot-instructions.md` when they exist.",
-      "- **Script paths.** A script path in a skill (`scripts/capture.mjs`, `../verify/scripts/capture.mjs`) is relative to the folder holding that skill's `SKILL.md`, not the working directory: run it by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project.",
+      "- **Script paths.** `<verify skill folder>` in a skill's command is a placeholder: put in the folder holding the verify skill's `SKILL.md` in the installed JBIT plugin, never a path inside the project (a project's own `scripts/capture.mjs` isn't JBIT's). Run the script by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project.",
       "- **Tools.** {tools}."
     ]
   },

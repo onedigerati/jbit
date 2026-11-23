@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "sources": {
     "hosts/build.mjs": "ddc441b0ee308ec5981068926f58f2c56536c682accf8eb5397637dfba502f7d",
-    "hosts/codex/capability.json": "6a74502277d954730a391e926136586382bc9be993ddad3b858804bef76aea0e",
+    "hosts/codex/capability.json": "7984e23d352bdd68753122d24bb7bd36c39f7435319ca7a5c02233035275f3d2",
     "hosts/codex/handler.mjs": "ec92ea836d3331fe97c6690d37f12649fb533fdf0dd51cf16f28ac139a5cd76f",
     "hosts/codex/hook.mjs": "49123c7978203c90268c99e41fcbda6bf49ab8108e885ec0ddc74564255b8b84",
     "hosts/codex/map.mjs": "38955ce0c1f4753ce99405de87248d5e9126bef8e236301ba36c4d08428b0eb8",
@@ -24,11 +24,11 @@
     "plugins/jbit/skills/autopilot/SKILL.md": "b8101d0aa6a3ed7e7368d916b576968db2685b686d9018eaae2357211af85d02",
     "plugins/jbit/skills/charter/SKILL.md": "92d11bdbf79306619cb47866c06fcb60917d444194083cbb3cf0dd2f7d66a2d1",
     "plugins/jbit/skills/fix/SKILL.md": "aeb4fc510686b0b7f54110f6e9b4f13671e1866bab591a6f111a9ae4c3346990",
-    "plugins/jbit/skills/plan/SKILL.md": "caeba0e0732573448363a03edece2683e85a58fb15fa42196595e44d4c1d8bab",
+    "plugins/jbit/skills/plan/SKILL.md": "207a21bb7678eedecac996a79080f26ac1d4edb4f75326d4cfb6159ca930aca1",
     "plugins/jbit/skills/resume/SKILL.md": "dfa85ada47d877a5722ed1394485e64941b2b876ae7d63b6dc378d6989ee7248",
     "plugins/jbit/skills/review/SKILL.md": "39e60af65b075f9fb7ae42aafac260d14f95bf2375b4c0a0cdb766f236b9351e",
-    "plugins/jbit/skills/stage/SKILL.md": "d0036c9c674663fc7af9c3563d9f84c93e1db57b0939f4ff77a22feb2a2f0ab7",
-    "plugins/jbit/skills/verify/SKILL.md": "7bf7410c474e9876d78ad2174bb597de8a096516754769675ab485cb38047fd0",
+    "plugins/jbit/skills/stage/SKILL.md": "1b7884c37eed278ca23e8dec1035f8eb8acd0f236e042a62773b5be96b2e2463",
+    "plugins/jbit/skills/verify/SKILL.md": "d341cff399196e4d53f1ab570fe655908edea0a22678f64f700f96c7ea9b8133",
     "plugins/jbit/skills/verify/scripts/capture.mjs": "1d28c531e7fdd3dae224c154f730278551cd9d52d79848c6a486a69ba277a199"
   }
 }

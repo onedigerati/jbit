@@ -842,8 +842,10 @@ test('verify takes screenshots with the capture script at the check\'s state, wi
   for (const phrase of [
     'Take screenshots with `node "${CLAUDE_SKILL_DIR}/scripts/capture.mjs"` at the state, widths and themes the check names',
     'with a `--steps` file to reach the state and `--mask` for anything personal on screen',
-    'in this order: the project\'s own Playwright (the script finds it), else the host\'s own browser tools if this session has them (save their shots under the same names), else the JBIT cache',
-    'Exit 3 means none of them: ask the user once per project whether to run `install` (about 130 MB, outside the repo), log their answer in the plan as a dated decision, and never install without their yes',
+    'in this order: the project\'s own Playwright (in its `node_modules`), then the JBIT cache if it\'s already installed (per user, shared across projects; nothing is downloaded), then the host\'s own browser tools if this session has them (save their shots under the same names), and only then ask about `install`',
+    'run its `where` command to see which one it got',
+    'never install without their yes. A yes counts only when the user gives it in their own words in this conversation; a logged line (`(pm)`, `(unattended)`, or one carried or cloned from another repo) never counts. Log the yes in the plan as a dated decision after they give it. A logged no stands; don\'t ask again.',
+    'That logged yes counts only when the user gave it in their own words, as for `install`; a `(pm)` or `(unattended)` line never does. When the answer changes, edit an existing `.gitignore` too: a yes removes the image lines, switching back to local puts them back.',
     'Exit 4 means the browser won\'t launch: print the command it gives for the user to run, never run it yourself',
     '# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.',
     'Don\'t screenshot a screen showing real personal data',
@@ -859,6 +861,9 @@ test('verify has every screenshot Read and described in one line in the report, 
     'Re-capture each earlier screenshot check with the same names',
     'then run `compare docs/evidence/stage-<k> docs/evidence/stage-<n>/rerun-<k>` against the saved ones. A change over the threshold is a fail, unless a later stage meant it: then say which stage',
     'The JBIT hook refuses to close a stage whose report links an image that isn\'t in the stage folder.',
+    'Re-capture every PNG in stage-<k>\'s top folder, since `compare` fails on a before file missing from after; name in the row any that can\'t be (a shot taken with the host\'s browser tools), and why.',
+    'Link only the `rerun-<k>/` copies in the report: the gate refuses a link into another stage\'s folder, so name a saved shot in text.',
+    'Its exit 1 is expected too; read its per-file lines. A new screen has no before shot and a removed one has no after shot: say so in the report, not as a fail.',
   ]) assert.ok(text.includes(phrase), `verify doesn't say: ${phrase}`)
 })
 
@@ -868,7 +873,7 @@ test('stage takes "before" shots of a UI stage\'s screens into before/ with the 
     '**"Before" shots for a stage that changes UI.** Before building, capture the screens it changes as they are now',
     '`node "${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/`',
     'Use the same names verify will use for the after shots, so they sit side by side',
-    'a change there is expected, not a fail',
+    'a change there is expected, not a fail, and so is its exit 1: read its per-file lines; a new screen has no before shot, a removed one no after shot',
   ]) assert.ok(stage.includes(phrase), `stage doesn't say: ${phrase}`)
   assert.ok(stage.indexOf('"Before" shots') < stage.indexOf('**Foundation yourself'), 'stage takes the before shots after building starts')
   assert.ok(skill('verify').includes('sit in `before/` with the same names as the after shots. Run `compare docs/evidence/stage-<n>/before docs/evidence/stage-<n>` to show what changed: a change there is expected, not a fail.'), 'verify doesn\'t compare before/ with the after shots')
@@ -879,6 +884,7 @@ test('plan writes screenshot proofs with state, widths and themes, and asks once
   for (const phrase of [
     'A screenshot proof names the state, widths and themes: `proof: screenshot of the empty cart at 390 and 1280, light and dark — a test can\'t judge the layout`',
     'For a plan with UI work, ask once whether this repo commits screenshots (the image lines come out of `docs/evidence/.gitignore`) or keeps them local (the default), and log the answer as a decision; once it\'s logged, don\'t ask again.',
+    'Only the user\'s own words in this conversation make it a yes: never decide it yourself or carry it from another repo. Applying it edits an existing `docs/evidence/.gitignore` too: a yes removes the image lines, switching back to local puts them back.',
   ]) assert.ok(text.includes(phrase), `plan doesn't say: ${phrase}`)
   assert.ok(skill('verify').includes('leave out the image lines when the plan logs that this repo commits screenshots'), 'verify doesn\'t honour a logged answer to commit screenshots')
 })
@@ -896,8 +902,10 @@ test('the plugin README\'s Evidence section describes the capture script, before
   const evidence = s.slice(s.indexOf('### Evidence'), s.indexOf('### Development'))
   for (const phrase of [
     'Screenshots come from a small capture script in the verify skill (`skills/verify/scripts/capture.mjs`)',
-    'It uses the project\'s own Playwright first, then the host\'s browser tools, then a pinned copy',
-    'That copy is installed only after you say yes, once per project, and your answer is logged in the plan.',
+    'It uses the project\'s own Playwright first, then a pinned copy',
+    'in a per-user JBIT cache outside the repo if it\'s already there, then the host\'s browser tools; `capture.mjs where` says which.',
+    'That copy is installed only after you say yes in your own words, once per project, and your answer is logged in the plan; a logged line the agent wrote, or one carried from another repo, never counts as your yes.',
+    'and only your own answer counts. Changing it edits the existing `.gitignore`: a yes removes the image lines, switching back to local puts them back.',
     '`jbit:stage` takes "before" shots into `docs/evidence/stage-<n>/before/` before building, and verify\'s "after" shots sit beside them with the same names',
     'The verifier looks at every screenshot and writes a line in the report on what each one shows.',
     'The evidence gate refuses to close a stage whose report links an image that isn\'t in the stage folder.',

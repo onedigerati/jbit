@@ -799,7 +799,19 @@ test('no ${CLAUDE_ text is left anywhere in a generated skill, and the capture s
     for (const [file, text] of skills) assert.ok(!text.includes('${CLAUDE_'), `${host}: ${file} still has \${CLAUDE_ text`)
     const capture = files.get(`${pkg}/skills/verify/scripts/capture.mjs`)
     assert.equal(capture, readFileSync(join(ROOT, 'plugins/jbit/skills/verify/scripts/capture.mjs'), 'utf8'), `${host}: capture.mjs isn't copied unchanged`)
-    assert.match(files.get(`${pkg}/skills/verify/SKILL.md`), /node "scripts\/capture\.mjs"/)
-    for (const s of ['stage', 'fix']) assert.match(files.get(`${pkg}/skills/${s}/SKILL.md`), /node "\.\.\/verify\/scripts\/capture\.mjs"/, `${host}: ${s} doesn't point at ../verify/scripts/capture.mjs`)
+    // A bare relative path would run from the project folder, where a project's own scripts/capture.mjs could sit.
+    for (const [file, text] of skills) {
+      assert.doesNotMatch(text, /node "scripts\//, `${host}: ${file} has a bare node "scripts/ command`)
+      assert.doesNotMatch(text, /"\.\.\/verify\//, `${host}: ${file} has a relative "../verify/ command`)
+    }
+    const rule = "`<verify skill folder>` is the folder holding the verify skill's `SKILL.md` in the installed JBIT plugin, never a path inside the project"
+    for (const s of ['verify', 'stage', 'fix']) {
+      const text = files.get(`${pkg}/skills/${s}/SKILL.md`)
+      const use = text.indexOf('node "<verify skill folder>/scripts/capture.mjs"')
+      assert.ok(use >= 0, `${host}: ${s} doesn't run node "<verify skill folder>/scripts/capture.mjs"`)
+      const at = text.indexOf(rule)
+      assert.ok(at > use && at - use < 200, `${host}: ${s} doesn't resolve <verify skill folder> beside its first use`)
+      assert.match(text, /\*\*Script paths\.\*\* `<verify skill folder>` in a skill's command is a placeholder/, `${host}: ${s}'s mapping section doesn't explain <verify skill folder>`)
+    }
   }
 })

@@ -122,6 +122,14 @@ const resolved = (path, base) => {
   }
 }
 
+/** The capture cache capture.mjs would use (its cacheDir), from the hook's own environment. */
+function captureCacheDir(env = process.env, platform = process.platform) {
+  if (str(env.JBIT_CAPTURE_CACHE)) return env.JBIT_CAPTURE_CACHE
+  if (platform === 'darwin') return join(homedir(), 'Library', 'Caches', 'jbit', 'capture')
+  if (platform === 'win32') return join(str(env.LOCALAPPDATA) ? env.LOCALAPPDATA : join(homedir(), 'AppData', 'Local'), 'jbit', 'capture')
+  return join(str(env.XDG_CACHE_HOME) ? env.XDG_CACHE_HOME : join(homedir(), '.cache'), 'jbit', 'capture')
+}
+
 /**
  * The installed JBIT plugin running its own screenshot script from the plugin cache, and nothing else:
  * `node <$CODEX_HOME>/plugins/cache/<m>/jbit/<v>/skills/verify/scripts/capture.mjs <args>`, plain words only, no symlink
@@ -150,13 +158,10 @@ export function runsOwnCapture(command, codexHome, cwd) {
       if (!at || underCodexHome(at, codexHome) || underCodexHome(at, realHome)) return false
     }
   }
-  // `install` fills the capture cache the environment names
-  if (words[2] === 'install' || words[2] === '--install') {
-    for (const c of [process.env.JBIT_CAPTURE_CACHE, process.env.XDG_CACHE_HOME].filter(str)) {
-      const at = resolved(c, realCwd)
-      if (!at || underCodexHome(at, codexHome) || underCodexHome(at, realHome)) return false
-    }
-  }
+  // the script takes its command from any word (`--timeout 1 install`, `--install`), so whatever the call, the cache it
+  // would fill must lie outside $CODEX_HOME: the one the environment names, else the default as capture.mjs works it out
+  const cache = resolved(captureCacheDir(), realCwd)
+  if (!cache || underCodexHome(cache, codexHome) || underCodexHome(cache, realHome)) return false
   return true
 }
 

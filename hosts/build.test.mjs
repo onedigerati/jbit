@@ -820,7 +820,7 @@ test('copilot screenshot gap: what the live run proved, the headless --add-dir n
   const cap = loadCapability(ROOT, 'copilot')
   assert.ok(!cap.gaps.some(g => g.id === 'capture-path-unproven'), 'proven live at stage 3: no longer unproven')
   const gap = cap.gaps.find(g => g.id === 'capture-path-outside-project')
-  for (const phrase of ['the model sees the skill\'s folder and runs the installed script', 'Copilot asks before running a file outside the project', 'Interactively it asks once', '`--add-dir <plugin folder>` (or `--allow-all-paths`)']) assert.ok(gap.why.includes(phrase), `gap lacks: ${phrase}`)
+  for (const phrase of ['the model sees the skill\'s folder and runs the installed script', 'a headless run (`copilot -p`) is denied running a file outside the project unless it allows the plugin\'s folder with `--add-dir <plugin folder>`', 'Per Copilot\'s docs, an interactive session asks']) assert.ok(gap.why.includes(phrase), `gap lacks: ${phrase}`)
   const paths = cap.mapping.lines.find(l => l.startsWith('- **Script paths.**'))
   for (const phrase of ['start a headless run with `--add-dir <plugin folder>`', 'never run a project script of the same name or write your own']) assert.ok(paths.includes(phrase), `mapping lacks: ${phrase}`)
 })
@@ -830,8 +830,10 @@ test('screenshot gaps: Copilot and Codex each list what they lose of screenshot 
   // Copilot: proven live, but headless needs --add-dir; Codex: proven live, but its workspace-write sandbox kills Chromium
   for (const [host, id, says] of [
     ['copilot', 'capture-path-outside-project', /--add-dir <plugin folder>/],
-    ['codex', 'capture-sandbox', /workspace-write[\s\S]*danger-full-access/],
+    ['codex', 'capture-sandbox', /workspace-write[\s\S]*could not start[\s\S]*--dangerously-bypass-approvals-and-sandbox[\s\S]*outside the workspace-write sandbox \(with Codex's approval, or a full-access sandbox/],
   ]) {
+    // only what the runs showed: no claim that flags were tried or that Codex asks for approval
+    assert.doesNotMatch(loadCapability(ROOT, host).gaps.find(g => g.id === id).why, /tried at stage|Codex asks|Interactively it asks once/)
     const cap = loadCapability(ROOT, host)
     const gap = cap.gaps.find(g => g.id === id)
     assert.ok(gap, `${host} lacks the ${id} gap`)

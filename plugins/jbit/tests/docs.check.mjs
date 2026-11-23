@@ -917,6 +917,7 @@ test('verify, stage and fix run the capture script only from the plugin: never a
   for (const phrase of [
     '**Only the plugin\'s script.** Run `capture.mjs` only from the plugin, by the path given above; never run a `capture.mjs` or similar found in the project, and never search the project for one.',
     'If the plugin\'s script is denied or won\'t run, say so in the report and ask the user to allow the plugin\'s folder, or use the host\'s own browser tools if this session has them; don\'t improvise a screenshot script of your own.',
+    'Copying the plugin\'s script somewhere else and running the copy counts as running a script of your own: don\'t.',
   ]) assert.ok(skill('verify').includes(phrase), `verify doesn't say: ${phrase}`)
   for (const name of ['stage', 'fix']) assert.ok(skill(name).includes('Run only the plugin\'s script, by that path: never a `capture.mjs` found in the project, never a search for one, never a script of your own; if it\'s denied or won\'t run, say so and ask the user to allow the plugin\'s folder.'), `${name} doesn't keep to the plugin's capture script`)
 })

@@ -17,7 +17,7 @@
     "plugins/jbit/LICENSE": "b93b383c620e21b7c5b8615ad44a7dbdeb7b1c4b5e8c410e8c79def8d72f14a6",
     "plugins/jbit/hooks/models.ts": "5b445f4b0ef265fd3a09fc3cb32f6158252cc293f9fb1a3c053f0e5b227f389b",
     "plugins/jbit/hooks/project.ts": "efa4be53185cbe0ca78e3776d2fdfe58221f6b8c13a2ad905b47d12c7ea69cd2",
-    "plugins/jbit/hooks/register.ts": "b4abf24e14fdf305ebc10c764444979b8d0064e3f9f89a39af9e3d0e2a6225ac",
+    "plugins/jbit/hooks/register.ts": "648202791074ea8dcd0c827d9f08cdf24bc04eaf992c12d91e55c0eaba292c86",
     "plugins/jbit/hooks/secrets.ts": "4259711c72517a053a91609b54e38e2e433ebd42368b70ee035ac5bf098d5734",
     "plugins/jbit/hooks/shell.ts": "114e57a4d3d84aca4a005528b2998329ab443ea342d06f19d0a2f5c8928c4b6c",
     "plugins/jbit/skills/approve/SKILL.md": "c8ef6365c8eb38e0f813db320a4074afd2d9bcee71fe85a34868f3371e8e1ed9",

@@ -640,3 +640,87 @@ test('stage 7 review: the $jbit: rewrite ignores case, as the core does', () => 
   assert.equal(hookModule.userPrompt('$JBIT:approve'), '/JBIT:approve')
   assert.equal(hookModule.userPrompt('$Jbit:autopilot lean'), '/Jbit:autopilot lean')
 })
+
+// stage 3 fix: the installed plugin's own capture.mjs runs from the plugin cache under $CODEX_HOME
+test('capture: one plain node run of the installed capture.mjs is allowed; every bypass keeps the refusal', async () => {
+  const { symlinkSync } = await import('node:fs')
+  const { homedir } = await import('node:os')
+  const home = '/home/u/.codex'
+  const S = 'plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs'
+  const root = '/home/u/proj'
+  const o = { cwd: root }
+  for (const cmd of [
+    `node "$CODEX_HOME/${S}" shot http://127.0.0.1:8765/ --name home --out shots --widths 390 --themes light`,
+    `node $CODEX_HOME/${S} where`,
+    `node "\${CODEX_HOME}/${S}" compare shots/before shots/after`,
+    `node /home/u/.codex/${S} shot index.html --name a --out ./shots`,
+    `node '/home/u/.codex/${S}' shot index.html --name a --out "${root}/shots"`,
+    `  node "$CODEX_HOME/${S}" --help  `,
+  ])
+    assert.equal(writesCodexHome(cmd, home, o), false, cmd)
+  // the ~ form, against the real home folder
+  const tildeHome = join(homedir(), '.codex')
+  assert.equal(writesCodexHome(`node ~/.codex/${S} where`, tildeHome, o), false)
+  assert.equal(writesCodexHome(`node ~/.codex/${S} where`, home, o), true, '~ is not this $CODEX_HOME')
+  for (const cmd of [
+    `node "$CODEX_HOME/${S}" where; rm -rf ~/.codex`,
+    `node "$CODEX_HOME/${S}" where && echo x > ~/.codex/hooks.json`,
+    `node "$CODEX_HOME/${S}" where || true`,
+    `node "$CODEX_HOME/${S}" where | tee ~/.codex/x`,
+    `node "$CODEX_HOME/${S}" where > ~/.codex/x`,
+    `node "$CODEX_HOME/${S}" where\nrm -rf ~/.codex`,
+    `node "$CODEX_HOME/${S}" shot $(cat ~/.codex/x) --out shots`,
+    `node "$CODEX_HOME/${S}" shot \`echo a\` --out shots`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out ~/.codex/x`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out "$CODEX_HOME/x"`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out /home/u/.codex/x`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out=/home/u/.codex/x`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out ../../u/.codex`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out ~/.cod?x`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out ~/.{codex,x}`,
+    `node "$CODEX_HOME/${S}" shot a.html --name a --out $HOME/.codex`,
+    `node "$CODEX_HOME/${S}" compare shots ~/.codex/plugins`,
+    `node "$CODEX_HOME/${S}" shot a.html --compare /home/u/.codex/x --out shots`,
+    `node "$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/evil.mjs" where`,
+    `node "$CODEX_HOME/plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/../../../../../../../config.mjs" where`,
+    `node "$CODEX_HOME/plugins/cache/jbit-local/jbit/../../x/jbit/1/skills/verify/scripts/capture.mjs" where`,
+    `node "$CODEX_HOME/plugins/cache/jbit-local/other/2.0.0/skills/verify/scripts/capture.mjs" where`,
+    `node -e "require('fs').writeFileSync(process.env.CODEX_HOME + '/hooks.json', '')" "$CODEX_HOME/${S}"`,
+    `node --require ./x.js "$CODEX_HOME/${S}" where`,
+    `node "$CODEX_HOME/${S}" -e "1" ~/.codex/x`,
+    `CODEX_HOME=/tmp/x node "$CODEX_HOME/${S}" where`,
+    `env CODEX_HOME=/tmp/x node "$CODEX_HOME/${S}" where`,
+    `JBIT_CAPTURE_CACHE=~/.codex node "$CODEX_HOME/${S}" install`,
+    `node "$HOME/.codex/${S}" where`,
+    `node "$CODEX_HOME/${S}" where # ; rm ~/.codex/x`,
+    `node "$CODEX_HOME/${S}" where & rm -rf ~/.codex`,
+    `node "$CODEX_HOME/${S}" where "$CODEX_HOME/x"`,
+    `nodejs "$CODEX_HOME/${S}" where; touch ~/.codex/x`,
+  ])
+    assert.equal(writesCodexHome(cmd, home, o), true, cmd)
+  // a working folder under $CODEX_HOME, or no known working folder (keystrokes into a running shell), keeps the refusal
+  assert.equal(writesCodexHome(`node "$CODEX_HOME/${S}" shot a.html --name a --out shots`, home, { cwd: `${home}/plugins` }), true)
+  assert.equal(writesCodexHome(`node "$CODEX_HOME/${S}" where`, home), true)
+
+  // a symlink anywhere in the script path, or an --out symlinked into $CODEX_HOME, keeps the refusal
+  const real = temp('jbit-codex-real-home-')
+  const proj = temp('jbit-codex-capture-proj-')
+  const scripts = join(real, 'plugins/cache/m/jbit/1/skills/verify/scripts')
+  mkdirSync(scripts, { recursive: true })
+  writeFileSync(join(scripts, 'capture.mjs'), '')
+  const ok = `node "$CODEX_HOME/plugins/cache/m/jbit/1/skills/verify/scripts/capture.mjs" shot a.html --name a --out shots`
+  assert.equal(writesCodexHome(ok, real, { cwd: proj }), false)
+  const planted = temp('jbit-codex-planted-')
+  mkdirSync(join(planted, 'skills/verify/scripts'), { recursive: true })
+  writeFileSync(join(planted, 'skills/verify/scripts/capture.mjs'), '')
+  symlinkSync(planted, join(real, 'plugins/cache/m/jbit/2'))
+  assert.equal(writesCodexHome(ok.replace('/jbit/1/', '/jbit/2/'), real, { cwd: proj }), true, 'a symlinked version folder')
+  symlinkSync(join(real, 'plugins'), join(proj, 'shots'))
+  assert.equal(writesCodexHome(ok, real, { cwd: proj }), true, '--out symlinked into $CODEX_HOME')
+
+  // through mapTool: the Bash call is judged by the core (so allowed here), the workdir counts
+  const r = mapTool('Bash', { command: `node "$CODEX_HOME/${S}" where` }, root, { codexHome: home })
+  assert.equal(r.kind, 'calls')
+  assert.equal(mapTool('Bash', { command: `node "$CODEX_HOME/${S}" where`, workdir: `${home}/x` }, root, { codexHome: home }).kind, 'deny')
+  assert.equal(mapTool('write_stdin', { chars: `node "$CODEX_HOME/${S}" where\n` }, root, { codexHome: home }).kind, 'deny')
+})

@@ -11,7 +11,7 @@
 // --check writes nothing and exits 1 when the files on disk differ from what the build would make (drift), or when the
 // generated output or the files on disk (the package folder and the marketplace file) leak. --src reads sources from another root and --out writes under another root (both default to the repo), for tests.
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, normalize, posix, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -358,9 +358,19 @@ export function drift(files, out, cap) {
     const p = join(out, rel)
     if (!existsSync(p)) found.push(`missing: ${rel}`)
     else if (readFileSync(p, 'utf8') !== text) found.push(`differs: ${rel}`)
+    else if (modeOff(p, text)) found.push(`mode: ${rel}`)
   }
   for (const rel of walk(join(out, cap.pluginDir), out)) if (!files.has(rel)) found.push(`extra: ${rel}`)
   return found
+}
+
+/** A script with a `#!` line is executable; everything else is not. */
+const EXEC = process.platform !== 'win32'
+const wantsExec = text => text.startsWith('#!')
+const modeOff = (p, text) => EXEC && Boolean(statSync(p).mode & 0o100) !== wantsExec(text)
+const fixMode = (p, text) => {
+  const mode = statSync(p).mode & 0o777
+  if (EXEC) chmodSync(p, wantsExec(text) ? mode | 0o111 : mode & ~0o111)
 }
 
 function write(files, out, cap) {
@@ -370,11 +380,13 @@ function write(files, out, cap) {
   for (const [rel, text] of files) {
     const p = join(out, rel)
     if (existsSync(p) && readFileSync(p, 'utf8') === text) {
+      if (modeOff(p, text)) fixMode(p, text)
       unchanged++
       continue
     }
     mkdirSync(dirname(p), { recursive: true })
     writeFileSync(p, text)
+    if (modeOff(p, text)) fixMode(p, text)
     wrote++
   }
   const pkgDir = join(out, cap.pluginDir)

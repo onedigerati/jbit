@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync, execFileSync } from 'node:child_process'
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync, appendFileSync, statSync } from 'node:fs'
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync, appendFileSync, statSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -827,11 +827,32 @@ test('copilot screenshot gap: what the live run proved, the headless --add-dir n
 
 test('screenshot gaps: Copilot and Codex each list what they lose of screenshot evidence, in their README block', () => {
   const readme = readFileSync(join(ROOT, 'README.md'), 'utf8')
-  for (const [host, id] of [['copilot', 'capture-path-outside-project'], ['codex', 'capture-path-unproven']]) {
+  // Copilot: proven live, but headless needs --add-dir; Codex: proven live, but its workspace-write sandbox kills Chromium
+  for (const [host, id, says] of [
+    ['copilot', 'capture-path-outside-project', /--add-dir <plugin folder>/],
+    ['codex', 'capture-sandbox', /workspace-write[\s\S]*danger-full-access/],
+  ]) {
     const cap = loadCapability(ROOT, host)
     const gap = cap.gaps.find(g => g.id === id)
     assert.ok(gap, `${host} lacks the ${id} gap`)
-    assert.match(gap.why, /<verify skill folder>\/scripts\/capture\.mjs/)
+    assert.match(gap.why, says)
     assert.ok(readmeBlock(readme, cap).includes(`- **${gap.what}.** ${gap.why}`), `${host}'s README block lacks the screenshot gap`)
   }
+  assert.ok(!loadCapability(ROOT, 'codex').gaps.some(g => g.id === 'capture-path-unproven'), 'codex still calls the capture path unproven')
+})
+
+test('a generated script with a #! line is written executable, kept so on rebuild, and --check reports one that is not', { skip: process.platform === 'win32' }, () => {
+  const out = temp()
+  assert.equal(build('--out', out).status, 0)
+  const capture = join(out, 'plugins/jbit-copilot/skills/verify/scripts/capture.mjs')
+  assert.ok(statSync(capture).mode & 0o100, 'capture.mjs is not executable')
+  const plain = join(out, 'plugins/jbit-copilot/plugin.json')
+  assert.equal(statSync(plain).mode & 0o111, 0, 'plugin.json is executable')
+  chmodSync(capture, 0o644)
+  const r = build('--out', out, '--check')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /mode: plugins\/jbit-copilot\/skills\/verify\/scripts\/capture\.mjs/)
+  assert.equal(build('--out', out).status, 0)
+  assert.ok(statSync(capture).mode & 0o100, 'a rebuild leaves capture.mjs not executable')
+  assert.equal(build('--out', out, '--check').status, 0)
 })

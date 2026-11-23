@@ -2292,6 +2292,66 @@ test('changes the evidence: removing, moving, writing into it or a script naming
     'rm /repo/docs/evidence/stage-1/a.png',
   ])
     expect([line, changes(line)]).toEqual([line, true])
+})
+
+test('changes the evidence, conservatively: whole-tree git resets, parents, globs, braces, variables, piped targets and every redirect', () => {
+  const changes = (line: string) => parseCommands(line).some(c => changesEvidence(c, 'docs/PLAN.md', '/repo'))
+  for (const line of [
+    'git clean -fdX',
+    'git clean -fdx',
+    'git clean -fd',
+    'git clean -n src',
+    'git stash -u',
+    'git stash push --include-untracked',
+    'git stash --all',
+    'git stash push -ku -m wip',
+    'git restore .',
+    'git restore docs',
+    'git restore --source=HEAD~1 -- docs/evidence/stage-1',
+    'git restore',
+    'git reset --hard',
+    'git reset --hard HEAD~1',
+    'git checkout -- .',
+    'git checkout .',
+    'git checkout HEAD -- docs',
+    'git rm -r -q docs',
+    'rm -rf docs',
+    'rm -rf .',
+    'rm -rf ..',
+    'cd docs && rm -rf evidence',
+    'rm -r docs/evid*',
+    'rm -r docs/{evidence,x}',
+    'D=docs/evidence; rm -r $D',
+    'rm -r "$D"',
+    'rm -rf ~/x',
+    'ls docs/evidence/*.png | xargs rm',
+    "find docs -name '*.png' -delete",
+    "find . -name '*.png' -exec rm {} +",
+    'mv docs /tmp/docs-old',
+    '/bin/mkdir x > docs/evidence/stage-3/report.md',
+    'mkdir -p x 2> docs/evidence/stage-3/log.txt',
+    'echo hi > $OUT',
+    'cd "$X" && rm a.png',
+  ])
+    expect([line, changes(line)]).toEqual([line, true])
+  for (const line of [
+    'git add docs/evidence',
+    'mkdir -p docs/evidence/stage-3',
+    'git checkout -- other/file',
+    'git restore src/a.ts',
+    'git stash',
+    'git stash push -m wip',
+    'git reset --soft HEAD~1',
+    'git reset',
+    'rm /tmp/x',
+    'rm src/a.js',
+    'rm -f src/*.js',
+    'rm -r docs/old',
+    "find src -name '*.tmp' -delete",
+    'echo ok > /dev/null',
+    'echo ok > docs/notes.md',
+  ])
+    expect([line, changes(line)]).toEqual([line, false])
   for (const line of [
     'git add docs/evidence/stage-1/report.md docs/evidence/stage-1/a.png',
     'git add -A docs/evidence',
@@ -2318,6 +2378,18 @@ test('a line that changes the evidence and commits is refused before it runs, wi
     'git rm -q docs/evidence/stage-2/home-390.png && git commit -qm "Stage 2"',
     "cat > docs/evidence/stage-2/report.md <<'EOF'\n# Stage 2\nEOF\ngit add docs/evidence && git commit -qm 'Stage 2'",
     "python3 - <<'EOF'\nimport os; os.remove('docs/evidence/stage-2/home-390.png')\nEOF\ngit commit -qam x",
+    'git clean -fdX && git commit -qm x',
+    'git stash -u && git commit -qm x',
+    'git restore . && git commit -qm x',
+    'git reset --hard && git commit -qm x',
+    'git checkout -- . && git commit -qm x',
+    'rm -rf docs && git commit -qm x',
+    'rm -r docs/evid* && git commit -qm x',
+    'rm -r docs/{evidence,x} && git commit -qm x',
+    'D=docs/evidence; rm -r $D && git commit -qm x',
+    'ls docs/evidence/*.png | xargs rm && git commit -qm x',
+    "find docs -name '*.png' -delete && git commit -qm x",
+    '/bin/mkdir x > docs/evidence/stage-3/report.md && git commit -qm x',
   ]) {
     const denied = await $.tool.call({ tool: 'Bash', command })
     expect([command, denied.deny?.split('\n')[1], denied.result]).toEqual([command, 'Make the evidence change in its own command first, then run the commit on its own line.', undefined])
@@ -2346,6 +2418,11 @@ test('staging the evidence with the commit, changing it in a separate command, o
     'git commit -qm "Stage 2"',
     'git commit -qm wip && rm docs/evidence/stage-2/scratch.png',
     'mkdir -p docs/evidence/stage-2 && git commit -qm wip',
+    'git add docs/evidence && git commit -qm wip',
+    'git checkout -- other/file && git commit -qm wip',
+    'git stash && git commit -qm wip',
+    'rm /tmp/x && git commit -qm wip',
+    'rm src/a.js && git commit -qm wip',
   ]) {
     const r = await $.tool.call({ tool: 'Bash', command })
     expect([command, r.deny, r.result]).toEqual([command, undefined, { text: 'ran' }])

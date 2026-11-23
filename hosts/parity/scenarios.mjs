@@ -74,6 +74,19 @@ export const SCENARIOS = [
     ],
   },
   {
+    name: 'a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs',
+    fixture: { committed: { 'docs/PLAN.md': TICKED, [REPORT]: reportWithShot(), [SHOT]: '\x89PNG\r\n' }, staged: { 'docs/PLAN.md': closed(TICKED) } },
+    steps: [
+      user('close stage 2'),
+      ...['git clean -fdX', 'rm -r docs/evid*'].map(change => ({
+        kind: 'tool',
+        tool: 'Bash',
+        input: { command: `${change} && git commit -m "Stage 2: share mode"` },
+        expect: { kind: 'deny', has: ['changes files under `docs/evidence/`', 'commits on the same line', 'its own command first'] },
+      })),
+    ],
+  },
+  {
     name: 'a secret in a staged commit is denied, named by kind and never by value',
     fixture: { committed: { 'docs/PLAN.md': TICKED }, staged: { 'src/client.ts': `export const token = "${FAKE_KEYS.GH}"\n` } },
     steps: [user('commit the client'), { ...commit('wire client'), expect: { kind: 'deny', has: ['src/client.ts:1: a GitHub token', 'environment variable'], lacks: [FAKE_KEYS.GH] } }],

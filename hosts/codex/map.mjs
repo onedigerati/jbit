@@ -63,11 +63,112 @@ const WRITES = new RegExp(
   ].join('|'),
 )
 
-/** A command that names $CODEX_HOME (or a `.codex` folder) and writes something: conservative on purpose. */
-export function writesCodexHome(command, codexHome) {
+const HOME_VAR = '\u0000CODEX_HOME\u0000'
+
+/**
+ * A command's words when it is nothing but plain words (bare, '…' or "…"), or null: no operators, redirects, globs,
+ * braces, substitution, escapes or comments. `$CODEX_HOME`/`${CODEX_HOME}` may only open a word, and becomes HOME_VAR.
+ */
+function plainWords(command) {
+  const out = []
+  let i = 0
+  const s = command.trim()
+  while (i < s.length) {
+    let word = ''
+    while (i < s.length && s[i] !== ' ' && s[i] !== '\t') {
+      const c = s[i]
+      if (c === "'") {
+        const j = s.indexOf("'", i + 1)
+        if (j < 0) return null
+        word += s.slice(i + 1, j)
+        i = j + 1
+      } else if (c === '"') {
+        const j = s.indexOf('"', i + 1)
+        if (j < 0) return null
+        let inner = s.slice(i + 1, j)
+        if (!word) {
+          const m = /^\$(?:CODEX_HOME|\{CODEX_HOME\})(?=\/)/.exec(inner)
+          if (m) inner = HOME_VAR + inner.slice(m[0].length)
+        }
+        if (/[$`\\!"]/.test(inner)) return null
+        word += inner
+        i = j + 1
+      } else if (c === '$' && !word) {
+        const m = /^\$(?:CODEX_HOME|\{CODEX_HOME\})(?=\/)/.exec(s.slice(i))
+        if (!m) return null
+        word += HOME_VAR
+        i += m[0].length
+      } else if (c === '~' && !word && s[i + 1] === '/') {
+        word += `${homedir()}/`
+        i += 2
+      } else if (/[A-Za-z0-9_@%+=:,./-]/.test(c)) {
+        word += c
+        i++
+      } else return null
+    }
+    out.push(word)
+    while (s[i] === ' ' || s[i] === '\t') i++
+  }
+  return out
+}
+
+const CAPTURE_TAIL = /^\/plugins\/cache\/[A-Za-z0-9][\w.+-]*\/jbit\/[A-Za-z0-9][\w.+-]*\/skills\/verify\/scripts\/capture\.mjs$/
+
+const resolved = (path, base) => {
+  try {
+    return resolveInProject(path, base)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * The installed JBIT plugin running its own screenshot script from the plugin cache, and nothing else:
+ * `node <$CODEX_HOME>/plugins/cache/<m>/jbit/<v>/skills/verify/scripts/capture.mjs <args>`, plain words only, no symlink
+ * on the way to the script, run from a known folder outside $CODEX_HOME, and no argument that names or lands under it.
+ */
+export function runsOwnCapture(command, codexHome, cwd) {
+  if (!str(command) || !str(codexHome) || !str(cwd)) return false
+  const words = plainWords(command)
+  if (!words || words.length < 2 || words[0] !== 'node') return false
+  const home = codexHome.replace(/\/+$/, '')
+  const script = words[1].startsWith(HOME_VAR) ? home + words[1].slice(HOME_VAR.length) : words[1]
+  if (script.includes('..') || script.includes(HOME_VAR) || !script.startsWith(`${home}/`)) return false
+  const tail = script.slice(home.length)
+  if (!CAPTURE_TAIL.test(tail)) return false
+  // the script is where its path says: no symlinked folder in the cache leads somewhere else
+  const realHome = resolved(home, '/')
+  if (!realHome || resolved(script, '/') !== realHome + tail) return false
+  const realCwd = resolved(cwd, '/')
+  if (!realCwd || underCodexHome(realCwd, codexHome) || underCodexHome(realCwd, realHome)) return false
+  const names = homeNames(codexHome)
+  for (const arg of words.slice(2)) {
+    if (arg.includes(HOME_VAR) || names.test(arg)) return false
+    for (const p of [arg, arg.slice(arg.indexOf('=') + 1)]) {
+      if (!p) continue
+      const at = resolved(p, realCwd)
+      if (!at || underCodexHome(at, codexHome) || underCodexHome(at, realHome)) return false
+    }
+  }
+  // `install` fills the capture cache the environment names
+  if (words[2] === 'install' || words[2] === '--install') {
+    for (const c of [process.env.JBIT_CAPTURE_CACHE, process.env.XDG_CACHE_HOME].filter(str)) {
+      const at = resolved(c, realCwd)
+      if (!at || underCodexHome(at, codexHome) || underCodexHome(at, realHome)) return false
+    }
+  }
+  return true
+}
+
+/**
+ * A command that names $CODEX_HOME (or a `.codex` folder) and writes something: conservative on purpose. `cwd` is
+ * the folder a Bash command runs in, when known; only then can the installed capture script run (runsOwnCapture).
+ */
+export function writesCodexHome(command, codexHome, { cwd } = {}) {
   if (typeof command !== 'string') return false
   const names = homeNames(codexHome)
   if (!names.test(command)) return false
+  if (runsOwnCapture(command, codexHome, cwd)) return false
   // a cd into the folder followed by any command runs that command there
   for (const m of command.matchAll(/(?:^|[;\n|&('"])\s*(?:cd|pushd)\s+([^\s;&|)]+)([\s\S]*)/g)) {
     if (names.test(m[1]) && /[;\n|&]\s*[^\s;&|)]/.test(m[2])) return true
@@ -125,7 +226,9 @@ const CHDIR = /(?:^|[\s;|&('"])(?:cd|pushd|popd|chdir)(?:\s|$|;)|\s(?:-C|--chdir
  * `apply_patch` command, against `input.workdir` when it has one (inside the project, or denied).
  */
 function shellCalls(tool, command, root, codexHome, input = {}) {
-  if (writesCodexHome(command, codexHome)) return deny(HOME_REASON('a shell write'))
+  // a Bash call runs in its workdir, else the project; keystrokes into a running shell run wherever it is
+  const cwd = tool !== 'Bash' ? undefined : input.workdir === undefined ? root : str(input.workdir) && !/\\|^[A-Za-z]:/.test(input.workdir) ? resolved(input.workdir, resolved(root, '/') ?? root) : undefined
+  if (writesCodexHome(command, codexHome, { cwd })) return deny(HOME_REASON('a shell write'))
   const sub = codexConfigCommand(command)
   if (sub) return deny(`JBIT blocked this call: \`codex ${sub}\` rewrites Codex's own config, plugins or sign-in under \`$CODEX_HOME\`, and a change there can silently turn JBIT's hooks off. Ask the user to run it themselves.`)
   const bash = { tool: 'Bash', command }

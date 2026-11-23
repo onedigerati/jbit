@@ -641,6 +641,40 @@ test('stage 7 review: the $jbit: rewrite ignores case, as the core does', () => 
   assert.equal(hookModule.userPrompt('$Jbit:autopilot lean'), '/Jbit:autopilot lean')
 })
 
+// stage 3 fix round 2: capture.mjs takes its command anywhere in the words, and fills its cache wherever that lands
+test('capture: the cache the script would use is checked on every call, wherever install sits and from the default path too', async () => {
+  const { homedir } = await import('node:os')
+  const S = 'plugins/cache/jbit-local/jbit/2.0.0/skills/verify/scripts/capture.mjs'
+  const o = { cwd: '/home/u/proj' }
+  const saved = { JBIT_CAPTURE_CACHE: process.env.JBIT_CAPTURE_CACHE, XDG_CACHE_HOME: process.env.XDG_CACHE_HOME, LOCALAPPDATA: process.env.LOCALAPPDATA }
+  try {
+    delete process.env.XDG_CACHE_HOME
+    delete process.env.LOCALAPPDATA
+    const home = '/home/u/.codex'
+    process.env.JBIT_CAPTURE_CACHE = `${home}/x`
+    for (const cmd of [
+      `node "$CODEX_HOME/${S}" --timeout 1 install`,
+      `node "$CODEX_HOME/${S}" --project . --install`,
+      `node "$CODEX_HOME/${S}" --viewport-only install`,
+      `node "$CODEX_HOME/${S}" where`,
+      `node "$CODEX_HOME/${S}" shot a.html --name a --out shots`,
+    ])
+      assert.equal(writesCodexHome(cmd, home, o), true, cmd)
+    delete process.env.JBIT_CAPTURE_CACHE
+    process.env.XDG_CACHE_HOME = home
+    assert.equal(writesCodexHome(`node "$CODEX_HOME/${S}" --timeout 1 install`, home, o), true, 'XDG_CACHE_HOME under $CODEX_HOME')
+    delete process.env.XDG_CACHE_HOME
+    assert.equal(writesCodexHome(`node "$CODEX_HOME/${S}" --timeout 1 install`, home, o), false, 'the default cache is outside $CODEX_HOME')
+    // $CODEX_HOME holding the default cache: ~/.cache (Linux), ~/Library/Caches (macOS), %LOCALAPPDATA% (Windows)
+    const def = process.platform === 'darwin' ? join(homedir(), 'Library', 'Caches')
+      : process.platform === 'win32' ? join(homedir(), 'AppData', 'Local') : join(homedir(), '.cache')
+    for (const cmd of [`node "$CODEX_HOME/${S}" --timeout 1 install`, `node "$CODEX_HOME/${S}" --project . --install`, `node "$CODEX_HOME/${S}" where`])
+      assert.equal(writesCodexHome(cmd, def, o), true, `default cache under $CODEX_HOME: ${cmd}`)
+  } finally {
+    for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v
+  }
+})
+
 // stage 3 fix: the installed plugin's own capture.mjs runs from the plugin cache under $CODEX_HOME
 test('capture: one plain node run of the installed capture.mjs is allowed; every bypass keeps the refusal', async () => {
   const { symlinkSync } = await import('node:fs')

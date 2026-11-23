@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "sources": {
     "hosts/build.mjs": "2649b857c559852b1b04900b825c66981db4ebcaf5f90719ac4e031bbc2fa963",
-    "hosts/copilot/capability.json": "1ee631b9e737a7f45e1a73883806be05795e578d4717151dbff22fea179c5cac",
+    "hosts/copilot/capability.json": "1455fe9a6f6169dd8e920cb904e70e9071bab5ec6ed371a7c35d1a241f7899c8",
     "hosts/copilot/hook.mjs": "580b02c9841a89838a6e7b4e9993f91327b0d7b0d16bfd33770e3383fc1844f8",
     "hosts/copilot/map.mjs": "b74eb5ac930e2004caaf1fa808e912d0c6df4a7c9616623501b6c64a10f4a368",
     "hosts/core/dispatch.mjs": "12243d9f6bd85fdb47378aca3c26f4c93295a571cb3433a91711010954c302e8",
@@ -26,7 +26,7 @@
     "plugins/jbit/skills/resume/SKILL.md": "dfa85ada47d877a5722ed1394485e64941b2b876ae7d63b6dc378d6989ee7248",
     "plugins/jbit/skills/review/SKILL.md": "39e60af65b075f9fb7ae42aafac260d14f95bf2375b4c0a0cdb766f236b9351e",
     "plugins/jbit/skills/stage/SKILL.md": "b0d42245fe09924a1b4d478a843ba8bc87e124413a2169667e417faa2109b960",
-    "plugins/jbit/skills/verify/SKILL.md": "95b807a56d1bfc2a88a756be3854f69d90edd9f2db3d52fb5e5bb997e9c0c3b0",
+    "plugins/jbit/skills/verify/SKILL.md": "c924ec982762b114597f7dba1650041d9a1ec82c1414dd5c39b9aa97bf287428",
     "plugins/jbit/skills/verify/scripts/capture.mjs": "1d28c531e7fdd3dae224c154f730278551cd9d52d79848c6a486a69ba277a199"
   }
 }

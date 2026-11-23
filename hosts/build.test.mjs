@@ -787,3 +787,19 @@ test('codex: a package whose adapter fails to import still denies a PreToolUse w
   assert.equal(ok.status, 0, ok.stderr)
   assert.equal(ok.stdout.trim(), '')
 })
+
+// ---- skill script paths ----
+
+test('no ${CLAUDE_ text is left anywhere in a generated skill, and the capture script ships beside the verify skill', () => {
+  for (const host of ['copilot', 'codex']) {
+    const { files } = generate({ src: ROOT, host })
+    const pkg = loadCapability(ROOT, host).pluginDir
+    const skills = [...files].filter(([f]) => f.startsWith(`${pkg}/skills/`) && f.endsWith('/SKILL.md'))
+    assert.ok(skills.length > 0, `${host}: no skills generated`)
+    for (const [file, text] of skills) assert.ok(!text.includes('${CLAUDE_'), `${host}: ${file} still has \${CLAUDE_ text`)
+    const capture = files.get(`${pkg}/skills/verify/scripts/capture.mjs`)
+    assert.equal(capture, readFileSync(join(ROOT, 'plugins/jbit/skills/verify/scripts/capture.mjs'), 'utf8'), `${host}: capture.mjs isn't copied unchanged`)
+    assert.match(files.get(`${pkg}/skills/verify/SKILL.md`), /node "scripts\/capture\.mjs"/)
+    for (const s of ['stage', 'fix']) assert.match(files.get(`${pkg}/skills/${s}/SKILL.md`), /node "\.\.\/verify\/scripts\/capture\.mjs"/, `${host}: ${s} doesn't point at ../verify/scripts/capture.mjs`)
+  }
+})

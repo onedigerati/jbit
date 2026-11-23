@@ -835,3 +835,72 @@ test('no dated decision was deleted at 2.0.0, or since the last commit', () => {
   assert.ok(count >= DECISIONS_AT_2_0_0, `docs/decisions.md has ${count} dated decisions, fewer than the ${DECISIONS_AT_2_0_0} at 2.0.0`)
   if (datedAtHead !== null) assert.ok(count >= datedAtHead, `docs/decisions.md has ${count} dated decisions, fewer than the ${datedAtHead} at HEAD`)
 })
+
+// Screenshots as evidence (2026-11-23): the capture script, its Playwright order, the install yes, before/after shots.
+test('verify takes screenshots with the capture script at the check\'s state, widths and themes, Playwright from the project, the host\'s browser tools, then the cache after a logged yes', () => {
+  const text = skill('verify')
+  for (const phrase of [
+    'Take screenshots with `node "${CLAUDE_SKILL_DIR}/scripts/capture.mjs"` at the state, widths and themes the check names',
+    'with a `--steps` file to reach the state and `--mask` for anything personal on screen',
+    'in this order: the project\'s own Playwright (the script finds it), else the host\'s own browser tools if this session has them (save their shots under the same names), else the JBIT cache',
+    'Exit 3 means none of them: ask the user once per project whether to run `install` (about 130 MB, outside the repo), log their answer in the plan as a dated decision, and never install without their yes',
+    'Exit 4 means the browser won\'t launch: print the command it gives for the user to run, never run it yourself',
+    '# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.',
+    'Don\'t screenshot a screen showing real personal data',
+  ]) assert.ok(text.includes(phrase), `verify doesn't say: ${phrase}`)
+})
+
+test('verify has every screenshot Read and described in one line in the report, and compares re-captured shots at the last stage', () => {
+  const text = skill('verify')
+  for (const phrase of [
+    'Read each image, and write one line per image in the report on what it shows',
+    'Every screenshot gets one line under `Screenshots:`, after the table, saying what it shows, written after you Read the image.',
+    'Screenshots:\n- [empty-cart-390-dark.png](empty-cart-390-dark.png): ',
+    'Re-capture each earlier screenshot check with the same names',
+    'then run `compare docs/evidence/stage-<k> docs/evidence/stage-<n>/rerun-<k>` against the saved ones. A change over the threshold is a fail, unless a later stage meant it: then say which stage',
+    'The JBIT hook refuses to close a stage whose report links an image that isn\'t in the stage folder.',
+  ]) assert.ok(text.includes(phrase), `verify doesn't say: ${phrase}`)
+})
+
+test('stage takes "before" shots of a UI stage\'s screens into before/ with the names verify gives the after shots, and verify compares them', () => {
+  const stage = skill('stage')
+  for (const phrase of [
+    '**"Before" shots for a stage that changes UI.** Before building, capture the screens it changes as they are now',
+    '`node "${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/`',
+    'Use the same names verify will use for the after shots, so they sit side by side',
+    'a change there is expected, not a fail',
+  ]) assert.ok(stage.includes(phrase), `stage doesn't say: ${phrase}`)
+  assert.ok(stage.indexOf('"Before" shots') < stage.indexOf('**Foundation yourself'), 'stage takes the before shots after building starts')
+  assert.ok(skill('verify').includes('sit in `before/` with the same names as the after shots. Run `compare docs/evidence/stage-<n>/before docs/evidence/stage-<n>` to show what changed: a change there is expected, not a fail.'), 'verify doesn\'t compare before/ with the after shots')
+})
+
+test('plan writes screenshot proofs with state, widths and themes, and asks once for a UI plan whether the repo commits screenshots, logging it', () => {
+  const text = skill('plan')
+  for (const phrase of [
+    'A screenshot proof names the state, widths and themes: `proof: screenshot of the empty cart at 390 and 1280, light and dark — a test can\'t judge the layout`',
+    'For a plan with UI work, ask once whether this repo commits screenshots (the image lines come out of `docs/evidence/.gitignore`) or keeps them local (the default), and log the answer as a decision; once it\'s logged, don\'t ask again.',
+  ]) assert.ok(text.includes(phrase), `plan doesn't say: ${phrase}`)
+  assert.ok(skill('verify').includes('leave out the image lines when the plan logs that this repo commits screenshots'), 'verify doesn\'t honour a logged answer to commit screenshots')
+})
+
+test('fix takes its one look with the same capture script, its captures in the scratchpad', () => {
+  const text = skill('fix')
+  for (const phrase of [
+    'taken with the same script as `jbit:verify` (`node "${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs" shot <url> --name <screen> --out <scratchpad>`)',
+    'Captures go in the scratchpad: a fix has no evidence folder.',
+  ]) assert.ok(text.includes(phrase), `fix doesn't say: ${phrase}`)
+})
+
+test('the plugin README\'s Evidence section describes the capture script, before and after shots, the one-time install yes and the image check', () => {
+  const s = readmes.plugin
+  const evidence = s.slice(s.indexOf('### Evidence'), s.indexOf('### Development'))
+  for (const phrase of [
+    'Screenshots come from a small capture script in the verify skill (`skills/verify/scripts/capture.mjs`)',
+    'It uses the project\'s own Playwright first, then the host\'s browser tools, then a pinned copy',
+    'That copy is installed only after you say yes, once per project, and your answer is logged in the plan.',
+    '`jbit:stage` takes "before" shots into `docs/evidence/stage-<n>/before/` before building, and verify\'s "after" shots sit beside them with the same names',
+    'The verifier looks at every screenshot and writes a line in the report on what each one shows.',
+    'The evidence gate refuses to close a stage whose report links an image that isn\'t in the stage folder.',
+  ]) assert.ok(evidence.includes(phrase), `the plugin README's Evidence section doesn't say: ${phrase}`)
+  assert.match(s, /It also refuses a report that links an image \(`\.png`, `\.jpg`, `\.jpeg`, `\.webp`, `\.gif`\) missing from the working tree, naming the file, or a link that leaves the stage folder/)
+})

@@ -27,12 +27,16 @@ Run the stack's audit if it's available without installing anything: `npm audit 
 
 For each check in the plan's `## Now`, use the proof it names:
 
-- **Web UI**: start the app (reuse a dev server that's already running; the built-in `run` skill knows how to launch most project types), drive it with Playwright or the project's browser tooling, take screenshots at the states the check describes, and look at them. Check the console for errors. Check a phone-width viewport when layout matters.
+- **Web UI**: start the app (reuse a dev server that's already running; the built-in `run` skill knows how to launch most project types), and drive it with Playwright or the project's browser tooling. Take screenshots with `node "scripts/capture.mjs"` at the state, widths and themes the check names: `shot <url> --name empty-cart --out docs/evidence/stage-<n> --widths 390,1280 --themes light,dark`, with a `--steps` file to reach the state and `--mask` for anything personal on screen. It writes `<name>-<width>-<theme>.png` and `<name>-console.txt`; exit 1 means the page failed to load or logged an error, and the console file says which. Check a phone-width viewport when layout matters.
+- **Where Playwright comes from**, in this order: the project's own Playwright (the script finds it), else the host's own browser tools if this session has them (save their shots under the same names), else the JBIT cache. Exit 3 means none of them: ask the user once per project whether to run `install` (about 130 MB, outside the repo), log their answer in the plan as a dated decision, and never install without their yes. A logged answer stands; don't ask again. On a no, the check can't be shown: report it fail, saying why. Exit 4 means the browser won't launch: print the command it gives for the user to run, never run it yourself.
+- **Look at every screenshot.** Read each image, and write one line per image in the report on what it shows (step 5). A screenshot nobody looked at proves nothing.
 - **API or service**: real requests (`curl`, a short script) for the success path and at least one bad input.
 - **CLI**: run it with realistic arguments and with a wrong one.
 - **Library or logic**: the tests are the proof; confirm a test covers the check, and that it fails when the behavior is broken (break it briefly if in doubt).
 
 **At the plan's last stage, re-run the earlier stages' hand-proven checks.** When the stage being verified is the last one in `## Stages`, also re-run every earlier stage's check that wasn't proven by a test (a CLI run, a request, a screenshot, a command); the suite run in step 1 already covered the tests. `## Now` holds only the current stage, so find them in each earlier stage's `docs/evidence/stage-<k>/report.md`: its rows, and the files they link, show what was run. For a stage with no report, use its line in `## Stages`. Run each the way it was proven then. One that passed then and fails now is a regression: report it as fail, never drop it or put it down to an earlier stage.
+
+Re-capture each earlier screenshot check with the same names into `docs/evidence/stage-<n>/rerun-<k>/`, then run `compare docs/evidence/stage-<k> docs/evidence/stage-<n>/rerun-<k>` against the saved ones. A change over the threshold is a fail, unless a later stage meant it: then say which stage, and look at the new shot. Saved shots stay local by default; if they aren't there, say so in the row and describe the new ones.
 
 Keep throwaway scripts in the scratchpad. When verifying a plan stage, everything that proves a check goes in the repo (step 4).
 
@@ -43,9 +47,10 @@ Whenever a plan stage is verified, write its evidence, including when the user a
 `<n>` is the number of the stage being verified: the one in `## Now`, unless asked about another. Save the proof for each check in `docs/evidence/stage-<n>/` as you go:
 
 - Command output that proves a check (test run, CLI run, request and response) as a text file, one per proof, named for what it shows: `tests.txt`, `cli-sample.txt`, `curl-bad-input.txt`. Put the command on the first line.
-- Screenshots, Playwright traces and videos.
+- Screenshots, named by the script, and Playwright traces and videos.
+- A UI stage's "before" shots, which `jbit:stage` takes before building, sit in `before/` with the same names as the after shots. Run `compare docs/evidence/stage-<n>/before docs/evidence/stage-<n>` to show what changed: a change there is expected, not a fail.
 
-If `docs/evidence/.gitignore` doesn't exist, create it:
+If `docs/evidence/.gitignore` doesn't exist, create it (leave out the image lines when the plan logs that this repo commits screenshots):
 
 ```
 # Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.
@@ -77,10 +82,13 @@ Verified <date> on <short commit>, plus uncommitted changes if any
 |---|---|---|
 | <check, as written in Now> | pass | [cli-sample.txt](cli-sample.txt) |
 | <check> | fail | [tests.txt](tests.txt): `sums amounts in cents` expected 139, got 138 |
-| <check> | pass | [checkout-phone.png](checkout-phone.png) (local) |
+| <check> | pass | [empty-cart-390-dark.png](empty-cart-390-dark.png) (local), described below |
 
 Project checks: type check pass · lint pass · tests 12/12 ([tests.txt](tests.txt)) · build pass
 Audit: `npm audit --omit=dev`: 0 high, 0 critical
+
+Screenshots:
+- [empty-cart-390-dark.png](empty-cart-390-dark.png): the empty cart at phone width, dark theme; one column, "Your cart is empty" and a Shop button, nothing cut off.
 
 ## History
 - <date> · <check> failed: <one line>. Fixed: <one line>.
@@ -88,6 +96,8 @@ Audit: `npm audit --omit=dev`: 0 high, 0 critical
 
 - One row per check in `## Now` (for an earlier stage, per thing its line in `## Stages` promises). A failing check is a fail row with its output saved and linked, never dropped.
 - At the plan's last stage, each re-run check gets its own row after those, in the same table: `Re-run of stage <k>: <check, as written in its report>`, pass or fail, with its evidence like any row.
+- Every screenshot gets one line under `Screenshots:`, after the table, saying what it shows, written after you Read the image.
+- The JBIT hook refuses to close a stage whose report links an image that isn't in the stage folder.
 - Escape a `|` inside a check's text as `\|` so the row keeps three columns.
 - Evidence is a relative link to a file in the folder, or a test name and the command that ran it. Every link points to a file that exists.
 - Link every file you saved. Mark each one git ignores as `(local)`: `git check-ignore -q <file>` succeeds for those.
@@ -115,4 +125,5 @@ JBIT was written for Claude Code; this copy is generated for GitHub Copilot CLI.
 - **Questions.** Where a skill says to ask the user (AskUserQuestion on Claude Code), ask in the chat and wait for the reply.
 - **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a `task` agent with `agent_type: "code-review"` (seen working), or a fresh `general-purpose` agent briefed with the same lenses. `security-review` is listed in the `task` tool's agent types but wasn't seen called; if it fails, brief a fresh `general-purpose` agent with the security lens.
 - **Instructions.** Copilot reads `CLAUDE.md` too; also read `AGENTS.md` and `.github/copilot-instructions.md` when they exist.
+- **Script paths.** A script path in a skill (`scripts/capture.mjs`, `../verify/scripts/capture.mjs`) is relative to the folder holding that skill's `SKILL.md`, not the working directory: run it by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project.
 - **Tools.** Bash → `bash`, `write_bash`; Edit → `apply_patch`, `edit`, `str_replace_editor`; Write → `apply_patch`, `create`; Read → `view`; Glob → `glob`; Grep → `grep`; Agent → `task`; Skill → `skill`; WebFetch → `web_fetch`; WebSearch → `web_search`; AskUserQuestion → `ask_user`.

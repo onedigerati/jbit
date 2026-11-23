@@ -1,87 +1,52 @@
 # JBIT plan
 
 ## Goal
-Bring as much of JBIT as each host can carry to GitHub Copilot CLI, then OpenAI Codex CLI, with no change at all to the Claude Code plugin. `plugins/jbit/` stays the source, untouched; a build step generates `plugins/jbit-copilot/` and `plugins/jbit-codex/` from it, each with its own capability file, its own marketplace entry, and the hook ported to a Node command-hook script. Done when, for each host, an isolated install from this repo runs a plan through a stage close headlessly, the commit gate and secret guard refuse what they refuse on Claude Code, and the README lists what that host can't do; and throughout, `plugins/jbit/` and `.claude-plugin/` are byte-identical to `c087d40`, with the suite, docs check and validate green. Pushing is a separate step that waits for the user.
+Make screenshots first-class evidence for UI and UX work, on every host JBIT ships to. The plugin carries a small capture script in the verify skill (`plugins/jbit/skills/verify/scripts/capture.mjs`). It gets Playwright from the project first, then the host's own browser tools, then a pinned install (`playwright-core@1.65.0` and Chromium's headless shell, about 130 MB) into a JBIT cache outside the repo, made only after the user says yes once per project. There is no bundled MCP server. A plan's screenshot proof names the state, widths and themes; `jbit:stage` captures "before" shots before building, and `jbit:verify` captures "after" shots. The fresh verifier looks at each one and writes a line on what it shows. The commit gate refuses to close a stage whose report links an image that isn't there. Re-runs at the last stage compare screenshots with the saved ones. Screenshots stay gitignored by default, and `jbit:plan` asks once, for a plan with UI work, whether this repo commits them. Done when the Claude Code plugin and the generated Copilot and Codex packages carry all of this, and a headless run on a small web app closes a UI stage with before and after screenshots, described rows and a refused close for a missing image. The suite, docs check, host tests and validate stay green throughout. Pushing waits for the user.
 
 ## Baseline
-2026-11-20 · at `c087d40`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · validate: passes (`claude plugin validate .`) · Copilot CLI and Codex CLI not installed on this machine (only a VS Code `copilot` shim)
+2026-11-23 · at `9f032ea`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · host tests: 121 pass (`node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs`) · parity: 14 pass (`node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-All stages done. Copilot CLI and Codex CLI packages are generated, installed from this repo and proven end to end. `plugins/jbit/` and `.claude-plugin/` are unchanged from `c087d40`. Pushing waits for the user.
+Stage 1 of 3 · Capture script
+Risk: user input, external services (it runs a browser against a URL and may download Playwright)
+Checks:
+- [ ] `node plugins/jbit/skills/verify/scripts/capture.mjs` captures a local fixture page at the widths and themes it's given, writing `<name>-<width>-<theme>.png` and a console log to the output folder (proof: test)
+- [ ] It finds Playwright in the project first and, with none there, uses the cache only when a cached install exists; otherwise it exits non-zero with a message saying what to install and that it needs the user's yes, and downloads nothing; `--install` installs into the cache, and a missing system library is printed as a command, never run (proof: test)
+- [ ] `--compare <dir>` reports, for each file in both folders, whether the image changed and by how much, and exits non-zero on a change over the threshold (proof: test)
+- [ ] A page that fails to load, or logs a console error, shows in the script's output and exit code, never silently (proof: test)
+- [ ] It has no bare package import, so the host build can copy it (proof: test, the build's import check)
+Open: none
 Agents: wide — confirmed 2026-11-20 10:45
 
 ## Stages
-- [x] 1. Spike: Copilot CLI — install, sign in, and prove on a throwaway plugin what the docs leave open
-- [x] 2. Hook core + Copilot adapter — a host-neutral Node command hook (the plan's `## Now` in context, commit gate, secret guard, holds, autopilot continuation) with shared parity scenarios run against the Claude hook too
-- [x] 3. Copilot package — build script, `hosts/copilot/capability.json`, generated `plugins/jbit-copilot/`, `.github/plugin/marketplace.json`, drift and leak checks
-- [x] 4. Copilot end to end — isolated install from the marketplace; headless stage close, gate and guard refusals, autopilot carry-on; README "Copilot CLI" with its gaps
-- [x] 5. Spike: Codex CLI — install, sign in, prove plugin hooks in the CLI, `apply_patch` paths, `spawn_agent`, skill naming, the 2,500-token context cap
-- [x] 6. Codex adapter + package — Codex adapter on the core, generated `plugins/jbit-codex/`, `.agents/plugins/marketplace.json`, parity scenarios
-- [x] 7. Codex end to end — isolated install; headless stage close, refusals, carry-on; README "Codex CLI" with its gaps
+- [ ] 1. Capture script — `skills/verify/scripts/capture.mjs`: Playwright lookup, widths and themes, console log, compare, with tests
+- [ ] 2. Skills + gate — plan, stage, verify and fix use it (before/after, described rows, the commit-screenshots question); the hook refuses a report linking a missing image
+- [ ] 3. Hosts + end to end — Copilot and Codex packages carry the script with skill paths rewritten; a live run on each host finds and runs it (Copilot first); a headless run on a small web app closes a UI stage
 
 ## Decisions
-- 2026-11-20 · Copilot CLI then Codex CLI; Google (Gemini CLI, Antigravity) dropped — the user's choice.
-- 2026-11-20 · No change or degradation on Claude Code: `plugins/jbit/` and `.claude-plugin/` stay byte-identical to `c087d40`, checked in every stage, and anything for the other hosts lives beside them — the user's goal ("keep the full capability … no degradation there").
-- 2026-11-20 · Agents: wide — the user's choice, confirmed in this session.
-- 2026-11-20 · Agents: wide, restated in the user's autopilot command ("jbit Autopilot wide") and restamped.
-- 2026-11-20 · I install each host CLI with npm when its spike starts; the user signs in — the user's choice.
-- 2026-11-20 · (pm) Claude's plugin is the source and the other hosts get generated packages, committed in the repo and shipped through each host's own plugin marketplace, not an installer that writes into users' config. Why: GSD does the same conversion but from a 15,800-line installer whose bugs were mostly config rewrites ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)); Copilot and Codex now have native plugins ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
-- 2026-11-20 · (pm) Each host has a `hosts/<host>/capability.json` that the build reads: tool and event names, paths, and the features it can't carry, which the README's gap list is generated from. Why: GSD's descriptors keep host differences in data and out of branching code ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)).
-- 2026-11-20 · (pm) Claude-specific skill text is adapted with a short per-host mapping section added to each generated skill plus a few tested substitutions, not a hand-maintained second copy. Why: GSD's mapping-section approach, and a drift check can then fail a generated copy that falls behind its source ([gsd-multi-host-2026-11.md](research/gsd-multi-host-2026-11.md)).
-- 2026-11-20 · (pm) The hook is ported as a Node command script reading the host's event on stdin; the hook's pure modules are copied into each package at build, since an installed plugin can't import across plugin folders. The Claude hook keeps its in-process module. Why: both hosts run command hooks with a deny decision and a stop-block ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
-- 2026-11-20 · (pm) Shared parity scenarios (a commit closing a stage with an unticked check, a secret in a commit, an edit in a held stage, autopilot at turn end, …) run against the Claude hook and each command hook, from outside `plugins/jbit/`. If the Claude side can only run from inside it, stage 2 stops for the user. Why: two copies of the gate logic must not drift, and the Claude plugin stays untouched.
-- 2026-11-20 · (pm) Generated packages carry the version of the source they were built from (2.0.0 now). Why: one release line; the drift check ties each package to its source.
-- 2026-11-20 · (pm) Each host gets its own marketplace file where that host looks first (`.github/plugin/marketplace.json`, `.agents/plugins/marketplace.json`), so neither falls back to `.claude-plugin/` and loads the Claude package, whose `hooks.json` it can't run. Why: both hosts fall back to `.claude-plugin/` ([copilot-cli-2026-11.md](research/copilot-cli-2026-11.md), [codex-cli-2026-11.md](research/codex-cli-2026-11.md)).
-- 2026-11-20 · (pm) Spikes before builds, one per host, with prototypes kept in the scratchpad. Why: the notes leave the load-bearing questions (per-prompt context on Copilot, plugin hooks in the Codex CLI) to a real run.
-- 2026-11-20 · (pm) Scale: seven stages, one plan; no charter. Why: under eight stages and one goal.
-- 2026-11-20 · (pm) Risk: stages 2 and 6 touch secrets and user input (the secret guard and shell parsing move to a new hook), so they get tests first, `/code-review` and `/security-review`; the spikes and end-to-end stages touch external services.
-- 2026-11-20 · (unattended) The hook core is the Claude hook itself: `hosts/core/` gives `plugins/jbit/hooks/register.ts` a shim engine (state in a JSON file under the plugin data folder, `fs`, `session.cwd` from the event, `git` through `child_process`, notices dropped or turned into context) and maps each host event to its handlers (`prompt.submit`/`prompt.compose`, `tool.call` with the host's tool names mapped to `Bash`/`Edit`/`Write`/`Agent`/`Skill`, `turn.complete`). Why: the handlers use a small engine surface (`state`, `fs`, `session.cwd`/`usage`/`compact`, `ui`, `process.run`, `clock`, `agent.list`, `store`, `settings`), so the gate logic stays in one copy, which is what the parity scenarios guard; a second copy would drift.
-- 2026-11-20 · (unattended) The Claude parity runner (`node hosts/parity/run-claude.mjs`) runs from outside `plugins/jbit/` on a byte-checked copy of its `hooks/` and `types/`, made into `hosts/parity/` (gitignored) just before `claude plugin test hosts/parity`. This settles the "stops for the user" condition in the parity decision: `claude plugin test` loads only files inside the folder it tests, the copy is checked identical first, and `plugins/jbit/` is never written.
-- 2026-11-20 · (unattended) Some of what the Claude hook keeps in memory can't carry to Copilot, since each event there is a fresh process. Lost: stall detection (Copilot's cap of 8 blocks per prompt bounds the loop instead), lean's count of agents already running, background agents, and the reopen check after a commit (it runs before the commit lands). They go into the README's Copilot gap list at stage 4.
-- 2026-11-20 · (pm) Small calls the adapter makes:
-  - `write_bash` is judged as Bash;
-  - `str_replace_editor` maps to Edit/Write;
-  - an allowed call prints nothing, so Copilot's own permission prompts still apply;
-  - a prompt that repeats the hook's last block reason counts as the plugin's, so it can't set an autopilot level or approve a stage.
-- 2026-11-20 · (pm) The Copilot build makes three small calls:
-  - It quotes skill frontmatter values that hold `: `, because Copilot rejected three skills over it ([evidence](evidence/stage-3/06-skill-list-before-frontmatter-fix.txt)).
-  - For reviews, the mapping section points at Copilot's `code-review` agent type (seen working), and at `security-review` with a `general-purpose` fallback (listed, never seen called).
-  - Parallel builders on Copilot each own separate files, since there are no worktrees.
-- 2026-11-20 · (unattended) Copilot: `## Now` rides on `userPromptTransformed` every turn, continuations included — settles the open question; the spike showed it honoured ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
-- 2026-11-20 · (unattended) Copilot skills keep bare names (`name: plan`) under a plugin and marketplace entry named `jbit`, reversing the research note's `name: jbit:<skill>`. Why: Copilot prefixes plugin skills itself and `jbit:plan` came out double-prefixed ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
-- 2026-11-20 · (unattended) The Copilot guard covers `edit` and `create` on their documented shape with fixture tests only, and the README says so. Why: no model this account offers writes through them, so a live run can't prove them; `bash` and `apply_patch` are proven ([copilot-spike-2026-11.md](research/copilot-spike-2026-11.md)).
-- 2026-11-20 · (unattended) Codex plugin hooks: settled, yes. The CLI runs a plugin's `hooks/hooks.json` once the user trusts them (TUI prompt or `/hooks`), and a script change voids that trust; untrusted, they're silently off. So `plugins/jbit-codex/` ships its hooks, and the README says first that they need trusting after each install and update ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
-- 2026-11-20 · (unattended) Codex: `## Now` on UserPromptSubmit `additionalContext` with a raised `additionalContextLimit`, and the Stop block's `reason` carries it on continuations, since UserPromptSubmit doesn't fire there; the adapter caps Stop blocks itself (Codex has none) and never exits 1 on PreToolUse (that fails open). Skills keep bare names, invoked as `$jbit:<name>`; no agent files ship, since a plugin can't register them ([codex-spike-2026-11.md](research/codex-spike-2026-11.md)).
-- 2026-11-20 · (pm) Small calls in the Codex adapter and build:
-  - Stop blocks are capped at 8 per prompt, matching Copilot, and the count resets on UserPromptSubmit. Codex has no cap of its own.
-  - `additionalContextLimit` is 16000 on UserPromptSubmit and Stop, so a long `## Now` isn't cut in the middle.
-  - Writes to any `.codex` folder are denied, the project's included, since an edit there can switch the hooks off.
-  - SessionStart outputs nothing, because every prompt already carries the plan.
-  - `spawn_agent`, `send_message` and `followup_task` are judged as Agent calls. `write_stdin` is judged as a shell command, and a shell `apply_patch` as a patch as well as a command.
-  - The package ships `hosts/copilot/map.mjs` as `scripts/copilot/map.mjs`, because the Codex map reuses its path resolver; Copilot's code is unchanged. The script imports are relinked inside the package at build time.
+- 2026-11-23 · Screenshots come from a capture script shipped with the plugin, not a bundled MCP server or the host's browser tools alone; Playwright comes from the project, then host browser tools, then a pinned cache install after the user's yes once per project, logged as a decision in that project's plan. Screenshot proofs name state, widths and themes; stage takes before shots, verify after shots; the fresh verifier writes one line per screenshot on what it shows; the gate refuses a missing linked image; last-stage re-runs compare screenshots. Screenshots stay gitignored by default and plan asks once per UI plan whether to commit them — the user's choice ("go with recommendations"), 2026-11-23.
+- 2026-11-23 · (pm) The 2026-11-20 rule that `plugins/jbit/` stays byte-identical to `c087d40` ended with that plan; this plan changes the plugin on purpose, and the generated packages are rebuilt from it. Why: the goal is a plugin feature, and the drift check keeps the packages in step.
+- 2026-11-23 · (pm) The image check sits in the hook's evidence gate before the commit and reads the working tree, not the after-commit check. Why: images are gitignored by default, so the commit never holds them, and `git show` of a landed report would fail every local image (survey).
+- 2026-11-23 · (pm) The script imports Playwright dynamically from a resolved path, never by bare name. Why: the host build refuses a copied script with a bare package import.
+- 2026-11-23 · (pm) The script's tests run with `node --test` beside `docs.check.mjs`. Why: `claude plugin test` runs in a sandbox with no file access, so it can't run a browser.
+- 2026-11-23 · (pm) The script lives in the verify skill's own `scripts/` folder and finds its own location; skills point at it as `${CLAUDE_SKILL_DIR}/scripts/capture.mjs` (stage and fix as `${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs`), and `hosts/build.mjs` rewrites those to skill-relative paths for Copilot and Codex, with a test that no `${CLAUDE_` text is left. Why: Claude Code substitutes those variables in skill text but doesn't set them in the model's shell; Codex resolves paths against the skill's folder; Copilot is unproven and gets a live check in stage 3 ([skill-script-paths-2026-11.md](research/skill-script-paths-2026-11.md)).
+- 2026-11-23 · (pm) Pinned Playwright is `playwright-core@1.65.0` (18 days old; 1.65.1 is 10) with `install --only-shell chromium` into `PLAYWRIGHT_BROWSERS_PATH` under the JBIT cache. Why: the core package is all a script needs, and the shell is the smallest browser that launches headless ([playwright-capture-2026-11.md](research/playwright-capture-2026-11.md)).
+- 2026-11-23 · (pm) Compare draws both PNGs on a canvas in the same headless browser and counts differing pixels, rather than installing pixelmatch and pngjs or using Playwright's internal comparator. Why: it adds no dependency beyond the browser the script already has, and the internal comparator is unsupported ([playwright-capture-2026-11.md](research/playwright-capture-2026-11.md)).
+- 2026-11-23 · (pm) Scale: three stages, one plan; no charter. Why: one feature, well under eight stages.
+- 2026-11-23 · (pm) Risk: stage 1 runs a browser against a URL and may point at a download (user input, external services); stage 2 changes the commit gate (it reads report text, user input); stage 3 installs packages and runs live hosts (external services). All three get the security pass.
 
 ## Open questions
-- What users lose (they get 0.18.1's behaviour):
-  - role agents and any `.claude/agents/<role>.md` overrides
-  - 1.1.0's `CLAUDE.md` fan-out limit (back to the Agents line)
-  - 1.2.0's handoff overflow rule and the reviewer's `review.md`
-  - 0.18.1 still assumes the verifier subagent writes `report.md`, which Claude Code refuses (see the 1.2.0 plan); it worked around this by running verify in the main session
-
-  The README note will say this; carrying any of it into 2.0.x is for a later plan. (carried)
-- Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs, so the reason for this change rests on one run per case — for the user. (carried)
-- The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts — carried; 0.18.1 has the same gap, and the ported hook will too.
-- Stage 2 review, deferred:
-  - `hosts/parity/claude.test.ts` sends a prompt before composing it. No current scenario depends on that order, so settle Claude Code's real order when a scenario judges an arming prompt's context.
-  - On Claude Code, `register.ts`'s commit guard also steps aside when git fails (a huge diff, a timeout). Copilot's shim now fails closed. Fixing the Claude side means changing `plugins/jbit/`, which is for the user ([review](evidence/stage-2/review.md)).
-- Stage 4 review, deferred: the commit gate trusts any tick it has seen, so a model can tick a check in one commit and close the stage in the next (Copilot run 05; Claude Code behaves the same). Whether a tick needs its own proof is for the user ([review](evidence/stage-4/review.md)).
-- Stage 6 review, deferred ([review](evidence/stage-6/review.md)):
-  - On a case-insensitive file system (macOS by default, `/mnt/c`), `~/.CODEX/…` gets past the `$CODEX_HOME` write guard.
-  - A missing `node`, or a static import failing, exits non-zero before any handler runs, which likely fails open. Copilot has the same exposure. Stage 7 probes it live.
-  - The `$CODEX_HOME` guard is best-effort: shell obfuscation and interpreters building the path from pieces can't be fully closed. The README says so.
-- In a held stage, a shell write (`echo b > src/login.ts`) gets through on every host. Claude's hold covers Edit, Write, NotebookEdit and Agent, not Bash, and the Copilot and Codex ports match it. Models on Copilot and Codex fall back to the shell when an edit tool is denied, so the hold is weaker there in practice. Widening it means changing `plugins/jbit/`, which is for the user ([stage 6 report](evidence/stage-6/report.md)).
-- A model can write "User approved stage <n>" into the plan's text. A Codex subagent did so live, on its own ([stage 7 review](evidence/stage-7/review.md)). The hook's hold doesn't read that line, so nothing is released, and Claude Code is the same. Whether the gates should also flag such a line is for the user.
-- `plugins/jbit/evals-ablation/` (untracked) — carried; for the user.
-- `CLAUDE.md` (untracked, in the repo root before this plan's stage 1) — left alone; for the user to commit or drop.
+- Carried from [Copilot and Codex hosts](plans/2026-11-20-copilot-codex-hosts.md), all for the user:
+  - What 2.0.0 users lose from 1.x (role agents and their overrides, the `CLAUDE.md` fan-out limit, the handoff overflow rule and `review.md`, the verifier `report.md` workaround); carrying any of it into 2.0.x is for a later plan.
+  - Single-run eval drops between 0.18.1 and 1.0.0 (charter-prd, regression-caught, research-spike) were never re-run with more runs.
+  - The secret guard can't see commits made through config-file git aliases (`git ci`), `git $x`, or scripts.
+  - `hosts/parity/claude.test.ts` sends a prompt before composing it; settle Claude Code's real order when a scenario judges an arming prompt's context.
+  - On Claude Code, the commit guard steps aside when git fails (huge diff, timeout); Copilot's shim fails closed ([review](plans/2026-11-20-copilot-codex-hosts/evidence/stage-2/review.md)).
+  - The commit gate trusts any tick it has seen, so a check can be ticked in one commit and the stage closed in the next ([review](plans/2026-11-20-copilot-codex-hosts/evidence/stage-4/review.md)).
+  - Codex: `~/.CODEX/…` on a case-insensitive file system gets past the `$CODEX_HOME` guard; a missing `node` or failed import likely fails open; the guard is best-effort against shell obfuscation ([review](plans/2026-11-20-copilot-codex-hosts/evidence/stage-6/review.md)).
+  - In a held stage, a shell write gets through on every host; the hold covers edit tools and Agent, not Bash ([report](plans/2026-11-20-copilot-codex-hosts/evidence/stage-6/report.md)).
+  - A model can write "User approved stage <n>" into the plan's text; the hold doesn't read it ([review](plans/2026-11-20-copilot-codex-hosts/evidence/stage-7/review.md)).
+  - `plugins/jbit/evals-ablation/` and the root `CLAUDE.md` are untracked; commit or drop.
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).
@@ -91,3 +56,4 @@ Agents: wide — confirmed 2026-11-20 10:45
 - 2026-11-17 · Fan-out limit: `stage`, `autopilot` and `plan` follow a `CLAUDE.md` limit on agents at once and worktrees; README "Slower machines" (1.1.0, pushed) — [plan](plans/2026-11-17-fan-out-limit.md) · [evidence](plans/2026-11-17-fan-out-limit/evidence/)
 - 2026-11-17 · Handoff overflow: role agents hand back 20 lines at most and say what they cut; the reviewer saves `review.md`; the verifier hands back its table for the main session to write `report.md` (1.2.0, pushed) — [plan](plans/2026-11-17-handoff-overflow.md) · [evidence](plans/2026-11-17-handoff-overflow/evidence/)
 - 2026-11-17 · Restore 0.18.1 as 2.0.0: 0.18.1's plugin back, unchanged in behaviour, with a "Moving from 1.x" note and 1.2.0's verifier handback (2.0.0, pushed) — [plan](plans/2026-11-17-restore-2-0-0.md) · [evidence](plans/2026-11-17-restore-2-0-0/evidence/)
+- 2026-11-20 · Copilot and Codex hosts: `hosts/build.mjs` generates `plugins/jbit-copilot/` and `plugins/jbit-codex/` from the Claude plugin, with the hook ported to a Node command hook, parity scenarios, and each host proven end to end from an isolated install (not yet pushed) — [plan](plans/2026-11-20-copilot-codex-hosts.md) · [evidence](plans/2026-11-20-copilot-codex-hosts/evidence/)

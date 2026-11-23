@@ -1805,11 +1805,82 @@ async function evidenceDenial(
     return [`JBIT blocked this commit: it closes stage ${stage}, but its evidence report \`${path}\` is neither in the commit nor in the working tree.`, backfill].join('\n')
   const want = Math.max(checks ?? 0, 1)
   const rows = reportRows(text)
-  if (rows >= want) return undefined
+  if (rows < want)
+    return [
+      `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
+      `Give each check a row in the report's first table.`,
+      backfill,
+    ].join('\n')
+  return imageDenial($, path, stage, text)
+}
+
+const IMAGE_EXT = /\.(?:png|jpe?g|webp|gif)$/i
+/** Links the image check reads per report: enough for any real report, and a bound on the exists checks. */
+const IMAGE_LINKS_MAX = 500
+
+/** Targets of the report's markdown links `[text](target)`, as written: `<…>` unwrapped, a title dropped. */
+function linkTargets(text: string): string[] {
+  const targets: string[] = []
+  for (const m of text.matchAll(/\]\(\s*(?:<([^<>\n]*)>|([^\s()<>]+))(?:\s+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?\s*\)/g)) {
+    targets.push(m[1] ?? m[2] ?? '')
+    if (targets.length >= IMAGE_LINKS_MAX) break
+  }
+  return targets
+}
+
+/**
+ * The repo path an image link in the report at `reportPath` names, or `outside` when it leaves the report's
+ * folder, or undefined when it isn't a local image (another file type, a URL or any other scheme, a bare `#anchor`).
+ */
+function linkedImage(reportPath: string, target: string): string | 'outside' | undefined {
+  const bare = target.replace(/[#?].*$/s, '')
+  if (!bare || /^[a-z][a-z0-9+.-]*:/i.test(bare) || bare.startsWith('//')) return undefined
+  let name = bare
+  try {
+    name = decodeURIComponent(bare)
+  } catch {
+    // a stray % keeps the link as written
+  }
+  name = name.replace(/\\/g, '/')
+  if (!IMAGE_EXT.test(name)) return undefined
+  if (name.startsWith('/') || /^[a-z]:\//i.test(name)) return 'outside'
+  const folder = reportPath.slice(0, reportPath.lastIndexOf('/'))
+  const parts = folder.split('/')
+  for (const part of name.split('/')) {
+    if (part === '' || part === '.') continue
+    if (part !== '..') parts.push(part)
+    else if (!parts.pop()) return 'outside'
+  }
+  const image = parts.join('/')
+  return image.startsWith(`${folder}/`) ? image : 'outside'
+}
+
+/**
+ * Why stage n can't close for a screenshot its report links that isn't in the working tree, or one that leaves the
+ * stage folder. Screenshots are gitignored by default, so only the working tree counts, never the commit's diff.
+ */
+async function imageDenial($: EngineInterface, path: string, stage: string, text: string): Promise<string | undefined> {
+  const missing = new Set<string>()
+  const outside = new Set<string>()
+  for (const target of linkTargets(text)) {
+    const image = linkedImage(path, target)
+    if (image === undefined) continue
+    if (image === 'outside') {
+      outside.add(target)
+      continue
+    }
+    if (missing.has(image)) continue
+    // an exists check that fails counts as missing, never as a pass
+    if (!(await $.fs.exists(image).catch(() => false))) missing.add(image)
+  }
+  if (!missing.size && !outside.size) return undefined
+  const folder = path.slice(0, path.lastIndexOf('/') + 1)
+  const list = (paths: Set<string>) => [...paths].map(p => `\`${p}\``).join(', ')
   return [
-    `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
-    `Give each check a row in the report's first table.`,
-    backfill,
+    `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` links screenshots that can't back it.`,
+    ...(missing.size ? [`Not in the working tree: ${list(missing)}. Run jbit:verify to re-capture each one, or drop its link from the report.`] : []),
+    ...(outside.size ? [`Links outside the stage folder \`${folder}\`: ${list(outside)}. Save the screenshot under \`${folder}\` and link it there, or drop the link.`] : []),
+    `Then close the stage again.`,
   ].join('\n')
 }
 

@@ -1415,6 +1415,84 @@ test('a report with fewer rows than the stage has checks is refused', async ($, 
   expect(r.deny).toContain('jbit:verify for stage 2')
 })
 
+/** A report with a row per check and `links` after its table. */
+const reportLinking = (...links: string[]) => [reportWith(2), '', ...links].join('\n')
+/** Close stage 2 with `report` in the working tree beside `images`, answering the commit's deny. */
+async function closeWithImages($: Engine, on: On, report: string, images: string[] = []) {
+  const files: Record<string, string> = { [REPORT]: report }
+  for (const image of images) files[image] = 'PNG'
+  engine(on, { text: shareMode('- [x] link opens read-only', '- [x] controls work on touch'), files })
+  fakeGit(on, () => closeStage2, false)
+  await $.turn.complete(ended('t1'))
+  return (await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny
+}
+
+test('a report linking a screenshot that is not in the working tree is refused, naming the file', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![home at 375px](home-375-light.png)', 'See [the menu](menu.webp).'), ['docs/evidence/stage-2/menu.webp'])
+  expect(deny).toContain('closes stage 2')
+  expect(deny).toContain('docs/evidence/stage-2/home-375-light.png')
+  expect(deny).not.toContain('menu.webp')
+  expect(deny).toContain('re-capture')
+})
+
+test('a missing screenshot is refused when the report comes in the same commit', async ($, on) => {
+  engine(on, { text: shareMode('- [x] link opens read-only', '- [x] controls work on touch') })
+  fakeGit(on, () => [closeStage2, newFile(REPORT, reportLinking('![home](home.png)'))].join('\n'), false)
+  await $.turn.complete(ended('t1'))
+  expect((await $.tool.call({ tool: 'Bash', command: 'git commit -m "Stage 2"' })).deny).toContain('docs/evidence/stage-2/home.png')
+})
+
+test('a report whose linked screenshots all exist lets the stage close', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![home](home.png)', '![menu](./menu.jpg)', '[gif](flow.gif) and ![old](before/home.jpeg)'), [
+    'docs/evidence/stage-2/home.png',
+    'docs/evidence/stage-2/menu.jpg',
+    'docs/evidence/stage-2/flow.gif',
+    'docs/evidence/stage-2/before/home.jpeg',
+  ])
+  expect(deny).toBeUndefined()
+})
+
+test('links to other file types and to URLs are not checked', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('[log](out-1.txt)', '![remote](https://example.com/shot.png)', '[mail](mailto:a@b.png)', '[data](data:image/png;base64,AAAA.png)', '[top](#check-1)'))
+  expect(deny).toBeUndefined()
+})
+
+test('an image link into another stage folder is refused as outside the stage folder', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![old](../stage-1/x.png)'), ['docs/evidence/stage-1/x.png'])
+  expect(deny).toContain('../stage-1/x.png')
+  expect(deny).toContain('outside')
+})
+
+test('an absolute image link is refused as outside the stage folder', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![abs](/abs/x.png)'), ['/abs/x.png'])
+  expect(deny).toContain('/abs/x.png')
+  expect(deny).toContain('outside')
+})
+
+test('a link that climbs out and back into the stage folder is the same file', async ($, on) => {
+  expect(await closeWithImages($, on, reportLinking('![x](../stage-2/before/../x.png)'), ['docs/evidence/stage-2/x.png'])).toBeUndefined()
+})
+
+test('a screenshot in a subfolder of the stage folder that exists lets the stage close', async ($, on) => {
+  expect(await closeWithImages($, on, reportLinking('![before](before/x.png)'), ['docs/evidence/stage-2/before/x.png'])).toBeUndefined()
+})
+
+test('an upper-case image extension is checked too', async ($, on) => {
+  expect(await closeWithImages($, on, reportLinking('![shot](Shot.PNG)'))).toContain('docs/evidence/stage-2/Shot.PNG')
+})
+
+test('an image link with a fragment or query checks the file it names', async ($, on) => {
+  expect(await closeWithImages($, on, reportLinking('![shot](shot.png#top)', '![q](q.png?v=2)'), ['docs/evidence/stage-2/shot.png', 'docs/evidence/stage-2/q.png'])).toBeUndefined()
+})
+
+test('a missing screenshot is named without its fragment, and a URL-encoded name is decoded', async ($, on) => {
+  const deny = await closeWithImages($, on, reportLinking('![shot](gone.png#top)', '![sp](my%20shot.png)', '![t](<with space.png> "title")'), ['docs/evidence/stage-2/my shot.png', 'docs/evidence/stage-2/with space.png'])
+  expect(deny).toContain('docs/evidence/stage-2/gone.png')
+  expect(deny).not.toContain('gone.png#top')
+  expect(deny).not.toContain('my shot.png')
+  expect(deny).not.toContain('with space.png')
+})
+
 test('re-run rows from earlier stages, past the row per check, still let the stage close', async ($, on) => {
   const report = reportWith(2).replace('| check 2 | pass | out-2.txt |', '| check 2 | pass | out-2.txt |\n| Re-run of stage 1: cli prints 13.89 | fail | rerun-1.txt |')
   engine(on, { text: shareMode('- [x] link opens read-only', '- [x] controls work on touch'), files: { [REPORT]: report } })

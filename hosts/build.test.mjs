@@ -816,12 +816,21 @@ test('no ${CLAUDE_ text is left anywhere in a generated skill, and the capture s
   }
 })
 
+test('copilot screenshot gap: what the live run proved, the headless --add-dir need, and the mapping says so', () => {
+  const cap = loadCapability(ROOT, 'copilot')
+  assert.ok(!cap.gaps.some(g => g.id === 'capture-path-unproven'), 'proven live at stage 3: no longer unproven')
+  const gap = cap.gaps.find(g => g.id === 'capture-path-outside-project')
+  for (const phrase of ['the model sees the skill\'s folder and runs the installed script', 'Copilot asks before running a file outside the project', 'Interactively it asks once', '`--add-dir <plugin folder>` (or `--allow-all-paths`)']) assert.ok(gap.why.includes(phrase), `gap lacks: ${phrase}`)
+  const paths = cap.mapping.lines.find(l => l.startsWith('- **Script paths.**'))
+  for (const phrase of ['start a headless run with `--add-dir <plugin folder>`', 'never run a project script of the same name or write your own']) assert.ok(paths.includes(phrase), `mapping lacks: ${phrase}`)
+})
+
 test('screenshot gaps: Copilot and Codex each list what they lose of screenshot evidence, in their README block', () => {
   const readme = readFileSync(join(ROOT, 'README.md'), 'utf8')
-  for (const host of ['copilot', 'codex']) {
+  for (const [host, id] of [['copilot', 'capture-path-outside-project'], ['codex', 'capture-path-unproven']]) {
     const cap = loadCapability(ROOT, host)
-    const gap = cap.gaps.find(g => g.id === 'capture-path-unproven')
-    assert.ok(gap, `${host} lacks the capture-path-unproven gap`)
+    const gap = cap.gaps.find(g => g.id === id)
+    assert.ok(gap, `${host} lacks the ${id} gap`)
     assert.match(gap.why, /<verify skill folder>\/scripts\/capture\.mjs/)
     assert.ok(readmeBlock(readme, cap).includes(`- **${gap.what}.** ${gap.why}`), `${host}'s README block lacks the screenshot gap`)
   }

@@ -1,0 +1,8 @@
+$ node plugins/jbit/skills/verify/scripts/capture.mjs compare docs/evidence/stage-1 <scratchpad>/cmp/chg   # after: card text and light card colour changed
+Comparing ~/src/repos/jbit/docs/evidence/stage-1 (before) with <scratchpad>/cmp/chg (after), threshold 0.001
+changed    fixture-1280-dark.png: fraction 0.000857 (878 of 1024000 px)
+changed    fixture-1280-light.png: fraction 0.069202 (70863 of 1024000 px) — over threshold
+changed    fixture-390-dark.png: fraction 0.002814 (878 of 312000 px) — over threshold
+changed    fixture-390-light.png: fraction 0.199240 (62163 of 312000 px) — over threshold
+FAILED: 3 of 4 image(s) changed more than the threshold 0.001
+exit 1

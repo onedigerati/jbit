@@ -1,0 +1,31 @@
+$ node <scratchpad>/mutate.mjs <repo> <scratchpad>   # each mutation applied to a scratch copy of capture.mjs (repo file untouched), then: JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node --test <copy>/plugins/jbit/tests/capture.check.mjs
+M1 file naming <name>-<width>-<theme>: exit 1, skipped 0, failing tests: capture: a local page at 2 widths x 2 themes, with PNGs and a console log | capture: light and dark really differ (prefers-color-scheme) | compare: identical folders pass and say unchanged; files in one folder are listed | compare: a change over the threshold fails, under it passes, and a size change counts as changed | capture: --compare checks the new shots against a before folder | capture: steps, wait-for and mask reach a state and hide data | failures are loud: a console error or page error exits non-zero and is logged | a file URL is captured
+M2 console messages not logged: exit 1, skipped 0, failing tests: capture: a local page at 2 widths x 2 themes, with PNGs and a console log | failures are loud: a console error or page error exits non-zero and is logged
+M3 project Playwright ignored: exit 1, skipped 0, failing tests: lookup: the project's playwright-core comes before the cache | lookup: the project's playwright package counts too | missing system libraries: the install-deps command is printed for the user, not run
+M4 incomplete cache used: exit 1, skipped 0, failing tests: lookup: a cache without the headless shell is not used
+M5 auto-install when none found: exit 1, skipped 0, failing tests: no Playwright anywhere: exits 3, says what install would download and that it needs a yes, downloads nothing
+M6 install-deps gets run: exit 1, skipped 0, failing tests: missing system libraries: the install-deps command is printed for the user, not run
+M7 install without --only-shell: exit 1, skipped 0, failing tests: install: npm into <cache>/lib with the pinned version, then the shell-only Chromium into <cache>/browsers
+M8 compare threshold ignored: exit 1, skipped 0, failing tests: capture: light and dark really differ (prefers-color-scheme) | compare: a change over the threshold fails, under it passes, and a size change counts as changed
+M9 compare never says changed: exit 1, skipped 0, failing tests: compare: a change over the threshold fails, under it passes, and a size change counts as changed | capture: steps, wait-for and mask reach a state and hide data
+M10 console error not a problem: exit 1, skipped 0, failing tests: failures are loud: a console error or page error exits non-zero and is logged
+M11 HTTP 404 not a failure: exit 1, skipped 0, failing tests: failures are loud: HTTP 404 and a network error fail the load, with a non-zero exit
+M12 page error not a problem: exit 1, skipped 0, failing tests: failures are loud: a console error or page error exits non-zero and is logged
+M13 bare dynamic import added: exit 1, skipped 0, failing tests: the host build's import check finds no bare package import in the script
+
+--- mutations (from -> to)
+const muts = {
+  'M1 file naming <name>-<width>-<theme>': ["`${opts.name}-${width}-${theme}.png`", "`${opts.name}-${theme}-${width}.png`"],
+  'M2 console messages not logged': ["log.push(`[console.${m.type()}]", "void(`[console.${m.type()}]"],
+  'M3 project Playwright ignored': ["for (const name of ['playwright-core', 'playwright'])", "for (const name of [])"],
+  'M4 incomplete cache used': ["if (hasLib && hasShell) {", "if (hasLib) {"],
+  'M5 auto-install when none found': ["if (cmd === 'shot') return shot(opts)", "if (cmd === 'shot') { if (!findPlaywright(opts.project ?? process.cwd()).source) await install(); return shot(opts) }"],
+  'M6 install-deps gets run': ["throw new Exit(EXIT.launch, [", "await run(process.execPath, [join(found.root, 'cli.js'), 'install-deps', 'chromium']); throw new Exit(EXIT.launch, ["],
+  'M7 install without --only-shell': ["[cli, 'install', '--only-shell', 'chromium']", "[cli, 'install', 'chromium']"],
+  'M8 compare threshold ignored': ["if (fraction > threshold) over++", "if (fraction > 1) over++"],
+  'M9 compare never says changed': ["const changed = r.sizeChanged || r.diff > 0", "const changed = r.sizeChanged"],
+  'M10 console error not a problem': ["if (m.type() === 'error') problems.push", "if (false) problems.push"],
+  'M11 HTTP 404 not a failure': ["if (response && response.status() >= 400) {", "if (false) {"],
+  'M12 page error not a problem': ["problems.push(`${label}: page error:", "void(`${label}: page error:"],
+  'M13 bare dynamic import added': ["async function install() {", "async function __bare() { return import('playwright') }\nasync function install() {"],
+}

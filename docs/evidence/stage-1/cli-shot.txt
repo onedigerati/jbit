@@ -1,0 +1,10 @@
+$ JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/page.html --name fixture --out docs/evidence/stage-1
+Using cache Playwright playwright-core@1.65.0
+wrote ~/src/repos/jbit/docs/evidence/stage-1/fixture-390-light.png
+wrote ~/src/repos/jbit/docs/evidence/stage-1/fixture-390-dark.png
+wrote ~/src/repos/jbit/docs/evidence/stage-1/fixture-1280-light.png
+wrote ~/src/repos/jbit/docs/evidence/stage-1/fixture-1280-dark.png
+wrote ~/src/repos/jbit/docs/evidence/stage-1/fixture-console.txt
+4 of 4 screenshots taken
+No load failures, console errors or page errors.
+exit 0

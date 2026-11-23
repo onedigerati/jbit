@@ -1,0 +1,179 @@
+$ JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node --test plugins/jbit/tests/capture.check.mjs
+TAP version 13
+# Subtest: lookup: the project's playwright-core comes before the cache
+ok 1 - lookup: the project's playwright-core comes before the cache
+  ---
+  duration_ms: 47.790099
+  type: 'test'
+  ...
+# Subtest: lookup: the project's playwright package counts too
+ok 2 - lookup: the project's playwright package counts too
+  ---
+  duration_ms: 35.3618
+  type: 'test'
+  ...
+# Subtest: lookup: with none in the project, a complete cache install is used, with its own browsers path
+ok 3 - lookup: with none in the project, a complete cache install is used, with its own browsers path
+  ---
+  duration_ms: 23.3671
+  type: 'test'
+  ...
+# Subtest: lookup: a cache without the headless shell is not used
+ok 4 - lookup: a cache without the headless shell is not used
+  ---
+  duration_ms: 22.2351
+  type: 'test'
+  ...
+# Subtest: cache location: JBIT_CAPTURE_CACHE, else XDG_CACHE_HOME or the platform cache folder
+ok 5 - cache location: JBIT_CAPTURE_CACHE, else XDG_CACHE_HOME or the platform cache folder
+  ---
+  duration_ms: 0.2462
+  type: 'test'
+  ...
+# Subtest: no Playwright anywhere: exits 3, says what install would download and that it needs a yes, downloads nothing
+ok 6 - no Playwright anywhere: exits 3, says what install would download and that it needs a yes, downloads nothing
+  ---
+  duration_ms: 58.5805
+  type: 'test'
+  ...
+# Subtest: install: npm into <cache>/lib with the pinned version, then the shell-only Chromium into <cache>/browsers
+ok 7 - install: npm into <cache>/lib with the pinned version, then the shell-only Chromium into <cache>/browsers
+  ---
+  duration_ms: 86.660899
+  type: 'test'
+  ...
+# Subtest: missing system libraries: the install-deps command is printed for the user, not run
+ok 8 - missing system libraries: the install-deps command is printed for the user, not run
+  ---
+  duration_ms: 33.358
+  type: 'test'
+  ...
+# Subtest: missing system libraries with a cache: the cache's own cli, single-quoted, never the project's
+ok 9 - missing system libraries with a cache: the cache's own cli, single-quoted, never the project's
+  ---
+  duration_ms: 31.5244
+  type: 'test'
+  ...
+# Subtest: lookup: only the project's own node_modules counts, not a parent folder's or NODE_PATH
+ok 10 - lookup: only the project's own node_modules counts, not a parent folder's or NODE_PATH
+  ---
+  duration_ms: 31.197
+  type: 'test'
+  ...
+# Subtest: lookup: @playwright/test in the project counts (pnpm projects)
+ok 11 - lookup: @playwright/test in the project counts (pnpm projects)
+  ---
+  duration_ms: 27.897
+  type: 'test'
+  ...
+# Subtest: lookup: a pnpm-style symlinked package under the project's node_modules counts
+ok 12 - lookup: a pnpm-style symlinked package under the project's node_modules counts
+  ---
+  duration_ms: 19.7368
+  type: 'test'
+  ...
+# Subtest: runs when reached through a symlink
+ok 13 - runs when reached through a symlink
+  ---
+  duration_ms: 32.1327
+  type: 'test'
+  ...
+# Subtest: local paths are files: Windows drive paths and existing paths with a colon
+ok 14 - local paths are files: Windows drive paths and existing paths with a colon
+  ---
+  duration_ms: 26.6355
+  type: 'test'
+  ...
+# Subtest: URL schemes other than http, https and file are refused before anything runs
+ok 15 - URL schemes other than http, https and file are refused before anything runs
+  ---
+  duration_ms: 98.421499
+  type: 'test'
+  ...
+# Subtest: steps files are checked: a JSON array of known actions
+ok 16 - steps files are checked: a JSON array of known actions
+  ---
+  duration_ms: 126.5577
+  type: 'test'
+  ...
+# Subtest: the host build's import check finds no bare package import in the script
+ok 17 - the host build's import check finds no bare package import in the script
+  ---
+  duration_ms: 0.8019
+  type: 'test'
+  ...
+# Subtest: capture: a local page at 2 widths x 2 themes, with PNGs and a console log
+ok 18 - capture: a local page at 2 widths x 2 themes, with PNGs and a console log
+  ---
+  duration_ms: 803.978696
+  type: 'test'
+  ...
+# Subtest: capture: light and dark really differ (prefers-color-scheme)
+ok 19 - capture: light and dark really differ (prefers-color-scheme)
+  ---
+  duration_ms: 451.127198
+  type: 'test'
+  ...
+# Subtest: compare: identical folders pass and say unchanged; files in one folder are listed
+ok 20 - compare: identical folders pass and say unchanged; files in one folder are listed
+  ---
+  duration_ms: 932.470497
+  type: 'test'
+  ...
+# Subtest: compare: a change over the threshold fails, under it passes, and a size change counts as changed
+ok 21 - compare: a change over the threshold fails, under it passes, and a size change counts as changed
+  ---
+  duration_ms: 778.934496
+  type: 'test'
+  ...
+# Subtest: capture: --compare checks the new shots against a before folder
+ok 22 - capture: --compare checks the new shots against a before folder
+  ---
+  duration_ms: 501.497699
+  type: 'test'
+  ...
+# Subtest: capture: steps, wait-for and mask reach a state and hide data
+ok 23 - capture: steps, wait-for and mask reach a state and hide data
+  ---
+  duration_ms: 2464.083195
+  type: 'test'
+  ...
+# Subtest: failures are loud: HTTP 404 and a network error fail the load, with a non-zero exit
+ok 24 - failures are loud: HTTP 404 and a network error fail the load, with a non-zero exit
+  ---
+  duration_ms: 687.208099
+  type: 'test'
+  ...
+# Subtest: failures are loud: a console error or page error exits non-zero and is logged
+ok 25 - failures are loud: a console error or page error exits non-zero and is logged
+  ---
+  duration_ms: 766.896899
+  type: 'test'
+  ...
+# Subtest: a bad mask selector is a per-shot problem: console log still written, exit 1, no stack
+ok 26 - a bad mask selector is a per-shot problem: console log still written, exit 1, no stack
+  ---
+  duration_ms: 449.266399
+  type: 'test'
+  ...
+# Subtest: the console log hides credentials and query values in URLs
+ok 27 - the console log hides credentials and query values in URLs
+  ---
+  duration_ms: 374.627699
+  type: 'test'
+  ...
+# Subtest: a file URL is captured
+ok 28 - a file URL is captured
+  ---
+  duration_ms: 387.757199
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9353.799173

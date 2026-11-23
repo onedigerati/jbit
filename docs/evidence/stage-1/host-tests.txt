@@ -1,0 +1,11 @@
+$ node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs
+  ...
+1..135
+# tests 135
+# suites 0
+# pass 135
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8924.706074

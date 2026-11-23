@@ -1,0 +1,9 @@
+$ ln -s ~/src/repos/jbit/plugins/jbit/skills/verify/scripts <scratchpad>/link && JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache node <scratchpad>/link/capture.mjs shot <scratchpad>/v/page.html --name sym --out <scratchpad>/symout --widths 390 --themes dark
+Using cache Playwright playwright-core@1.65.0
+wrote <scratchpad>/symout/sym-390-dark.png
+wrote <scratchpad>/symout/sym-console.txt
+1 of 1 screenshots taken
+No load failures, console errors or page errors.
+exit 0
+sym-390-dark.png
+sym-console.txt

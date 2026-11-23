@@ -1,0 +1,5 @@
+$ node plugins/jbit/skills/verify/scripts/capture.mjs shot 'javascript:alert(1)' --name x --out <scratchpad>/bad; node plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/page.html --name '../x' --out <scratchpad>/bad
+refused URL scheme javascript: in javascript:alert(1): only http, https and file
+exit 2
+--name is required: letters, digits, ".", "_" or "-"
+exit 2

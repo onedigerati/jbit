@@ -1,0 +1,16 @@
+$ node plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/err.html --name err --out <scratchpad>/errout --widths 390 --themes light; node plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/nope.html ...; node plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:9/ ...
+Using cache Playwright playwright-core@1.65.0
+wrote <scratchpad>/errout/err-390-light.png
+wrote <scratchpad>/errout/err-console.txt
+1 of 1 screenshots taken
+FAILED: 1 problem(s) — see <scratchpad>/errout/err-console.txt
+  390 light: console error: boom
+exit 1
+not a URL or an existing file: <scratchpad>/v/nope.html
+exit 2
+Using cache Playwright playwright-core@1.65.0
+wrote <scratchpad>/errout/down-console.txt
+0 of 1 screenshots taken
+FAILED: 1 problem(s) — see <scratchpad>/errout/down-console.txt
+  390 light: page failed to load: page.goto: net::ERR_UNSAFE_PORT at http://127.0.0.1:9/
+exit 1

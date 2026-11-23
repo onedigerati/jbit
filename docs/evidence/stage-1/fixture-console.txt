@@ -1,0 +1,8 @@
+== fixture 390px light — file://<scratchpad>/v/page.html
+[requestfailed] GET https://example.invalid/x.png?token=[masked] — origin
+== fixture 390px dark — file://<scratchpad>/v/page.html
+[requestfailed] GET https://example.invalid/x.png?token=[masked] — origin
+== fixture 1280px light — file://<scratchpad>/v/page.html
+[requestfailed] GET https://example.invalid/x.png?token=[masked] — origin
+== fixture 1280px dark — file://<scratchpad>/v/page.html
+[requestfailed] GET https://example.invalid/x.png?token=[masked] — origin

@@ -7,19 +7,22 @@ Make screenshots first-class evidence for UI and UX work, on every host JBIT shi
 2026-11-23 · at `9f032ea`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · host tests: 121 pass (`node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs`) · parity: 14 pass (`node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 1 of 3 · Capture script
-Risk: user input, external services (it runs a browser against a URL and may download Playwright)
+Stage 2 of 3 · Skills + gate
+Risk: user input (the hook parses report text and checks paths it names)
 Checks:
-- [ ] `node plugins/jbit/skills/verify/scripts/capture.mjs` captures a local fixture page at the widths and themes it's given, writing `<name>-<width>-<theme>.png` and a console log to the output folder (proof: test)
-- [ ] It finds Playwright in the project first and, with none there, uses the cache only when a cached install exists; otherwise it exits non-zero with a message saying what to install and that it needs the user's yes, and downloads nothing; `--install` installs into the cache, and a missing system library is printed as a command, never run (proof: test)
-- [ ] `--compare <dir>` reports, for each file in both folders, whether the image changed and by how much, and exits non-zero on a change over the threshold (proof: test)
-- [ ] A page that fails to load, or logs a console error, shows in the script's output and exit code, never silently (proof: test)
-- [ ] It has no bare package import, so the host build can copy it (proof: test, the build's import check)
+- [ ] The commit gate refuses to close a stage whose `report.md` links an image (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) that isn't in the working tree, naming the file; it allows the close when every linked image exists, ignores links to other file types and to URLs, and refuses a link that leaves the stage folder (proof: test)
+- [ ] `jbit:verify` tells the agent to take screenshots with `${CLAUDE_SKILL_DIR}/scripts/capture.mjs` at the state, widths and themes the check names, in the order: the project's Playwright, the host's browser tools, then the cache, whose `install` runs only after the user's yes once per project, logged as a decision in the plan (proof: test, docs check)
+- [ ] `jbit:verify` has the verifier Read each screenshot and write one line per image in the report on what it shows, and at the plan's last stage compares re-run screenshots with the saved ones (`compare`), a change over the threshold reported as a fail unless the plan meant it (proof: test, docs check)
+- [ ] `jbit:stage` captures "before" screenshots of the screens a UI stage changes, before building, into `docs/evidence/stage-<n>/before/`, and verify's "after" shots sit beside them with the same names (proof: test, docs check)
+- [ ] `jbit:plan` writes screenshot proofs with state, widths and themes, and asks once, for a plan with UI work, whether this repo commits screenshots, logging the answer (proof: test, docs check)
+- [ ] `jbit:fix` uses the same script for its one look at a visible change (proof: test, docs check)
+- [ ] The plugin README's Evidence section describes the capture script, the before/after shots, the one-time install yes and the image check (proof: test, docs check)
 Open: none
-Agents: wide — confirmed 2026-11-20 10:45
+Mode: autopilot
+Agents: wide — confirmed 2026-11-23 11:54
 
 ## Stages
-- [ ] 1. Capture script — `skills/verify/scripts/capture.mjs`: Playwright lookup, widths and themes, console log, compare, with tests
+- [x] 1. Capture script — `skills/verify/scripts/capture.mjs`: Playwright lookup, widths and themes, console log, compare, with tests
 - [ ] 2. Skills + gate — plan, stage, verify and fix use it (before/after, described rows, the commit-screenshots question); the hook refuses a report linking a missing image
 - [ ] 3. Hosts + end to end — Copilot and Codex packages carry the script with skill paths rewritten; a live run on each host finds and runs it (Copilot first); a headless run on a small web app closes a UI stage
 
@@ -32,6 +35,9 @@ Agents: wide — confirmed 2026-11-20 10:45
 - 2026-11-23 · (pm) The script lives in the verify skill's own `scripts/` folder and finds its own location; skills point at it as `${CLAUDE_SKILL_DIR}/scripts/capture.mjs` (stage and fix as `${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs`), and `hosts/build.mjs` rewrites those to skill-relative paths for Copilot and Codex, with a test that no `${CLAUDE_` text is left. Why: Claude Code substitutes those variables in skill text but doesn't set them in the model's shell; Codex resolves paths against the skill's folder; Copilot is unproven and gets a live check in stage 3 ([skill-script-paths-2026-11.md](research/skill-script-paths-2026-11.md)).
 - 2026-11-23 · (pm) Pinned Playwright is `playwright-core@1.65.0` (18 days old; 1.65.1 is 10) with `install --only-shell chromium` into `PLAYWRIGHT_BROWSERS_PATH` under the JBIT cache. Why: the core package is all a script needs, and the shell is the smallest browser that launches headless ([playwright-capture-2026-11.md](research/playwright-capture-2026-11.md)).
 - 2026-11-23 · (pm) Compare draws both PNGs on a canvas in the same headless browser and counts differing pixels, rather than installing pixelmatch and pngjs or using Playwright's internal comparator. Why: it adds no dependency beyond the browser the script already has, and the internal comparator is unsupported ([playwright-capture-2026-11.md](research/playwright-capture-2026-11.md)).
+- 2026-11-23 · Agents: wide — the user's choice, confirmed in this session (2026-11-23 11:54), with autopilot.
+- 2026-11-23 · (pm) This repo's own capture tests use a Playwright cache in the session scratchpad (`JBIT_CAPTURE_CACHE`), installed with the script's own `install`, and browser tests report as skipped with the reason when none is found; verify counts a skip as a fail. Why: the tests need a real browser, and the per-project yes the script asks for is a product rule for users' projects, which this development download (approved with the plan) doesn't replace.
+- 2026-11-23 · (pm) Stage 1 review: both fix-now bugs (symlink entry, Windows drive paths) fixed, and five deferrable findings taken now because each was small and lands before skills depend on the script: project-only Playwright lookup plus `@playwright/test`, masked credentials and query values in the console log, a sudo hint that never runs project code, `--ignore-scripts`, per-shot errors keeping the log, and compare failing on missing after-shots. Left: no download hash beyond npm's own check (nit), and symlinks inside `--out` (the caller picks `--out`). The install-needs-yes rule goes into the skill text in stage 2 ([report](evidence/stage-1/report.md)).
 - 2026-11-23 · (pm) Scale: three stages, one plan; no charter. Why: one feature, well under eight stages.
 - 2026-11-23 · (pm) Risk: stage 1 runs a browser against a URL and may point at a download (user input, external services); stage 2 changes the commit gate (it reads report text, user input); stage 3 installs packages and runs live hosts (external services). All three get the security pass.
 

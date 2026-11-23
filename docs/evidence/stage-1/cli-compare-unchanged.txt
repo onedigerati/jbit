@@ -1,0 +1,8 @@
+$ node plugins/jbit/skills/verify/scripts/capture.mjs compare docs/evidence/stage-1 <scratchpad>/cmp/same
+Comparing ~/src/repos/jbit/docs/evidence/stage-1 (before) with <scratchpad>/cmp/same (after), threshold 0.001
+unchanged  fixture-1280-dark.png: fraction 0.000000 (0 of 1024000 px)
+unchanged  fixture-1280-light.png: fraction 0.000000 (0 of 1024000 px)
+unchanged  fixture-390-dark.png: fraction 0.000000 (0 of 312000 px)
+unchanged  fixture-390-light.png: fraction 0.000000 (0 of 312000 px)
+4 image(s) compared; none over the threshold 0.001
+exit 0

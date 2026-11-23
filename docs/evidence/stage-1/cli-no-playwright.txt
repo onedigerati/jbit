@@ -1,0 +1,14 @@
+$ cd <scratchpad>/empty && JBIT_CAPTURE_CACHE=<scratchpad>/emptycache node ~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs shot <scratchpad>/v/page.html --name x --out <scratchpad>/np
+No Playwright found: nothing was captured or compared.
+  project: no playwright-core, playwright or @playwright/test in <scratchpad>/empty/node_modules
+  cache:   none at <scratchpad>/emptycache
+To take screenshots, `install` would download playwright-core@1.65.0 and the Chromium headless shell
+(about 130 MB download, about 290 MB on disk) into <scratchpad>/emptycache — nothing goes into the project.
+That download needs the user's yes. Once they agree, run:
+  node '~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs' install
+Nothing was downloaded.
+exit 3
+--- after the run:
+emptycache exists: no
+files in out folder: 0
+files in cwd: 0

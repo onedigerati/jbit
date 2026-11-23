@@ -66,7 +66,7 @@ If `docs/evidence/.gitignore` doesn't exist, create it (leave out the image line
 *.har
 ```
 
-If it exists, leave it alone. A repo that removed the image lines has opted in to committing screenshots; never add them back.
+If it exists, leave it alone unless the user's answer changed, as above. A repo that removed the image lines has opted in to committing screenshots; add them back only when the user, in their own words, switches back to keeping screenshots local.
 
 Before saving anything, mask secrets and personal data in it: tokens, API keys, passwords, cookies (`Cookie`/`Set-Cookie`), `Authorization` headers and bearer tokens, session IDs, JWTs, database URLs with credentials, emails, names, addresses. Replace the value and keep what it was: `DATABASE_URL=postgres://[masked]@db:5432/app`. The command on the first line of each file is masked too: `curl -H "Authorization: [masked]"`. Don't screenshot a screen showing real personal data; use test data, or describe the screen instead.
 

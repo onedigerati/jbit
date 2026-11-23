@@ -1,0 +1,68 @@
+$ bash <scratchpad>/mutate.sh   # breaks imageDenial in scratch copies of plugins/jbit, runs `claude plugin test .` in each; repo untouched
+
+# Mutation runs of the image gate on scratch copies of plugins/jbit. Never touches the repo.
+S=<scratchpad>/mut
+SRC=~/src/repos/jbit/plugins/jbit
+mkdir -p $S
+mut() {
+  name=$1; expr=$2; d=$S/$name
+  rm -rf $d; mkdir -p $d
+  cp -r $SRC/. $d/
+  perl -0pi -e "$expr" $d/hooks/register.ts
+  if cmp -s $SRC/hooks/register.ts $d/hooks/register.ts; then echo "== $name: MUTATION NOT APPLIED"; return; fi
+  echo "--- $name diff:"; diff $SRC/hooks/register.ts $d/hooks/register.ts | head -8
+  (cd $d && claude plugin test . 2>&1) > $S/$name.out
+  echo "== $name: $(grep -E '^ *[0-9]+ (pass|fail)$' $S/$name.out | tr '\n' ' ')"
+  grep -E '^\(fail\)' $S/$name.out | head -20
+}
+mut off 's/(export async function imageDenial\([^\n]*\{\n)/$1  return undefined\n/'
+mut nodrive 's/const drive = \/\^\[a-z\]:\[\\\\\/\]\/i\.test\(bare\)/const drive = false/'
+mut nocode 's/const prose = withoutCode\(text\)/const prose = text/'
+mut noref 's/  for \(const m of prose\.matchAll\(\/\^ \{0,3\}[^\n]*\n[^\n]*\n//'
+mut noimg 's/  for \(const m of prose\.matchAll\(\/<img[^\n]*\n//'
+
+# output
+--- off diff:
+1911a1912
+>   return undefined
+== off:  567 pass  12 fail 
+(fail) a report linking a screenshot that is not in the working tree is refused, naming the file [42.42ms]
+(fail) a missing screenshot is refused when the report comes in the same commit [49.86ms]
+(fail) an image link into another stage folder is refused as outside the stage folder [42.42ms]
+(fail) an absolute image link is refused as outside the stage folder [51.11ms]
+(fail) an upper-case image extension is checked too [43.03ms]
+(fail) a missing screenshot is named without its fragment, and a URL-encoded name is decoded [42.52ms]
+(fail) a Windows absolute image link is refused as outside the stage folder, not skipped as a URL scheme [46.97ms]
+(fail) a code fence does not hide image links after it closes [57.63ms]
+(fail) reference-style definitions and HTML img tags are checked [50.49ms]
+(fail) an inline link whose target has spaces or balanced brackets is checked [41.48ms]
+(fail) text and URL links before the screenshots do not push them past the link cap [41.48ms]
+(fail) an exists check on a screenshot that throws synchronously counts as missing [0.20ms]
+--- nodrive diff:
+1885c1885
+<   const drive = /^[a-z]:[\\/]/i.test(bare)
+---
+>   const drive = false
+== nodrive:  578 pass  1 fail 
+(fail) a Windows absolute image link is refused as outside the stage folder, not skipped as a URL scheme [53.12ms]
+--- nocode diff:
+1866c1866
+<   const prose = withoutCode(text)
+---
+>   const prose = text
+== nocode:  578 pass  1 fail 
+(fail) image links inside inline code or a fenced code block are not checked [48.61ms]
+--- noref diff:
+1872,1873d1871
+<   for (const m of prose.matchAll(/^ {0,3}\[[^\]\n]+\]:[ \t]*(?:<([^<>\n]*)>|(\S+))(?:[ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/gm))
+<     targets.push(m[1] ?? m[2] ?? '')
+== noref:  578 pass  1 fail 
+(fail) reference-style definitions and HTML img tags are checked [43.79ms]
+--- noimg diff:
+1874d1873
+<   for (const m of prose.matchAll(/<img\b[^>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/gi)) targets.push(m[1] ?? m[2] ?? m[3] ?? '')
+== noimg:  578 pass  1 fail 
+(fail) reference-style definitions and HTML img tags are checked [43.91ms]
+
+$ git status --short plugins/   # after: repo unchanged except the pre-existing untracked evals-ablation/
+?? plugins/jbit/evals-ablation/

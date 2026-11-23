@@ -1,0 +1,56 @@
+$ node plugins/jbit/skills/verify/scripts/capture.mjs --help && node plugins/jbit/skills/verify/scripts/capture.mjs where (no cache env); then JBIT_CAPTURE_CACHE=<scratchpad>/jbit-capture-cache ... where
+JBIT capture — screenshots and pixel compare with Playwright (Chromium headless shell).
+
+Usage:
+  node capture.mjs shot <url|file> --name <name> --out <dir> [options]
+  node capture.mjs compare <before-dir> <after-dir> [--threshold <fraction>]
+  node capture.mjs where              which Playwright would be used
+  node capture.mjs install            install playwright-core@1.65.0 + Chromium headless shell into the JBIT cache
+  node capture.mjs --help
+  (--install, --where and --compare <before> <after> work as the commands above)
+
+shot writes <out>/<name>-<width>-<theme>.png for every width x theme, and <out>/<name>-console.txt holding console
+messages, page errors and failed requests. URLs must be http, https or file (a local path is taken as a file).
+  --name <name>          file name stem: letters, digits, '.', '_' or '-'
+  --out <dir>            output folder (created)
+  --widths <list>        viewport widths in CSS px, default 390,1280
+  --height <px>          viewport height, default 800
+  --themes <list>        light, dark or both (prefers-color-scheme emulation), default light,dark
+  --wait-for <selector>  wait for this selector to be visible before the shot
+  --steps <file.json>    actions to reach the state, run after load: a JSON array of
+                         {"click": sel} {"fill": sel, "value": text} {"press": key, "selector"?: sel}
+                         {"waitFor": sel} {"goto": url}
+  --mask <selector>      cover matching elements in the shot (repeatable), for hiding data
+  --viewport-only        shoot the viewport only, not the full page
+  --timeout <ms>         load, wait and step timeout, default 30000
+  --compare <dir>        after the shots, compare this run's shots in <out> with the same names in <dir>
+  --threshold <fraction> for --compare and compare: largest fraction of differing pixels that still passes, default 0.001
+
+compare reports, for each PNG in both folders, changed or unchanged and the fraction of pixels that differ (a size
+change counts as fully changed). A before file missing from after fails; files only in after are listed.
+
+Options for every command:
+  --project <dir>        project whose Playwright is looked up first, default the current directory
+
+Playwright lookup, in order: the project's playwright-core or playwright (resolved from --project), then the JBIT
+cache: $JBIT_CAPTURE_CACHE, else ${XDG_CACHE_HOME:-~/.cache}/jbit/capture (macOS ~/Library/Caches/jbit/capture,
+Windows %LOCALAPPDATA%\jbit\capture). With neither, nothing is downloaded: install needs the user's yes.
+
+Exit codes: 0 ok; 1 page failed to load, logged a console error or page error, a compare change over the threshold, or a before shot missing from after;
+2 usage error or refused URL; 3 no Playwright found; 4 the browser would not launch; 5 install failed.
+exit: 0
+--- where (default cache)
+No Playwright found: nothing was captured or compared.
+  project: no playwright-core, playwright or @playwright/test in ~/src/repos/jbit/node_modules
+  cache:   none at ~/.cache/jbit/capture
+To take screenshots, `install` would download playwright-core@1.65.0 and the Chromium headless shell
+(about 130 MB download, about 290 MB on disk) into ~/.cache/jbit/capture — nothing goes into the project.
+That download needs the user's yes. Once they agree, run:
+  node '~/src/repos/jbit/plugins/jbit/skills/verify/scripts/capture.mjs' install
+Nothing was downloaded.
+exit: 3
+--- where (scratchpad cache)
+playwright: cache — playwright-core@1.65.0
+  module:   <scratchpad>/jbit-capture-cache/lib/node_modules/playwright-core/index.js
+  browsers: <scratchpad>/jbit-capture-cache/browsers
+exit: 0

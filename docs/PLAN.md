@@ -7,23 +7,21 @@ Make screenshots first-class evidence for UI and UX work, on every host JBIT shi
 2026-11-23 · at `9f032ea`: tests: 561 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 51 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · host tests: 121 pass (`node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs`) · parity: 14 pass (`node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 2 of 3 · Skills + gate
-Risk: user input (the hook parses report text and checks paths it names)
+Stage 3 of 3 · Hosts + end to end
+Risk: external services (live Copilot and Codex sessions, an isolated install, a Playwright cache)
 Checks:
-- [ ] The commit gate refuses to close a stage whose `report.md` links an image (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`) that isn't in the working tree, naming the file; it allows the close when every linked image exists, ignores links to other file types and to URLs, and refuses a link that leaves the stage folder (proof: test)
-- [ ] `jbit:verify` tells the agent to take screenshots with `${CLAUDE_SKILL_DIR}/scripts/capture.mjs` at the state, widths and themes the check names, in the order: the project's Playwright, the host's browser tools, then the cache, whose `install` runs only after the user's yes once per project, logged as a decision in the plan (proof: test, docs check)
-- [ ] `jbit:verify` has the verifier Read each screenshot and write one line per image in the report on what it shows, and at the plan's last stage compares re-run screenshots with the saved ones (`compare`), a change over the threshold reported as a fail unless the plan meant it (proof: test, docs check)
-- [ ] `jbit:stage` captures "before" screenshots of the screens a UI stage changes, before building, into `docs/evidence/stage-<n>/before/`, and verify's "after" shots sit beside them with the same names (proof: test, docs check)
-- [ ] `jbit:plan` writes screenshot proofs with state, widths and themes, and asks once, for a plan with UI work, whether this repo commits screenshots, logging the answer (proof: test, docs check)
-- [ ] `jbit:fix` uses the same script for its one look at a visible change (proof: test, docs check)
-- [ ] The plugin README's Evidence section describes the capture script, the before/after shots, the one-time install yes and the image check (proof: test, docs check)
+- [ ] A parity scenario runs the image gate on the Claude hook and both command hooks: a stage close whose report links a missing screenshot is refused on all three, and allowed once the file exists (proof: test)
+- [ ] Claude Code: a headless session with the plugin, on a small web app with a one-stage plan whose check is a screenshot proof, takes "before" shots, builds, verifies with "after" shots and a `Screenshots:` line per image, and the commit closes the stage; deleting one linked image first gets the close refused (proof: run the product, a test can't show what the agent does)
+- [ ] Copilot CLI: from an isolated install of this repo's marketplace, a session resolves `<verify skill folder>` to the installed plugin's script (not the project's planted `scripts/capture.mjs`) and captures a screenshot (proof: run the product, a test can't show what the host model does)
+- [ ] Codex CLI: the same from an isolated install (proof: run the product, a test can't show what the host model does)
+- [ ] Each host README's gap list says what it can't carry of screenshot evidence, if anything (proof: test, docs check)
 Open: none
 Mode: autopilot
 Agents: wide — confirmed 2026-11-23 11:54
 
 ## Stages
 - [x] 1. Capture script — `skills/verify/scripts/capture.mjs`: Playwright lookup, widths and themes, console log, compare, with tests
-- [ ] 2. Skills + gate — plan, stage, verify and fix use it (before/after, described rows, the commit-screenshots question); the hook refuses a report linking a missing image
+- [x] 2. Skills + gate — plan, stage, verify and fix use it (before/after, described rows, the commit-screenshots question); the hook refuses a report linking a missing image
 - [ ] 3. Hosts + end to end — Copilot and Codex packages carry the script with skill paths rewritten; a live run on each host finds and runs it (Copilot first); a headless run on a small web app closes a UI stage
 
 ## Decisions
@@ -38,6 +36,8 @@ Agents: wide — confirmed 2026-11-23 11:54
 - 2026-11-23 · Agents: wide — the user's choice, confirmed in this session (2026-11-23 11:54), with autopilot.
 - 2026-11-23 · (pm) This repo's own capture tests use a Playwright cache in the session scratchpad (`JBIT_CAPTURE_CACHE`), installed with the script's own `install`, and browser tests report as skipped with the reason when none is found; verify counts a skip as a fail. Why: the tests need a real browser, and the per-project yes the script asks for is a product rule for users' projects, which this development download (approved with the plan) doesn't replace.
 - 2026-11-23 · (pm) Stage 1 review: both fix-now bugs (symlink entry, Windows drive paths) fixed, and five deferrable findings taken now because each was small and lands before skills depend on the script: project-only Playwright lookup plus `@playwright/test`, masked credentials and query values in the console log, a sudo hint that never runs project code, `--ignore-scripts`, per-shot errors keeping the log, and compare failing on missing after-shots. Left: no download hash beyond npm's own check (nit), and symlinks inside `--out` (the caller picks `--out`). The install-needs-yes rule goes into the skill text in stage 2 ([report](evidence/stage-1/report.md)).
+- 2026-11-23 · (pm) Lookup order refined: project's Playwright, then the JBIT cache if it's already installed, then the host's browser tools, then asking about `install`. Why: the script can't see host tools, and an installed cache downloads nothing; the user's yes still guards the only download. The cache is per user, so one yes serves every project on that machine.
+- 2026-11-23 · (pm) Stage 2 review: fixed the planted-script path (a `<verify skill folder>` placeholder with its rule beside the first use), the install yes and commit-screenshots opt-in counting only the user's own words, Windows drive links, links in code, reference-style and `<img>` links, the image-link cap and a throwing exists check. Left: a symlink in the stage folder counts as present (existence only, never read), and a folder named `x.png` passes ([report](evidence/stage-2/report.md)).
 - 2026-11-23 · (pm) Scale: three stages, one plan; no charter. Why: one feature, well under eight stages.
 - 2026-11-23 · (pm) Risk: stage 1 runs a browser against a URL and may point at a download (user input, external services); stage 2 changes the commit gate (it reads report text, user input); stage 3 installs packages and runs live hosts (external services). All three get the security pass.
 

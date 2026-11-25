@@ -87,25 +87,6 @@ A plan covers one body of work with one goal: a single feature, several features
 - **A project too big for one plan.** For a PRD with many requirements or several releases, `/jbit:plan` asks once whether to chart it. `/jbit:charter` turns it into `docs/ROADMAP.md`, and plans are cut from it one milestone at a time (see [Large projects](#large-projects)).
 - **After a break.** `/jbit:resume` (or "where were we") reads the plan, the commits since the last stage and any uncommitted work, then says where things stand and what's next.
 
-## Moving over from keel
-
-JBIT was called keel up to 0.11.0. To switch an existing install, uninstall the old plugin, swap the marketplace, and install `jbit`:
-
-```
-claude plugin uninstall keel@keel-local
-claude plugin marketplace remove keel-local
-claude plugin marketplace add onedigerati/jbit
-claude plugin install jbit@jbit-local
-```
-
-Use the path to your local clone in place of `onedigerati/jbit` if you install from a clone. If you installed keel at another scope, add the same `--scope` to the uninstall. Then start a new session (or run `/reload-plugins`).
-
-What changes and what doesn't:
-
-- Commands are now `/jbit:*`: `/jbit:plan`, `/jbit:autopilot`, `/jbit:approve` and so on. The old `/keel:*` commands no longer exist, so typing `/keel:autopilot unattended` or `/keel:approve` does nothing.
-- The status line reads `jbit`, and the hook's per-session state starts fresh once.
-- Your repos need no edits. `Keel risk:` and `Keel outward:` lines in `CLAUDE.md` are still read, exactly like `JBIT risk:` and `JBIT outward:`, and a `keel:allow-secret` marker still exempts a line from the secret guard, like `jbit:allow-secret`. Old plans that mention `keel:plan` and the like need no edit either: the hook's notes to Claude use the current names.
-
 ## Moving from 1.x
 
 JBIT 2.0.0 is 0.18.1's plugin again, numbered above 1.2.0 so that `claude plugin update` moves a 1.x install forward. A plan in progress needs no edit: a 1.x plan has no Mode, Agents or Models line, and 2.0.0 reads it as `balanced` with no Models line. What changes, and what to do:

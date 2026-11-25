@@ -768,11 +768,13 @@ test('plan\'s description says to load it before any research for a plan, so its
   assert.match(description('plan'), /before any research for a plan/)
 })
 
-test('the plugin README has a ## Moving from 1.x section after the keel one, saying what changes for a 1.x user', () => {
+test('the plugin README has a ## Moving from 1.x section, and neither README mentions keel', () => {
+  for (const [name, text] of Object.entries(readmes)) {
+    assert.doesNotMatch(text, /\bkeel\b/i, `${name} README still mentions keel`)
+  }
   const text = readmes.plugin
-  const keel = text.indexOf('\n## Moving over from keel\n')
   const start = text.indexOf('\n## Moving from 1.x\n')
-  assert.ok(keel !== -1 && start > keel, 'no ## Moving from 1.x section after ## Moving over from keel')
+  assert.ok(start !== -1, 'no ## Moving from 1.x section')
   const end = text.indexOf('\n## ', start + 1)
   const section = text.slice(start, end === -1 ? undefined : end)
   for (const phrase of [

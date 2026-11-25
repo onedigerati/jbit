@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "sources": {
     "hosts/build.mjs": "1c358aba037112f278788d79df7c0ecdb5db1f92a07a57fc963a1a1c4d9e204d",
-    "hosts/copilot/capability.json": "1455fe9a6f6169dd8e920cb904e70e9071bab5ec6ed371a7c35d1a241f7899c8",
+    "hosts/copilot/capability.json": "b9a0b41c61acaf4280b252dc245d94b9e5f9cbfd32201c7383cdce2ace84b1e6",
     "hosts/copilot/hook.mjs": "580b02c9841a89838a6e7b4e9993f91327b0d7b0d16bfd33770e3383fc1844f8",
     "hosts/copilot/map.mjs": "b74eb5ac930e2004caaf1fa808e912d0c6df4a7c9616623501b6c64a10f4a368",
     "hosts/core/dispatch.mjs": "146f6b06407f79565ce3614f24febe10cb126e8fb8ec8153861371560dbed2ac",

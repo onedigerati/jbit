@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "sources": {
     "hosts/build.mjs": "1c358aba037112f278788d79df7c0ecdb5db1f92a07a57fc963a1a1c4d9e204d",
-    "hosts/codex/capability.json": "eaee1976a87b52e651c3203d2933469e9bb044b6cb0ee31603b752587f17c1f8",
+    "hosts/codex/capability.json": "9e32046c95f2725b29a5fb3b09aa45496d70ba53955543103ef9c8a4df5819ec",
     "hosts/codex/handler.mjs": "ec92ea836d3331fe97c6690d37f12649fb533fdf0dd51cf16f28ac139a5cd76f",
     "hosts/codex/hook.mjs": "e7217f37360e083793c7e10e040ec8b90f4656fa7e8bbc77fadcc54ed015d070",
     "hosts/codex/map.mjs": "ae8d7319467c6941ee7d03b809d204a5aef354803668f3bd643bdf9949abbf72",

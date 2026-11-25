@@ -17,7 +17,7 @@
     "category": "Productivity"
   },
   "readme": {
-    "path": "README.md",
+    "path": "docs/hosts.md",
     "start": "<!-- codex-gaps:start: generated from hosts/codex/capability.json by node hosts/build.mjs codex; don't edit -->",
     "end": "<!-- codex-gaps:end -->"
   },
@@ -125,18 +125,18 @@
   },
   "gaps": [
     { "id": "hook-trust", "what": "Hooks need trusting after every install and update", "why": "Codex runs a plugin's hooks only once the user trusts them, at startup (\"Hooks need review\", then \"Trust all\") or through `/hooks`, and every JBIT update voids that trust silently. Until they're trusted again, JBIT has no `## Now` in context, no gates and no carry-on, and nothing says so; `codex exec` skips untrusted hooks without a warning. Trusted hooks run outside the sandbox." },
-    { "id": "hook-timeout", "what": "A hook killed on timeout", "why": "A PreToolUse hook that Codex kills on its 30-second timeout lets the call run (proven live at stage 7). The shipped hook refuses by its own 25-second watchdog first, and refuses when its own modules fail to load, so this bites only if the hook's event loop blocks." },
+    { "id": "hook-timeout", "what": "A hook killed on timeout", "why": "A PreToolUse hook that Codex kills on its 30-second timeout lets the call run. The shipped hook refuses by its own 25-second watchdog first, and refuses when its own modules fail to load, so this bites only if the hook's event loop blocks." },
     { "id": "stall-detection", "what": "Stall detection and other in-memory state", "why": "Each hook event is a fresh process, as on Copilot, so nothing counts repeated turn ends; the hook's own cap of 8 Stop blocks per prompt bounds the loop instead, and an unattended `codex exec` run stops quietly when it's reached. Prompt again to carry on." },
     { "id": "lean-agent-count", "what": "Lean's count of agents already running", "why": "The Claude hook keeps it in memory across events; a command hook has no running process to keep it in." },
     { "id": "background-agents", "what": "Tracking background agents", "why": "Same reason: no in-memory agent list between events." },
     { "id": "post-commit-reopen", "what": "The reopen check after a commit", "why": "It runs before the commit lands, since there's no in-memory state carried to the next event." },
-    { "id": "long-now", "what": "A `## Now` longer than 40 lines", "why": "JBIT passes at most 40 lines of `## Now` into context, as on Claude Code: a longer one reaches the model cut at its 40th line (proven live, along with 40 lines passed whole). Keep `## Now` short." },
+    { "id": "long-now", "what": "A `## Now` longer than 40 lines", "why": "JBIT passes at most 40 lines of `## Now` into context, as on Claude Code: a longer one reaches the model cut at its 40th line. Keep `## Now` short." },
     { "id": "encrypted-brief", "what": "The brief of a `spawn_agent` call", "why": "Codex hands the hook the brief (`message`) encrypted, so no check can read it. The stage hold and the Models line still apply to the call; nothing that needs the brief's words does." },
-    { "id": "child-tools-unproven", "what": "Some tool calls inside `spawn_agent` children", "why": "The hooks fire for `Bash` and `apply_patch` calls a subagent makes (proven live), but whether they fire for its `write_stdin` and MCP tool calls is unproven." },
+    { "id": "child-tools-unproven", "what": "Some tool calls inside `spawn_agent` children", "why": "The hooks fire for `Bash` and `apply_patch` calls a subagent makes, but whether they fire for its `write_stdin` and MCP tool calls is unproven." },
     { "id": "shell-writes-held", "what": "Writes through the shell in a held stage", "why": "The hold refuses `apply_patch` and builder agents, but a file written by a shell command (`echo > file`, `sed -i`) isn't held, on any host: the hook can't tell a build step from a read in a shell line." },
     { "id": "codex-home-guard", "what": "The `$CODEX_HOME` guard", "why": "Writes under `$CODEX_HOME` or a `.codex` folder are refused through `apply_patch` and through shell commands that name the folder, but the shell check is best-effort: a command that reaches the folder without naming it isn't caught." },
     { "id": "case-insensitive-fs", "what": "Case-insensitive file systems", "why": "The guard compares paths case-sensitively, so on a case-insensitive file system (macOS, Windows) a write to `.Codex/` or to `$CODEX_HOME` spelled in another case can slip past it." },
-    { "id": "role-agents", "what": "No role agents", "why": "A Codex plugin can't register agents (none of the routes the spike tried did), so the package ships none; builders, verifiers and reviewers are plain `spawn_agent` calls briefed with the role." },
+    { "id": "role-agents", "what": "No role agents", "why": "A Codex plugin can't register agents, so the package ships none; builders, verifiers and reviewers are plain `spawn_agent` calls briefed with the role." },
     { "id": "claude-md", "what": "`CLAUDE.md` loaded at startup", "why": "Codex loads `AGENTS.md`, not `CLAUDE.md`; the skills tell the model to read `CLAUDE.md` itself." },
     { "id": "dollar-invocation", "what": "Typing `/jbit:<name>`", "why": "Codex recognises a skill only as `$jbit:<name>` (for example `$jbit:autopilot`). A typed `/jbit:plan` or `$plan` reaches the model as plain text, which may still find the skill from its description, with no guarantee. The hook reads a leading `$jbit:autopilot` or `$jbit:approve` as the typed command." },
     { "id": "node-22-18", "what": "Node older than 22.18", "why": "The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused." },
@@ -144,6 +144,6 @@
     { "id": "worktree-isolation", "what": "Worktree isolation for parallel builders", "why": "Codex's `spawn_agent` has none, so parallel builders must own separate files or run one at a time." },
     { "id": "compaction", "what": "Compacting the context before autopilot carries on", "why": "Codex gives a command hook no context gauge and no compact call; Codex manages its own context." },
     { "id": "hook-wording", "what": "The hook's own messages", "why": "They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them." },
-    {"id": "capture-sandbox", "what": "Screenshots inside the workspace-write sandbox", "why": "In a stage 3 `codex exec` run under `--sandbox workspace-write`, Chromium could not start (it aborted at launch with `shutdown: Operation not permitted`), so `capture.mjs` stopped with \"The browser would not launch\"; with the sandbox off (`--dangerously-bypass-approvals-and-sandbox`) the same script took the screenshot. So run it outside the workspace-write sandbox (with Codex's approval, or a full-access sandbox such as `--sandbox danger-full-access`). Finding the script works: a live run showed the model fills `<verify skill folder>/scripts/capture.mjs` from the `SKILL.md` path Codex lists for the skill."}
+    { "id": "capture-sandbox", "what": "Screenshots inside the workspace-write sandbox", "why": "In a `codex exec` run under `--sandbox workspace-write`, Chromium could not start (it aborted at launch with `shutdown: Operation not permitted`), so `capture.mjs` stopped with \"The browser would not launch\"; with the sandbox off (`--dangerously-bypass-approvals-and-sandbox`) the same script took the screenshot. So run it outside the workspace-write sandbox (with Codex's approval, or a full-access sandbox such as `--sandbox danger-full-access`). Finding the script works: the model fills `<verify skill folder>/scripts/capture.mjs` from the `SKILL.md` path Codex lists for the skill." }
   ]
 }

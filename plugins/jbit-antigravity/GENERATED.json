@@ -3,7 +3,7 @@
   "host": "antigravity",
   "version": "2.0.0",
   "sources": {
-    "hosts/antigravity/capability.json": "e73c78e6e0e1cc7874ac59506eaafbe7ca52b3256f10b41228bb8a0c9fb62a99",
+    "hosts/antigravity/capability.json": "1402db2c6e2ec302b1c564c9e402aaf615808623387396d2b03ae0b2e4935924",
     "hosts/antigravity/handler.mjs": "f9f6cd7f47acf85a0e77f892d582373b84b233fb558ce20708bc2188a748e9d6",
     "hosts/antigravity/hook.mjs": "37804d76014df6e1a933c44fef5a07da1d017a1bfd625b409af9ddce11e2935a",
     "hosts/antigravity/map.mjs": "7d08bd1ff3cbd087561d82be71d4431e0ac96d1ab8c53e735f64b5cdce86e8c8",

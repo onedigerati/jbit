@@ -9,7 +9,7 @@
 
 **JBIT** (*jay-bit*, for Just Build It). You bring the goal; JBIT **plans it**. Approve the plan and say `JBIT, just build it.` JBIT does the rest: it **proves it** and **sees it through**, logging the calls it makes for you and stopping before anything it can't take back.
 
-It's a Claude Code plugin for long, multi-stage work, on new projects and existing ones. All project state lives in one plan file plus git, with no tracker or codebase map to keep current.
+It's a plugin for Claude Code—with generated packages for GitHub Copilot CLI, OpenAI Codex CLI, and Google Antigravity CLI—for long, multi-stage work, on new projects and existing ones. All project state lives in one plan file plus git, with no tracker or codebase map to keep current.
 
 For a visual walkthrough (interactive autopilot simulation, the stage loop, guardrails and roadmaps), download [docs/field-guide.html](docs/field-guide.html) and open it in a browser.
 
@@ -37,19 +37,6 @@ Once you've seen the plan, your own command runs autopilot unattended: a typed `
 
 It removes waiting, not checks: verification, the commit gates, the secret guard and the security review of risky stages stay, and it still stops when it's stuck and before building a plan you haven't seen.
 
-## Moving over from keel
-
-JBIT was called keel up to 0.11.0. To switch an existing install:
-
-```
-claude plugin uninstall keel@keel-local
-claude plugin marketplace remove keel-local
-claude plugin marketplace add onedigerati/jbit
-claude plugin install jbit@jbit-local
-```
-
-Use the path to your local clone in place of `onedigerati/jbit` if you install from a clone, then start a new session. Commands are now `/jbit:*`; the old `/keel:*` commands no longer exist. Your repos need no edits: `Keel risk:` and `Keel outward:` lines in `CLAUDE.md` and `keel:allow-secret` markers still work, alongside `JBIT risk:`, `JBIT outward:` and `jbit:allow-secret`.
-
 ## In short
 
 - **State.** One plan file plus git. With a PRD too big for one plan, `docs/ROADMAP.md` adds milestones and a requirement ledger, and a milestone closes only on evidence that its requirements are covered.
@@ -62,144 +49,35 @@ Use the path to your local clone in place of `onedigerati/jbit` if you install f
 
 ## Install
 
+### Claude Code
+
 ```
 claude plugin marketplace add onedigerati/jbit
 claude plugin install jbit@jbit-local
 ```
 
-See [plugins/jbit/README.md](plugins/jbit/README.md) for the full story, every skill and hook, project risk rules, the secret guard, evidence, roadmaps, Agents levels, Models and evals.
+### Other hosts (Copilot CLI, Codex CLI, Antigravity CLI)
 
-## Copilot CLI
+Generated packages live in `plugins/jbit-copilot/`, `plugins/jbit-codex/`, and `plugins/jbit-antigravity/` (all require Node 22.18 or later):
 
-JBIT also runs on GitHub Copilot CLI. `plugins/jbit-copilot/` is the same plugin, version 2.0.0, generated from this one by `node hosts/build.mjs copilot`: the same skills with a note on Copilot's tool names, and the hook ported to a Node script. It needs Node 22.18 or later.
+- **GitHub Copilot CLI** — invoke as `/jbit:<name>` (bare `/plan`, `/review`, `/autopilot` are Copilot's own commands):
+  ```
+  copilot plugin marketplace add onedigerati/jbit
+  copilot plugin install jbit@jbit-local
+  ```
+- **OpenAI Codex CLI** — invoke as `$jbit:<name>`, and trust the plugin's hooks on first startup and after every update (`/hooks` → "Trust all"):
+  ```
+  codex plugin marketplace add onedigerati/jbit
+  codex plugin add jbit@jbit-local
+  ```
+- **Google Antigravity CLI (`agy`)** — invoke as `/jbit:<name>`; install by the package path, never the repo root:
+  ```
+  agy plugin install /path/to/jbit/plugins/jbit-antigravity
+  ```
 
-```
-copilot plugin marketplace add onedigerati/jbit
-copilot plugin install jbit@jbit-local
-```
+Because these three hosts run JBIT's hook as a per-event Node command instead of an in-process hook, they share a few differences from Claude Code (no in-memory stall counter or `lean` agent count, no hook-driven context compaction, and no worktree isolation for parallel builders). See [docs/hosts.md](docs/hosts.md) for local-clone installs, headless flags, Antigravity's `--settings` allow list, and each host's full gap list.
 
-The GitHub form works once the Copilot package is pushed; from a local clone, use `copilot plugin marketplace add /path/to/jbit`. Copilot reads its own marketplace file, `.github/plugin/marketplace.json`, so it installs the Copilot package, not the Claude one.
+## Further reading
 
-Type `/jbit:plan`, `/jbit:stage`, `/jbit:autopilot` and so on. A typed `/plan`, `/review` or `/autopilot` is Copilot's own command, not JBIT's.
-
-What works, proven headless on Copilot CLI 1.0.114: the plan's `## Now` reaches the model with every prompt, a stage runs to its close and commit, the commit gate refuses a stage close with an unticked check, the secret guard refuses a commit carrying a key, a `git push` under autopilot is held, an edit in a held stage is refused, autopilot carries on into the next stage (proven with a run told to end its turn after stage 1, since a model often finishes small stages in one turn), and the commit gate holds inside a `task` subagent.
-
-What Copilot can't do:
-
-<!-- copilot-gaps:start: generated from hosts/copilot/capability.json by node hosts/build.mjs copilot; don't edit -->
-- **Stall detection.** Each hook event is a fresh process, so nothing counts repeated turn ends; Copilot's cap of 8 agentStop blocks per prompt bounds the loop instead.
-- **Lean's count of agents already running.** The Claude hook keeps it in memory across events; a command hook has no running process to keep it in.
-- **Tracking background agents.** Same reason: no in-memory agent list between events.
-- **The reopen check after a commit.** It runs before the commit lands, since there's no in-memory state carried to the next event.
-- **The guard on `edit` and `create`.** Covered on their documented shape with fixture tests only: no model this account offers writes through them, so no live run proved them. `bash` and `apply_patch` are proven.
-- **Long unattended runs under `copilot -p`.** agentStop gets 8 blocks per prompt, so an unattended run stops quietly at its 9th turn end; use Copilot's --autopilot or prompt again.
-- **Typed `/plan`, `/review`, `/autopilot`.** They are Copilot's own commands; type `/jbit:plan`, `/jbit:review`, `/jbit:autopilot`.
-- **Node older than 22.18.** The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused.
-- **`/code-review` and `/security-review`.** They are Claude Code built-ins; on Copilot the review runs as a `task` agent (`code-review`, `security-review`) or a fresh agent with the same lenses.
-- **Worktree isolation for parallel builders.** Copilot's `task` has none, so parallel builders must own separate files or run one at a time.
-- **Compacting the context before autopilot carries on.** Copilot gives a command hook no context gauge and no compact call (the shim reports 0% and skips compaction); Copilot manages its own context.
-- **The stage hold and the secret guard inside a `task` subagent.** Only the commit gate was proven inside a subagent (stage 4, run 12); in the runs meant to test the hold and the secret guard there, the model declined to delegate, so those two are unproven in a subagent.
-- **A hook that hangs or prints junk.** Copilot refuses a call when a preToolUse hook exits non-zero, but lets the call run when the hook prints something other than JSON or outlasts its 30-second timeout (proven at stage 4 on a scratch copy). The shipped hook prints only JSON and refuses by its own 25-second watchdog, so this bites only if the hook's event loop blocks.
-- **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
-- **Running the screenshot script headless.** Skills name it as `<verify skill folder>/scripts/capture.mjs`; a live run (stage 3) proved the model sees the skill's folder and runs the installed script, and a headless run (`copilot -p`) is denied running a file outside the project unless it allows the plugin's folder with `--add-dir <plugin folder>`. Per Copilot's docs, an interactive session asks for the path instead, and `--allow-all-paths` also allows it.
-<!-- copilot-gaps:end -->
-
-## Codex CLI
-
-JBIT also runs on OpenAI Codex CLI. `plugins/jbit-codex/` is the same plugin, version 2.0.0, generated from this one by `node hosts/build.mjs codex`: the same skills with a note on Codex's tool names, and the hook ported to a Node script. It needs Node 22.18 or later.
-
-```
-codex plugin marketplace add onedigerati/jbit
-codex plugin add jbit@jbit-local
-```
-
-The GitHub form works once the Codex package is pushed; from a local clone, use `codex plugin marketplace add /path/to/jbit`. Codex reads its own marketplace file, `.agents/plugins/marketplace.json`, so it installs the Codex package, not the Claude one.
-
-**Trust the hooks first.** Codex runs a plugin's hooks only once you trust them: at startup the TUI says "Hooks need review"; choose "Trust all", or review them in `/hooks`. Do it again after every JBIT update, which voids the trust. Until then nothing guards, no plan reaches the model, and nothing says so. Trusted hooks run outside Codex's sandbox.
-
-Invoke a skill as `$jbit:<name>`: `$jbit:plan`, `$jbit:stage`, `$jbit:autopilot`. A typed `/jbit:plan` is plain text to Codex. The hook reads a leading `$jbit:autopilot` or `$jbit:approve` as the typed `/jbit:autopilot` or `/jbit:approve`.
-
-Headless, run `codex exec "<prompt>" < /dev/null` from the project (without `< /dev/null` it waits for more input on stdin). Under `--sandbox workspace-write`, `.git` is read-only, so a stage can't commit until you make it writable: `-c 'sandbox_workspace_write.writable_roots=["<project>/.git"]'`. `--dangerously-bypass-hook-trust` runs the hooks without saved trust; use it in CI only.
-
-What works, proven headless on Codex CLI 0.171.0 from the marketplace install: the plan's `## Now` reaches the model with every prompt, a stage runs to its close and commit, the commit gate refuses a stage close with an unticked check, the secret guard refuses a commit carrying a key, a `git push` under autopilot is held, an edit through `apply_patch` in a held stage is refused, a write under `$CODEX_HOME` is refused, autopilot carries on through the turn end and stops at the hook's cap, the hooks fire for `Bash` and `apply_patch` calls inside `spawn_agent` children, and `approve` is left out of the skills Codex shows the model (it wasn't invoked when asked to approve).
-
-What Codex can't do:
-
-<!-- codex-gaps:start: generated from hosts/codex/capability.json by node hosts/build.mjs codex; don't edit -->
-- **Hooks need trusting after every install and update.** Codex runs a plugin's hooks only once the user trusts them, at startup ("Hooks need review", then "Trust all") or through `/hooks`, and every JBIT update voids that trust silently. Until they're trusted again, JBIT has no `## Now` in context, no gates and no carry-on, and nothing says so; `codex exec` skips untrusted hooks without a warning. Trusted hooks run outside the sandbox.
-- **A hook killed on timeout.** A PreToolUse hook that Codex kills on its 30-second timeout lets the call run (proven live at stage 7). The shipped hook refuses by its own 25-second watchdog first, and refuses when its own modules fail to load, so this bites only if the hook's event loop blocks.
-- **Stall detection and other in-memory state.** Each hook event is a fresh process, as on Copilot, so nothing counts repeated turn ends; the hook's own cap of 8 Stop blocks per prompt bounds the loop instead, and an unattended `codex exec` run stops quietly when it's reached. Prompt again to carry on.
-- **Lean's count of agents already running.** The Claude hook keeps it in memory across events; a command hook has no running process to keep it in.
-- **Tracking background agents.** Same reason: no in-memory agent list between events.
-- **The reopen check after a commit.** It runs before the commit lands, since there's no in-memory state carried to the next event.
-- **A `## Now` longer than 40 lines.** JBIT passes at most 40 lines of `## Now` into context, as on Claude Code: a longer one reaches the model cut at its 40th line (proven live, along with 40 lines passed whole). Keep `## Now` short.
-- **The brief of a `spawn_agent` call.** Codex hands the hook the brief (`message`) encrypted, so no check can read it. The stage hold and the Models line still apply to the call; nothing that needs the brief's words does.
-- **Some tool calls inside `spawn_agent` children.** The hooks fire for `Bash` and `apply_patch` calls a subagent makes (proven live), but whether they fire for its `write_stdin` and MCP tool calls is unproven.
-- **Writes through the shell in a held stage.** The hold refuses `apply_patch` and builder agents, but a file written by a shell command (`echo > file`, `sed -i`) isn't held, on any host: the hook can't tell a build step from a read in a shell line.
-- **The `$CODEX_HOME` guard.** Writes under `$CODEX_HOME` or a `.codex` folder are refused through `apply_patch` and through shell commands that name the folder, but the shell check is best-effort: a command that reaches the folder without naming it isn't caught.
-- **Case-insensitive file systems.** The guard compares paths case-sensitively, so on a case-insensitive file system (macOS, Windows) a write to `.Codex/` or to `$CODEX_HOME` spelled in another case can slip past it.
-- **No role agents.** A Codex plugin can't register agents (none of the routes the spike tried did), so the package ships none; builders, verifiers and reviewers are plain `spawn_agent` calls briefed with the role.
-- **`CLAUDE.md` loaded at startup.** Codex loads `AGENTS.md`, not `CLAUDE.md`; the skills tell the model to read `CLAUDE.md` itself.
-- **Typing `/jbit:<name>`.** Codex recognises a skill only as `$jbit:<name>` (for example `$jbit:autopilot`). A typed `/jbit:plan` or `$plan` reaches the model as plain text, which may still find the skill from its description, with no guarantee. The hook reads a leading `$jbit:autopilot` or `$jbit:approve` as the typed command.
-- **Node older than 22.18.** The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused.
-- **`/code-review` and `/security-review`.** They are Claude Code built-ins; on Codex the review runs as a fresh `spawn_agent` briefed with the same lenses.
-- **Worktree isolation for parallel builders.** Codex's `spawn_agent` has none, so parallel builders must own separate files or run one at a time.
-- **Compacting the context before autopilot carries on.** Codex gives a command hook no context gauge and no compact call; Codex manages its own context.
-- **The hook's own messages.** They are the Claude hook's words and name Claude tools (Agent, Edit, Write); each skill's mapping section translates them.
-- **Screenshots inside the workspace-write sandbox.** In a stage 3 `codex exec` run under `--sandbox workspace-write`, Chromium could not start (it aborted at launch with `shutdown: Operation not permitted`), so `capture.mjs` stopped with "The browser would not launch"; with the sandbox off (`--dangerously-bypass-approvals-and-sandbox`) the same script took the screenshot. So run it outside the workspace-write sandbox (with Codex's approval, or a full-access sandbox such as `--sandbox danger-full-access`). Finding the script works: a live run showed the model fills `<verify skill folder>/scripts/capture.mjs` from the `SKILL.md` path Codex lists for the skill.
-<!-- codex-gaps:end -->
-
-## Antigravity CLI
-
-JBIT also runs on Google Antigravity CLI (`agy`). `plugins/jbit-antigravity/` is the same plugin, version 2.0.0, generated from this one by `node hosts/build.mjs antigravity`: a native Antigravity plugin with the same skills, a note on Antigravity's tool names, and the hook ported to a Node script. It needs Node 22.18 or later.
-
-```
-agy plugin install /path/to/jbit/plugins/jbit-antigravity
-```
-
-Install it by the package's path, never the repo root: from the root, `agy` installs every `plugins/*` folder, and same-named ones replace each other. There is no marketplace file for Antigravity.
-
-Type `/jbit:plan`, `/jbit:stage`, `/jbit:autopilot` and so on, or describe the task and let the model find the skill. A typed `/plan` isn't expanded. `JBIT …` command words work as on Claude Code.
-
-Screenshots come from JBIT's capture script only. `agy`'s sandbox can't reach a local dev server, so run with `--mode accept-edits`, where every shell command asks first. A headless run (`agy -p`) can't ask, so it denies any command no allow rule covers, and the stage stops there. These rules closed a UI stage twice in a row, headless (put your home folder in the first one):
-
-```
-agy -p "/jbit:stage" --mode accept-edits --settings jbit-agy.json
-```
-
-```json
-{"permissions":{"allow":[
-  "command(node /home/you/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs)",
-  "command(git status)","command(git diff)","command(git log)","command(git show)","command(git add)",
-  "command(git commit)","command(git check-ignore)","command(git rev-parse)",
-  "command(ls)","command(cat)","command(head)","command(tail)","command(wc)","command(find)","command(grep)",
-  "command(mkdir)","command(test)","command(echo)","command(pwd)","command(date)"
-]}}
-```
-
-They're narrow: a rule matches a command's first words, agy checks each part of `a && b` on its own, and it still asks before a redirect into a file or a `$(…)`. So `git push`, `node -e '…'` and any other command still ask, and headless they're denied. A broad `command(git)` or `command(node)` would let `git push` and `node -e` run unprompted, outside the sandbox; JBIT itself holds a push only under autopilot. Avoid `regex:` rules: agy matches them against the whole line, so a `( .*)?` tail lets `&& anything` through. `--settings` holds for that one run; the same list in `~/.gemini/antigravity-cli/settings.json` applies to every run in every project.
-
-What Antigravity can't do:
-
-<!-- antigravity-gaps:start: generated from hosts/antigravity/capability.json by node hosts/build.mjs antigravity; don't edit -->
-- **A hook that prints nothing.** agy runs a tool call when its PreToolUse hook prints nothing (proven in the spike, hooks-deny/13, 14). The shipped hook prints an explicit allow or deny on every path, a crash, bad input, an unknown event and an old Node included, and its 25-second watchdog answers before agy's 30-second timeout.
-- **A subagent's calls judged in its parent's session, when linked.** agy's payload marks no subagent and names no parent: the hook reads the parent from agy's own first message in the subagent's transcript (or its message files) and judges the subagent's calls in the parent's session, as Claude Code does. When it can't link one, it judges the calls as armed, attended, with no stage approved, the strictest any session could be. A held stage still refuses `invoke_subagent` itself, so no subagent starts while a stage is held.
-- **Autopilot carry-on.** agy honours 10 Stop continues per prompt and never sets `continuationActive`, so the hook counts its own: at most 8 continues per user prompt, reset only by the user's next prompt (not by a subagent waking the session), kept in its data folder, which the guard keeps tools from writing.
-- **`## Now` copies in a long conversation.** agy keeps every injected step, so the plan's `## Now` is injected once per prompt (on its first model call) and the copies pile up one per prompt, and again on a resumed conversation.
-- **The `~/.gemini` guard.** Writes to `~/.gemini/config/`, `~/.gemini/antigravity-cli/settings.json` and the plugins' data folders are refused through write_file, edit_file and shell commands that name them, but the shell check is best-effort: a command that reaches them without naming them isn't caught. The rest of `~/.gemini/antigravity-cli/` stays writable.
-- **Case-insensitive file systems.** The guard compares paths case-sensitively, so on a case-insensitive file system a write to `.Gemini/config` can slip past it.
-- **Writes through the shell in a held stage.** The hold refuses write_file, edit_file and `invoke_subagent`, but a file written by a shell command isn't held, on any host.
-- **Node older than 22.18.** The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused.
-- **Lean's count of agents already running.** Each hook event is a fresh process, so no in-memory agent list carries between events.
-- **The reopen check after a commit.** It runs before the commit lands, since there's no in-memory state carried to the next event.
-- **Compacting the context before autopilot carries on.** agy gives a command hook no context gauge and no compact call.
-- **Typed `/plan`, `/stage`, `/autopilot`.** agy expands a skill only as `/jbit:<name>`. A bare `/plan` reaches the model as plain text, which may still read the skill, as may a prompt that describes the task, with no guarantee.
-- **A headless run without allow rules.** In `--mode accept-edits` every shell command asks, and `agy -p` can't ask, so it denies any command no `permissions.allow` rule covers (exit 0, `denied_actions`) and the stage stops there; in live runs that was an ordinary `ls`, `echo` or `date`. Pass the README's narrow rules with `--settings`; a broad `command(git)` or `command(node)` lets `git push` and `node -e` run unprompted.
-- **Per-role effort.** An agy agent takes `model` as `inherit`, `flash` or `pro`, with no effort, so the Models line's model half applies and its effort half doesn't.
-- **The status line.** A plugin can't set one in agy; it is a user setting, and its input carries the account's email, so a status line script should never log it whole.
-- **`CLAUDE.md` loaded at startup.** agy loads `AGENTS.md` and `GEMINI.md`, not `CLAUDE.md`; the package's rules tell the model to read `CLAUDE.md` itself.
-- **The host's own browser tools.** They need a running Chrome with remote debugging and a person clicking Allow, so screenshots come only from the capture script.
-- **Host tools JBIT doesn't know.** The hook allows a tool only when it is read-only or on its list, so a tool a newer agy adds is refused until JBIT lists it.
-- **Running notebook cells.** `notebook_execution` runs arbitrary code with no command line to judge, so the hook refuses it.
-- **Commits and pushes from a script or alias.** The gates read the command line, as on every host, so a commit or push run inside a script, an interpreter or an alias defined elsewhere isn't seen.
-<!-- antigravity-gaps:end -->
+- [plugins/jbit/README.md](plugins/jbit/README.md) — full reference for every skill and hook, project risk rules, the secret guard, evidence, roadmaps, Agents levels, Models and evals.
+- [docs/hosts.md](docs/hosts.md) — setup details, headless usage and known gaps for Copilot CLI, Codex CLI and Antigravity CLI.

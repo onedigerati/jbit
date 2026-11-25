@@ -11,7 +11,7 @@
     "schema": "https://antigravity.google/schemas/v1/plugin.json"
   },
   "readme": {
-    "path": "README.md",
+    "path": "docs/hosts.md",
     "start": "<!-- antigravity-gaps:start: generated from hosts/antigravity/capability.json by node hosts/build.mjs antigravity; don't edit -->",
     "end": "<!-- antigravity-gaps:end -->"
   },
@@ -130,7 +130,7 @@
     ]
   },
   "gaps": [
-    { "id": "empty-allows", "what": "A hook that prints nothing", "why": "agy runs a tool call when its PreToolUse hook prints nothing (proven in the spike, hooks-deny/13, 14). The shipped hook prints an explicit allow or deny on every path, a crash, bad input, an unknown event and an old Node included, and its 25-second watchdog answers before agy's 30-second timeout." },
+    { "id": "empty-allows", "what": "A hook that prints nothing", "why": "agy runs a tool call when its PreToolUse hook prints nothing. The shipped hook prints an explicit allow or deny on every path, a crash, bad input, an unknown event and an old Node included, and its 25-second watchdog answers before agy's 30-second timeout." },
     { "id": "subagent-session", "what": "A subagent's calls judged in its parent's session, when linked", "why": "agy's payload marks no subagent and names no parent: the hook reads the parent from agy's own first message in the subagent's transcript (or its message files) and judges the subagent's calls in the parent's session, as Claude Code does. When it can't link one, it judges the calls as armed, attended, with no stage approved, the strictest any session could be. A held stage still refuses `invoke_subagent` itself, so no subagent starts while a stage is held." },
     { "id": "stop-cap", "what": "Autopilot carry-on", "why": "agy honours 10 Stop continues per prompt and never sets `continuationActive`, so the hook counts its own: at most 8 continues per user prompt, reset only by the user's next prompt (not by a subagent waking the session), kept in its data folder, which the guard keeps tools from writing." },
     { "id": "now-copies", "what": "`## Now` copies in a long conversation", "why": "agy keeps every injected step, so the plan's `## Now` is injected once per prompt (on its first model call) and the copies pile up one per prompt, and again on a resumed conversation." },
@@ -142,7 +142,7 @@
     { "id": "post-commit-reopen", "what": "The reopen check after a commit", "why": "It runs before the commit lands, since there's no in-memory state carried to the next event." },
     { "id": "compaction", "what": "Compacting the context before autopilot carries on", "why": "agy gives a command hook no context gauge and no compact call." },
     { "id": "bare-skill-names", "what": "Typed `/plan`, `/stage`, `/autopilot`", "why": "agy expands a skill only as `/jbit:<name>`. A bare `/plan` reaches the model as plain text, which may still read the skill, as may a prompt that describes the task, with no guarantee." },
-    { "id": "headless-allow-rules", "what": "A headless run without allow rules", "why": "In `--mode accept-edits` every shell command asks, and `agy -p` can't ask, so it denies any command no `permissions.allow` rule covers (exit 0, `denied_actions`) and the stage stops there; in live runs that was an ordinary `ls`, `echo` or `date`. Pass the README's narrow rules with `--settings`; a broad `command(git)` or `command(node)` lets `git push` and `node -e` run unprompted." },
+    { "id": "headless-allow-rules", "what": "A headless run without allow rules", "why": "In `--mode accept-edits` every shell command asks, and `agy -p` can't ask, so it denies any command no `permissions.allow` rule covers (exit 0, `denied_actions`) and the stage stops there (such as `ls`, `echo` or `date`). Pass the narrow rules above with `--settings`; a broad `command(git)` or `command(node)` lets `git push` and `node -e` run unprompted." },
     { "id": "per-role-effort", "what": "Per-role effort", "why": "An agy agent takes `model` as `inherit`, `flash` or `pro`, with no effort, so the Models line's model half applies and its effort half doesn't." },
     { "id": "status-line", "what": "The status line", "why": "A plugin can't set one in agy; it is a user setting, and its input carries the account's email, so a status line script should never log it whole." },
     { "id": "claude-md", "what": "`CLAUDE.md` loaded at startup", "why": "agy loads `AGENTS.md` and `GEMINI.md`, not `CLAUDE.md`; the package's rules tell the model to read `CLAUDE.md` itself." },

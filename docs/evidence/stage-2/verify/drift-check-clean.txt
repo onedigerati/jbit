@@ -1,0 +1,16 @@
+$ node hosts/build.mjs antigravity --check
+antigravity: up to date (30 files)
+rc=0
+$ node hosts/build.mjs copilot --check
+copilot: up to date (28 files)
+rc=0
+$ node hosts/build.mjs codex --check
+codex: up to date (31 files)
+rc=0
+$ git status --porcelain -- plugins/jbit-copilot plugins/jbit-codex plugins/jbit-antigravity (after building all three)
+ M plugins/jbit-codex/GENERATED.json
+ M plugins/jbit-codex/scripts/core/dispatch.mjs
+ M plugins/jbit-codex/scripts/hook.mjs
+ M plugins/jbit-copilot/GENERATED.json
+ M plugins/jbit-copilot/scripts/core/dispatch.mjs
+?? plugins/jbit-antigravity/

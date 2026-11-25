@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Builds a host's generated JBIT package from the Claude plugin (the source) and `hosts/`:
 //   node hosts/build.mjs <host> [--check] [--src DIR] [--out DIR]
-// `hosts/<host>/capability.json` drives it: the format (`copilot`, the default, or `codex`: manifest path, hooks.json
-// and marketplace shapes), the package folder, the marketplace file, the hook events, the scripts to copy (listed or
+// `hosts/<host>/capability.json` drives it: the format (`copilot`, the default, `codex`, or `antigravity`, a native agy
+// plugin: manifest path, hooks.json and marketplace shapes), the package folder, the marketplace file (none for
+// antigravity, installed by path), the rules file (`rules`: always-on host guidance, antigravity), the hook events, the scripts to copy (listed or
 // globbed, some required) and the import rewrites (or `relink`) that keep them inside the package, frontmatter keys to
 // drop and the `agents/openai.yaml` for a skill the model mustn't invoke, the skill substitutions (each must still match its
 // source), the mapping section appended to every skill, and the leak terms: Claude-only names that must not be left
@@ -66,9 +67,42 @@ export function quoteFrontmatter(text, where) {
   return `---\n${lines.join('\n')}\n---\n${text.slice(m[0].length)}`
 }
 
+const mappingTools = cap => cap.tools.map(t => `${t.claude} → ${t[cap.host].map(n => `\`${n}\``).join(', ')}${t.note ? ` (${t.note})` : ''}`).join('; ')
+
 function mappingSection(cap) {
-  const tools = cap.tools.map(t => `${t.claude} → ${t[cap.host].map(n => `\`${n}\``).join(', ')}${t.note ? ` (${t.note})` : ''}`).join('; ')
+  const tools = mappingTools(cap)
   return [cap.mapping.heading, '', ...cap.mapping.lines.map(l => l.replace('{tools}', tools))].join('\n')
+}
+
+/**
+ * A skill whose body (after the frontmatter, the mapping section included) would pass the host's load limit
+ * (`skillBody.limit` bytes; agy loads only the first 24000) is cut at the latest `## ` heading, outside a code fence,
+ * that lets it fit: the sections from there on go to `skillBody.file` beside it, and the body gets `skillBody.pointer`
+ * (`{file}` and `{sections}` filled) at its top and at the cut. Returns the kept text; adds the continuation to `files`.
+ */
+function splitSkill(text, section, { limit, file, pointer }, name, files, pkg) {
+  const bytes = s => Buffer.byteLength(s)
+  const front = /^---\n[\s\S]*?\n---\n/.exec(text)[0]
+  const body = text.slice(front.length)
+  if (bytes(`${body}\n${section}`) <= limit) return text
+  const cuts = []
+  let fence = false
+  let at = 0
+  for (const line of body.split('\n')) {
+    if (/^(```|~~~)/.test(line)) fence = !fence
+    else if (!fence && at > 0 && line.startsWith('## ')) cuts.push(at)
+    at += line.length + 1
+  }
+  for (const cut of cuts.reverse()) {
+    const rest = body.slice(cut)
+    const sections = [...rest.matchAll(/^## (.+)$/gm)].map(m => `"${m[1]}"`).join(', ')
+    const note = `${pointer.replace('{file}', file).replace('{sections}', sections)}\n`
+    const kept = `${note}\n${body.slice(0, cut)}${note}`
+    if (bytes(`${kept}\n${section}`) > limit) continue
+    files.set(`${pkg}/skills/${name}/${file}`, rest)
+    return `${front}${kept}`
+  }
+  fail(`skills/${name}/SKILL.md is over the host's ${limit}-byte skill body limit, and no \`## \` heading cut makes it fit`)
 }
 
 /** The README's gap list: one bullet per capability.json gap, in its order. */
@@ -193,6 +227,16 @@ function relink(text, from, to, plan) {
 /** The package's hooks.json, in the host's format. */
 function hooksFile(cap, events) {
   const h = cap.hooks
+  if (cap.format === 'antigravity') {
+    // one named hook spec: tool events take matcher groups, the rest a flat handler list; the command runs from the
+    // plugin folder (agy substitutes no variable into it)
+    const spec = {}
+    for (const e of events) {
+      const handler = { type: 'command', command: h.command.replace('<event>', e), timeout: h.timeoutSec }
+      spec[e] = h.matchers?.[e] !== undefined ? [{ matcher: h.matchers[e], hooks: [handler] }] : [handler]
+    }
+    return { [h.name ?? cap.manifest.name]: spec }
+  }
   if (cap.format === 'codex') {
     const hooks = {}
     for (const e of events) {
@@ -263,13 +307,19 @@ export function generate({ src = REPO, host }) {
     text = dropFrontmatter(text, cap.frontmatter?.drop)
     text = quoteFrontmatter(text, `skills/${n}/SKILL.md`)
     if (!text.endsWith('\n')) text += '\n'
+    if (cap.skillBody) text = splitSkill(text, `${section}\n`, cap.skillBody, n, files, pkg)
     files.set(`${pkg}/skills/${n}/SKILL.md`, `${text}\n${section}\n`)
   }
 
-  const manifest = cap.manifest
-    ? { name: cap.marketplace.entry, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: cap.manifest.skills }
-    : { name: cap.marketplace.entry, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: 'skills/', hooks: 'hooks/hooks.json' }
+  const name = cap.manifest?.name ?? cap.marketplace.entry
+  const manifest = cap.format === 'antigravity'
+    ? { $schema: cap.manifest.schema, name, displayName: cap.manifest.displayName, description: adapted[''], version: srcPlugin.version, author: srcPlugin.author }
+    : cap.manifest
+    ? { name, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: cap.manifest.skills }
+    : { name, version: srcPlugin.version, description: adapted[''], author: srcPlugin.author, license: srcPlugin.license, skills: 'skills/', hooks: 'hooks/hooks.json' }
   files.set(`${pkg}/${cap.manifest?.path ?? 'plugin.json'}`, json(manifest))
+  // the host's always-on rules: a heading and lines, `{tools}` filled as in the mapping section
+  if (cap.rules) files.set(`${pkg}/${cap.rules.path}`, `${[cap.rules.heading, '', ...cap.rules.lines].join('\n').replace('{tools}', mappingTools(cap))}\n`)
   if (existsSync(join(src, SOURCE_PLUGIN, 'LICENSE'))) files.set(`${pkg}/LICENSE`, source(`${SOURCE_PLUGIN}/LICENSE`))
 
   // hooks.json: one command entry per event the hook answers
@@ -289,7 +339,7 @@ export function generate({ src = REPO, host }) {
       fail(`hooks.json events and the hook disagree: not handled by ${eventsTo.replace(/^scripts\//, '')}: ${unhandled.join(', ') || 'none'}; handled but not listed: ${unlisted.join(', ') || 'none'}`)
     }
   }
-  files.set(`${pkg}/hooks/hooks.json`, json(hooksFile(cap, events)))
+  files.set(`${pkg}/${cap.hooks.path ?? 'hooks/hooks.json'}`, json(hooksFile(cap, events)))
 
   // scripts: copied, with the import rewrites (or, with `relink`, every import of another copied script repointed)
   // that keep them inside the package
@@ -314,7 +364,7 @@ export function generate({ src = REPO, host }) {
   }
   for (const [file, text] of Object.entries(scripts)) files.set(`${pkg}/${file}`, text)
 
-  files.set(cap.marketplace.path, json(marketplaceFile(cap, pkg, srcPlugin, adapted[''])))
+  if (cap.marketplace) files.set(cap.marketplace.path, json(marketplaceFile(cap, pkg, srcPlugin, adapted[''])))
 
   // the README's gap list; the README itself isn't a source of the package, so it stays out of GENERATED.json
   if (cap.readme) {
@@ -425,7 +475,7 @@ function main(argv) {
     if (check) {
       const found = drift(files, out, cap)
       const onDisk = new Map()
-      for (const rel of [...walk(join(out, cap.pluginDir), out), cap.marketplace.path]) {
+      for (const rel of [...walk(join(out, cap.pluginDir), out), ...(cap.marketplace ? [cap.marketplace.path] : [])]) {
         if (existsSync(join(out, rel))) onDisk.set(rel, readFileSync(join(out, rel), 'utf8'))
       }
       const leaks = findLeaks(onDisk, cap).map(l => `leak: ${l.file}:${l.line} ${l.term}`)
@@ -439,7 +489,7 @@ function main(argv) {
       return 0
     }
     const r = write(files, out, cap)
-    process.stdout.write(`${host}: wrote ${r.wrote}, removed ${r.removed}, unchanged ${r.unchanged} (${[cap.pluginDir, cap.marketplace.path, cap.readme?.path].filter(Boolean).join(", ")})\n`)
+    process.stdout.write(`${host}: wrote ${r.wrote}, removed ${r.removed}, unchanged ${r.unchanged} (${[cap.pluginDir, cap.marketplace?.path, cap.readme?.path].filter(Boolean).join(", ")})\n`)
     return 0
   } catch (err) {
     if (!(err instanceof BuildError)) throw err

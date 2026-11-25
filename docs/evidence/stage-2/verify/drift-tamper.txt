@@ -1,0 +1,21 @@
+$ cp -r plugins/jbit-antigravity <scratch>/plugins/ && node hosts/build.mjs antigravity --check --out <scratch>
+antigravity: up to date (30 files)
+rc=0
+
+$ echo "tampered" >> <scratch>/plugins/jbit-antigravity/skills/plan/SKILL.md && node hosts/build.mjs antigravity --check --out <scratch>
+drift: plugins/jbit-antigravity lags its sources; run node hosts/build.mjs antigravity
+differs: plugins/jbit-antigravity/skills/plan/SKILL.md
+rc=1
+
+$ rm <scratch>/plugins/jbit-antigravity/rules/AGENTS.md (restore SKILL.md first) && --check
+drift: plugins/jbit-antigravity lags its sources; run node hosts/build.mjs antigravity
+missing: plugins/jbit-antigravity/rules/AGENTS.md
+rc=1
+
+$ in-repo: append to plugins/jbit-antigravity/hooks.json, --check, then restore from a saved copy
+drift: plugins/jbit-antigravity lags its sources; run node hosts/build.mjs antigravity
+differs: plugins/jbit-antigravity/hooks.json
+rc=1
+antigravity: up to date (30 files)
+rc after restore=0
+03a8dc68171f45f3f3159db8b943fd8a69ce10061fb447c7da94f2d56be33fbe  -

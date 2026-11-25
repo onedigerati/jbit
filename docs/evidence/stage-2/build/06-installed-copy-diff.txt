@@ -1,0 +1,2 @@
+$ diff -r <throwaway-home>/.gemini/config/plugins/jbit plugins/jbit-antigravity
+exit=0

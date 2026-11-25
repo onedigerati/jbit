@@ -1,0 +1,34 @@
+$ node <scratch>/vf/readonly.mjs   # packaged hook; held risky stage, parent armed attended
+## PASS parent armed attended on a held risky stage
+$ echo '{"invocationNum":0,"initialNumSteps":1,"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreInvocation   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"injectSteps":[{"systemMessage":{"systemMessage":"JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, `attended`. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for `docs/PLAN.md`, and follow its rules and the working rules below.\n\n# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 2 of 3 · Share mode\nRisk: auth, user input\nMode: autopilot\nChecks:\n- [ ] login works\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage. Autopilot is on, and the current stage is held: its risk line names auth. Building it (file edits outside the plan and its `docs/research/` notes, builder agents) is blocked until the user approves it with \"yes\", \"go\", \"approve\", \"proceed\" or \"just build it\", alone or followed by a line break or punctuation other than \"?\" (as in \"yes, build it\"), or `/jbit:approve` (or \"JBIT approve\"); nothing else releases it. Commit what is finished, set the Mode line to `paused — <reason>`, and ask the user for that reply. This run is attended: the user said `attended`, or gave no autopilot command of their own for this plan, so a risky stage waits for their approval. Unattended is the default only for their own command: the typed `/jbit:autopilot`, or a message opening with \"JBIT\" made of nothing but command words, such as \"JBIT autopilot lean\"; `outward` in it also lets push, publish and deploy through. Plain words without the name (\"just build it, autopilot lean\"), Claude starting autopilot and a Mode line never set the level: they run at the one that stands, attended unless the user's own command set one for this plan. The level holds until their next command or a new plan Goal. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details. When someone reads along, right after each stage's commit, before any tool call for the next stage, write the user a short progress note in the chat: its concerns first or `No concerns.`, what it delivered and how it was proven (its `docs/evidence/stage-<n>/report.md`), its `(unattended)` decisions, and what's left. A headless run (`claude -p`) leaves it to the final report, which then gives, for each stage, its concerns or `No concerns.`, what it delivered and how it was proven (its evidence report), and its `(unattended)` decisions. Tell a concern (a check failing after the second fix round, a fix-now review finding, a risk line that grows) in one line when it happens, `Concern: <what> — <what you're doing about it>`, without pausing."}}]}
+
+## PASS read_file in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"read_file","args":{"Path":"src/a.ts"},"id":"call_2"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS view_file in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"view_file","args":{"AbsolutePath":"$T/ws1/src/a.ts"},"id":"call_3"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS list_dir in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"list_dir","args":{"DirectoryPath":"$T/ws1"},"id":"call_4"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS grep_search in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"grep_search","args":{"Query":"a","SearchPath":"$T/ws1/src"},"id":"call_5"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS find_by_name in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"find_by_name","args":{"Pattern":"*.ts","SearchDirectory":"$T/ws1"},"id":"call_6"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS run_command in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls -la"},"id":"call_7"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+## PASS run_command in a held stage (stage reading tools must not be blocked)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"git status"},"id":"call_8"},"lastUserInput":"/jbit:autopilot attended"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=a5000000-0000-4000-8000-00000000000a
+{"decision":"allow"}
+
+fails: 0

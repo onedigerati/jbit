@@ -1,0 +1,8 @@
+$ agy plugin list
+
+Installed plugins:
+- jbit (enabled, 2.0.0)
+    Source:     antigravity
+    Components: 9 skills, 1 rule, 1 hook
+
+exit=0

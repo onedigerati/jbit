@@ -1,0 +1,9 @@
+$ agy plugin install <repo>/plugins/jbit-antigravity
+
+  [ok]    jbit
+          ✔ skills      : 9 installed (approve, autopilot, charter, fix, plan, resume, review, stage, verify)
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to <throwaway-home>/.gemini/config/plugins/jbit
+
+exit=0

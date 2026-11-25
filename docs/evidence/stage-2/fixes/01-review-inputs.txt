@@ -1,0 +1,55 @@
+$ node review-inputs.mjs   # 2026-11-25T16:20:32Z; the built package plugins/jbit-antigravity/scripts/, a temp HOME and project
+
+## 1a. run_command with Cwd in the plugin data folder (was: Bash, allowed)
+$ PreToolUse {"name":"run_command","args":{"CommandLine":"echo {} > sessions/x.json","Cwd":"$TMP/.gemini/antigravity-cli/plugin_data/jbit"}}
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$TMP/.gemini/antigravity-cli/plugin_data/jbit`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## 1b. run_command with Cwd ~/.gemini/config (was: allowed)
+$ PreToolUse {"name":"run_command","args":{"CommandLine":"rm -rf plugins","Cwd":"~/.gemini/config"}}
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$TMP/.gemini/config`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## 1c. run_command with an unreadable Cwd (was: run as if no Cwd)
+$ PreToolUse {"name":"run_command","args":{"CommandLine":"ls","Cwd":42}}
+{"decision":"deny","reason":"JBIT blocked this `run_command` call: it couldn't read its arguments (no usable `Cwd`), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## 2a. multi_replace_file_content: now one Edit per chunk, carrying its new text (was: one Edit with new_string "")
+$ mapTool {"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":[{"TargetContent":"a","ReplacementContent":"<AWS documentation example key, removed>"}]}}
+{"kind":"calls","calls":[{"tool":"Edit","file_path":"$TMP/src/a.ts","old_string":"a","new_string":"<AWS documentation example key, removed>"}]}
+
+## 2b. multi_replace_file_content with an unreadable chunk list
+$ PreToolUse {"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":"oops"}}
+{"decision":"deny","reason":"JBIT blocked this `multi_replace_file_content` call: it couldn't read its arguments (no `ReplacementChunks` list), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## 2c. write_file whose Content is not a string (was: Write with content "")
+$ PreToolUse {"name":"write_file","args":{"Path":"src/a.ts","Content":{"x":1}}}
+{"decision":"deny","reason":"JBIT blocked this `write_file` call: it couldn't read its arguments (no `Content` string), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## 3a. browser_subagent: now an Agent call for the core (was: allowed outright)
+$ mapTool {"name":"browser_subagent","args":{"Task":"edit src/login.ts","TaskName":"x"}}
+{"kind":"calls","calls":[{"tool":"Agent","description":"x","prompt":"edit src/login.ts"}]}
+
+## 3b. define_subagent
+$ mapTool {"name":"define_subagent","args":{"Name":"n","SystemPrompt":"p"}}
+{"kind":"calls","calls":[{"tool":"Agent","description":"n","prompt":"p"}]}
+
+## 3b. schedule
+$ mapTool {"name":"schedule","args":{"Prompt":"p","Cron":"* * * * *"}}
+{"kind":"calls","calls":[{"tool":"Agent","description":"","prompt":"p"}]}
+
+## 3b. run_workflow
+$ mapTool {"name":"run_workflow","args":{"Name":"w"}}
+{"kind":"calls","calls":[{"tool":"Agent","description":"w","prompt":"w"}]}
+
+## 3c. a tool not on any list (was: allowed when no path-like key)
+$ PreToolUse {"name":"brand_new_tool","args":{"Index":1}}
+{"decision":"deny","reason":"JBIT blocked `brand_new_tool`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or starts an agent, and a call it can't check doesn't run. Use run_command, write_file, edit_file or invoke_subagent instead, or ask the user."}
+
+## 4a. subagent push, no parent transcript, plan Mode autopilot, nothing armed (was: allowed)
+$ PreToolUse conversationId=sub-1 lastUserInput="" {"name":"run_command","args":{"CommandLine":"git push origin main"}}
+{"decision":"deny","reason":"JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user.\n\n(JBIT couldn't link this subagent to the conversation that started it, so it judges the subagent's calls by autopilot's strictest rules: armed, attended, no stage approved.)"}
+
+SessionStart sub-2 -> {}
+## 4b. subagent push, parent parent-2 armed unattended (not outward), linked by its transcript (was: allowed)
+$ PreToolUse conversationId=sub-2 lastUserInput="" {"name":"run_command","args":{"CommandLine":"git push origin main"}}
+{"decision":"deny","reason":"JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user."}
+

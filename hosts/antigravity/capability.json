@@ -1,0 +1,137 @@
+{
+  "host": "antigravity",
+  "hostName": "Google Antigravity CLI",
+  "format": "antigravity",
+  "testedWith": "Google Antigravity CLI (agy) 1.5.17 (stage 1 spike)",
+  "pluginDir": "plugins/jbit-antigravity",
+  "manifest": {
+    "path": "plugin.json",
+    "name": "jbit",
+    "displayName": "JBIT",
+    "schema": "https://antigravity.google/schemas/v1/plugin.json"
+  },
+  "skillBody": {
+    "limit": 24000,
+    "file": "continued.md",
+    "pointer": "> **This skill continues in `{file}`,** in this skill's folder beside this `SKILL.md`: Antigravity loads only the first 24000 bytes of a skill, so its sections {sections} are there. Read that file with `read_file` before you act on this skill."
+  },
+  "rules": {
+    "path": "rules/AGENTS.md",
+    "heading": "# JBIT",
+    "lines": [
+      "JBIT (`/jbit:plan`, `/jbit:stage`, `/jbit:autopilot` and the other `/jbit:<name>` skills) runs a project from one plan file, `docs/PLAN.md`.",
+      "",
+      "- **Read `CLAUDE.md` first.** A project using JBIT keeps its working rules in `CLAUDE.md` at the repo root, which this host doesn't load. At the start of a session, and before any JBIT skill, read that file if it exists and follow it as you would `AGENTS.md`. Where a skill reads or writes `CLAUDE.md`, use that file, not `AGENTS.md`; JBIT never writes the project's `AGENTS.md`.",
+      "- **Skills.** Type a skill as `/jbit:<name>` (for example `/jbit:plan`); that form expands it. When a skill says to run another JBIT skill, open that skill's `SKILL.md` and follow it.",
+      "- **Host names.** Each JBIT skill ends with an \"On Antigravity CLI\" section that maps the names its text and its hook's messages use to this host's tools. Read it before acting on a skill."
+    ]
+  },
+  "hooks": {
+    "path": "hooks.json",
+    "events": ["PostInvocation", "PostToolUse", "PreInvocation", "PreToolUse", "SessionStart", "Stop"],
+    "command": "node ./scripts/hook.mjs <event>",
+    "matchers": { "PreToolUse": "*", "PostToolUse": "*" },
+    "timeoutSec": 30,
+    "eventsFrom": "scripts/handler.mjs"
+  },
+  "scripts": {
+    "relink": true,
+    "required": ["hosts/antigravity/hook.mjs", "hosts/antigravity/handler.mjs", "hosts/antigravity/map.mjs"],
+    "globs": [
+      { "dir": "hosts/antigravity", "match": "\\.mjs$", "exclude": "\\.test\\.mjs$", "to": "scripts/" },
+      { "dir": "hosts/core", "match": "\\.mjs$", "exclude": "\\.test\\.mjs$", "to": "scripts/core/" }
+    ],
+    "files": {
+      "hosts/copilot/map.mjs": "scripts/copilot/map.mjs",
+      "plugins/jbit/hooks/models.ts": "scripts/hooks/models.ts",
+      "plugins/jbit/hooks/project.ts": "scripts/hooks/project.ts",
+      "plugins/jbit/hooks/register.ts": "scripts/hooks/register.ts",
+      "plugins/jbit/hooks/secrets.ts": "scripts/hooks/secrets.ts",
+      "plugins/jbit/hooks/shell.ts": "scripts/hooks/shell.ts",
+      "plugins/jbit/skills/verify/scripts/capture.mjs": "skills/verify/scripts/capture.mjs"
+    },
+    "rewrites": []
+  },
+  "tools": [
+    { "claude": "Bash", "antigravity": ["run_command"], "note": "`CommandLine`", "verified": "run_command in the PreToolUse payload (fixtures PreToolUse-deny-1, -5; hooks-deny/06)" },
+    { "claude": "Write", "antigravity": ["write_file"], "note": "`Path`, `Content`", "verified": "fixtures PreToolUse-deny-2, -6; hooks-deny/07" },
+    { "claude": "Edit", "antigravity": ["edit_file"], "note": "`Path`, `Target`, `Replacement`", "verified": "fixtures PreToolUse-deny-3, -7; hooks-deny/08" },
+    { "claude": "Read", "antigravity": ["read_file"], "note": "`Path`", "verified": "fixtures PreToolUse-1, -2" },
+    { "claude": "Agent", "antigravity": ["invoke_subagent"], "note": "`Prompt`, `Role`, `TypeName`", "verified": "fixture PreToolUse-deny-4; hooks-deny/09" },
+    { "claude": "SendMessage", "antigravity": ["send_message"], "note": "`Message`, `Recipient`; a subagent reporting back", "verified": "fixture PreToolUse-deny-8" },
+    { "claude": "Skill", "antigravity": ["/jbit:<name>"], "note": "the host expands the skill into the prompt", "verified": "plugin/04, 05" }
+  ],
+  "substitutions": [
+    { "from": "Research reads go through WebFetch and WebSearch.", "to": "Research reads go through `search_web` and `read_url_content`." },
+    { "from": "(WebSearch, WebFetch, or the docs the question names)", "to": "(`search_web`, `read_url_content`, or the docs the question names)" },
+    { "from": "each with `isolation: \"worktree\"` so parallel edits can't collide; check each one's branch and merge it back", "to": "each owning files no other builder touches, since JBIT doesn't rely on worktree isolation for agents here; check each one's work in the tree" },
+    { "from": "each with `isolation: \"worktree\"` so they can't collide, and merge each builder's branch back once you've checked it", "to": "each owning files no other builder touches, since JBIT doesn't rely on worktree isolation for agents here, and check each builder's work once it reports" },
+    { "from": "every independent leaf to its own agent in its own worktree", "to": "every independent leaf to its own agent, each owning separate files" },
+    { "from": "every independent leaf gets its own builder and worktree", "to": "every independent leaf gets its own builder, each owning separate files" },
+    { "from": "every independent leaf its own agent in its own worktree", "to": "every independent leaf its own agent, each owning separate files" },
+    { "from": "on the Agent call", "to": "on the `invoke_subagent` call" },
+    { "from": "The hook ignores a skill Claude invoked", "to": "The hook ignores a skill the model invoked" },
+    { "from": "Claude Code refuses a subagent's report file, so", "to": "a subagent's report file isn't trusted as the main session's, so" },
+    { "from": "(created if missing; `.claude/CLAUDE.md` when that exists and the root one doesn't)", "to": "(at the repo root, created if missing; Antigravity loads `AGENTS.md`, not this file, so read it at the start of a session)" },
+    { "from": "it compacts the context if it's past 65% full, then prompts you to carry on", "to": "it prompts you to carry on (the hook doesn't compact the context on Antigravity, which manages its own context)" },
+    { "from": "`Explore` agents", "to": "`research` subagents" },
+    { "from": "run the built-in `security-review` skill (and `code-review` for a broad correctness sweep)", "to": "run a fresh `invoke_subagent` reviewer briefed with the security lens (and one with the correctness lens for a broad sweep)" },
+    { "from": "`node \"${CLAUDE_SKILL_DIR}/scripts/capture.mjs\"`", "to": "`node \"<this skill's folder>/scripts/capture.mjs\"` (the `scripts/capture.mjs` in this skill's folder, beside this `SKILL.md`, run by its full path; never a path inside the project)" },
+    { "from": "`node \"${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs\" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/`", "to": "`node \"<verify skill folder>/scripts/capture.mjs\" shot <url> --name <screen> --out docs/evidence/stage-<n>/before/` (the `scripts/capture.mjs` in the verify skill's folder: `<verify skill folder>` is the folder holding the `SKILL.md` of the `jbit:verify` skill in the installed JBIT plugin (its path is in your skill listing), never a path inside the project)" },
+    { "from": "`node \"${CLAUDE_PLUGIN_ROOT}/skills/verify/scripts/capture.mjs\" shot <url> --name <screen> --out <scratchpad>`", "to": "`node \"<verify skill folder>/scripts/capture.mjs\" shot <url> --name <screen> --out <scratchpad>`; it is the `scripts/capture.mjs` in the verify skill's folder: `<verify skill folder>` is the folder holding the `SKILL.md` of the `jbit:verify` skill in the installed JBIT plugin (its path is in your skill listing), never a path inside the project" },
+    { "from": "ask the user to allow the plugin's folder, or use the host's own browser tools if this session has them;", "to": "ask the user to allow the plugin's folder (the host's browser tools aren't a fallback here: they need a person at a running Chrome);" }
+  ],
+  "leakTerms": [
+    "\\bClaude\\b",
+    "CLAUDE_PLUGIN_ROOT",
+    "CLAUDE_PLUGIN_DATA",
+    "CLAUDE_PROJECT_DIR",
+    "CLAUDE_SKILL_DIR",
+    "\\.claude/",
+    "\\.claude-plugin",
+    "AskUserQuestion",
+    "WebFetch",
+    "WebSearch",
+    "TodoWrite",
+    "subagent_type",
+    "run_in_background",
+    "isolation: \"worktree\"",
+    "\\bAgent (call|tool)\\b",
+    "\\bSkill tool\\b",
+    "/code-review",
+    "/security-review",
+    "`Explore`",
+    "past 65% full",
+    "\\$\\{"
+  ],
+  "mapping": {
+    "heading": "## On Antigravity CLI",
+    "lines": [
+      "JBIT was written for Claude Code; this copy is generated for Google Antigravity CLI (`agy`). Where the text or the hook's messages use Claude's names, read them this way:",
+      "",
+      "- **Instructions.** Antigravity loads `AGENTS.md` and `GEMINI.md`, not `CLAUDE.md`. Where a skill reads or writes `CLAUDE.md`, use that file, and read it yourself at the start of a session.",
+      "- **Skills.** A `jbit:<name>` skill is typed `/jbit:<name>` (for example `/jbit:plan`), which Antigravity expands into the prompt. When a skill says to run another JBIT skill, open that skill's `SKILL.md` (its path is in your skill listing) and follow it.",
+      "- **Agents.** An Agent call is `invoke_subagent`: give it the role and the brief as its prompt. Agents take no per-call model or effort, so a plan's Models line can't be applied here: the subagent runs on the session's model. JBIT's role agents don't ship on Antigravity: brief a plain `invoke_subagent` with the role. A subagent reports back with `send_message`.",
+      "- **No worktree isolation.** JBIT doesn't rely on `isolation: \"worktree\"` here. Build leaves one at a time in the main tree, or in parallel only when each builder owns files no other touches; there is no branch to merge back.",
+      "- **Questions.** Where a skill says to ask the user (AskUserQuestion on Claude Code), use `ask_question`, or ask in the chat and wait for the reply.",
+      "- **Research.** WebSearch and WebFetch are `search_web` and `read_url_content`.",
+      "- **Reviews.** `/code-review` and `/security-review` are Claude Code commands. Here, run a fresh `invoke_subagent` briefed with the same lenses (correctness, then security), and triage what it finds.",
+      "- **Hooks.** JBIT's hook puts the plan's `## Now` into context once per prompt, gates commits, guards secrets and the host's config, holds edits and subagents while a stage is held, and carries autopilot on at a turn's end (at most 8 times per prompt). `/hooks` lists its six events.",
+      "- **Script paths.** `<this skill's folder>` and `<verify skill folder>` in a skill's command are placeholders: put in the folder holding that skill's `SKILL.md` in the installed JBIT plugin (its path is in your skill listing), never a path inside the project (a project's own `scripts/capture.mjs` isn't JBIT's). Run the script by that full path from the project, so its other paths (`--out docs/evidence/…`) stay relative to the project. Screenshots come only from that script; the host's browser tools aren't a fallback.",
+      "- **Tools.** {tools}. Edits go through `write_file` and `edit_file`; the guard covers them and the shell alike."
+    ]
+  },
+  "gaps": [
+    { "id": "empty-allows", "what": "A hook that prints nothing", "why": "agy runs a tool call when its PreToolUse hook prints nothing (proven in the spike, hooks-deny/13, 14). The shipped hook prints an explicit allow or deny on every path, a crash, bad input, an unknown event and an old Node included, and its 25-second watchdog answers before agy's 30-second timeout." },
+    { "id": "subagent-session", "what": "A subagent's calls judged as its own session", "why": "agy's payload marks no subagent: a subagent's calls carry its own conversation id, so they are judged by the same gates but with a session of their own. A held stage still refuses `invoke_subagent` itself, so no subagent starts while a stage is held." },
+    { "id": "stop-cap", "what": "Autopilot carry-on", "why": "agy honours 10 Stop continues per prompt and never sets `continuationActive`, so the hook counts its own: at most 8 per prompt, reset by the next prompt, kept in its data folder, which the guard keeps tools from writing." },
+    { "id": "now-copies", "what": "`## Now` copies in a long conversation", "why": "agy keeps every injected step, so the plan's `## Now` is injected once per prompt (on its first model call) and the copies pile up one per prompt, and again on a resumed conversation." },
+    { "id": "home-guard", "what": "The `~/.gemini` guard", "why": "Writes to `~/.gemini/config/`, `~/.gemini/antigravity-cli/settings.json` and the plugins' data folders are refused through write_file, edit_file and shell commands that name them, but the shell check is best-effort: a command that reaches them without naming them isn't caught. The rest of `~/.gemini/antigravity-cli/` stays writable." },
+    { "id": "case-insensitive-fs", "what": "Case-insensitive file systems", "why": "The guard compares paths case-sensitively, so on a case-insensitive file system a write to `.Gemini/config` can slip past it." },
+    { "id": "shell-writes-held", "what": "Writes through the shell in a held stage", "why": "The hold refuses write_file, edit_file and `invoke_subagent`, but a file written by a shell command isn't held, on any host." },
+    { "id": "node-22-18", "what": "Node older than 22.18", "why": "The hook runs the Claude hook's TypeScript through Node's type stripping; an older Node can't load it, so guarded tool calls are refused." },
+    { "id": "lean-agent-count", "what": "Lean's count of agents already running", "why": "Each hook event is a fresh process, so no in-memory agent list carries between events." },
+    { "id": "post-commit-reopen", "what": "The reopen check after a commit", "why": "It runs before the commit lands, since there's no in-memory state carried to the next event." },
+    { "id": "compaction", "what": "Compacting the context before autopilot carries on", "why": "agy gives a command hook no context gauge and no compact call." }
+  ]
+}

@@ -1,0 +1,1020 @@
+$ node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs hosts/antigravity/hook.test.mjs
+TAP version 13
+# Subtest: every PreToolUse fixture names a tool this adapter maps, with the argument keys it reads
+ok 1 - every PreToolUse fixture names a tool this adapter maps, with the argument keys it reads
+  ---
+  duration_ms: 6.0251
+  type: 'test'
+  ...
+# Subtest: mapTool maps each fixture tool call to the Claude call the core judges
+ok 2 - mapTool maps each fixture tool call to the Claude call the core judges
+  ---
+  duration_ms: 1.7439
+  type: 'test'
+  ...
+# Subtest: mapTool: unreadable input never means allow, and unknown tools carrying a path or command are denied
+ok 3 - mapTool: unreadable input never means allow, and unknown tools carrying a path or command are denied
+  ---
+  duration_ms: 0.5561
+  type: 'test'
+  ...
+# Subtest: every tool in agy's live list is mapped, read-only or explicitly allowed; any other tool is denied
+ok 4 - every tool in agy's live list is mapped, read-only or explicitly allowed; any other tool is denied
+  ---
+  duration_ms: 0.4136
+  type: 'test'
+  ...
+# Subtest: run_command: a Cwd inside the config, the plugin data or any .gemini folder is denied, and so is an unreadable one
+ok 5 - run_command: a Cwd inside the config, the plugin data or any .gemini folder is denied, and so is an unreadable one
+  ---
+  duration_ms: 36.484201
+  type: 'test'
+  ...
+# Subtest: multi_replace_file_content: each chunk is an Edit of its own; an unreadable chunk list or content is denied
+ok 6 - multi_replace_file_content: each chunk is an Edit of its own; an unreadable chunk list or content is denied
+  ---
+  duration_ms: 351.260817
+  type: 'test'
+  ...
+# Subtest: protectedPath and writesProtected: ~/.gemini/config, settings.json and plugin data are guarded; the rest of antigravity-cli is not
+ok 7 - protectedPath and writesProtected: ~/.gemini/config, settings.json and plugin data are guarded; the rest of antigravity-cli is not
+  ---
+  duration_ms: 2.1064
+  type: 'test'
+  ...
+# Subtest: agy subcommands that rewrite its config are denied; list, validate and a nested prompt are not
+ok 8 - agy subcommands that rewrite its config are denied; list, validate and a nested prompt are not
+  ---
+  duration_ms: 0.2737
+  type: 'test'
+  ...
+# Subtest: PreToolUse: writes to ~/.gemini/config, settings.json and the state dir are denied through every edit tool and the shell, with or without a plan
+ok 9 - PreToolUse: writes to ~/.gemini/config, settings.json and the state dir are denied through every edit tool and the shell, with or without a plan
+  ---
+  duration_ms: 848.881847
+  type: 'test'
+  ...
+# Subtest: capture: the installed capture script runs from the plugin folder under ~/.gemini/config; every bypass keeps the refusal
+ok 10 - capture: the installed capture script runs from the plugin folder under ~/.gemini/config; every bypass keeps the refusal
+  ---
+  duration_ms: 114.800207
+  type: 'test'
+  ...
+# Subtest: PreInvocation injects \#\# Now on invocationNum 0 only, in the shape agy reads
+ok 11 - PreInvocation injects \#\# Now on invocationNum 0 only, in the shape agy reads
+  ---
+  duration_ms: 1097.719761
+  type: 'test'
+  ...
+# Subtest: SessionStart, PostInvocation and PostToolUse answer {}
+ok 12 - SessionStart, PostInvocation and PostToolUse answer {}
+  ---
+  duration_ms: 171.871909
+  type: 'test'
+  ...
+# Subtest: PreToolUse on the fixtures: an explicit allow with no plan to gate them
+ok 13 - PreToolUse on the fixtures: an explicit allow with no plan to gate them
+  ---
+  duration_ms: 622.722035
+  type: 'test'
+  ...
+# Subtest: PreToolUse: a commit with a secret staged is denied by kind, never by value; a clean one is allowed
+ok 14 - PreToolUse: a commit with a secret staged is denied by kind, never by value; a clean one is allowed
+  ---
+  duration_ms: 440.996824
+  type: 'test'
+  ...
+# Subtest: PreToolUse: the commit gate (unticked check, missing report, missing screenshot, evidence wiped on the commit line)
+ok 15 - PreToolUse: the commit gate (unticked check, missing report, missing screenshot, evidence wiped on the commit line)
+  ---
+  duration_ms: 609.277333
+  type: 'test'
+  ...
+# Subtest: PreToolUse: in a held stage, write_file, edit_file and invoke_subagent are denied; the plan and a research note are not
+ok 16 - PreToolUse: in a held stage, write_file, edit_file and invoke_subagent are denied; the plan and a research note are not
+  ---
+  duration_ms: 951.147653
+  type: 'test'
+  ...
+# Subtest: PreToolUse: an outward command under autopilot is denied
+ok 17 - PreToolUse: an outward command under autopilot is denied
+  ---
+  duration_ms: 258.411114
+  type: 'test'
+  ...
+# Subtest: subagent: its parent is read from its transcript, so the parent's hold and approval reach its calls
+ok 18 - subagent: its parent is read from its transcript, so the parent's hold and approval reach its calls
+  ---
+  duration_ms: 702.129538
+  type: 'test'
+  ...
+# Subtest: subagent: an outward command is denied when the parent drives autopilot, as in the parent
+ok 19 - subagent: an outward command is denied when the parent drives autopilot, as in the parent
+  ---
+  duration_ms: 548.895431
+  type: 'test'
+  ...
+# Subtest: subagent: with no parent found, it fails closed under autopilot's strictest rules
+ok 20 - subagent: with no parent found, it fails closed under autopilot's strictest rules
+  ---
+  duration_ms: 620.062934
+  type: 'test'
+  ...
+# Subtest: a crash, garbage stdin, a missing tool, no project, no data folder, an unknown event and a mismatched event all deny with a reason
+ok 21 - a crash, garbage stdin, a missing tool, no project, no data folder, an unknown event and a mismatched event all deny with a reason
+  ---
+  duration_ms: 686.941137
+  type: 'test'
+  ...
+# Subtest: the watchdog denies a PreToolUse that hangs, with exit 0, under the hooks.json timeout
+ok 22 - the watchdog denies a PreToolUse that hangs, with exit 0, under the hooks.json timeout
+  ---
+  duration_ms: 324.255721
+  type: 'test'
+  ...
+# Subtest: on a Node without TypeScript stripping, a guarded call is denied naming the Node it needs, and the prompt is told
+ok 23 - on a Node without TypeScript stripping, a guarded call is denied naming the Node it needs, and the prompt is told
+  ---
+  duration_ms: 78.685706
+  type: 'test'
+  ...
+# Subtest: Stop continues under armed autopilot with a reason carrying the plan, and not otherwise
+ok 24 - Stop continues under armed autopilot with a reason carrying the plan, and not otherwise
+  ---
+  duration_ms: 499.271035
+  type: 'test'
+  ...
+# Subtest: Stop continues at most 8 times per prompt (under agy's 10); a new prompt resets it, a later call of the same prompt doesn't
+ok 25 - Stop continues at most 8 times per prompt (under agy's 10); a new prompt resets it, a later call of the same prompt doesn't
+  ---
+  duration_ms: 1864.792231
+  type: 'test'
+  ...
+# Subtest: the Stop count lives in the data folder, which the guard keeps tools from writing
+ok 26 - the Stop count lives in the data folder, which the guard keeps tools from writing
+  ---
+  duration_ms: 258.799218
+  type: 'test'
+  ...
+# Subtest: stopWith: a continue with no reason does not crash and counts only an emitted continue
+ok 27 - stopWith: a continue with no reason does not crash and counts only an emitted continue
+  ---
+  duration_ms: 0.3191
+  type: 'test'
+  ...
+# Subtest: the hook runs from any cwd and never prints a stack
+ok 28 - the hook runs from any cwd and never prints a stack
+  ---
+  duration_ms: 95.433407
+  type: 'test'
+  ...
+# Subtest: building twice gives identical bytes, and the second run writes nothing
+ok 29 - building twice gives identical bytes, and the second run writes nothing
+  ---
+  duration_ms: 158.254305
+  type: 'test'
+  ...
+# Subtest: the committed package is current: --check passes on the repo
+ok 30 - the committed package is current: --check passes on the repo
+  ---
+  duration_ms: 79.326604
+  type: 'test'
+  ...
+# Subtest: plugin.json, marketplace and hooks.json follow the spike's working layout
+ok 31 - plugin.json, marketplace and hooks.json follow the spike's working layout
+  ---
+  duration_ms: 9.542201
+  type: 'test'
+  ...
+# Subtest: skills keep bare names and get one mapping section at the end
+ok 32 - skills keep bare names and get one mapping section at the end
+  ---
+  duration_ms: 4.8826
+  type: 'test'
+  ...
+# Subtest: scripts are copied with their imports rewritten inside the package, and a source hash manifest
+ok 33 - scripts are copied with their imports rewritten inside the package, and a source hash manifest
+  ---
+  duration_ms: 6.2251
+  type: 'test'
+  ...
+# Subtest: frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+ok 34 - frontmatter scalars a strict YAML parser would reject are quoted (Copilot failed on `: ` in a description)
+  ---
+  duration_ms: 5.412301
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a skill changed, and passes after a rebuild
+ok 35 - drift: --check fails when a skill changed, and passes after a rebuild
+  ---
+  duration_ms: 272.742115
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a hook module changed, and passes after a rebuild
+ok 36 - drift: --check fails when a hook module changed, and passes after a rebuild
+  ---
+  duration_ms: 246.969513
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when a core module changed, and passes after a rebuild
+ok 37 - drift: --check fails when a core module changed, and passes after a rebuild
+  ---
+  duration_ms: 244.811514
+  type: 'test'
+  ...
+# Subtest: drift: --check fails when the capability file changed, and passes after a rebuild
+ok 38 - drift: --check fails when the capability file changed, and passes after a rebuild
+  ---
+  duration_ms: 236.859113
+  type: 'test'
+  ...
+# Subtest: drift: a stray file in the package, or an edited generated file, fails --check
+ok 39 - drift: a stray file in the package, or an edited generated file, fails --check
+  ---
+  duration_ms: 183.13621
+  type: 'test'
+  ...
+# Subtest: README gap list: the root README's block lists every capability.json gap, in order, and nothing else
+ok 40 - README gap list: the root README's block lists every capability.json gap, in order, and nothing else
+  ---
+  duration_ms: 5.373501
+  type: 'test'
+  ...
+# Subtest: README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it
+ok 41 - README gap list: a gap changed in capability.json fails --check naming README.md, and a rebuild fixes it
+  ---
+  duration_ms: 224.703312
+  type: 'test'
+  ...
+# Subtest: README gap list: a hand edit inside the block fails --check; prose outside it is the README's own
+ok 42 - README gap list: a hand edit inside the block fails --check; prose outside it is the README's own
+  ---
+  duration_ms: 121.284107
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path /etc/README.md (absolute or with ..) fails the build
+ok 43 - README gap list: readme.path /etc/README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 45.083902
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path ../README.md (absolute or with ..) fails the build
+ok 44 - README gap list: readme.path ../README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 39.188403
+  type: 'test'
+  ...
+# Subtest: README gap list: readme.path docs/../../README.md (absolute or with ..) fails the build
+ok 45 - README gap list: readme.path docs/../../README.md (absolute or with ..) fails the build
+  ---
+  duration_ms: 35.920901
+  type: 'test'
+  ...
+# Subtest: README gap list: a README without the markers fails the build
+ok 46 - README gap list: a README without the markers fails the build
+  ---
+  duration_ms: 40.191703
+  type: 'test'
+  ...
+# Subtest: leak check: the real output has no leak
+ok 47 - leak check: the real output has no leak
+  ---
+  duration_ms: 6.4877
+  type: 'test'
+  ...
+# Subtest: leak check: a Claude-only name planted outside the mapping section fails the build and --check
+ok 48 - leak check: a Claude-only name planted outside the mapping section fails the build and --check
+  ---
+  duration_ms: 145.159708
+  type: 'test'
+  ...
+# Subtest: leak check: the same names inside the mapping section are allowed
+ok 49 - leak check: the same names inside the mapping section are allowed
+  ---
+  duration_ms: 0.5192
+  type: 'test'
+  ...
+# Subtest: --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+ok 50 - --check also leak-scans the files on disk: a hand-planted term outside the mapping section reports leak:
+  ---
+  duration_ms: 177.46531
+  type: 'test'
+  ...
+# Subtest: Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+ok 51 - Copilot wording: no compaction promise, lowercase explore agents, security-review marked as listed but unseen
+  ---
+  duration_ms: 16.635301
+  type: 'test'
+  ...
+# Subtest: a substitution that no longer matches its source fails the build
+ok 52 - a substitution that no longer matches its source fails the build
+  ---
+  duration_ms: 25.465501
+  type: 'test'
+  ...
+# Subtest: a rewrite that no longer matches fails the build
+ok 53 - a rewrite that no longer matches fails the build
+  ---
+  duration_ms: 36.544302
+  type: 'test'
+  ...
+# Subtest: an import that leaves the package fails the build
+ok 54 - an import that leaves the package fails the build
+  ---
+  duration_ms: 54.998403
+  type: 'test'
+  ...
+# Subtest: a hooks.json event the hook does not handle fails the build
+ok 55 - a hooks.json event the hook does not handle fails the build
+  ---
+  duration_ms: 32.582002
+  type: 'test'
+  ...
+# Subtest: the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+ok 56 - the generated hook, copied alone outside the repo, denies `git push` under armed autopilot
+  ---
+  duration_ms: 1011.164956
+  type: 'test'
+  ...
+# Subtest: the repo's own generated hook denies `git push` under armed autopilot
+ok 57 - the repo's own generated hook denies `git push` under armed autopilot
+  ---
+  duration_ms: 208.817112
+  type: 'test'
+  ...
+# Subtest: codex: building twice gives identical bytes, and the second run writes nothing
+ok 58 - codex: building twice gives identical bytes, and the second run writes nothing
+  ---
+  duration_ms: 166.294609
+  type: 'test'
+  ...
+# Subtest: codex: .codex-plugin/plugin.json names the plugin jbit at the source version, with LICENSE and GENERATED.json
+ok 59 - codex: .codex-plugin/plugin.json names the plugin jbit at the source version, with LICENSE and GENERATED.json
+  ---
+  duration_ms: 10.6666
+  type: 'test'
+  ...
+# Subtest: codex: 9 skills with bare names, no Claude-only frontmatter, and one "On Codex CLI" section
+ok 60 - codex: 9 skills with bare names, no Claude-only frontmatter, and one "On Codex CLI" section
+  ---
+  duration_ms: 7.730401
+  type: 'test'
+  ...
+# Subtest: codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false (proven live, so no gap)
+ok 61 - codex: approve alone gets agents/openai.yaml with allow_implicit_invocation false (proven live, so no gap)
+  ---
+  duration_ms: 6.8772
+  type: 'test'
+  ...
+# Subtest: codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with a raised prompt context limit
+ok 62 - codex: hooks.json runs the hook on the four events, PreToolUse on every tool, with a raised prompt context limit
+  ---
+  duration_ms: 9.071401
+  type: 'test'
+  ...
+# Subtest: codex: .agents/plugins/marketplace.json points at the package under its own name
+ok 63 - codex: .agents/plugins/marketplace.json points at the package under its own name
+  ---
+  duration_ms: 7.4006
+  type: 'test'
+  ...
+# Subtest: codex: scripts are globbed from hosts/core and hosts/codex, with imports repointed inside the package
+ok 64 - codex: scripts are globbed from hosts/core and hosts/codex, with imports repointed inside the package
+  ---
+  duration_ms: 9.619201
+  type: 'test'
+  ...
+# Subtest: codex: a missing hook.mjs fails the build with a clear message and writes nothing
+ok 65 - codex: a missing hook.mjs fails the build with a clear message and writes nothing
+  ---
+  duration_ms: 57.647803
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when a skill changed, and passes after a rebuild
+ok 66 - codex drift: --check fails when a skill changed, and passes after a rebuild
+  ---
+  duration_ms: 241.886113
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when a core module changed, and passes after a rebuild
+ok 67 - codex drift: --check fails when a core module changed, and passes after a rebuild
+  ---
+  duration_ms: 237.715413
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when the hook changed, and passes after a rebuild
+ok 68 - codex drift: --check fails when the hook changed, and passes after a rebuild
+  ---
+  duration_ms: 234.967313
+  type: 'test'
+  ...
+# Subtest: codex drift: --check fails when the capability file changed, and passes after a rebuild
+ok 69 - codex drift: --check fails when the capability file changed, and passes after a rebuild
+  ---
+  duration_ms: 251.532714
+  type: 'test'
+  ...
+# Subtest: codex drift: a stray file in the package or a hand-edited marketplace fails --check
+ok 70 - codex drift: a stray file in the package or a hand-edited marketplace fails --check
+  ---
+  duration_ms: 179.45801
+  type: 'test'
+  ...
+# Subtest: codex leak check: the output has none, and a Claude-only name planted outside the mapping section fails
+ok 71 - codex leak check: the output has none, and a Claude-only name planted outside the mapping section fails
+  ---
+  duration_ms: 231.370812
+  type: 'test'
+  ...
+# Subtest: codex gaps: the capability lists the gaps the stage-7 README must carry
+ok 72 - codex gaps: the capability lists the gaps the stage-7 README must carry
+  ---
+  duration_ms: 0.457901
+  type: 'test'
+  ...
+# Subtest: codex: the committed package is current (once the adapter has landed)
+ok 73 - codex: the committed package is current (once the adapter has landed)
+  ---
+  duration_ms: 58.858403
+  type: 'test'
+  ...
+# Subtest: review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml
+ok 74 - review: disable-model-invocation is read as a value (quoted, trailing comment) to decide on agents/openai.yaml
+  ---
+  duration_ms: 19.828801
+  type: 'test'
+  ...
+# Subtest: review: dropping disable-model-invocation: true with no openai.yaml written fails the build
+ok 75 - review: dropping disable-model-invocation: true with no openai.yaml written fails the build
+  ---
+  duration_ms: 2.6743
+  type: 'test'
+  ...
+# Subtest: review: the codex build requires the hook EVENTS table, and the real hook has one it reads
+ok 76 - review: the codex build requires the hook EVENTS table, and the real hook has one it reads
+  ---
+  duration_ms: 51.477403
+  type: 'test'
+  ...
+# Subtest: review: a dropped frontmatter key takes its indented continuation lines with it
+ok 77 - review: a dropped frontmatter key takes its indented continuation lines with it
+  ---
+  duration_ms: 8.312
+  type: 'test'
+  ...
+# Subtest: codex: Stop carries no additionalContextLimit (Codex rejects it); UserPromptSubmit keeps its raised one
+ok 78 - codex: Stop carries no additionalContextLimit (Codex rejects it); UserPromptSubmit keeps its raised one
+  ---
+  duration_ms: 9.722901
+  type: 'test'
+  ...
+# Subtest: codex: a package whose adapter fails to import still denies a PreToolUse with exit 0, and is silent elsewhere
+ok 79 - codex: a package whose adapter fails to import still denies a PreToolUse with exit 0, and is silent elsewhere
+  ---
+  duration_ms: 287.908616
+  type: 'test'
+  ...
+# Subtest: no ${CLAUDE_ text is left anywhere in a generated skill, and the capture script ships beside the verify skill
+ok 80 - no ${CLAUDE_ text is left anywhere in a generated skill, and the capture script ships beside the verify skill
+  ---
+  duration_ms: 29.070501
+  type: 'test'
+  ...
+# Subtest: copilot screenshot gap: what the live run proved, the headless --add-dir need, and the mapping says so
+ok 81 - copilot screenshot gap: what the live run proved, the headless --add-dir need, and the mapping says so
+  ---
+  duration_ms: 0.4761
+  type: 'test'
+  ...
+# Subtest: screenshot gaps: Copilot and Codex each list what they lose of screenshot evidence, in their README block
+ok 82 - screenshot gaps: Copilot and Codex each list what they lose of screenshot evidence, in their README block
+  ---
+  duration_ms: 0.9997
+  type: 'test'
+  ...
+# Subtest: a generated script with a \#! line is written executable, kept so on rebuild, and --check reports one that is not
+ok 83 - a generated script with a \#! line is written executable, kept so on rebuild, and --check reports one that is not
+  ---
+  duration_ms: 149.907709
+  type: 'test'
+  ...
+# Subtest: antigravity: root plugin.json named jbit at the source version, root hooks.json, rules/AGENTS.md, no marketplace and no Claude layout
+ok 84 - antigravity: root plugin.json named jbit at the source version, root hooks.json, rules/AGENTS.md, no marketplace and no Claude layout
+  ---
+  duration_ms: 7.4205
+  type: 'test'
+  ...
+# Subtest: antigravity: hooks.json names one jbit hook with all six events, tool events in "*" groups, 30 s timeouts, commands that run shipped scripts
+ok 85 - antigravity: hooks.json names one jbit hook with all six events, tool events in "*" groups, 30 s timeouts, commands that run shipped scripts
+  ---
+  duration_ms: 6.3996
+  type: 'test'
+  ...
+# Subtest: antigravity: skills have no ${ left, invoke as /jbit:<name>, reach the capture script by the skill folder, and carry one mapping section
+ok 86 - antigravity: skills have no ${ left, invoke as /jbit:<name>, reach the capture script by the skill folder, and carry one mapping section
+  ---
+  duration_ms: 8.494101
+  type: 'test'
+  ...
+# Subtest: antigravity leak check: the output has none, and a Claude-only name planted in the rules or a skill fails the build
+ok 87 - antigravity leak check: the output has none, and a Claude-only name planted in the rules or a skill fails the build
+  ---
+  duration_ms: 50.120903
+  type: 'test'
+  ...
+# Subtest: antigravity: building twice gives identical bytes, and the second run writes nothing
+ok 88 - antigravity: building twice gives identical bytes, and the second run writes nothing
+  ---
+  duration_ms: 87.741904
+  type: 'test'
+  ...
+# Subtest: antigravity drift: --check fails when a skill changed, and passes after a rebuild
+ok 89 - antigravity drift: --check fails when a skill changed, and passes after a rebuild
+  ---
+  duration_ms: 202.685312
+  type: 'test'
+  ...
+# Subtest: antigravity drift: --check fails when the hook adapter changed, and passes after a rebuild
+ok 90 - antigravity drift: --check fails when the hook adapter changed, and passes after a rebuild
+  ---
+  duration_ms: 228.630312
+  type: 'test'
+  ...
+# Subtest: antigravity drift: --check fails when the shared core changed, and passes after a rebuild
+ok 91 - antigravity drift: --check fails when the shared core changed, and passes after a rebuild
+  ---
+  duration_ms: 206.977411
+  type: 'test'
+  ...
+# Subtest: antigravity drift: --check fails when the rules in capability.json changed, and passes after a rebuild
+ok 92 - antigravity drift: --check fails when the rules in capability.json changed, and passes after a rebuild
+  ---
+  duration_ms: 199.908611
+  type: 'test'
+  ...
+# Subtest: antigravity drift: a stray file or a hand-edited hooks.json fails --check
+ok 93 - antigravity drift: a stray file or a hand-edited hooks.json fails --check
+  ---
+  duration_ms: 170.74681
+  type: 'test'
+  ...
+# Subtest: antigravity: the committed package is current: --check passes on the repo
+ok 94 - antigravity: the committed package is current: --check passes on the repo
+  ---
+  duration_ms: 38.201802
+  type: 'test'
+  ...
+# Subtest: antigravity: the generated hook, run from the package folder as agy runs it, answers every PreToolUse explicitly
+ok 95 - antigravity: the generated hook, run from the package folder as agy runs it, answers every PreToolUse explicitly
+  ---
+  duration_ms: 78.213104
+  type: 'test'
+  ...
+# Subtest: antigravity: a skill body over agy's 24000-byte load limit is cut at a \#\# heading into continued.md, pointed to at its top and at the cut
+ok 96 - antigravity: a skill body over agy's 24000-byte load limit is cut at a \#\# heading into continued.md, pointed to at its top and at the cut
+  ---
+  duration_ms: 12.175001
+  type: 'test'
+  ...
+# Subtest: the hoisted patch grammar reads the Codex spike patch
+ok 97 - the hoisted patch grammar reads the Codex spike patch
+  ---
+  duration_ms: 2.8346
+  type: 'test'
+  ...
+# Subtest: mapTool maps Codex apply_patch, Bash and spawn_agent to the Claude calls the core judges
+ok 98 - mapTool maps Codex apply_patch, Bash and spawn_agent to the Claude calls the core judges
+  ---
+  duration_ms: 1.8251
+  type: 'test'
+  ...
+# Subtest: mapTool: a tool_input of the wrong type never means allow
+ok 99 - mapTool: a tool_input of the wrong type never means allow
+  ---
+  duration_ms: 0.2602
+  type: 'test'
+  ...
+# Subtest: mapTool: unknown tools carrying a path or a command are denied, naming the tool
+ok 100 - mapTool: unknown tools carrying a path or a command are denied, naming the tool
+  ---
+  duration_ms: 0.3145
+  type: 'test'
+  ...
+# Subtest: writesCodexHome: a write naming $CODEX_HOME or .codex/ is caught, a read is not
+ok 101 - writesCodexHome: a write naming $CODEX_HOME or .codex/ is caught, a read is not
+  ---
+  duration_ms: 1.5763
+  type: 'test'
+  ...
+# Subtest: UserPromptSubmit carries the plan as hookSpecificOutput additionalContext
+ok 102 - UserPromptSubmit carries the plan as hookSpecificOutput additionalContext
+  ---
+  duration_ms: 253.442411
+  type: 'test'
+  ...
+# Subtest: SessionStart exits 0 and adds nothing (the prompt carries the plan)
+ok 103 - SessionStart exits 0 and adds nothing (the prompt carries the plan)
+  ---
+  duration_ms: 31.661701
+  type: 'test'
+  ...
+# Subtest: PreToolUse: a commit with a secret staged is denied, a plain one goes through
+ok 104 - PreToolUse: a commit with a secret staged is denied, a plain one goes through
+  ---
+  duration_ms: 269.473715
+  type: 'test'
+  ...
+# Subtest: PreToolUse: a commit closing a stage with an unticked check is denied
+ok 105 - PreToolUse: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 125.324007
+  type: 'test'
+  ...
+# Subtest: PreToolUse: in a held stage, apply_patch (Add, Update, Delete, Move to, .., absolute) and builder agents are denied
+ok 106 - PreToolUse: in a held stage, apply_patch (Add, Update, Delete, Move to, .., absolute) and builder agents are denied
+  ---
+  duration_ms: 1244.906969
+  type: 'test'
+  ...
+# Subtest: PreToolUse: an unparseable patch and wrong-typed tool_input are denied even with no plan
+ok 107 - PreToolUse: an unparseable patch and wrong-typed tool_input are denied even with no plan
+  ---
+  duration_ms: 184.952811
+  type: 'test'
+  ...
+# Subtest: PreToolUse: unknown tools carrying a path or command are denied, naming the tool
+ok 108 - PreToolUse: unknown tools carrying a path or command are denied, naming the tool
+  ---
+  duration_ms: 108.362906
+  type: 'test'
+  ...
+# Subtest: PreToolUse: writes under $CODEX_HOME are denied through apply_patch and Bash, with or without a plan
+ok 109 - PreToolUse: writes under $CODEX_HOME are denied through apply_patch and Bash, with or without a plan
+  ---
+  duration_ms: 608.060733
+  type: 'test'
+  ...
+# Subtest: PreToolUse: under autopilot, the shell fallback writing the plan and committing on one line is denied
+ok 110 - PreToolUse: under autopilot, the shell fallback writing the plan and committing on one line is denied
+  ---
+  duration_ms: 227.425613
+  type: 'test'
+  ...
+# Subtest: PreToolUse: an outward command under autopilot is denied
+ok 111 - PreToolUse: an outward command under autopilot is denied
+  ---
+  duration_ms: 244.037313
+  type: 'test'
+  ...
+# Subtest: no project dir: guarded tools are denied, and prompts and stops add nothing
+ok 112 - no project dir: guarded tools are denied, and prompts and stops add nothing
+  ---
+  duration_ms: 344.446619
+  type: 'test'
+  ...
+# Subtest: no PLUGIN_DATA: guarded tools are denied
+ok 113 - no PLUGIN_DATA: guarded tools are denied
+  ---
+  duration_ms: 34.587902
+  type: 'test'
+  ...
+# Subtest: a crash fails closed for PreToolUse, stays silent elsewhere, and never exits 1
+ok 114 - a crash fails closed for PreToolUse, stays silent elsewhere, and never exits 1
+  ---
+  duration_ms: 739.875041
+  type: 'test'
+  ...
+# Subtest: the watchdog denies a PreToolUse that hangs, with exit 0
+ok 115 - the watchdog denies a PreToolUse that hangs, with exit 0
+  ---
+  duration_ms: 318.613117
+  type: 'test'
+  ...
+# Subtest: Stop blocks under armed autopilot with a reason that carries the plan, and not otherwise
+ok 116 - Stop blocks under armed autopilot with a reason that carries the plan, and not otherwise
+  ---
+  duration_ms: 566.793232
+  type: 'test'
+  ...
+# Subtest: Stop blocks at most 8 times per prompt, and a new prompt resets the count
+ok 117 - Stop blocks at most 8 times per prompt, and a new prompt resets the count
+  ---
+  duration_ms: 1324.801572
+  type: 'test'
+  ...
+# Subtest: on a Node without TypeScript stripping, the deny names the Node it needs
+ok 118 - on a Node without TypeScript stripping, the deny names the Node it needs
+  ---
+  duration_ms: 34.852202
+  type: 'test'
+  ...
+# Subtest: review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read
+ok 119 - review: a Bash command holding apply_patch is judged as Bash too, and every patch block is read
+  ---
+  duration_ms: 0.9139
+  type: 'test'
+  ...
+# Subtest: review: apply_patch counts only as the command word; a mention is a plain Bash command
+ok 120 - review: apply_patch counts only as the command word; a mention is a plain Bash command
+  ---
+  duration_ms: 0.45
+  type: 'test'
+  ...
+# Subtest: review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project
+ok 121 - review: a shell apply_patch after a directory change is denied; a workdir is resolved inside the project
+  ---
+  duration_ms: 0.3512
+  type: 'test'
+  ...
+# Subtest: review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot
+ok 122 - review: PreToolUse denies an outward push riding with a shell apply_patch under autopilot
+  ---
+  duration_ms: 294.631617
+  type: 'test'
+  ...
+# Subtest: review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it
+ok 123 - review: writesCodexHome catches >&file, find, curl, wget, tar, unzip, git -C, ln, install, truncate, dd, interpreters and cd into it
+  ---
+  duration_ms: 1.233
+  type: 'test'
+  ...
+# Subtest: review: codex subcommands that rewrite its config are denied; --version and exec are not
+ok 124 - review: codex subcommands that rewrite its config are denied; --version and exec are not
+  ---
+  duration_ms: 0.4102
+  type: 'test'
+  ...
+# Subtest: review: send_message and followup_task map to Agent calls; wait, list and interrupt stay allowed
+ok 125 - review: send_message and followup_task map to Agent calls; wait, list and interrupt stay allowed
+  ---
+  duration_ms: 294.252116
+  type: 'test'
+  ...
+# Subtest: review: write_stdin runs the apply_patch detection and is judged as Bash
+ok 126 - review: write_stdin runs the apply_patch detection and is judged as Bash
+  ---
+  duration_ms: 0.6288
+  type: 'test'
+  ...
+# Subtest: review: a Stop block with no reason does not crash, still carries \#\# Now, and counts only an emitted block
+ok 127 - review: a Stop block with no reason does not crash, still carries \#\# Now, and counts only an emitted block
+  ---
+  duration_ms: 0.4367
+  type: 'test'
+  ...
+# Subtest: live: the collaboration-prefixed agent tools map as the bare ones do
+ok 128 - live: the collaboration-prefixed agent tools map as the bare ones do
+  ---
+  duration_ms: 0.2267
+  type: 'test'
+  ...
+# Subtest: live: in a held stage, collaborationspawn_agent with an encrypted brief is denied
+ok 129 - live: in a held stage, collaborationspawn_agent with an encrypted brief is denied
+  ---
+  duration_ms: 489.591527
+  type: 'test'
+  ...
+# Subtest: live: a leading $jbit:autopilot arms autopilot as /jbit:autopilot does
+ok 130 - live: a leading $jbit:autopilot arms autopilot as /jbit:autopilot does
+  ---
+  duration_ms: 1028.462065
+  type: 'test'
+  ...
+# Subtest: live: $jbit:approve releases a held stage as /jbit:approve does
+ok 131 - live: $jbit:approve releases a held stage as /jbit:approve does
+  ---
+  duration_ms: 369.155926
+  type: 'test'
+  ...
+# Subtest: live: only the user prompt is rewritten; a tool command holding $jbit:approve is not an approval
+ok 132 - live: only the user prompt is rewritten; a tool command holding $jbit:approve is not an approval
+  ---
+  duration_ms: 299.715521
+  type: 'test'
+  ...
+# Subtest: stage 7 review: an unknown collaboration tool carrying a message is judged as an Agent call
+ok 133 - stage 7 review: an unknown collaboration tool carrying a message is judged as an Agent call
+  ---
+  duration_ms: 0.2387
+  type: 'test'
+  ...
+# Subtest: stage 7 review: the $jbit: rewrite ignores case, as the core does
+ok 134 - stage 7 review: the $jbit: rewrite ignores case, as the core does
+  ---
+  duration_ms: 0.3081
+  type: 'test'
+  ...
+# Subtest: capture: the cache the script would use is checked on every call, wherever install sits and from the default path too
+ok 135 - capture: the cache the script would use is checked on every call, wherever install sits and from the default path too
+  ---
+  duration_ms: 7.662501
+  type: 'test'
+  ...
+# Subtest: capture: one plain node run of the installed capture.mjs is allowed; every bypass keeps the refusal
+ok 136 - capture: one plain node run of the installed capture.mjs is allowed; every bypass keeps the refusal
+  ---
+  duration_ms: 19.645801
+  type: 'test'
+  ...
+# Subtest: parsePatch reads Add, Update, Delete and Move to
+ok 137 - parsePatch reads Add, Update, Delete and Move to
+  ---
+  duration_ms: 1.3867
+  type: 'test'
+  ...
+# Subtest: parsePatch reads the captured spike patch
+ok 138 - parsePatch reads the captured spike patch
+  ---
+  duration_ms: 0.2472
+  type: 'test'
+  ...
+# Subtest: parsePatch refuses what it cannot read
+ok 139 - parsePatch refuses what it cannot read
+  ---
+  duration_ms: 0.1435
+  type: 'test'
+  ...
+# Subtest: parsePatch tolerates CRLF and surrounding blank lines
+ok 140 - parsePatch tolerates CRLF and surrounding blank lines
+  ---
+  duration_ms: 0.1244
+  type: 'test'
+  ...
+# Subtest: paths resolve against the project, normalising .., absolute paths and symlinks
+ok 141 - paths resolve against the project, normalising .., absolute paths and symlinks
+  ---
+  duration_ms: 2.2558
+  type: 'test'
+  ...
+# Subtest: mapTool maps Copilot tools to the Claude tool calls the core judges
+ok 142 - mapTool maps Copilot tools to the Claude tool calls the core judges
+  ---
+  duration_ms: 1.0056
+  type: 'test'
+  ...
+# Subtest: mapTool: a toolArgs of the wrong type never means allow
+ok 143 - mapTool: a toolArgs of the wrong type never means allow
+  ---
+  duration_ms: 0.5975
+  type: 'test'
+  ...
+# Subtest: mapTool: unknown tools carrying a path or a command are denied, naming the tool
+ok 144 - mapTool: unknown tools carrying a path or a command are denied, naming the tool
+  ---
+  duration_ms: 0.6066
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit with a secret staged is denied
+ok 145 - preToolUse: a commit with a secret staged is denied
+  ---
+  duration_ms: 281.993812
+  type: 'test'
+  ...
+# Subtest: preToolUse: a commit closing a stage with an unticked check is denied
+ok 146 - preToolUse: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 155.674209
+  type: 'test'
+  ...
+# Subtest: preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+ok 147 - preToolUse: in a held stage, writes and builder agents are denied through every Copilot tool
+  ---
+  duration_ms: 1550.957986
+  type: 'test'
+  ...
+# Subtest: preToolUse: outside a held stage the same calls go through
+ok 148 - preToolUse: outside a held stage the same calls go through
+  ---
+  duration_ms: 532.826229
+  type: 'test'
+  ...
+# Subtest: preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+ok 149 - preToolUse: an unparseable patch and wrong-typed args are denied even with no plan
+  ---
+  duration_ms: 100.887106
+  type: 'test'
+  ...
+# Subtest: preToolUse: unknown tools carrying a path or command are denied, naming the tool
+ok 150 - preToolUse: unknown tools carrying a path or command are denied, naming the tool
+  ---
+  duration_ms: 76.732904
+  type: 'test'
+  ...
+# Subtest: preToolUse: an outward command under autopilot is denied
+ok 151 - preToolUse: an outward command under autopilot is denied
+  ---
+  duration_ms: 225.561413
+  type: 'test'
+  ...
+# Subtest: no project dir: guarded tools are denied and prompts get no context
+ok 152 - no project dir: guarded tools are denied and prompts get no context
+  ---
+  duration_ms: 207.208411
+  type: 'test'
+  ...
+# Subtest: COPILOT_PROJECT_DIR stands in when stdin has no cwd
+ok 153 - COPILOT_PROJECT_DIR stands in when stdin has no cwd
+  ---
+  duration_ms: 123.291407
+  type: 'test'
+  ...
+# Subtest: a crash in the core fails closed for preToolUse and stays silent elsewhere
+ok 154 - a crash in the core fails closed for preToolUse and stays silent elsewhere
+  ---
+  duration_ms: 370.41842
+  type: 'test'
+  ...
+# Subtest: userPromptTransformed appends the plan to transformedPrompt, never replacing it
+ok 155 - userPromptTransformed appends the plan to transformedPrompt, never replacing it
+  ---
+  duration_ms: 295.748317
+  type: 'test'
+  ...
+# Subtest: sessionStart gives the plan as additionalContext
+ok 156 - sessionStart gives the plan as additionalContext
+  ---
+  duration_ms: 119.417506
+  type: 'test'
+  ...
+# Subtest: agentStop blocks while autopilot is armed with stages left, and not otherwise
+ok 157 - agentStop blocks while autopilot is armed with stages left, and not otherwise
+  ---
+  duration_ms: 821.421645
+  type: 'test'
+  ...
+# Subtest: S1: git output past the buffer limit fails the commit check closed
+ok 158 - S1: git output past the buffer limit fails the commit check closed
+  ---
+  duration_ms: 112.928506
+  type: 'test'
+  ...
+# Subtest: S2: a lone carriage return or an indented directive makes a patch unparseable
+ok 159 - S2: a lone carriage return or an indented directive makes a patch unparseable
+  ---
+  duration_ms: 29.232902
+  type: 'test'
+  ...
+# Subtest: C1: the model starting jbit:autopilot after the user asked arms autopilot
+ok 160 - C1: the model starting jbit:autopilot after the user asked arms autopilot
+  ---
+  duration_ms: 310.795217
+  type: 'test'
+  ...
+# Subtest: C1: a skill call with no user prompt before it does not arm
+ok 161 - C1: a skill call with no user prompt before it does not arm
+  ---
+  duration_ms: 293.569416
+  type: 'test'
+  ...
+# Subtest: C2: a run that pauses tells the user at the next prompt
+ok 162 - C2: a run that pauses tells the user at the next prompt
+  ---
+  duration_ms: 410.314323
+  type: 'test'
+  ...
+# Subtest: C3: a prompt composes before it submits, as Claude Code does
+ok 163 - C3: a prompt composes before it submits, as Claude Code does
+  ---
+  duration_ms: 8.066
+  type: 'test'
+  ...
+# Subtest: C4: on a Node without TypeScript stripping, the deny says what Node it needs
+ok 164 - C4: on a Node without TypeScript stripping, the deny says what Node it needs
+  ---
+  duration_ms: 58.667903
+  type: 'test'
+  ...
+# Subtest: C5: the held notice is said once per stage, not at every turn end
+ok 165 - C5: the held notice is said once per stage, not at every turn end
+  ---
+  duration_ms: 595.135133
+  type: 'test'
+  ...
+# Subtest: C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+ok 166 - C5/C6: the unheld notice is said once, even across a multi-file patch and later calls
+  ---
+  duration_ms: 485.692227
+  type: 'test'
+  ...
+# Subtest: C7: removed keys drop their versions, and stale post: keys are pruned
+ok 167 - C7: removed keys drop their versions, and stale post: keys are pruned
+  ---
+  duration_ms: 226.329512
+  type: 'test'
+  ...
+# Subtest: C8: Windows backslash and drive-letter paths are denied with a reason
+ok 168 - C8: Windows backslash and drive-letter paths are denied with a reason
+  ---
+  duration_ms: 0.3297
+  type: 'test'
+  ...
+1..168
+# tests 168
+# suites 0
+# pass 168
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11270.365763
+exit 0

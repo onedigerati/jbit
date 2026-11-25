@@ -1,0 +1,10 @@
+$ agy -p /hooks
+
+jbit	enabled	SessionStart	-	command	node ./scripts/hook.mjs SessionStart
+jbit	enabled	PreInvocation	-	command	node ./scripts/hook.mjs PreInvocation
+jbit	enabled	PostInvocation	-	command	node ./scripts/hook.mjs PostInvocation
+jbit	enabled	PreToolUse	*	command	node ./scripts/hook.mjs PreToolUse
+jbit	enabled	PostToolUse	*	command	node ./scripts/hook.mjs PostToolUse
+jbit	enabled	Stop	-	command	node ./scripts/hook.mjs Stop
+
+exit=0

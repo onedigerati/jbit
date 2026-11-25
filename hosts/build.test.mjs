@@ -858,3 +858,195 @@ test('a generated script with a #! line is written executable, kept so on rebuil
   assert.ok(statSync(capture).mode & 0o100, 'a rebuild leaves capture.mjs not executable')
   assert.equal(build('--out', out, '--check').status, 0)
 })
+
+// ---- antigravity: a native agy plugin, installed by path ----
+
+function agSources() {
+  const dir = temp('jbit-build-ag-src-')
+  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/core', 'hosts/antigravity', 'hosts/copilot/map.mjs']) {
+    cpSync(join(ROOT, p), join(dir, p), { recursive: true, filter: s => !s.endsWith('.test.mjs') && !s.includes('/spike') && !s.includes('/fixtures') })
+  }
+  return dir
+}
+const ag = (...args) => spawnSync(process.execPath, [BUILD, 'antigravity', ...args], { encoding: 'utf8', timeout: 60000 })
+const AG = 'plugins/jbit-antigravity'
+const AG_EVENTS = ['PostInvocation', 'PostToolUse', 'PreInvocation', 'PreToolUse', 'SessionStart', 'Stop']
+
+test('antigravity: root plugin.json named jbit at the source version, root hooks.json, rules/AGENTS.md, no marketplace and no Claude layout', () => {
+  const { files } = generate({ src: ROOT, host: 'antigravity' })
+  const src = JSON.parse(readFileSync(join(ROOT, 'plugins/jbit/.claude-plugin/plugin.json'), 'utf8'))
+  const manifest = JSON.parse(files.get(`${AG}/plugin.json`))
+  assert.equal(manifest.name, 'jbit')
+  assert.equal(manifest.version, src.version)
+  assert.equal(manifest.$schema, 'https://antigravity.google/schemas/v1/plugin.json')
+  for (const f of ['hooks.json', 'rules/AGENTS.md', 'LICENSE', 'GENERATED.json', 'scripts/hook.mjs', 'scripts/handler.mjs', 'scripts/map.mjs', 'scripts/package.json', 'skills/verify/scripts/capture.mjs']) {
+    assert.ok(files.has(`${AG}/${f}`), `missing ${f}`)
+  }
+  // agy doesn't load these in a native plugin; a root AGENTS.md is ignored, a marketplace isn't used (install by path)
+  for (const f of [...files.keys()]) {
+    assert.ok(f.startsWith(`${AG}/`), `${f} is written outside the package`)
+    assert.doesNotMatch(f, new RegExp(`^${AG}/(hooks/hooks\\.json|AGENTS\\.md|GEMINI\\.md|\\.claude-plugin/|\\.antigravity-plugin/|commands/)`))
+  }
+  const rules = files.get(`${AG}/rules/AGENTS.md`)
+  assert.match(rules, /read that file/)
+  assert.match(rules, /`CLAUDE\.md`/)
+  assert.match(rules, /`\/jbit:<name>`/)
+})
+
+test('antigravity: hooks.json names one jbit hook with all six events, tool events in "*" groups, 30 s timeouts, commands that run shipped scripts', () => {
+  const { files } = generate({ src: ROOT, host: 'antigravity' })
+  const hooks = JSON.parse(files.get(`${AG}/hooks.json`))
+  assert.deepEqual(Object.keys(hooks), ['jbit'])
+  assert.deepEqual(Object.keys(hooks.jbit).sort(), AG_EVENTS)
+  for (const e of AG_EVENTS) {
+    let handlers = hooks.jbit[e]
+    assert.equal(handlers.length, 1)
+    if (e === 'PreToolUse' || e === 'PostToolUse') {
+      assert.equal(handlers[0].matcher, '*')
+      handlers = handlers[0].hooks
+    } else assert.equal(handlers[0].matcher, undefined)
+    assert.equal(handlers.length, 1)
+    const [h] = handlers
+    assert.deepEqual(Object.keys(h).sort(), ['command', 'timeout', 'type'])
+    assert.equal(h.type, 'command')
+    assert.equal(h.timeout, 30)
+    const m = /^node \.\/(\S+) (\w+)$/.exec(h.command)
+    assert.ok(m, `${e}: ${h.command} isn't node ./<script> <Event>`)
+    assert.equal(m[2], e)
+    assert.ok(files.has(`${AG}/${m[1]}`), `${e}: ${m[1]} isn't in the package`)
+    assert.doesNotMatch(h.command, /\$/)
+  }
+})
+
+test('antigravity: skills have no ${ left, invoke as /jbit:<name>, reach the capture script by the skill folder, and carry one mapping section', () => {
+  const { files, cap } = generate({ src: ROOT, host: 'antigravity' })
+  const names = readdirSync(join(ROOT, 'plugins/jbit/skills')).filter(n => statSync(join(ROOT, 'plugins/jbit/skills', n)).isDirectory()).sort()
+  const skills = [...files].filter(([f]) => f.startsWith(`${AG}/skills/`) && f.endsWith('/SKILL.md'))
+  assert.equal(skills.length, names.length)
+  for (const [file, text] of skills) {
+    assert.ok(!text.includes('${'), `${file} still has a \${ variable`)
+    assert.equal(text.split(`\n${cap.mapping.heading}\n`).length, 2, `${file}: not exactly one mapping section`)
+    assert.doesNotMatch(text, /\$jbit:/, `${file} uses the Codex $jbit: form`)
+    assert.doesNotMatch(text, /node "scripts\//)
+  }
+  assert.match(files.get(`${AG}/skills/autopilot/SKILL.md`), /\/jbit:autopilot/)
+  assert.match(files.get(`${AG}/skills/verify/SKILL.md`), /`node "<this skill's folder>\/scripts\/capture\.mjs"` \(the `scripts\/capture\.mjs` in this skill's folder/)
+  for (const s of ['stage', 'fix']) {
+    assert.match(files.get(`${AG}/skills/${s}/SKILL.md`), /node "<verify skill folder>\/scripts\/capture\.mjs" shot .{0,120}the `scripts\/capture\.mjs` in the verify skill's folder/)
+  }
+  assert.doesNotMatch(files.get(`${AG}/skills/verify/SKILL.md`), /use the host's own browser tools/)
+  assert.equal(files.get(`${AG}/skills/verify/scripts/capture.mjs`), readFileSync(join(ROOT, 'plugins/jbit/skills/verify/scripts/capture.mjs'), 'utf8'))
+})
+
+test('antigravity leak check: the output has none, and a Claude-only name planted in the rules or a skill fails the build', () => {
+  const { files, cap } = generate({ src: ROOT, host: 'antigravity' })
+  assert.deepEqual(findLeaks(files, cap), [])
+  assert.ok(cap.leakTerms.includes('\\$\\{'))
+  const planted = new Map([
+    [`${AG}/rules/AGENTS.md`, 'use the Skill tool'],
+    [`${AG}/skills/x/SKILL.md`, `run \${CLAUDE_SKILL_DIR}/x\n${cap.mapping.heading}\nClaude WebFetch`],
+  ])
+  const leaks = findLeaks(planted, cap)
+  assert.ok(leaks.some(l => l.file.endsWith('rules/AGENTS.md') && l.term === 'Skill tool'))
+  assert.ok(leaks.some(l => l.file.endsWith('SKILL.md') && l.line === 1))
+  assert.ok(!leaks.some(l => l.line > 1 && l.file.endsWith('SKILL.md')), 'a name inside the mapping section was flagged')
+  // the build itself refuses a leak: a skill source that keeps a variable no substitution rewrites
+  const src = agSources()
+  appendFileSync(join(src, 'plugins/jbit/skills/plan/SKILL.md'), '\nRun `${CLAUDE_PLUGIN_ROOT}/x`.\n')
+  const r = ag('--src', src, '--out', temp())
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /leak: plugins\/jbit-antigravity\/skills\/plan\/(SKILL|continued)\.md:\d+ CLAUDE_PLUGIN_ROOT/)
+})
+
+test('antigravity: building twice gives identical bytes, and the second run writes nothing', () => {
+  const src = agSources()
+  const out = temp()
+  assert.equal(ag('--src', src, '--out', out).status, 0)
+  const first = snapshot(out)
+  const r = ag('--src', src, '--out', out)
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, /wrote 0, removed 0/)
+  assert.deepEqual(snapshot(out), first)
+  assert.deepEqual(readdirSync(out), ['plugins'])
+})
+
+for (const [what, change] of [
+  ['a skill', src => appendFileSync(join(src, 'plugins/jbit/skills/plan/SKILL.md'), '\nA new line.\n')],
+  ['the hook adapter', src => appendFileSync(join(src, 'hosts/antigravity/map.mjs'), '\n// changed\n')],
+  ['the shared core', src => appendFileSync(join(src, 'hosts/core/engine.mjs'), '\n// changed\n')],
+  ['the rules in capability.json', src => {
+    const p = join(src, 'hosts/antigravity/capability.json')
+    const cap = JSON.parse(readFileSync(p, 'utf8'))
+    cap.rules.lines.push('- One more rule.')
+    writeFileSync(p, JSON.stringify(cap, null, 2))
+  }],
+]) {
+  test(`antigravity drift: --check fails when ${what} changed, and passes after a rebuild`, () => {
+    const src = agSources()
+    const out = temp()
+    assert.equal(ag('--src', src, '--out', out).status, 0)
+    assert.equal(ag('--src', src, '--out', out, '--check').status, 0)
+    change(src)
+    const r = ag('--src', src, '--out', out, '--check')
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /drift: plugins\/jbit-antigravity lags its sources; run node hosts\/build\.mjs antigravity/)
+    assert.equal(ag('--src', src, '--out', out).status, 0)
+    const again = ag('--src', src, '--out', out, '--check')
+    assert.equal(again.status, 0, again.stderr)
+  })
+}
+
+test('antigravity drift: a stray file or a hand-edited hooks.json fails --check', () => {
+  const src = agSources()
+  const out = temp()
+  assert.equal(ag('--src', src, '--out', out).status, 0)
+  writeFileSync(join(out, AG, 'AGENTS.md'), 'stray\n')
+  assert.match(ag('--src', src, '--out', out, '--check').stderr, /extra: plugins\/jbit-antigravity\/AGENTS\.md/)
+  assert.equal(ag('--src', src, '--out', out).status, 0)
+  appendFileSync(join(out, AG, 'hooks.json'), ' ')
+  const r = ag('--src', src, '--out', out, '--check')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /differs: plugins\/jbit-antigravity\/hooks\.json/)
+})
+
+test('antigravity: the committed package is current: --check passes on the repo', () => {
+  const r = ag('--check')
+  assert.equal(r.status, 0, r.stderr)
+})
+
+test('antigravity: the generated hook, run from the package folder as agy runs it, answers every PreToolUse explicitly', () => {
+  const src = agSources()
+  const out = temp()
+  assert.equal(ag('--src', src, '--out', out).status, 0)
+  const pkg = join(out, AG)
+  const run = (input, event = 'PreToolUse') => spawnSync(process.execPath, ['./scripts/hook.mjs', event], { cwd: pkg, input, encoding: 'utf8', timeout: 30000, env: { ...process.env, HOME: temp('jbit-ag-home-') } })
+  const fixture = name => readFileSync(join(HOSTS, 'antigravity/fixtures', `${name}.json`), 'utf8')
+  const allow = run(fixture('PreToolUse-1'))
+  assert.equal(allow.status, 0)
+  assert.deepEqual(JSON.parse(allow.stdout), { decision: 'allow' })
+  const bad = run('{bad')
+  assert.equal(bad.status, 0)
+  assert.equal(JSON.parse(bad.stdout).decision, 'deny')
+})
+
+test('antigravity: a skill body over agy\'s 24000-byte load limit is cut at a ## heading into continued.md, pointed to at its top and at the cut', () => {
+  const { files, cap } = generate({ src: ROOT, host: 'antigravity' })
+  const body = text => text.slice(/^---\n[\s\S]*?\n---\n/.exec(text)[0].length)
+  for (const [f, text] of files) {
+    if (f.endsWith('/SKILL.md')) assert.ok(Buffer.byteLength(body(text)) <= cap.skillBody.limit, `${f} body is over ${cap.skillBody.limit} bytes`)
+  }
+  const plan = files.get(`${AG}/skills/plan/SKILL.md`)
+  const rest = files.get(`${AG}/skills/plan/continued.md`)
+  assert.ok(rest, 'plan has no continued.md')
+  assert.match(rest, /^## /)
+  assert.equal(plan.split('This skill continues in `continued.md`').length, 3)
+  assert.match(body(plan), /^> \*\*This skill continues in `continued\.md`/)
+  // nothing lost: every section of the source is in exactly one of the two, in order
+  const heads = t => [...t.matchAll(/^## (.+)$/gm)].map(m => m[1])
+  const src = readFileSync(join(ROOT, 'plugins/jbit/skills/plan/SKILL.md'), 'utf8')
+  const kept = plan.slice(0, plan.indexOf(`\n${cap.mapping.heading}\n`))
+  assert.deepEqual([...heads(kept), ...heads(rest)], heads(src))
+  assert.ok(Buffer.byteLength(kept) + Buffer.byteLength(rest) > Buffer.byteLength(src))
+  // a skill that fits isn't touched
+  assert.ok(![...files.keys()].some(f => f.endsWith('continued.md') && !f.includes('/plan/')))
+})

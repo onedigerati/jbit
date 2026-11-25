@@ -1,0 +1,12 @@
+$ cp hosts/antigravity/hook.mjs <scratch>/crash/ ; handler.mjs replaced by (a) one that throws, (b) one with a syntax error, (c) one that never resolves (JBIT_HOOK_WATCHDOG_MS=500)
+--- (a) throws
+jbit hook: PreToolUse: boom
+{"decision":"deny","reason":"JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."}
+exit=0
+--- (b) syntax error
+jbit hook: PreToolUse: Unexpected identifier 'error'
+{"decision":"deny","reason":"JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."}
+exit=0
+--- (c) hangs
+{"decision":"deny","reason":"JBIT's hook failed on this call, so the call doesn't run (its guard fails closed). Retry it; if it keeps failing, tell the user."}
+exit=0

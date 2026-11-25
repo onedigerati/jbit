@@ -1,0 +1,3 @@
+$ git diff --stat HEAD -- plugins/jbit
+(empty: no tracked change under plugins/jbit)
+exit 0

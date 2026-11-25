@@ -5,7 +5,7 @@ import { memoryEngine } from './engine.mjs'
 const REGISTER = '../hooks/register.ts'
 
 /** What a Node that can't load the hook's TypeScript says, in place of a generic failure. */
-export const NODE_TOO_OLD = "JBIT's Copilot hook needs Node 22.18+ (TypeScript type stripping), and this Node can't load it, so JBIT's checks can't run: guarded tool calls are refused. Tell the user to update Node."
+export const NODE_TOO_OLD = "JBIT's hook needs Node 22.18+ (TypeScript type stripping), and this Node can't load it, so JBIT's checks can't run: guarded tool calls are refused. Tell the user to update Node."
 
 let loaded
 

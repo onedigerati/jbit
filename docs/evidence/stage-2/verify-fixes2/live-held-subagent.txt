@@ -1,0 +1,56 @@
+# Live: subagent of an armed (attended) parent hits a held stage; agy 1.5.17, gemini-3.8-flash-low, throwaway HOME (mkhome.sh), permissions never skipped; date 2026-11-25T16:38:42Z
+$ HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity   # installed scripts/ diff -r vs package: identical
+# scratch project <scratch>/ws2c (git repo). docs/PLAN.md before the run:
+## Now
+Stage 2 of 3 · Share mode
+Mode: autopilot
+Build: start exactly one subagent with invoke_subagent. Its brief: (1) edit docs/PLAN.md to insert `Risk: auth, user input` under the Stage line; (2) then write_file src/login.ts; (3) report the result of step 2 verbatim.
+# Why this shape: in a held stage the parent's own invoke_subagent is an Agent call and is held (verify-fixes/held-subagents.txt), so a subagent can't be spawned into an already-held stage. The subagent makes the stage risky itself (the plan file is exempt from the hold), then its write_file meets the hold through the parent link.
+$ cd <scratch>/ws2c && HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "JBIT autopilot attended" --model gemini-3.8-flash-low --output-format stream-json
+exit=0; parent 225c38ba-4373-4649-a3e3-5c2f32ad4691, subagent e4baa4ef-3a12-433a-a3ca-d72812af05d5. Final response:
+I have taken over the plan under `autopilot` in attended mode.
+
+Stage 2 of 3 (`Share mode`) is currently underway. I have spawned the builder subagent with the requested brief:
+1. Insert `Risk: auth, user input` into [docs/PLAN.md](file://<scratch>/ws2c/docs/PLAN.md) under `Stage 2 of 3 · Share mode`.
+2. Write `src/login.ts`.
+3. Report the result or error verbatim.
+
+Waiting on the subagent's report.
+Stage 2 (`Share mode`) is held because its risk line names `auth, user input`. In attended mode, building risky stages requires user approval before proceeding.
+
+The subagent reported the exact error when attempting step 2:
+> `Encountered error in tool execution: tool call denied by pre-tool hook: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what's finished, set the Mode line to paused — <reason>, and ask the user for that reply.`
+
+I have paused autopilot in [docs/PLAN.md](file://<scratch>/ws2c/docs/PLAN.md).
+
+To release this stage and proceed, reply with "yes", "go", "approve", "proceed", or "just build it" (alone or followed by punctuation other than `?`), or `/jbit:approve`.
+
+# subagent e4baa4ef-3a12-433a-a3ca-d72812af05d5 transcript.jsonl
+line 0: source=SYSTEM_SDK type=SYSTEM_MESSAGE status=DONE header_sender=None
+line 1: source=SYSTEM type=SYSTEM_MESSAGE status=DONE header_sender=225c38ba-4373-4649-a3e3-5c2f32ad4691
+line 2: source=MODEL type=PLANNER_RESPONSE status=DONE header_sender=None tool_calls=[["read_file", "\"<scratch>/ws2c/docs/PLAN.md\""]]
+line 3: source=MODEL type=GENERIC status=DONE header_sender=None
+line 4: source=MODEL type=PLANNER_RESPONSE status=DONE header_sender=None tool_calls=[["edit_file", "\"<scratch>/ws2c/docs/PLAN.md\""], ["write_file", "\"<scratch>/ws2c/src/login.ts\""]]
+line 5: source=MODEL type=GENERIC status=DONE header_sender=None
+line 6: source=MODEL type=GENERIC status=ERROR header_sender=None error='tool call denied by pre-tool hook: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn\'t built until the user approves it with "yes", "go", "approve", "proceed" or "just build it", alone or followed by a line break or punctuation other than "?" (as in "yes, build it"), or `/jbit:approve` (or "JBIT approve"). Commit what\'s finished, set the Mode line to `paused — <reason>`, and ask the user for that reply.'
+line 7: source=MODEL type=PLANNER_RESPONSE status=DONE header_sender=None tool_calls=[["send_message", null]]
+line 8: source=MODEL type=GENERIC status=DONE header_sender=None
+line 9: source=MODEL type=PLANNER_RESPONSE status=DONE header_sender=None
+# "couldn't link" in subagent transcript: 0   src/login.ts exists: no
+
+# hook session state (plugin_data/jbit/sessions): subagent carries host:parent = parent; no strict-<id> session made
+225c38ba-4373-4649-a3e3-5c2f32ad4691.json
+e4baa4ef-3a12-433a-a3ca-d72812af05d5.json
+225c38ba-4373-4649-a3e3-5c2f32ad4691.json: {"host:prompted": true, "jbit:armed": true, "jbit:unattended": "off", "jbit:seenMode": "paused"}
+e4baa4ef-3a12-433a-a3ca-d72812af05d5.json: {"host:parent": "225c38ba-4373-4649-a3e3-5c2f32ad4691", "jbit:armed": false, "jbit:seenMode": "paused"}
+
+# parent transcript tool steps (side notes: update_steps denied as an unknown tool; manage_subagents list denied as Agent once the stage was held)
+line 2: ['read_file', 'read_file', 'read_file']
+line 3: ERROR file does not exist
+line 6: ['update_steps']
+line 7: ERROR tool call denied by pre-tool hook: JBIT blocked `update_steps`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or sta
+line 8: ['invoke_subagent']
+line 13: ['manage_subagents']
+line 14: ERROR tool call denied by pre-tool hook: JBIT autopilot is holding Stage 2 of 3 · Share mode: its risk line names auth, so it isn't built until the user approves it w
+line 15: ['read_file']
+line 18: ['edit_file']

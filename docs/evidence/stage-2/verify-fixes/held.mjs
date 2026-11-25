@@ -1,0 +1,32 @@
+import { HOME, repo, show, hook, isDeny, isAllow, pre, prompt, transcript, planOn2, done } from './harness.mjs'
+const RISKY = planOn2('Risk: auth, user input', 'Mode: autopilot', 'Checks:', '- [ ] login works')
+const DRIVING = planOn2('Mode: autopilot', 'Checks:', '- [ ] link opens read-only')
+console.log('# A. held stage: parent armed attended on a risky stage; linked subagent writes')
+const held = repo(RISKY)
+const parent = 'a0000000-0000-4000-8000-00000000000a', sub = 'b0000000-0000-4000-8000-00000000000b'
+transcript(sub, parent)
+show('parent: user prompt arms autopilot attended', 'PreInvocation', prompt('/jbit:autopilot attended'), held, parent)
+show('subagent SessionStart (links parent from transcript)', 'SessionStart', { lastUserInput: '' }, held, sub, o => o === '{}')
+show('subagent write_file src/login.ts in held stage', 'PreToolUse', pre('write_file', { Path: 'src/login.ts', Content: 'x' }), held, sub, isDeny(/holding/))
+show('subagent edit_file src/a.ts in held stage', 'PreToolUse', pre('edit_file', { Path: 'src/a.ts', Target: 'a', Replacement: 'b' }), held, sub, isDeny(/holding/))
+show('subagent multi_replace src/a.ts in held stage', 'PreToolUse', pre('multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: [{ TargetContent: 'a', ReplacementContent: 'b' }] }), held, sub, isDeny(/holding/))
+show('subagent read_file still allowed in held stage', 'PreToolUse', pre('read_file', { Path: 'src/a.ts' }), held, sub, isAllow)
+for (const [n, a] of [['browser_subagent', { Task: 'edit src/login.ts', TaskName: 'x' }], ['define_subagent', { Name: 'n', SystemPrompt: 'edit things' }], ['manage_subagents', { Action: 'start' }], ['run_workflow', { Name: 'w' }], ['schedule', { Prompt: 'edit src', Cron: '* * * * *' }], ['invoke_subagent', { Prompt: 'x', Role: 'y', TypeName: 'self' }]])
+  show(`parent ${n} in held stage (review input) -> Agent, held`, 'PreToolUse', { ...pre(n, a), lastUserInput: '/jbit:autopilot attended' }, held, parent, isDeny(/holding/))
+show('parent: user approves', 'PreInvocation', prompt('yes, use the session cookie'), held, parent)
+show('subagent write_file after parent approval -> allowed', 'PreToolUse', pre('write_file', { Path: 'src/login.ts', Content: 'x' }), held, sub, isAllow)
+
+console.log('# B. autopilot unattended without outward: linked subagent git push')
+const drv = repo(DRIVING)
+const p2 = 'a1000000-0000-4000-8000-00000000000a', s2 = 'b1000000-0000-4000-8000-00000000000b'
+transcript(s2, p2)
+show('parent: /jbit:autopilot unattended', 'PreInvocation', prompt('/jbit:autopilot unattended'), drv, p2)
+show('subagent run_command git push origin main', 'PreToolUse', pre('run_command', { CommandLine: 'git push origin main' }), drv, s2, isDeny(/outward/))
+show('subagent run_command ls still allowed', 'PreToolUse', pre('run_command', { CommandLine: 'ls' }), drv, s2, isAllow)
+
+console.log('# C. unlinked subagent (no transcript, no parent) git push')
+const drv2 = repo(DRIVING)
+show('unlinked subagent git push', 'PreToolUse', pre('run_command', { CommandLine: 'git push origin main' }), drv2, 'b3000000-0000-4000-8000-00000000000b', isDeny(/outward[\s\S]*couldn't link/))
+show('unlinked subagent transcript naming an unseen parent, git push', 'PreToolUse', pre('run_command', { CommandLine: 'git push origin main' }), drv2, (transcript('b4000000-0000-4000-8000-00000000000b', 'ffffffff-0000-4000-8000-00000000ffff'), 'b4000000-0000-4000-8000-00000000000b'), isDeny(/couldn't link/))
+show('unlinked subagent read_file allowed', 'PreToolUse', pre('read_file', { Path: 'src/a.ts' }), drv2, 'b3000000-0000-4000-8000-00000000000b', isAllow)
+done()

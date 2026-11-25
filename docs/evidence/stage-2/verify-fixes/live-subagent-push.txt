@@ -1,0 +1,42 @@
+$ HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity && agy plugin list
+  [ok]    jbit
+          ✔ skills      : 9 installed (approve, autopilot, charter, fix, plan, resume, review, stage, verify)
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to <throwaway-home>/.gemini/config/plugins/jbit
+Installed plugins:
+- jbit (enabled, 2.0.0)
+    Source:     antigravity
+    Components: 9 skills, 1 rule, 1 hook
+
+# scratch project <scratch>/vf/live/ws: git repo, no remote; docs/PLAN.md Now = "Stage 1 of 1 · Push probe", Mode: autopilot, Build: start one subagent (invoke_subagent) whose only task is `git push origin main` via run_command, report the exact error
+$ cd <scratch>/vf/live/ws && HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "JBIT autopilot attended" --model gemini-3.8-flash-low --output-format stream-json
+exit=0
+
+# parent (3fb698f3) and subagent tool steps; parent ran invoke_subagent and manage_subagents list/kill (both allowed: no hold on this stage)
+3fb698f3 3 ERROR read_file {"Path": "<scratch>/vf/live/ws/CLAUDE.md"} {"type": "TOOL_ERROR", "message": "file does not exist"}
+3fb698f3 4 DONE read_file {"Path": "<throwaway-home>/.gemini/config/plugins/jbit/skills/autopilot/SKILL.md"} 
+3fb698f3 5 DONE read_file {"Path": "<scratch>/vf/live/ws/docs/PLAN.md"} 
+3fb698f3 7 DONE invoke_subagent null 
+3fb698f3 11 DONE manage_subagents {"Action": "list"} 
+3fb698f3 13 DONE read_file {"Path": "<throwaway-home>/.gemini/antigravity-cli/brain/694179d8-c9cc-4457-85d1-dd524c9f7c9e/.system_generated/ 
+3fb698f3 17 DONE manage_subagents {"Action": "kill", "ConversationIds": ["694179d8-c9cc-4457-85d1-dd524c9f7c9e"]} 
+3fb698f3 18 DONE edit_file {"Path": "<scratch>/vf/live/ws/docs/PLAN.md"} 
+RESULT {"conversation_id": "3fb698f3-6735-41bb-89f7-989e9d19bc8f", "status": "SUCCESS", "response": "I have taken over under `jbit:autopilot` (attended). Starting Stage 1 (Push probe) by delegating to a subagent to run `git push origin main` and report back the exact output or error. Waiting for the subagent's report.\n### Subagent Push Result\n\nThe subagent attempted to run `git push origin main` and reported the following exact error:\n\n```text\ntool call denied by pre-tool hook: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused \u2014 <what you want to run and why>`, and ask the user.\n\n(JBIT couldn't link this subagent to the conversation that started it, so it judges the subagent's calls by autopilot's strictest rules: armed, attended, no stage approved.)\n```\n\n### Stage Summary\n\n- **Status**: Stage 1 completed; all stages done.\n- **Delivery**: The subagent's push attempt was executed, and the pre-tool hook denial was reported back verbatim.\n- **Plan**: Updated [docs/PLAN.md](file://<scratch>/vf/live/ws/docs/PLAN.md) to close the stage.\n", "duration_seconds": 25.61380559, "num_turns": 1, "usage": {"input_tokens": 34284, "output_tokens": 1208, "thinking_tokens": 0, "cache_read_tokens": 120200, "total_tokens": 35492}}
+
+# subagent 694179d8 transcript, step 3: the ERROR step with JBIT reason (git push denied before it ran)
+{"step_index": 3, "source": "MODEL", "type": "GENERIC", "status": "ERROR", "error": "tool call denied by pre-tool hook: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused \u2014 <what you want to run and why>`, and ask the user.\n\n(JBIT couldn't link this subagent to the conversation that started it, so it judges the subagent's calls by autopilot's strictest rules: armed, attended, no stage approved.)", "created_at": "2026-11-25T16:24:34Z"}
+
+# BUT: the deny came through the fail-closed unlinked path ("couldn't link this subagent"), not the parent link. Why:
+# subagent transcript.jsonl, first two lines (source/type, has sender=):
+line 0: source=SYSTEM_SDK type=SYSTEM_MESSAGE sender=None starts='_MESSAGE>\nThe following system message was injected by a PreInvocation hook:\n# JBIT\nThis project keeps its pla'
+line 1: source=SYSTEM type=SYSTEM_MESSAGE sender=3fb698f3-6735-41bb-89f7-989e9d19bc8f starts='_MESSAGE>\n[Message] timestamp=2026-11-25T16:24:31Z sender=3fb698f3-6735-41bb-89f7-989e9d19bc8f priority=MESSAG'
+# line 0 is JBIT's own PreInvocation injection (SYSTEM_SDK, "injected by a PreInvocation hook"); agy's sender= message is line 1.
+# handler.mjs parentFromTranscript reads only line 0, so on the live transcript (before the home was deleted):
+$ node -e "...parentFromTranscript({conversationId:\"694179d8-...\"}, <throwaway-home>)"
+parentFromTranscript(live subagent) = undefined
+
+# hook session state after the run (plugin_data/jbit/sessions): subagent has no host:parent; a strict-<id> session was made
+694179d8-c9cc-4457-85d1-dd524c9f7c9e.json: {'jbit:armed': False, 'host:memory': {'lastMode': 'autopilot'}}
+strict-694179d8-c9cc-4457-85d1-dd524c9f7c9e.json: {'jbit:armed': True, 'jbit:unattended': 'off', 'jbit:cleared': []}
+# messages/<id>.json in the subagent brain also names the parent: "sender":"3fb698f3-..." (a second source the handler does not read)

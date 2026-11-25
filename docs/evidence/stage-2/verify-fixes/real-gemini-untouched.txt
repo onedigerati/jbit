@@ -1,0 +1,2 @@
+$ find -L ~/.gemini -printf "%p\t%s\t%T@\n" | sort   # before and after the live runs, diffed
+real ~/.gemini: before/after listing of 424 entries (path, size, mtime) identical; throwaway home <scratch>/agy/home-v2b deleted after the runs

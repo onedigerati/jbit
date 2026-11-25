@@ -1,0 +1,155 @@
+# Stage 2 fix round 2: subagent -> parent link, live (agy, gemini-3.8-flash-low, throwaway HOME, permissions never skipped)
+# date: 2026-11-25T16:35:16Z   agy: 1.5.17
+
+$ HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity && agy plugin list
+  [ok]    jbit
+          ✔ skills      : 9 installed (approve, autopilot, charter, fix, plan, resume, review, stage, verify)
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to <throwaway-home>/.gemini/config/plugins/jbit
+Installed plugins:
+- jbit (enabled, 2.0.0)
+    Source:     antigravity
+    Components: 9 skills, 1 rule, 1 hook
+
+# scratch project <scratch>/fix2-ws: git repo, no remote; docs/PLAN.md:
+# Plan
+
+## Goal
+Share boards read-only.
+
+## Now
+Stage 2 of 3 · Share mode
+Mode: autopilot
+Build: start one subagent (invoke_subagent) whose only task is `git push origin main` via run_command; it reports the exact error.
+Checks:
+- [ ] link opens read-only
+
+## Stages
+- [x] 1. Foundation — engine
+- [ ] 2. Share mode — viewer controls
+- [ ] 3. Polish — copy and layout
+
+## Run 1: parent armed attended; its subagent's git push (package build with the new transcript scan; the later build only tightened the messages fallback)
+$ cd <scratch>/fix2-ws && HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "JBIT autopilot attended" --model gemini-3.8-flash-low --output-format stream-json
+exit=0; parent bb21ca9c, subagent 71cbed2b. Final response:
+I have taken over the plan under `autopilot` in attended mode. Stage 2 ("Share mode") is in progress. I have launched the builder subagent to execute `git push origin main` and report the exact error.
+The builder subagent reported that the pre-tool hook denied `git push origin main`:
+
+> *JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user.*
+
+I have paused autopilot in [docs/PLAN.md](file://<scratch>/fix2-ws/docs/PLAN.md#L8). 
+
+To proceed with outward-facing commands such as `git push`, please confirm or approve (`yes`, `go`, `approve`, `proceed`, or run with `JBIT autopilot outward`).
+
+# subagent 71cbed2b transcript.jsonl (live shape: JBIT's injected SYSTEM_SDK step first, agy's SYSTEM [Message] sender= second):
+line 0: source=SYSTEM_SDK type=SYSTEM_MESSAGE status=DONE content[:200]='The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injecte'
+line 1: source=SYSTEM type=SYSTEM_MESSAGE status=DONE content[:200]='The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n[Message] timestamp=2026-11-25T16:32:01Z'
+line 2: source=MODEL type=PLANNER_RESPONSE status=DONE tool_calls=[["run_command", {"CommandLine": "\"git push origin main\"", "WaitMsBeforeAsync": "5000", "toolSummary": "\"Git push to origin main\""}]]
+line 3: source=MODEL type=GENERIC status=ERROR error="tool call denied by pre-tool hook: JBIT autopilot holds outward-facing steps for the user (git push). Commit what's finished, set the Mode line to `paused — <what you want to run and why>`, and ask the user."
+line 4: source=MODEL type=PLANNER_RESPONSE status=DONE tool_calls=[["send_message", {"Message": "\"Execution failed. The pre-tool hook denied the command:\\n\\\"Encountered error in tool execution: tool call denied by pre-tool hook: JBIT autopilot holds outward-faci
+line 5: source=MODEL type=GENERIC status=DONE
+line 6: source=SYSTEM type=SYSTEM_MESSAGE status=DONE
+line 7: source=MODEL type=PLANNER_RESPONSE status=DONE
+# the deny reason has no "couldn't link this subagent" tail: judged in the parent's session (armed, attended), not a strict one
+
+## Run 2 (final package, after the messages-fallback tightening): parent not armed (prompt isn't a bare command), its subagent's git push
+# (run 2a with the bare 'JBIT autopilot attended' prompt: the model paused before spawning any subagent, so nothing to judge)
+$ HOME=<throwaway-home> agy plugin install ./plugins/jbit-antigravity   # reinstall; installed scripts/ diff -r against the package: identical
+$ agy -p "JBIT autopilot attended. For the Build line: call invoke_subagent now; the subagent tries git push origin main with run_command and reports the exact result. ..." --model gemini-3.8-flash-low --output-format stream-json
+exit=0; parent 6c7b394b, subagent ab1fb2eb. Final response:
+The subagent has been invoked to run `git push origin main`. Awaiting its response.
+The subagent completed execution of `git push origin main` and reported the following exact output:
+
+```
+Command `git push origin main` failed with exit code 128.
+
+Exact output:
+fatal: 'origin' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+```
+
+# subagent ab1fb2eb transcript.jsonl:
+line 0: source=SYSTEM_SDK type=SYSTEM_MESSAGE status=DONE content[:200]='The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injecte'
+line 1: source=SYSTEM type=SYSTEM_MESSAGE status=DONE content[:200]='The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n[Message] timestamp=2026-11-25T16:34:19Z'
+line 2: source=MODEL type=PLANNER_RESPONSE status=DONE tool_calls=[["run_command", {"CommandLine": "\"git push origin main\"", "WaitMsBeforeAsync": "10000", "toolSummary": "\"Git push origin main\""}]]
+line 3: source=MODEL type=GENERIC status=DONE
+line 4: source=MODEL type=PLANNER_RESPONSE status=DONE tool_calls=[["send_message", {"Message": "\"Command `git push origin main` failed with exit code 128.\\n\\nExact output:\\nfatal: 'origin' does not appear to be a git repository\\nfatal: Could not read from remo
+line 5: source=MODEL type=GENERIC status=DONE
+line 6: source=SYSTEM type=SYSTEM_MESSAGE status=DONE
+line 7: source=MODEL type=PLANNER_RESPONSE status=DONE
+# the push ran (and failed: no remote): judged in the unarmed parent's session. The strict fallback (armed, attended) would have denied it as outward.
+
+## Hook session state after both runs (plugin_data/jbit/sessions): each subagent has host:parent; no strict-<id> session exists
+04f2618f-a22d-4ac4-b1f8-59af09709ae4.json
+6c7b394b-1983-4bb8-a286-a1e4bb482126.json
+71cbed2b-70df-4e0d-87af-02126f859249.json
+ab1fb2eb-305f-4df1-bc7a-09bbe759b22f.json
+bb21ca9c-f536-47a2-a369-58b0102ddef3.json
+c587d1e9-c1da-4af4-b41d-eadb8eac88d6.json
+04f2618f-a22d-4ac4-b1f8-59af09709ae4.json: {'host:parent': None, 'host:prompted': True, 'jbit:armed': False, 'jbit:unattended': None}
+6c7b394b-1983-4bb8-a286-a1e4bb482126.json: {'host:parent': None, 'host:prompted': True, 'jbit:armed': False, 'jbit:unattended': None}
+71cbed2b-70df-4e0d-87af-02126f859249.json: {'host:parent': 'bb21ca9c-f536-47a2-a369-58b0102ddef3', 'host:prompted': None, 'jbit:armed': False, 'jbit:unattended': None}
+ab1fb2eb-305f-4df1-bc7a-09bbe759b22f.json: {'host:parent': '6c7b394b-1983-4bb8-a286-a1e4bb482126', 'host:prompted': None, 'jbit:armed': False, 'jbit:unattended': None}
+bb21ca9c-f536-47a2-a369-58b0102ddef3.json: {'host:parent': None, 'host:prompted': True, 'jbit:armed': True, 'jbit:unattended': 'off'}
+c587d1e9-c1da-4af4-b41d-eadb8eac88d6.json: {'host:parent': None, 'host:prompted': True, 'jbit:armed': True, 'jbit:unattended': 'off'}
+
+## parentFromTranscript (packaged handler) on the live run-1 files, each source alone
+both sources: bb21ca9c-f536-47a2-a369-58b0102ddef3
+transcript only: bb21ca9c-f536-47a2-a369-58b0102ddef3
+messages only (parent lists sub under subagents/): bb21ca9c-f536-47a2-a369-58b0102ddef3
+the parent itself (its inbox holds the subagent reply): undefined
+# messages/<id>.json as agy writes it (subagent inbox), and the parent's subagents/<id>.json the fallback checks:
+{"id":"61c6af0c-150d-4af7-95be-8a5f06627b49", "recipient":"71cbed2b-70df-4e0d-87af-02126f859249", "sender":"bb21ca9c-f536-47a2-a369-58b0102ddef3", "priority":"MESSAGE_PRIORITY_HIGH", "timestamp":"2026-11-25T16:32:01.630041549Z", "renderDetails":{"messageTitle":"Message from Parent Agent"}, "content":"Run `git push origin main` v ...
+{"conversationId":"71cbed2b-70df-4e0d-87af-02126f859249", "subagentDescriptor":{"typeName":"self", "role":"Builder"}, "state":"SUBAGENT_STATE_ALIVE", "spawnStepIndex":8, "workspaceUris":["file://<scratch>/fix2-ws"]}
+
+## sed_file / notebook_edit / notebook_execution argument shapes
+# no live call: agy lists them in init.tools but did not offer them to the model (probe below). Shapes from the agy binary's Go struct tags (strings):
+TargetFilehjson:"target_file" jsonschema:"required" jsonschema_description:"The absolute path to the file to edit."
+Expressionsrjson:"expressions" jsonschema:"required" jsonschema_description:"A list of sed expressions to apply sequentially."
+json:"file_content,omitempty"
+CortexStepEditNotebook_Args).GetAbsolutePathUri
+AbsolutePathUri AnchorCellId AnchorCellIndex Cells DeleteCount Operation   (+ 'notebook_path' in the string table)
+go.shape.struct { NotebookPath string "jsonschema:\"required\" jsonschema_description:\"Absolute path to the .ipynb notebook file.\""; CellIDs []string "json:\"CellIDs\" jsonschema:\"required\" jsonschema_description:\"The IDs of the cells to execute.\"" }
+# => sed_file maps to Edit{file_path: target_file}; notebook_edit to Edit on its notebook path (notebook_path/NotebookPath/absolute_path_uri file://); notebook_execution stays denied (runs cells in a kernel: arbitrary code, no command line).
+$ agy -p "Tool probe. 1) Use the sed_file tool ... 2) Use the notebook_edit tool ..." --model gemini-3.8-flash-low   # in <scratch>/fix2-probe
+### Tool Probe Results
+
+1. **`sed_file`**: **Tool not available.**  
+   There is no tool named `sed_file` in the available toolset (available file editing tools are `edit_file` and `write_file`). As requested not to use any other tool, no modification was performed on `notes.txt`.
+
+2. **`notebook_edit`**: **Tool not available.**  
+   There is no tool named `notebook_edit` in the available toolset. As requested not to use any other tool, no modification was performed on `nb.ipynb`.
+
+tool steps in that stream: 0
+
+## Tests after the fix (repo)
+$ node hosts/build.mjs antigravity
+antigravity: wrote 0, removed 0, unchanged 30 (plugins/jbit-antigravity)
+$ node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs hosts/antigravity/hook.test.mjs
+# Subtest: sed_file and notebook_edit are each an Edit of their target, so the path guards apply; an unreadable target is denied
+ok 5 - sed_file and notebook_edit are each an Edit of their target, so the path guards apply; an unreadable target is denied
+# Subtest: PreToolUse: in a held stage, write_file, edit_file and invoke_subagent are denied; the plan and a research note are not
+ok 17 - PreToolUse: in a held stage, write_file, edit_file and invoke_subagent are denied; the plan and a research note are not
+# Subtest: subagent: its parent is read from its transcript, so the parent's hold and approval reach its calls
+ok 19 - subagent: its parent is read from its transcript, so the parent's hold and approval reach its calls
+# Subtest: subagent: an outward command is denied when the parent drives autopilot, as in the parent
+ok 20 - subagent: an outward command is denied when the parent drives autopilot, as in the parent
+# Subtest: subagent: only agy's own message header names the parent; a forged `sender=` elsewhere is never trusted
+ok 21 - subagent: only agy's own message header names the parent; a forged `sender=` elsewhere is never trusted
+# Subtest: subagent: with no parent found, it fails closed under autopilot's strictest rules
+ok 22 - subagent: with no parent found, it fails closed under autopilot's strictest rules
+# tests 170
+# pass 170
+# fail 0
+$ node --test hosts/parity/antigravity.test.mjs hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs
+# tests 35
+# pass 35
+# fail 0
+
+## Cleanup
+$ rm -rf <throwaway-home> <scratch>/fix2-ws <scratch>/fix2-probe
+$ ls -d <throwaway-home>   -> No such file or directory

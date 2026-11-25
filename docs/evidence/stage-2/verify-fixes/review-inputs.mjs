@@ -1,0 +1,35 @@
+import { HOME, repo, show, isDeny, isAllow, pre, prompt, planOn2, done } from './harness.mjs'
+const p = repo(planOn2())   // plain plan, no autopilot: only the mapping/guard decides
+const user = 'c0ffee00-0000-4000-8000-000000000001'
+show('setup: user prompt in plain session', 'PreInvocation', prompt('hello'), p, user)
+const deny = isDeny(), allow = isAllow
+const P = (l, n, a, e) => show(l, 'PreToolUse', { ...pre(n, a), lastUserInput: 'hello' }, p, user, e)
+console.log('# Finding 1: run_command Cwd')
+P('Cwd = plugin_data/jbit (review input)', 'run_command', { CommandLine: 'echo {} > sessions/x.json', Cwd: `${HOME}/.gemini/antigravity-cli/plugin_data/jbit` }, isDeny(/Antigravity's own config/))
+P('Cwd = ~/.gemini/config, rm -rf plugins (review input)', 'run_command', { CommandLine: 'rm -rf plugins', Cwd: '~/.gemini/config' }, isDeny(/own config/))
+P('Cwd = $HOME/.gemini (parent folder)', 'run_command', { CommandLine: 'mv config x', Cwd: '$HOME/.gemini' }, isDeny(/own config/))
+P('Cwd relative ../ into .gemini', 'run_command', { CommandLine: 'ls', Cwd: `${HOME}/.gemini/antigravity-cli` }, isDeny(/own config/))
+P('Cwd a number', 'run_command', { CommandLine: 'ls', Cwd: 5 }, isDeny(/no usable `Cwd`/))
+P('Cwd Windows path', 'run_command', { CommandLine: 'ls', Cwd: 'C:\\Users\\u' }, isDeny(/no usable `Cwd`/))
+P('Cwd = project subdir, ls (must allow)', 'run_command', { CommandLine: 'ls', Cwd: `${p}/src` }, allow)
+P('no Cwd, ls (must allow)', 'run_command', { CommandLine: 'ls' }, allow)
+console.log('# Finding 2: multi_replace_file_content / non-string content')
+// The Claude hook scans secrets at commit time, not on Edit, so an edit carrying a key is allowed on Claude Code too.
+// What the fix must show: each chunk reaches the core as its own Edit with its real new_string.
+const { mapTool } = await import('<repo>/plugins/jbit-antigravity/scripts/map.mjs')
+const r = mapTool('multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: [{ TargetContent: 'a', ReplacementContent: 'b' }, { TargetContent: 'c', ReplacementContent: 'AKIA' + 'Q'.repeat(16) }] }, '/proj')
+const ok2 = r.kind === 'calls' && r.calls.length === 2 && r.calls[1].new_string === 'AKIA' + 'Q'.repeat(16)
+console.log(`## ${ok2 ? 'PASS' : 'FAIL'} packaged mapTool(multi_replace, 2 chunks incl. key) -> one Edit per chunk\n${JSON.stringify(r)}\n`)
+P('multi-replace chunk with AWS key (review input): allowed as on Claude Code (secret scan is at commit)', 'multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: [{ TargetContent: 'a', ReplacementContent: '<AWS documentation example key, removed>' }] }, allow)
+P('multi-replace, chunks not an array', 'multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: 'x' }, isDeny(/couldn't read/))
+P('multi-replace, no chunks', 'multi_replace_file_content', { TargetFile: 'src/a.ts' }, isDeny(/couldn't read/))
+P('multi-replace, chunk with non-string', 'multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: [{ TargetContent: 'a', ReplacementContent: 7 }] }, isDeny(/couldn't read/))
+P('multi-replace, harmless chunks (must allow)', 'multi_replace_file_content', { TargetFile: 'src/a.ts', ReplacementChunks: [{ TargetContent: 'a', ReplacementContent: 'b' }] }, allow)
+P('write_file Content a number', 'write_file', { Path: 'src/b.ts', Content: 42 }, isDeny(/couldn't read/))
+P('write_file Content an object', 'write_file', { Path: 'src/b.ts', Content: { x: 1 } }, isDeny(/couldn't read/))
+P('write_file plain (must allow)', 'write_file', { Path: 'src/b.ts', Content: 'ok' }, allow)
+console.log('# Finding 3: agent spawners and unknown tools')
+P('browser_subagent (review input) in plain plan -> mapped to Agent, allowed (no hold)', 'browser_subagent', { Task: 'edit src/login.ts', TaskName: 'x' }, allow)
+P('unknown tool frobnicate', 'frobnicate', { a: 1 }, isDeny(/isn't a tool JBIT knows/))
+P('sed_file (live list, unmapped)', 'sed_file', { File: 'src/a.ts' }, deny)
+done()

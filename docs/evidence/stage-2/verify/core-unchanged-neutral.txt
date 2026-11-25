@@ -1,0 +1,27 @@
+$ git diff --stat ae9a765 -- plugins/jbit
+(empty above = unchanged)
+$ git diff --stat HEAD -- plugins/jbit
+$ git status --porcelain -- plugins/jbit
+?? plugins/jbit/evals-ablation/
+(plugins/jbit/evals-ablation/: untracked, files dated 2026-11-17, before this plan; already listed in docs/PLAN.md as untracked "commit or drop". Not stage-2 work.)
+
+$ git diff HEAD -- hosts/core/dispatch.mjs
+diff --git a/hosts/core/dispatch.mjs b/hosts/core/dispatch.mjs
+index f503238..19cef4b 100644
+--- a/hosts/core/dispatch.mjs
++++ b/hosts/core/dispatch.mjs
+@@ -5,7 +5,7 @@ import { memoryEngine } from './engine.mjs'
+ const REGISTER = '../../plugins/jbit/hooks/register.ts'
+ 
+ /** What a Node that can't load the hook's TypeScript says, in place of a generic failure. */
+-export const NODE_TOO_OLD = "JBIT's Copilot hook needs Node 22.18+ (TypeScript type stripping), and this Node can't load it, so JBIT's checks can't run: guarded tool calls are refused. Tell the user to update Node."
++export const NODE_TOO_OLD = "JBIT's hook needs Node 22.18+ (TypeScript type stripping), and this Node can't load it, so JBIT's checks can't run: guarded tool calls are refused. Tell the user to update Node."
+ 
+ let loaded
+ 
+
+$ grep -n -i -E "claude|copilot|codex|antigravity|gemini|agy" hosts/core/*.mjs (host names in shared core text)
+hosts/core/dispatch.mjs:1:// Runs a host-neutral event through the Claude hook's own handlers (`plugins/jbit/hooks/register.ts`, imported
+hosts/core/dispatch.mjs:2:// read-only), in register order with `next` chaining, as Claude Code's engine does.
+hosts/core/dispatch.mjs:144: * - `{ kind: 'prompt', text, origin }`: `prompt.compose`, then `prompt.submit`, as Claude Code composes the request
+hosts/core/index.mjs:1:// The host-neutral hook core: the Claude hook's handlers over a shim engine. A host adapter maps its events to

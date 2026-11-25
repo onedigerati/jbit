@@ -1,0 +1,4 @@
+$ find -L ~/.gemini -newer <marker made before mkhome> | wc -l   # files changed in the real ~/.gemini during the live run
+0
+$ test -e <throwaway-home> || echo deleted
+deleted

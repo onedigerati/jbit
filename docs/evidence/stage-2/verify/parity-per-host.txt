@@ -1,0 +1,7 @@
+$ grep -E "^(ok|not ok)" parity.txt | per-host counts
+antigravity: pass 17 · not ok 0 · skip 0
+codex: pass 1 · not ok 0 · skip 0
+copilot: pass 17 · not ok 0 · skip 0
+shared scenarios: 17
+codex runs all via runScenarios and asserts results.length === SCENARIOS.length
+antigravity skip guard (unmappable) fired for: 0 scenarios

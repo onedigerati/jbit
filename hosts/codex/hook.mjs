@@ -15,8 +15,7 @@ const WATCHDOG_MS = (() => {
 const deny = reason => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } })
 
 /** A Node that can't load the hook: a guarded call is refused and a prompt is told why, in the hook's words. */
-function nodeTooOld(event, message) {
-  const text = message.replace("JBIT's Copilot hook", "JBIT's Codex hook")
+function nodeTooOld(event, text) {
   if (event === 'PreToolUse') return deny(text)
   if (event === 'UserPromptSubmit') return { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: text } }
   return {}

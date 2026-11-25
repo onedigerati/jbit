@@ -1,0 +1,10 @@
+$ node hosts/build.mjs antigravity && git status --porcelain -- plugins/jbit-antigravity
+?? plugins/jbit-antigravity/
+before build: tree is untracked (new package); snapshot hash:
+03a8dc68171f45f3f3159db8b943fd8a69ce10061fb447c7da94f2d56be33fbe  -
+antigravity: wrote 0, removed 0, unchanged 30 (plugins/jbit-antigravity)
+rc=0
+after build snapshot hash:
+03a8dc68171f45f3f3159db8b943fd8a69ce10061fb447c7da94f2d56be33fbe  -
+after second build:
+03a8dc68171f45f3f3159db8b943fd8a69ce10061fb447c7da94f2d56be33fbe  -

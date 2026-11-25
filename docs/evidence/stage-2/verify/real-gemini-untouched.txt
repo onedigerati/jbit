@@ -1,0 +1,1 @@
+real ~/.gemini: before/after listing of 424 entries (path, size, mtime) identical; throwaway home <scratch>/agy/home-v2 deleted after the live runs

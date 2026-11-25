@@ -1,0 +1,7 @@
+$ grep -rn -F -e "${" -e CLAUDE_PLUGIN -e CLAUDE_SKILL_DIR plugins/jbit-antigravity --include=*.md --include=*.json
+rc=1 (1 = no match)
+
+$ grep -rn -F -e CLAUDE_PLUGIN -e CLAUDE_SKILL_DIR plugins/jbit-antigravity (all files)
+rc=1
+
+Remaining "${" hits are JS template literals in scripts/ (see leak-grep.txt)

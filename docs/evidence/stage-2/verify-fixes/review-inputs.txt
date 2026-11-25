@@ -1,0 +1,88 @@
+$ node <scratch>/vf/review-inputs.mjs   # pipes each input through plugins/jbit-antigravity/scripts/hook.mjs PreToolUse; fake HOME ($T/home), scratch git repo, plain plan (no Mode line)
+## PASS setup: user prompt in plain session
+$ echo '{"invocationNum":0,"initialNumSteps":1,"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreInvocation   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"injectSteps":[{"systemMessage":{"systemMessage":"# JBIT\nThis project keeps its plan in `docs/PLAN.md`: the source of truth for goal, decisions and stages. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.\n\nCurrent position (from the plan):\nStage 2 of 3 · Share mode\n\nWorking rules: build in stages; a stage is done only when its acceptance checks pass against the running product and the test suite is green; tick each check in `## Now` as it is proven, before closing the stage; verifying a stage, even one asked about only for a report, means running jbit:verify, which saves its evidence to `docs/evidence/stage-<n>/`; tests accompany risky logic (money, dates, parsing, permissions); stages marked risky get a security review; a small, low-risk change that fits jbit:fix's bar (UI only or no runtime behaviour, already decided, easy to undo, outside an open stage) skips the stage: say in one line that it fits the bar and why, then jbit:fix builds and checks it in the main session, logs one line under `## Fixes` and commits it alone; commit per stage and stop for the user's review. The JBIT skills (plan, charter, stage, fix, autopilot, verify, review, resume) hold the details."}}]}
+
+# Finding 1: run_command Cwd
+## PASS Cwd = plugin_data/jbit (review input)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"echo {} > sessions/x.json","Cwd":"$T/home/.gemini/antigravity-cli/plugin_data/jbit"},"id":"call_2"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$T/home/.gemini/antigravity-cli/plugin_data/jbit`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## PASS Cwd = ~/.gemini/config, rm -rf plugins (review input)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"rm -rf plugins","Cwd":"~/.gemini/config"},"id":"call_3"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$T/home/.gemini/config`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## PASS Cwd = $HOME/.gemini (parent folder)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"mv config x","Cwd":"$HOME/.gemini"},"id":"call_4"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$T/home/.gemini`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## PASS Cwd relative ../ into .gemini
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls","Cwd":"$T/home/.gemini/antigravity-cli"},"id":"call_5"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a command run in `$T/home/.gemini/antigravity-cli`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+
+## PASS Cwd a number
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls","Cwd":5},"id":"call_6"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `run_command` call: it couldn't read its arguments (no usable `Cwd`), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS Cwd Windows path
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls","Cwd":"C:\\Users\\u"},"id":"call_7"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `run_command` call: it couldn't read its arguments (no usable `Cwd`), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS Cwd = project subdir, ls (must allow)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls","Cwd":"$T/ws1/src"},"id":"call_8"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+## PASS no Cwd, ls (must allow)
+$ echo '{"toolCall":{"name":"run_command","args":{"CommandLine":"ls"},"id":"call_9"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+# Finding 2: multi_replace_file_content / non-string content
+## PASS packaged mapTool(multi_replace, 2 chunks incl. key) -> one Edit per chunk
+{"kind":"calls","calls":[{"tool":"Edit","file_path":"/proj/src/a.ts","old_string":"a","new_string":"b"},{"tool":"Edit","file_path":"/proj/src/a.ts","old_string":"c","new_string":"AKIA+16×Q (synthetic key, removed)"}]}
+
+## PASS multi-replace chunk with AWS key (review input): allowed as on Claude Code (secret scan is at commit)
+$ echo '{"toolCall":{"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":[{"TargetContent":"a","ReplacementContent":"<AWS documentation example key, removed>"}]},"id":"call_10"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+## PASS multi-replace, chunks not an array
+$ echo '{"toolCall":{"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":"x"},"id":"call_11"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `multi_replace_file_content` call: it couldn't read its arguments (no `ReplacementChunks` list), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS multi-replace, no chunks
+$ echo '{"toolCall":{"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts"},"id":"call_12"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `multi_replace_file_content` call: it couldn't read its arguments (no `ReplacementChunks` list), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS multi-replace, chunk with non-string
+$ echo '{"toolCall":{"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":[{"TargetContent":"a","ReplacementContent":7}]},"id":"call_13"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `multi_replace_file_content` call: it couldn't read its arguments (a chunk without `TargetContent` and `ReplacementContent` strings), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS multi-replace, harmless chunks (must allow)
+$ echo '{"toolCall":{"name":"multi_replace_file_content","args":{"TargetFile":"src/a.ts","ReplacementChunks":[{"TargetContent":"a","ReplacementContent":"b"}]},"id":"call_14"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+## PASS write_file Content a number
+$ echo '{"toolCall":{"name":"write_file","args":{"Path":"src/b.ts","Content":42},"id":"call_15"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `write_file` call: it couldn't read its arguments (no `Content` string), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS write_file Content an object
+$ echo '{"toolCall":{"name":"write_file","args":{"Path":"src/b.ts","Content":{"x":1}},"id":"call_16"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked this `write_file` call: it couldn't read its arguments (no `Content` string), and a call it can't check doesn't run. Retry with the documented arguments."}
+
+## PASS write_file plain (must allow)
+$ echo '{"toolCall":{"name":"write_file","args":{"Path":"src/b.ts","Content":"ok"},"id":"call_17"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+# Finding 3: agent spawners and unknown tools
+## PASS browser_subagent (review input) in plain plan -> mapped to Agent, allowed (no hold)
+$ echo '{"toolCall":{"name":"browser_subagent","args":{"Task":"edit src/login.ts","TaskName":"x"},"id":"call_18"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"allow"}
+
+## PASS unknown tool frobnicate
+$ echo '{"toolCall":{"name":"frobnicate","args":{"a":1},"id":"call_19"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked `frobnicate`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or starts an agent, and a call it can't check doesn't run. Use run_command, write_file, edit_file or invoke_subagent instead, or ask the user."}
+
+## PASS sed_file (live list, unmapped)
+$ echo '{"toolCall":{"name":"sed_file","args":{"File":"src/a.ts"},"id":"call_20"},"lastUserInput":"hello"}' | node plugins/jbit-antigravity/scripts/hook.mjs PreToolUse   # conversationId=c0ffee00-0000-4000-8000-000000000001
+{"decision":"deny","reason":"JBIT blocked `sed_file`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or starts an agent, and a call it can't check doesn't run. Use run_command, write_file, edit_file or invoke_subagent instead, or ask the user."}
+
+fails: 0

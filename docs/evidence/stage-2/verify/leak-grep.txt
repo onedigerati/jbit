@@ -1,0 +1,320 @@
+$ grep -rn -F -e "${" -e CLAUDE_PLUGIN -e CLAUDE_SKILL_DIR plugins/jbit-antigravity
+plugins/jbit-antigravity/scripts/core/engine.mjs:10:  const id = typeof sessionId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(sessionId) ? sessionId : `h-${createHash('sha256').update(String(sessionId)).digest('hex').slice(0, 32)}`
+plugins/jbit-antigravity/scripts/core/engine.mjs:11:  return `${id}.json`
+plugins/jbit-antigravity/scripts/core/engine.mjs:28:    const tmp = `${path}.${process.pid}.${Date.now()}.tmp`
+plugins/jbit-antigravity/scripts/core/engine.mjs:66:const refKey = ref => `${ref.plugin}:${ref.key}${ref.id !== undefined ? `:${ref.id}` : ''}`
+plugins/jbit-antigravity/scripts/core/engine.mjs:100:      get: async key => (await store.get(`store:${key}`)).value,
+plugins/jbit-antigravity/scripts/core/engine.mjs:101:      set: async (key, value) => void (await store.set(`store:${key}`, value)),
+plugins/jbit-antigravity/scripts/core/engine.mjs:102:      delete: async key => void (await store.set(`store:${key}`, undefined)),
+plugins/jbit-antigravity/scripts/core/engine.mjs:160:                out.fatal ??= `JBIT blocked this call: its check couldn't finish reading the repository with git (\`git ${String(argv[1] ?? '')}\`: ${why}), and a check that can't finish doesn't let the call through. Commit in smaller parts, or ask the user.`
+plugins/jbit-antigravity/scripts/core/engine.mjs:183:    get: async key => (await state.get(`host:${key}`)).value,
+plugins/jbit-antigravity/scripts/core/engine.mjs:184:    set: (key, value) => state.set(`host:${key}`, value),
+plugins/jbit-antigravity/scripts/core/engine.mjs:185:    prune: (prefix, keep) => state.prune(`host:${prefix}`, keep),
+plugins/jbit-antigravity/scripts/core/engine.mjs:198:    if (!(key in files)) throw Object.assign(new Error(`ENOENT: ${path}`), { code: 'ENOENT' })
+plugins/jbit-antigravity/scripts/core/engine.mjs:213:        return { kind: 'file', size: text.length, mtimeMs: 0, isLink: false, realPath: `/memory/${String(path).replace(/^\/memory\//, '')}` }
+plugins/jbit-antigravity/scripts/hooks/models.ts:60:    .map(r => `${r} ${settingText(models[r]!, short)}`)
+plugins/jbit-antigravity/scripts/hooks/shell.ts:32:   * Its words that may split or change before it runs: an unquoted variable expansion (`$URL`, `x${A}`), or an unquoted
+plugins/jbit-antigravity/scripts/hooks/shell.ts:84:    const key = `${c.dir}\0${c.words.join('\0')}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:167:  return absolute ? `/${parts.join('/')}` : parts.join('/') || '.'
+plugins/jbit-antigravity/scripts/hooks/shell.ts:304:    if (spec.short && (a === `-${spec.short}` || (spec.combine && /^-[A-Za-z]+$/.test(a) && a.endsWith(spec.short)))) return words[i + 1]
+plugins/jbit-antigravity/scripts/hooks/shell.ts:485:      w = [target.includes('/') ? target : `./${target}`, ...w.slice(arg.at + 1)]
+plugins/jbit-antigravity/scripts/hooks/shell.ts:547:  /** Words with an unquoted `$VAR` or `${…}` in them. */
+plugins/jbit-antigravity/scripts/hooks/shell.ts:571:/** The `${…}` starting at `i`: where it ends, with the substitutions inside it noted in `subs`. */
+plugins/jbit-antigravity/scripts/hooks/shell.ts:620:      text += d ? String.fromCodePoint(Math.min(parseInt(d, 16), 0x10ffff)) : `\\${e}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:623:    else text += `\\${e}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:628:/** The substitutions an unquoted heredoc's body runs (`$(…)`, backticks, `${…}`), each scanned. */
+plugins/jbit-antigravity/scripts/hooks/shell.ts:651: * comments, redirections, heredocs and here-strings, `case` patterns, and `$(…)`, `<(…)`, `>(…)`, `${…}` and backtick
+plugins/jbit-antigravity/scripts/hooks/shell.ts:745:          body += `${row}\n`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1237:/** A word that is one variable expansion and nothing else (`"$URL"`, `"${ROUTES[i]}"`), read as a URL when quoted. */
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1251: * holds a `$`; and so does a URL in a double-quoted variable (`"$URL"`, `"${ROUTES[i]}"`,
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1361:  if ((git?.sub === 'subtree' || git?.sub === 'lfs') && git.args.includes('push')) return `git ${git.sub} push`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1368:        return method.toUpperCase() === 'GET' ? undefined : `gh api ${method.toUpperCase()}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1379:      return noun && verb && writes[noun]?.includes(verb) ? `gh ${noun} ${verb}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1386:        if (s === 'publish' || s === 'unpublish' || s === 'deprecate') return `${tool} ${s}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1389:          if (reason) return `yarn ${reason}`
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1395:      return sub === 'publish' || sub === 'yank' ? `cargo ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1402:      return sub === 'publish' ? `${tool} publish` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1405:      return sub === 'push' ? `${tool} push` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1416:      return sub === 'deploy' ? `${tool} deploy` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1418:      return sub === 'deploy' || sub === 'publish' ? `wrangler ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1422:      return sub === 'deploy' || sub === 'destroy' ? `cdk ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1425:      return sub === 'apply' || sub === 'destroy' || sub === 'import' ? `${tool} ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1427:      return sub === 'up' || sub === 'destroy' || sub === 'update' ? `pulumi ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1429:      return sub && ['apply', 'delete', 'create', 'replace', 'patch', 'scale', 'rollout', 'set', 'edit', 'drain'].includes(sub) ? `kubectl ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1431:      return sub && ['install', 'upgrade', 'uninstall', 'delete', 'rollback'].includes(sub) ? `helm ${sub}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1434:      return has('deploy', 'delete') ? `${tool} ${args.includes('deploy') ? 'deploy' : 'delete'}` : undefined
+plugins/jbit-antigravity/scripts/hooks/shell.ts:1436:      if (args[0] === 's3' && ['cp', 'sync', 'mv', 'rm', 'rb'].includes(args[1] ?? '')) return `aws s3 ${args[1]}`
+plugins/jbit-antigravity/scripts/hooks/secrets.ts:23:  // 20+ token characters with a digit and a letter, after `Bearer ` or `Bearer%20`: `${token}`, `$TOKEN`, `{{token}}`,
+plugins/jbit-antigravity/scripts/hooks/secrets.ts:79: * What hides a value: `[masked]` and references to a value rather than the value (`$TOKEN`, `${token}`, `{{token}}`,
+plugins/jbit-antigravity/scripts/hooks/secrets.ts:143:    if (leaks(name, text.slice(at, end))) return `an unmasked ${NAMES[name]} header in evidence`
+plugins/jbit-antigravity/scripts/hooks/secrets.ts:147:    if (leaks(name, m[2] ?? m[3] ?? '')) return `an unmasked ${NAMES[name]} header in evidence`
+plugins/jbit-antigravity/scripts/core/dispatch.mjs:193:  throw new Error(`unknown event kind: ${event.kind}`)
+plugins/jbit-antigravity/scripts/hooks/project.ts:196:  return real.startsWith(`${base}/`) || real.startsWith(`${base}\\`)
+plugins/jbit-antigravity/scripts/hooks/project.ts:263:  if (r && joined.startsWith(`${r}/`)) return joined.slice(r.length + 1)
+plugins/jbit-antigravity/scripts/hooks/project.ts:279:  return want === tail || want.endsWith(`/${tail}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:27:  node capture.mjs install            install playwright-core@${PIN} + Chromium headless shell into the JBIT cache
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:55:cache: $JBIT_CAPTURE_CACHE, else \${XDG_CACHE_HOME:-~/.cache}/jbit/capture (macOS ~/Library/Caches/jbit/capture,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:75:      if (i + 1 >= argv.length) throw new Exit(EXIT.usage, `${a} needs a value`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:80:    else if (a.startsWith('-') && !['--install', '--where'].includes(a)) throw new Exit(EXIT.usage, `unknown option ${a} (see --help)`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:92:  if (!Number.isFinite(n) || n < min || n > max) throw new Exit(EXIT.usage, `${name} must be a number from ${min} to ${max}, got ${value}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:99:    if (/^[a-zA-Z]:[\\/]/.test(input)) return new URL(`file:///${input.replace(/\\/g, '/')}`).href
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:104:    throw new Exit(EXIT.usage, `not a URL or an existing file: ${input}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:106:  if (!['http:', 'https:', 'file:'].includes(url.protocol)) throw new Exit(EXIT.usage, `refused URL scheme ${url.protocol} in ${input}: only http, https and file`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:113:    scheme + rest + (query ? '?' + query.slice(1).split('&').map(kv => kv.includes('=') ? `${kv.split('=')[0]}=[masked]` : kv && '[masked]').join('&') : ''))
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:170:  const partial = found.hasLib || found.hasShell ? ` (incomplete: ${found.hasLib ? '' : `no ${PACKAGE}`}${!found.hasLib && !found.hasShell ? ', ' : ''}${found.hasShell ? '' : 'no Chromium headless shell'})` : ''
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:173:    `  project: no playwright-core, playwright or @playwright/test in ${join(found.projectDir, 'node_modules')}`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:174:    `  cache:   none at ${found.cache}${partial}`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:175:    `To take screenshots, \`install\` would download ${PACKAGE}@${PIN} and the Chromium headless shell`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:176:    `(${DOWNLOAD}) into ${found.cache} — nothing goes into the project.`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:178:    `  node ${sq(SELF)} install`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:185:  const lines = [`playwright: ${found.source} — ${found.name}@${found.version}`, `  module:   ${found.entry}`]
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:186:  if (found.browsers) lines.push(`  browsers: ${found.browsers}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:197:  if (!pw?.chromium) throw new Exit(EXIT.launch, `${found.entry} has no chromium export`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:202:const sq = text => `'${String(text).replace(/'/g, `'\\''`)}'`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:207:  if (existsSync(cli)) return `sudo ${sq(process.execPath)} ${sq(cli)} install-deps chromium`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:208:  return `sudo npx playwright@${PIN} install-deps chromium\n  (or first, with the user's yes, node ${sq(SELF)} install — then use the cache's own copy)`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:219:        `The browser would not launch: this system is missing libraries Chromium needs (${found.source} Playwright).`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:221:        `  ${installDepsCommand()}`,
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:228:        ? `the cache at ${dirname(found.browsers)} has no working browser; with the user's yes run: node ${sq(SELF)} install`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:230:      throw new Exit(EXIT.launch, `The browser would not launch: ${fix}\n\n${msg.split('\n').slice(0, 8).join('\n')}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:232:    throw new Exit(EXIT.launch, `The browser would not launch (${found.source} Playwright, ${found.entry}):\n${msg}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:242:  try { steps = JSON.parse(readFileSync(file, 'utf8')) } catch (err) { throw new Exit(EXIT.usage, `can't read steps file ${file}: ${err.message}`) }
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:243:  if (!Array.isArray(steps)) throw new Exit(EXIT.usage, `steps file ${file} must hold a JSON array`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:244:  if (steps.length > 50) throw new Exit(EXIT.usage, `steps file ${file} has ${steps.length} steps; keep it to 50`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:247:    if (kinds.length !== 1) throw new Exit(EXIT.usage, `step ${i + 1} must have exactly one of ${STEP_KINDS.join(', ')}: ${JSON.stringify(s)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:249:    if (typeof s[k] !== 'string' || !s[k]) throw new Exit(EXIT.usage, `step ${i + 1}: ${k} needs a string`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:250:    if (k === 'fill' && typeof s.value !== 'string') throw new Exit(EXIT.usage, `step ${i + 1}: fill needs a string "value"`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:262:    if (r && r.status() >= 400) throw new Error(`goto ${step.goto} answered HTTP ${r.status()}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:274:  for (const t of themes) if (!['light', 'dark'].includes(t)) throw new Exit(EXIT.usage, `theme must be light or dark, got ${t}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:283:  console.log(`Using ${found.source} Playwright ${found.name}@${found.version}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:290:  const logFile = join(out, `${opts.name}-console.txt`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:294:        const label = `${width} ${theme}`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:295:        note(`== ${opts.name} ${width}px ${theme} — ${url}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:302:            note(`[console.${m.type()}] ${m.text()}${loc?.url ? ` (${loc.url}:${loc.lineNumber})` : ''}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:303:            if (m.type() === 'error') problem(`${label}: console error: ${m.text()}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:306:            note(`[pageerror] ${e?.message ?? e}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:307:            problem(`${label}: page error: ${e?.message ?? e}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:309:          page.on('requestfailed', r => note(`[requestfailed] ${r.method()} ${r.url()} — ${r.failure()?.errorText ?? 'failed'}`))
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:310:          page.on('response', r => { if (r.status() >= 400) note(`[http ${r.status()}] ${r.request().method()} ${r.url()}`) })
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:315:            note(`[load failed] ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:316:            problem(`${label}: page failed to load: ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:320:            note(`[load failed] HTTP ${response.status()} for ${url}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:321:            problem(`${label}: page failed to load: HTTP ${response.status()} for ${url}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:328:            note(`[state failed] ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:329:            problem(`${label}: couldn't reach the state: ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:332:          const file = join(out, `${opts.name}-${width}-${theme}.png`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:335:          console.log(`wrote ${file}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:337:          note(`[shot failed] ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:338:          problem(`${label}: shot failed: ${firstLine(err)}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:347:    console.log(`wrote ${logFile}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:349:  console.log(`${written.length} of ${widths.length * themes.length} screenshots taken`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:352:    console.error(`FAILED: ${problems.length} problem(s) — see ${logFile}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:353:    for (const p of problems) console.error(`  ${p}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:358:    const only = widths.flatMap(w => themes.map(t => `${opts.name}-${w}-${t}.png`))
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:368:  if (!existsSync(dir) || !statSync(dir).isDirectory()) throw new Exit(EXIT.usage, `not a folder: ${dir}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:398:  console.log(`Comparing ${resolve(beforeDir)} (before) with ${resolve(afterDir)} (after), threshold ${threshold}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:406:        const url = dir => `data:image/png;base64,${readFileSync(join(dir, name)).toString('base64')}`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:409:          console.log(`error      ${name}: ${String(err?.message ?? err).split('\n')[0]}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:417:          ? `size ${r.size.a.join('x')} -> ${r.size.b.join('x')}, fraction 1`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:418:          : `fraction ${fraction.toFixed(6)} (${r.diff} of ${r.total} px)`
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:419:        console.log(`${(changed ? 'changed' : 'unchanged').padEnd(10)} ${name}: ${detail}${fraction > threshold ? ' — over threshold' : ''}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:425:  for (const n of onlyBefore) console.log(`missing from after: ${n}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:426:  for (const n of onlyAfter) console.log(`only in after:  ${n}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:429:    if (over) console.error(`FAILED: ${over} of ${both.length} image(s) changed more than the threshold ${threshold}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:430:    if (onlyBefore.length) console.error(`FAILED: ${onlyBefore.length} image(s) in before are missing from after: ${onlyBefore.join(', ')}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:433:  console.log(`${both.length} image(s) compared; none over the threshold ${threshold}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:459:  console.log(`Installing ${PACKAGE}@${PIN} into ${lib}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:461:  const a = await run(npmCmd, [...npmArgs, 'i', '--prefix', lib, '--no-save', '--no-package-lock', '--ignore-scripts', '--no-audit', '--no-fund', `${PACKAGE}@${PIN}`])
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:462:  if (a.code !== 0) throw new Exit(EXIT.install, `npm install of ${PACKAGE}@${PIN} failed${a.error ? `: ${a.error.message}` : ` (exit ${a.code})`}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:464:  if (!existsSync(cli)) throw new Exit(EXIT.install, `npm finished but ${cli} is missing`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:465:  console.log(`Installing the Chromium headless shell into ${browsers}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:467:  if (b.code !== 0) throw new Exit(EXIT.install, `the Chromium headless shell install failed${b.error ? `: ${b.error.message}` : ` (exit ${b.code})`}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:470:  if (found.source !== 'cache') throw new Exit(EXIT.install, `install finished but the cache at ${cache} is incomplete`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:478:      throw new Exit(EXIT.launch, `Installed, but Chromium won't launch: this system is missing libraries it needs.\nInstalling them needs root, so this script does not do it. Ask the user to run:\n  ${installDepsCommand()}\n\n${msg.split('\n').slice(0, 12).join('\n')}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:480:    throw new Exit(EXIT.launch, `Installed, but Chromium won't launch:\n${msg}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:483:  console.log(`Installed and launched: ${PACKAGE}@${found.version}, browsers in ${browsers}`)
+plugins/jbit-antigravity/skills/verify/scripts/capture.mjs:503:  throw new Exit(EXIT.usage, `unknown command ${cmd} (see --help)`)
+plugins/jbit-antigravity/scripts/map.mjs:33:const unreadable = (tool, what) => deny(`JBIT blocked this \`${tool}\` call: it couldn't read its arguments (${what}), and a call it can't check doesn't run. Retry with the documented arguments.`)
+plugins/jbit-antigravity/scripts/map.mjs:37:  `JBIT blocked this call: it writes to Antigravity's own config (${what}): \`~/.gemini/config/\` holds the plugins, agents and MCP servers, \`~/.gemini/antigravity-cli/settings.json\` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves.`
+plugins/jbit-antigravity/scripts/map.mjs:64:  return dataDirs(guard).some(d => path === d || path.startsWith(`${d}/`))
+plugins/jbit-antigravity/scripts/map.mjs:67:const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+plugins/jbit-antigravity/scripts/map.mjs:78:      ...dataDirs(guard).map(d => `${escape(d)}(?![\\w.-])`),
+plugins/jbit-antigravity/scripts/map.mjs:104: * braces, substitution, escapes or comments. `~/`, `$HOME/` and `${HOME}/` may only open a word, and become the home.
+plugins/jbit-antigravity/scripts/map.mjs:245:  if (sub) return deny(`JBIT blocked this call: \`agy ${sub}\` rewrites Antigravity's own config, plugins or sign-in under \`~/.gemini/\`, and a change there can silently turn JBIT's hooks off. Ask the user to run it themselves.`)
+plugins/jbit-antigravity/scripts/map.mjs:256:    if (WINDOWS.test(p)) return { error: deny(`JBIT blocked this \`${tool}\` call: \`${p.slice(0, 80)}\` is a Windows-style path (a backslash or a drive letter), which the hook can't resolve against the project to check the plan's gates. Use a forward-slash path.`) }
+plugins/jbit-antigravity/scripts/map.mjs:258:    return protectedPath(path, guard) ? { error: deny(HOME_REASON(`\`${path}\``)) } : { path }
+plugins/jbit-antigravity/scripts/map.mjs:287:  if (key) return deny(unknownReason(tool, `\`${key}\``))
+plugins/jbit-antigravity/scripts/map.mjs:292:  `JBIT blocked \`${tool}\`: it doesn't know this tool, and its arguments carry a path or a command (${what}) that the plan's gates can't check. Use run_command, write_file or edit_file instead, or ask the user.`
+plugins/jbit-antigravity/scripts/core/patch.mjs:32:    if (!line.startsWith('***') && line.trimStart().startsWith('***')) return fail(`an indented patch directive \`${line.trim().slice(0, 60)}\``)
+plugins/jbit-antigravity/scripts/core/patch.mjs:37:        if (!path) return fail(`a \`*** ${f[1]} File:\` line names no path`)
+plugins/jbit-antigravity/scripts/core/patch.mjs:52:      return fail(`unknown patch line \`${line.slice(0, 60)}\``)
+plugins/jbit-antigravity/scripts/core/patch.mjs:57:      return fail(`content under \`*** Delete File: ${file.path}\``)
+plugins/jbit-antigravity/scripts/core/patch.mjs:60:      if (!raw.startsWith('+')) return fail(`a line under \`*** Add File: ${file.path}\` does not start with \`+\``)
+plugins/jbit-antigravity/scripts/core/patch.mjs:64:    if (!(raw === '' || raw.startsWith(' ') || raw.startsWith('-') || raw.startsWith('+') || raw.startsWith('@@'))) return fail(`an unreadable line under \`*** Update File: ${file.path}\``)
+plugins/jbit-antigravity/scripts/core/patch.mjs:74:      ...(f.op === 'add' ? { content: f.lines.length ? `${f.lines.join('\n')}\n` : '' } : {}),
+plugins/jbit-antigravity/scripts/hooks/register.ts:77:    const file = root ? `${root.replace(/\/+$/, '')}/${path}` : path
+plugins/jbit-antigravity/scripts/hooks/register.ts:307:  const name = chars.length > MILESTONE_NAME_MAX ? `${chars.slice(0, MILESTONE_NAME_MAX - 1).join('').trimEnd()}…` : raw
+plugins/jbit-antigravity/scripts/hooks/register.ts:600:  const spaced = ` ${words.join(' ')} `
+plugins/jbit-antigravity/scripts/hooks/register.ts:668:  if (t.length > MODELS_COMMAND_MAX) return { kind: 'refused', why: `It's longer than a Models line could be. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:675:    const ask = modelsCommand(`JBIT models ${body}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:678:      return { kind: 'refused', why: `\`— my default\` saves settings only: name each role's model and effort (\`JBIT models build sonnet/medium · review opus/high — my default\`); \`JBIT models clear my default\` removes your default. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:684:  if (!entries.length) return { kind: 'refused', why: `It names no role. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:694:        why: `\`${role}\` runs in the main session, on the model and effort set in Claude Code: change them with \`/model\` (and its effort setting). JBIT sets only the agents it starts: build, research, review and verify.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:696:    if (!e) return { kind: 'refused', why: `\`${entry}\` isn't a role and a setting. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:697:    if (!MODEL_ROLES.includes(role)) return { kind: 'refused', why: `\`${role}\` isn't a role JBIT can set. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:698:    if (set[role] || defaulted.includes(role) || cleared.includes(role)) return { kind: 'refused', why: `It names ${role} twice. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:703:      const setting = parseModels(`Models: ${role} ${value}`)?.[role]
+plugins/jbit-antigravity/scripts/hooks/register.ts:704:      if (!setting) return { kind: 'refused', why: `\`${value}\` isn't a model and effort JBIT knows. ${VALID_SETTINGS}` }
+plugins/jbit-antigravity/scripts/hooks/register.ts:720:  const project = dflt ? parseModels(`Models: ${dflt}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:744:    return `JBIT: the user's \`JBIT models\` command was refused, and the Models line is left as it is${inEffect ? ` (\`Models: ${inEffect}\`)` : ''}. ${ask.why} Tell the user this in a line, and don't change the plan's Models line.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:748:      ? `JBIT: the user's \`JBIT models\` command sets \`Models: ${line}\`${toDefault ? ', the project default' : ''}, but there's no plan to write it to. Tell the user so in a line; when jbit:plan writes a plan, put that line in its \`## Now\`, beside the Agents line.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:749:      : `JBIT: the user's \`JBIT models\` command asks for agents to run as the session${toDefault ? ' (there is no project default in CLAUDE.md)' : ''}, and there's no plan, so no Models line to remove. Tell the user so in a line.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:751:    return `JBIT: the user's own \`JBIT models\` command leaves no role set${toDefault ? ' (it asks for the project default, and CLAUDE.md has no `JBIT models:` line)' : ''}: remove the \`Models:\` line from \`## Now\` in \`${plan}\`, so agents run as the session, and log it as a dated decision ("Models line removed by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:752:  return `JBIT: the user's own \`JBIT models\` command sets the Models line${toDefault ? ' back to the project default (`JBIT models:` in CLAUDE.md)' : ''}, honoured from now on. Write exactly this line in \`## Now\` in \`${plan}\`, beside the Agents line, in place of any Models line there: \`Models: ${line}\`. Log it as a dated decision ("Models: ${line}, set by the user's \`JBIT models\` command"). Change nothing else in the plan, then tell the user in a line. Agents for these roles start with these settings from now on.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:847:const ROLE_WORDS = new RegExp(`\\b(${MODEL_ROLES.join('|')})\\b`, 'gi')
+plugins/jbit-antigravity/scripts/hooks/register.ts:856:  const before = parseModels(`Models: ${honoured}`) ?? {}
+plugins/jbit-antigravity/scripts/hooks/register.ts:884:    const dflt = parseModels(`Models: ${s.modelsDefault}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:944:  const text = modelsText(parseModels(`Models: ${value}`))
+plugins/jbit-antigravity/scripts/hooks/register.ts:986:  const own = effectiveModels(plan, s.modelsHonoured) ?? (s.modelsPending && s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined) ?? {}
+plugins/jbit-antigravity/scripts/hooks/register.ts:989:    if (!set) return `${r}: as the session (session)`
+plugins/jbit-antigravity/scripts/hooks/register.ts:991:    return `${r}: ${settingText(set)} (${source})`
+plugins/jbit-antigravity/scripts/hooks/register.ts:995:      ? `The project default in CLAUDE.md, \`Models: ${s.modelsDefault}\`, is waiting for their word: it applies once they name its settings in their own message or type \`JBIT models default\`.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:997:    s.modelsMine ? `Their own default is \`Models: ${s.modelsMine}\`${s.modelsChosen ? ', not used in this session since their `JBIT models` command set the line' : ''}.` : 'They have no own default saved (`JBIT models … — my default` saves one).',
+plugins/jbit-antigravity/scripts/hooks/register.ts:999:  return `JBIT: the user's \`JBIT models\` asks what each role's agents start on. Show them exactly these lines, one per role: ${rows.map(r => `\`${r}\``).join(', ')}. ${extra.join(' ')} Change nothing in the plan.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1004:  `JBIT couldn't read the user's own Models default (\`JBIT models … — my default\`) from its store (${why}), so none applies this session. Tell the user so in a line.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1016:  const mine = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:1017:  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:1024:  const project = s.modelsDefaultConfirmed && s.modelsDefault ? parseModels(`Models: ${s.modelsDefault}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:1031:    .map(r => `${r} ${settingText(models[r]!)} (${fallbackSource(s, r) === 'my default' ? "the user's own default" : 'CLAUDE.md, confirmed'})`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:1068:  if (s.modelsPending) return s.modelsHonoured ? parseModels(`Models: ${s.modelsHonoured}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:1092:    ? `JBIT: the Models settings in effect (the plan's line, then the user's defaults) set ${modelsText(models)}.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1093:    : `JBIT: the plan's Models line sets ${modelsText(models)}.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1096:    return `${sets} A fork runs on your own model and effort whatever the call names: start a named agent type with the setting for its role instead.${neither}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1103:    : `${sets} Start this agent with exactly the setting for its role (its model and effort, and nothing the line leaves out for it).${neither}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1175:  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}:${two(d.getMinutes())}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1335:  const milestone = roadmap ? ` · ${roadmap.id} ${roadmap.covered}/${roadmap.total}` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1336:  if (plan.total === 0) return `jbit${milestone} · ${plan.path}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1337:  if (!plan.current) return `jbit${milestone} · all ${plan.total} stages done · next feature: jbit:plan`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1345:          ? ` · paused · ${level}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1352:            ? ` · autopilot ${level}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1355:  const agents = fanOut === 'lean' || fanOut === 'wide' ? ` · ${fanOut}` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1357:  const models = set ? ` · ${modelsText(set, true)}` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1358:  return `jbit${mode}${agents}${models}${milestone} · ${plan.done}/${plan.total} done · next: ${plan.current}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1366:    return `Agents: the plan's Agents line asks for wide, but it was set before this session, so work at balanced until the user confirms: ask whether to fan out wide (under jbit:stage, before building; under autopilot, carry on at balanced meanwhile), and on their yes restamp the line as \`Agents: wide — confirmed ${now ?? '<YYYY-MM-DD HH:MM>'}\`${now ? '' : ', the current date and time'}.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1389:  const dflt = `The project default (\`JBIT models:\` in CLAUDE.md) is \`Models: ${s.modelsDefault}\``
+plugins/jbit-antigravity/scripts/hooks/register.ts:1390:  if (s.modelsChosen) return `${dflt}; the user's \`JBIT models\` command set the line this session, so it fills in nothing (\`JBIT models default\` goes back to it).`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1391:  if (s.modelsDefaultConfirmed) return `${dflt}, confirmed by the user this session: it sets the roles a plan's line leaves out, over the user's own default, and new plans start from it.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1392:  const named = MODEL_ROLES.filter(r => parseModels(`Models: ${s.modelsDefault}`)?.[r])
+plugins/jbit-antigravity/scripts/hooks/register.ts:1393:    .map(r => `${r} ${settingText(parseModels(`Models: ${s.modelsDefault}`)![r]!)}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:1395:  return `${dflt}, waiting for the user's word: a default committed to the repo isn't honoured until the user's own message names its settings (e.g. "${named}") or they type \`JBIT models default\`. Until then don't start agents on it or write it into a plan; you may ask them once whether to use it.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1402:    ? `A new plan starts from the user's defaults: write \`Models: ${modelsText(fallback)}\` as its Models line (${sourcedText(fallback, s)}).`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1412:    return `Models: the user set \`Models: ${s.modelsHonoured}\` with \`JBIT models\`: write exactly that line in \`## Now\`, in place of any Models line there, and log it as a dated decision. It applies already. ${passRule(parseModels(`Models: ${s.modelsHonoured}`)!)}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1415:    return `Models: the plan's Models line is not understood, so agents start as if there were none; the form is ${MODELS_FORM}.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1417:    const named = MODEL_ROLES.filter(r => plan.models![r]).map(r => `${r} ${settingText(plan.models![r]!)}`).join(', ')
+plugins/jbit-antigravity/scripts/hooks/register.ts:1418:    return `Models: the plan's Models line (${modelsText(plan.models)}) changed without the user naming its settings, so it is ignored until they confirm: ask them to confirm by naming the settings (e.g. "${named}"); a plain yes won't do. Start agents as if there were no line meanwhile.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1427:      : ` Write \`Models: ${modelsText(fallback)}\` in \`## Now\`, beside the Agents line, as the plan's Models line, and log it as a dated decision ("Models: ${modelsText(fallback)}, from the user's defaults").`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1428:    return `Models: agents start on the user's defaults: ${sourcedText(fallback, s)}.${write} ${passRule(fallback)}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1431:  if (!filled.length) return `Models: the plan's Models line sets ${modelsText(set)}. ${passRule(set)}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1433:  return `Models: the plan's Models line sets ${modelsText(set)}; the roles it leaves out start on the user's defaults: ${sourcedText(from, s)}. ${passRule({ ...from, ...set })}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1439:  const leftOut = unset.length ? ` A role it leaves out (${unset.join(', ')}) gets neither, as usual.` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1441:    ? ` Research agents (web or domain lookups, a research fan-out) are the \`research\` role: pass ${settingText(set.research)} on them.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1443:  return `When you start an agent for one of these roles, pass the role's model and effort on the Agent call (\`model\`, \`effort\`), and only what the line sets for it (leave out a half it doesn't set): pass the effort the line names and never choose one yourself.${research}${leftOut} Planning and project management stay on the session's model and effort, which the user sets in Claude Code (\`/model\`).`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1451:    return `${base} commit per stage. The plan's Mode line says autopilot, but that was set in an earlier session and autopilot is not armed in this one: do not carry on by yourself. Tell the user where the run stands and ask whether to resume; on their yes, run jbit:autopilot. Resumed that way it runs attended, risky stages held for their approval; their own autopilot command (the typed \`/jbit:autopilot\`, or a message opening with "JBIT" such as "JBIT autopilot lean") runs it unattended, the default. ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1453:    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}), and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) stays blocked until the user approves it with ${APPROVAL_REPLY}; only that approval releases the stage. A question or comment from the user gets its answer while the stage stays held; then ask for that reply again. Put no other yes/no question to the user while paused here, since their yes would release the stage. ${ATTENDED_NOTE} ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1455:    return `${base} commit per stage. Autopilot is on, and the current stage is held: its risk line names ${plan.stage?.risky.join(', ')}. Building it (file edits outside the plan and its \`docs/research/\` notes, builder agents) is blocked until the user approves it with ${APPROVAL_REPLY}; nothing else releases it. Commit what is finished, set the Mode line to \`paused — <reason>\`, and ask the user for that reply. ${ATTENDED_NOTE} ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1456:  if (plan.mode?.kind === 'autopilot' && unattended(s)) return `${base} commit per stage. ${unattendedRules(s)} ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1458:    return `${base} commit per stage. Autopilot is on: you are the project manager under jbit:autopilot. Go from stage to stage without stopping for review, delegate the building, and stop only for the reasons jbit:autopilot lists, setting the Mode line to paused when you do. Outward-facing commands (push, publish, deploy, sending data out) are blocked while it runs. ${PROGRESS_NOTE} ${ATTENDED_NOTE} ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1460:    return `${base} commit per stage. Autopilot is paused (${plan.mode.reason}): settle that with the user, then set the Mode line back to autopilot and carry on under jbit:autopilot. ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1461:  return `${base} commit per stage and stop for the user's review. ${skills}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1502:  const position = plan.now ?? (plan.current ? `Next stage: ${plan.current}` : 'No open stage in the plan.')
+plugins/jbit-antigravity/scripts/hooks/register.ts:1503:  const standing = decisionsFile ? ` (standing decisions in \`${DECISIONS_PATH}\`)` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1504:  const milestone = roadmap && `Roadmap: ${[roadmap.id, roadmap.name].filter(Boolean).join(' ')} · ${roadmap.covered}/${roadmap.total} requirements covered (${ROADMAP_PATH})`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1507:    `This project keeps its plan in \`${plan.path}\`: the source of truth for goal, decisions and stages${standing}. Reread it before acting on anything it covers, and update it in the same change when a decision or stage changes. Subagents: treat this as background and stay inside your brief.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1539:  const head = `JBIT: the user just gave their own autopilot command for this plan, which armed autopilot in this turn, ${LEVEL_WORDS[s.unattended]}. This entry supersedes the JBIT section of the system prompt, which was composed before the command. Run jbit:autopilot now (the Skill tool, unless its instructions are already loaded in this turn) for \`${plan.path}\`, and follow its rules and the working rules below.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1543:    return `${head}\n\n${section.includes(PROGRESS_NOTE) ? section : `${section} ${PROGRESS_NOTE}`}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1546:  if (text.length > CONTEXT_MAX && run.now) text = build({ ...run, now: `${cutAt(run.now, run.now.length - (text.length - CONTEXT_MAX) - 1)}…` })
+plugins/jbit-antigravity/scripts/hooks/register.ts:1547:  return text.length > CONTEXT_MAX ? `${cutAt(text, CONTEXT_MAX - 1)}…` : text
+plugins/jbit-antigravity/scripts/hooks/register.ts:1595:    text: `jbit autopilot: carry on with \`${plan.path}\` under jbit:autopilot. Next: ${plan.current}.${note}`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1603:  if (r.exitCode !== 0) throw new Error(`git ${args[0]} failed: ${r.stderr.slice(0, 200)}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:1649:  for (const part of `${prefix}/${path}`.split('/')) {
+plugins/jbit-antigravity/scripts/hooks/register.ts:1663:  return f === p || f.endsWith(`/${p}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:1675:  const dir = `${joinPath(root, RESEARCH_DIR).toLowerCase()}/`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1706:    .map(f => `  - ${f.file}${f.line ? `:${f.line}` : ''}: ${f.kind}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:1708:  const more = found.length > 8 ? `\n  - …and ${found.length - 8} more` : ''
+plugins/jbit-antigravity/scripts/hooks/register.ts:1725:    `JBIT blocked this commit: it closes stage ${stage}, but these checks were never seen ticked in \`## Now\`:`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1726:    ...open.slice(0, 8).map(c => `  - ${c}`),
+plugins/jbit-antigravity/scripts/hooks/register.ts:1727:    `Prove them (jbit:verify). If they pass, put stage ${stage}'s checks back in \`## Now\` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from \`## Now\` first.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1740:  return `${dir}/evidence/stage-${stage}/report.md`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1803:  const backfill = `Run jbit:verify for stage ${stage}, which writes the report; for a stage verified before version 0.5.0, backfill the report in jbit:verify's format from the evidence at hand. Then close the stage again.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1805:    return [`JBIT blocked this commit: it closes stage ${stage}, but its evidence report \`${path}\` is neither in the commit nor in the working tree.`, backfill].join('\n')
+plugins/jbit-antigravity/scripts/hooks/register.ts:1810:      `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${checks ? `${checks} check${checks === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1904:  return image.startsWith(`${folder}/`) ? image : 'outside'
+plugins/jbit-antigravity/scripts/hooks/register.ts:1936:  const list = (paths: Set<string>) => [...paths].map(p => `\`${p}\``).join(', ')
+plugins/jbit-antigravity/scripts/hooks/register.ts:1938:    `JBIT blocked this commit: it closes stage ${stage}, but \`${path}\` links screenshots that can't back it.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:1939:    ...(missing.size ? [`Not in the working tree: ${list(missing)}. Run jbit:verify to re-capture each one, or drop its link from the report.`] : []),
+plugins/jbit-antigravity/scripts/hooks/register.ts:1940:    ...(outside.size ? [`Links outside the stage folder \`${folder}\`: ${list(outside)}. Save the screenshot under \`${folder}\` and link it there, or drop the link.`] : []),
+plugins/jbit-antigravity/scripts/hooks/register.ts:1969:  return `docs/evidence/milestone-${id}.md`
+plugins/jbit-antigravity/scripts/hooks/register.ts:1999:  const how = `Close the milestone as jbit:plan's "With a roadmap" says: jbit:verify's "Closing a milestone" writes \`${path}\` with a row per requirement (full suite, coverage, a fresh agent's evidence-fit sample), then jbit:review's milestone review. Tick the box only once all pass.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2001:    return [`JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but its evidence \`${path}\` is neither in the commit nor in the working tree.`, how].join('\n')
+plugins/jbit-antigravity/scripts/hooks/register.ts:2005:  const list = missing.slice(0, 12).join(', ') + (missing.length > 12 ? `, and ${missing.length - 12} more` : '')
+plugins/jbit-antigravity/scripts/hooks/register.ts:2007:    `JBIT blocked this commit: it ticks milestone ${id} in \`${ROADMAP_PATH}\`, but \`${path}\` has no row for ${missing.length === 1 ? 'requirement' : 'requirements'} ${list}.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2008:    `Give each of ${id}'s requirements that isn't dropped a row, its ID in the first cell.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2019:  const text = await git($, ['show', `${ref}:${planPath}`], dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2057:  const note = PROGRESS_NOTE.replace('stage-<n>', `stage-${last.n}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2058:  return `JBIT: stage ${last.n} of ${last.total} (${oneLine(last.name)}) closed with this commit; stage ${last.next.number} (${oneLine(last.next.name)}) is next. Before any tool call for stage ${last.next.number}, write the user its progress note in the chat when someone reads along, then go on without waiting; a headless run (\`claude -p\`) leaves it to the final report. ${note}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2077:    const text = await git($, ['show', `HEAD:${planPath}`], dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2087:      await $.ui.notify(`Stage ${n} of ${list.length} done: ${oneLine(stage.name)}. Next: ${oneLine(next.name)}.`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2088:    } else if (await announce($, [n, 'all'])) await $.ui.notify(`All ${list.length} stages done.`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2109:    const then = await git($, ['show', `${before}:${planPath}`], dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2110:    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2132:    const now = await git($, ['show', `${after}:${planPath}`], dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2165:  if (open?.length) failed.push(`its checks in \`## Now\` aren't all ticked:\n${open.slice(0, 8).map(k => `  - ${oneLine(k)}`).join('\n')}`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2168:  const text = await git($, ['show', `${c.after}:${report}`], c.dir).catch(() => undefined)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2169:  if (typeof text !== 'string') failed.push(`its evidence report \`${report}\` isn't in the commit`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2174:        `its evidence report \`${report}\` has ${rows} check row${rows === 1 ? '' : 's'} in its table and the stage has ${count ? `${count} check${count === 1 ? '' : 's'} in \`## Now\`` : 'to have at least one'}`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2187:    `JBIT: this command's commit ticks stage ${c.n} done in \`${planPath}\`, but the commit doesn't pass the stage gates, so stage ${c.n} is not closed:`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2188:    ...failed.map(f => `- ${f}`),
+plugins/jbit-antigravity/scripts/hooks/register.ts:2190:    `Reopen it: untick stage ${c.n} in \`${planPath}\` and commit that, prove its checks with jbit:verify (which writes \`${evidencePath(planPath, c.n)}\`), tick them in \`## Now\`, then close the stage again — the plan edited with the Edit tool, and \`git commit\` on its own line.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2233:  const escape = (p: string) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+plugins/jbit-antigravity/scripts/hooks/register.ts:2235:  const inside = new RegExp(`(?:^|[^\\w./-])(?:${paths})(?:$|${under ? '/|' : ''}[^\\w.-])`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2237:  const within = (p: string, at: string) => at === p || (under && at.startsWith(`${p}/`))
+plugins/jbit-antigravity/scripts/hooks/register.ts:2282:    path = at === '.' ? tail : at === '/' ? `/${tail}` : `${at}/${tail}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2287:  if (path === '.' || path === '' || path === '/' || path === ev || path.startsWith(`${ev}/`)) return true
+plugins/jbit-antigravity/scripts/hooks/register.ts:2289:  return cut < 0 ? ev.startsWith(`${path}/`) : ev.startsWith(path)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2352:    `JBIT blocked this command: it changes files under \`${dir}/\` (\`${shown}\`) and commits on the same line, and the commit gates read the evidence a commit carries before the line runs, when that change hasn't happened yet.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2360:    `JBIT blocked this command: it names the plan file \`${planPath}\` (\`${shown}\`) and commits on the same line, and the commit gates read what a commit closes before the line runs, when the plan isn't written yet.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2361:    `Edit \`${planPath}\` with the Edit tool (or a separate command) first, then run the commit on its own line.`,
+plugins/jbit-antigravity/scripts/hooks/register.ts:2370:  `JBIT autopilot holds outward-facing steps for the user (${reason}). Commit what's finished, set the Mode line to \`paused — <what you want to run and why>\`, and ask the user.${network ? ` ${READ_HINT}` : ''}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2377:    if (rule) return `${rule.words.join(' ')}, a \`JBIT outward:\` rule in ${rule.file}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2405:      return said ? { sections: [...composed.sections, { id: 'jbit:plan', text: `# JBIT\n${said}`, scope: 'session' as const }] } : composed
+plugins/jbit-antigravity/scripts/hooks/register.ts:2415:    return { sections: [...composed.sections, { id: 'jbit:plan', text: failed ? `${text}\n${failed}` : text, scope: 'session' as const }] }
+plugins/jbit-antigravity/scripts/hooks/register.ts:2421:    return next({ ...e, instructions: e.instructions ? `${e.instructions}\n\n${KEEP}` : KEEP })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2446:      const mineModels = s.modelsMine ? parseModels(`Models: ${s.modelsMine}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:2454:        const was = before.text ? ` (\`Models: ${before.text}\`)` : before.failed ? ' (whether one was stored couldn\'t be read)' : ' (none was stored)'
+plugins/jbit-antigravity/scripts/hooks/register.ts:2458:          entry = `JBIT: the user's own \`JBIT models clear my default\` removed their own Models default${was}: no repo starts from it now, and agents in this session no longer fall back on it. Tell the user so in a line; change nothing in the plan.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2460:          entry = `JBIT: the user's \`JBIT models clear my default\` failed: the store couldn't be written (${storeError(err)}), so their own default is left as it was. Tell the user so in a line; change nothing in the plan.`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2479:          notes.push(`Their own default (\`Models: ${s.modelsMine}\`) still sets ${dropped.join(', ')}: it fills ${dropped.length > 1 ? 'those roles' : 'that role'} in again in later sessions, in any repo whose plan line leaves ${dropped.length > 1 ? 'them' : 'it'} out, unless they type \`JBIT models clear my default\`. Say so in the same line.`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2484:          const kept = stored.text ? parseModels(`Models: ${stored.text}`) : undefined
+plugins/jbit-antigravity/scripts/hooks/register.ts:2490:            notes.push(`It also saved \`Models: ${saved}\` as the user's own default${kept ? ' (the roles this command named replaced theirs in the earlier default, the rest kept)' : ''}: in any repo, a plan with no Models line starts from it (a plan's line, then a project default the user confirms, win over it per role). Say so in the same line.`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2492:            notes.push(`Saving it as the user's own default failed: the store couldn't be ${stored.failed ? 'read' : 'written'} (${storeError(err)}), so no default is saved and this session's line is set all the same. Say so in the same line.`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2547:        await $.ui.notify(`Autopilot paused: ${plan.mode.reason}${held(plan, s) ? `${/[.!?]$/.test(plan.mode.reason) ? '' : '.'} ${APPROVAL_NOTE}` : ''}`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2550:        await $.ui.notify(`All ${plan.total} stages done.`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2559:        await $.ui.notify(`Autopilot (attended) is holding before ${plan.stage?.key}: it touches ${plan.stage?.risky.join(', ')}. ${APPROVAL_NOTE}`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2567:    const progress = `${plan.done}\n${plan.now}`
+plugins/jbit-antigravity/scripts/hooks/register.ts:2571:      $.ui.toast(`JBIT: autopilot stopped prompting; ${MAX_STALLED_TURNS} turns ended without the plan moving`)
+plugins/jbit-antigravity/scripts/hooks/register.ts:2615:        await $.ui.notify(`Autopilot (unattended) is building ${plan.stage?.key} without a hold: it touches ${plan.stage?.risky.join(', ')}.`, { title: 'JBIT' })
+plugins/jbit-antigravity/scripts/hooks/register.ts:2625:      deny: `JBIT autopilot is holding ${plan.stage?.key}: its risk line names ${plan.stage?.risky.join(', ')}, so it isn't built until the user approves it with ${APPROVAL_REPLY}. ${then}`,
+plugins/jbit-antigravity/scripts/hook.mjs:46:    return `${JSON.stringify(deny(reason))}\n`
+plugins/jbit-antigravity/scripts/hook.mjs:49:    return `${JSON.stringify(out && typeof out === 'object' ? out : {})}\n`
+plugins/jbit-antigravity/scripts/hook.mjs:78:    if (!KNOWN.has(event)) return failed(`JBIT blocked this call: its hook was run for an event it doesn't know (\`${String(event).slice(0, 40)}\`), so it fails closed. Tell the user JBIT's hooks.json is out of date; reinstall the plugin.`)
+plugins/jbit-antigravity/scripts/hook.mjs:84:    process.stderr.write(`jbit hook: ${event}: ${String(err?.message ?? err).split('\n')[0].slice(0, 200)}\n`)
+plugins/jbit-antigravity/scripts/handler.mjs:18:const NO_PROJECT = tool => `JBIT blocked \`${tool}\`: the hook couldn't tell which project this is (no usable \`cwd\` on the event), so it can't check the plan's gates and fails closed.`
+plugins/jbit-antigravity/scripts/handler.mjs:19:const NO_DATA = tool => `JBIT blocked \`${tool}\`: the hook has no data folder (Antigravity sets PLUGIN_DATA for a plugin's hooks), so it can't keep the session's state and fails closed. Tell the user JBIT's hooks need to run from the installed plugin.`
+plugins/jbit-antigravity/scripts/handler.mjs:118:    await keepNotices(c, [...notices, `JBIT autopilot stopped carrying on by itself after ${STOP_CAP} continuations in one prompt; a new prompt resumes it.`])
+plugins/jbit-antigravity/scripts/handler.mjs:146:  if (!fn) throw new Error(`unknown event: ${String(event).slice(0, 40)}`)
+plugins/jbit-antigravity/scripts/copilot/map.mjs:20:const unreadable = (tool, what) => deny(`JBIT blocked this \`${tool}\` call: it couldn't read its arguments (${what}), and a call it can't check doesn't run. Retry with the documented arguments.`)
+plugins/jbit-antigravity/scripts/copilot/map.mjs:111:    if (WINDOWS.test(p)) throw new WindowsPath(`JBIT blocked this \`${tool}\` call: \`${p.slice(0, 80)}\` is a Windows-style path (a backslash or a drive letter), which the hook can't resolve against the project to check the plan's gates. Use a forward-slash path relative to the project.`)
+plugins/jbit-antigravity/scripts/copilot/map.mjs:125:      if (!patch.ok) return deny(`JBIT blocked this \`apply_patch\` call: it couldn't read the patch (${patch.reason}), and a patch it can't check doesn't run. Send a well-formed patch: \`*** Begin Patch\`, \`*** Add File:\`/\`*** Update File:\`/\`*** Delete File:\` headers, \`*** End Patch\`.`)
+plugins/jbit-antigravity/scripts/copilot/map.mjs:165:  if (key) return deny(unknownReason(tool, `\`${key}\``))
+plugins/jbit-antigravity/scripts/copilot/map.mjs:170:  `JBIT blocked \`${tool}\`: it doesn't know this tool, and its arguments carry a path or a command (${what}) that the plan's gates can't check. Use bash, apply_patch, edit or create instead, or ask the user.`
+rc=0 (1 = no match)

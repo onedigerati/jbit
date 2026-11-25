@@ -78,7 +78,7 @@ The `settings.json` keeps a `hooks` key, but the CLI never loads it.
 - **Context injection.** `SessionStart`, `PreInvocation` and `PostInvocation` return `{"injectSteps":[{"systemMessage":{"systemMessage":"…"}}]}`. The other step types are `userMessage` and `errorMessage` (`{"errorMessage":{"userMessage":"…"}}`, shown to the user only). The probe confirmed the model received an injected system message.
 - **Blocking a prompt.** `PreInvocation` returns `"terminationBehavior":"terminate"`. Paired with an `errorMessage`, this also makes `-p` exit non-zero.
 
-**Fail behaviour, probed.** A `PreToolUse` hook **fails closed in every case**. Each of the following blocked the tool call and showed the error text to the model:
+**Fail behaviour, probed.** A `PreToolUse` hook fails closed in the cases below: each blocked the tool call and showed the error text to the model. **Correction (2026-11-25):** it does not fail closed in every case. A hook that prints nothing and exits 0 **allows** the tool; `{}`, a non-zero exit and (per this note) a timeout block it. See [the spike note](antigravity-spike-2026-11.md), finding 4.
 
 | Hook outcome | Message the model saw |
 | :-- | :-- |

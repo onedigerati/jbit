@@ -1,0 +1,6 @@
+$ cd $SCRATCH/sb/srv && echo SERVER-MARKER-7731 > marker.txt && python3 -m http.server 18731 --bind 127.0.0.1 &   # outside agy
+$ curl -s http://127.0.0.1:18731/marker.txt
+SERVER-MARKER-7731
+$ readlink /proc/self/ns/net   # host network namespace, for comparison with the runs
+net:[4026531833]
+# Server killed after the runs (kill <pid>; ss -ltn shows nothing on 1873x).

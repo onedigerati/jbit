@@ -1,0 +1,6 @@
+$ cd $SCRATCH && find $HOME/.gemini -printf '%p\t%s\t%T@\t%m\n' | sort > real-gemini-after.tsv && wc -l < real-gemini-before.tsv && diff real-gemini-before.tsv real-gemini-after.tsv && echo 'real ~/.gemini: no path, size, mtime or mode changed'
+# metadata only (no file contents read); real-gemini-before.tsv was taken before the first agy run, real-gemini-after.tsv after the last
+424
+real ~/.gemini: no path, size, mtime or mode changed
+[exit 0]
+

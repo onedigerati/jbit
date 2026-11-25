@@ -1,0 +1,11 @@
+$ H=$(hosts/antigravity/spike/mkhome.sh $SCRATCH/agy/home-sb2); cat $SCRATCH/sb/sl/sl.sh; cat $H/.gemini/antigravity-cli/settings.json   # written before the first run
+#!/bin/sh
+d="$HOME/sl-capture"; mkdir -p "$d"
+n=$(date +%s%N)
+cat > "$d/$n.json"
+echo "$n $PWD" >> "$d/calls.log"
+echo "SLPROBE ok"
+{"statusLine": {"type": "command", "command": "$SCRATCH/sb/sl/sl.sh", "enabled": true}}
+
+# After the TUI run, agy had added trustedWorkspaces to the same file; settings.json keys now:
+['statusLine', 'trustedWorkspaces']

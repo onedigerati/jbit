@@ -1,0 +1,22 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/21d80062-4645-4465-b295-27989cdf8726",
+  "conversationId": "21d80062-4645-4465-b295-27989cdf8726",
+  "cwd": "$SCRATCH/agy/deny-runs/base-sub/ws",
+  "hookEventName": "PreToolUse",
+  "lastUserInput": "Use the invoke_subagent tool to start one subagent (type self) whose task is: reply with the word PINEAPPLE and do nothing else. Do not use any other tool. When it finishes, reply DONE.",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 2,
+  "toolCall": {
+    "args": {
+      "Prompt": "reply with the word PINEAPPLE and do nothing else",
+      "Role": "Pineapple Responder",
+      "TypeName": "self"
+    },
+    "id": "call_13053561726471719870",
+    "name": "invoke_subagent"
+  },
+  "transcriptPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/21d80062-4645-4465-b295-27989cdf8726/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/deny-runs/base-sub/ws"
+  ]
+}

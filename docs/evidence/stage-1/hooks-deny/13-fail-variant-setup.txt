@@ -1,0 +1,35 @@
+$ cp -r hosts/antigravity/spike/probe-plugin $SCRATCH/agy/probe-plugin-failvariant   # then add hook-fail.mjs and point PreToolUse at it
+$ cat $SCRATCH/agy/probe-plugin-failvariant/hook-fail.mjs
+#!/usr/bin/env node
+// Fail-mode PreToolUse variant: $HOME/FAIL_MODE = empty | emptyobj | exit1. Logs stdin to $HOME/probe-log.
+import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os';
+const home = os.homedir(); let mode = 'empty';
+try { mode = fs.readFileSync(path.join(home, 'FAIL_MODE'), 'utf8').trim(); } catch {}
+let raw = ''; process.stdin.setEncoding('utf8');
+process.stdin.on('data', (c) => { raw += c; });
+process.stdin.on('end', () => {
+  const dir = path.join(home, 'probe-log'); fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${Date.now()}-${process.pid}-PreToolUse-fail-${mode}.json`), raw);
+  if (mode === 'emptyobj') process.stdout.write('{}\n');
+  else if (mode === 'exit1') { process.stderr.write('probe fail boom\n'); process.exit(1); }
+  // 'empty': print nothing, exit 0
+});
+
+$ diff hosts/antigravity/spike/probe-plugin/hooks.json $SCRATCH/agy/probe-plugin-failvariant/hooks.json
+37c37
+<             "command": "node ./hook.mjs PreToolUse",
+---
+>             "command": "node ./hook-fail.mjs",
+56c56
+< }
+---
+> }
+\ No newline at end of file
+
+$ H=$(hosts/antigravity/spike/mkhome.sh "$SCRATCH/agy/home-deny-fail") && HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install $SCRATCH/agy/probe-plugin-failvariant && HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks
+probe	enabled	SessionStart	-	command	node ./hook.mjs SessionStart
+probe	enabled	PreInvocation	-	command	node ./hook.mjs PreInvocation
+probe	enabled	PostInvocation	-	command	node ./hook.mjs PostInvocation
+probe	enabled	PreToolUse	*	command	node ./hook-fail.mjs
+probe	enabled	PostToolUse	*	command	node ./hook.mjs PostToolUse
+probe	enabled	Stop	-	command	node ./hook.mjs Stop

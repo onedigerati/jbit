@@ -1,0 +1,61 @@
+{
+  "cwd": "$SCRATCH/sb/ws2",
+  "session_id": "e83a2700-7d3d-47d0-82e4-e33b5caf4823",
+  "conversation_id": "e83a2700-7d3d-47d0-82e4-e33b5caf4823",
+  "transcript_path": "$SCRATCH/agy/home-sb2/.gemini/antigravity/brain/e83a2700-7d3d-47d0-82e4-e33b5caf4823/.system_generated/logs/transcript.jsonl",
+  "model": {
+    "id": "Gemini 3.8 Flash (Low)",
+    "display_name": "Gemini 3.8 Flash (Low)",
+    "effort": "low"
+  },
+  "workspace": {
+    "current_dir": "$SCRATCH/sb/ws2",
+    "project_dir": "$SCRATCH/sb/ws2"
+  },
+  "version": "1.5.17",
+  "context_window": {
+    "total_input_tokens": 15062,
+    "total_output_tokens": 2,
+    "context_window_size": 1048576,
+    "used_percentage": 1.4364242553710938,
+    "remaining_percentage": 98.5635757446289,
+    "current_usage": {
+      "input_tokens": 10824,
+      "output_tokens": 2,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    }
+  },
+  "exceeds_200k_tokens": false,
+  "product": "antigravity",
+  "quota": {
+    "3p-5h": {
+      "remaining_fraction": "<removed>",
+      "reset_time": "<removed>",
+      "reset_in_seconds": "<removed>"
+    },
+    "3p-weekly": {
+      "remaining_fraction": "<removed>",
+      "reset_time": "<removed>",
+      "reset_in_seconds": "<removed>"
+    },
+    "gemini-5h": {
+      "remaining_fraction": "<removed>",
+      "reset_time": "<removed>",
+      "reset_in_seconds": "<removed>"
+    },
+    "gemini-weekly": {
+      "remaining_fraction": "<removed>",
+      "reset_time": "<removed>",
+      "reset_in_seconds": "<removed>"
+    }
+  },
+  "agent_state": "idle",
+  "cycle_mode": "auto",
+  "sandbox": {
+    "enabled": false
+  },
+  "plan_tier": "<removed>",
+  "email": "<removed>",
+  "terminal_width": 160
+}

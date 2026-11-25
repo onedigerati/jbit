@@ -1,0 +1,12 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/2f202d28-dd4f-4c35-85ac-b0691b4df042",
+  "conversationId": "2f202d28-dd4f-4c35-85ac-b0691b4df042",
+  "cwd": "$SCRATCH/agy/deny-runs/sub-deny/ws",
+  "hookEventName": "SessionStart",
+  "lastUserInput": "",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/2f202d28-dd4f-4c35-85ac-b0691b4df042/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/deny-runs/sub-deny/ws"
+  ]
+}

@@ -7,18 +7,19 @@ Bring JBIT to Google Antigravity CLI (`agy`), as close to Claude Code as the hos
 2026-11-25 · at `68b9afd`: tests: 584 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 58 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · host tests: 127 pass (`node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs`) · parity: 18 pass (`node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs`) · validate: passes (`claude plugin validate .`)
 
 ## Now
-Stage 1 of 3 · Spike: Antigravity CLI
-Risk: external services, secrets (a copied sign-in token in a throwaway home)
+Stage 2 of 3 · Antigravity adapter + package
+Risk: user input (the hook reads tool input), permissions (the commit gate, secret guard, holds and home guard on a new host)
 Checks:
-- [ ] A throwaway `HOME` holding only a copy of the sign-in token runs `agy -p`, and the user's `~/.gemini` is unchanged afterwards (proof: run the product, a test can't sign in)
-- [ ] A throwaway plugin installed by path is listed by `agy -p /hooks`; its skill is invoked by its slash form (record the exact form) and by its description (proof: run the product, live host behaviour)
-- [ ] The probe hook's `PreInvocation` context reaches the model on the first call of a prompt only, a `PreToolUse` deny stops `run_command`, `write_file`, `edit_file` and `invoke_subagent`, including calls inside a subagent, and a `Stop` "continue" keeps a `-p` run going until the host's cap (proof: run the product, live host behaviour)
-- [ ] Every event's stdin is saved as a fixture under `hosts/antigravity/fixtures/`, and the note answers: `${...}` substitution in skills, a GitHub `tree/` install, `@path` includes of `CLAUDE.md` from `AGENTS.md`, the status line's stdin, and whether `--add-dir` or an allow rule lets a sandboxed command reach a local server (proof: run the product, live host behaviour)
+- [ ] `node hosts/build.mjs antigravity` generates `plugins/jbit-antigravity/` (root `plugin.json`, root `hooks.json`, `rules/AGENTS.md` pointing at `CLAUDE.md`, the skills with no `${CLAUDE_*}` left and the capture script reached by "this skill's folder"), `agy plugin validate --strict` passes on it, and the drift check fails when it is stale (proof: run the product for validate, test for layout and drift)
+- [ ] The Antigravity hook, run on the spike's fixtures, injects the plan's `## Now` on `invocationNum` 0 only; prints an explicit decision on every `PreToolUse` path, a thrown error or bad input included (a deny with a reason); refuses what the Claude Code hook refuses (commit gate with evidence and images, secret guard, held edits and `invoke_subagent`); denies writes to `~/.gemini/config/` and `~/.gemini/antigravity-cli/settings.json`; and carries autopilot on through `Stop` with its own per-prompt cap, kept where an allowed tool can't write it (proof: test, tool names pinned to the fixtures)
+- [ ] The parity scenarios pass against the Antigravity hook beside Codex and Copilot (proof: test)
+- [ ] `plugins/jbit/` is unchanged, the shared core's host text is host-neutral, and the suite, docs check, host tests, parity, drift checks and validate are green (proof: test)
 Open: none
-Agents: wide — confirmed 2026-11-25 09:16
+Mode: autopilot — unattended
+Agents: wide — confirmed 2026-11-25 09:25
 
 ## Stages
-- [ ] 1. Spike: Antigravity CLI — throwaway home, install by path, skill forms, prompt context, denies inside subagents, Stop carry-on, event fixtures
+- [x] 1. Spike: Antigravity CLI — throwaway home, install by path, skill forms, prompt context, denies inside subagents, Stop carry-on, event fixtures
 - [ ] 2. Antigravity adapter + package — `hosts/antigravity/` on the core, a native-plugin format in the build, generated `plugins/jbit-antigravity/`, home guard, parity scenarios
 - [ ] 3. Antigravity end to end — install by path; headless UI stage close with screenshots, refusals, carry-on; README "Antigravity CLI" with its gaps
 
@@ -26,9 +27,10 @@ Agents: wide — confirmed 2026-11-25 09:16
 - 2026-11-25 · Antigravity CLI is added as a host, as close to Claude Code's capabilities as reasonably possible; Gemini CLI stays out. It replaces the 2026-11-20 standing decision dropping Google hosts, struck in [decisions.md](decisions.md). Why: the user's choice.
 - 2026-11-25 · The plugin review the user asked for is a survey for planning, not a findings review. Why: the user's choice.
 - 2026-11-25 · Agents: wide, confirmed by the user in this session.
+- 2026-11-25 · Agents: wide, named again in the user's own autopilot command ("jbit autopilot wide") this session; restamped.
 - 2026-11-25 · (pm) Scale: three stages, one plan; no charter. Why: one host, well under eight stages.
 - 2026-11-25 · (pm) The package is a native Antigravity plugin, not a Claude plugin left for `agy` to convert, and is installed by its path (`agy plugin install <clone>/plugins/jbit-antigravity`), never from the repo root. There is no marketplace file for now. Why: conversion leaves `${CLAUDE_*}` in the skills and doesn't port the TS-module hook; installing the repo root bulk-installs every `plugins/*` folder, and same-named ones replace each other; `agy` rejects both existing marketplace files ([antigravity-plugins-2026-11.md](research/antigravity-plugins-2026-11.md)).
-- 2026-11-25 · (pm) The hook maps the per-prompt `## Now` to `PreInvocation` on the first call of a prompt only (`invocationNum === 0`), holds subagents on the `invoke_subagent` tool, and continues autopilot through `Stop` "continue". It prints an explicit allow on every pass, sets its own timeout and catches its errors into a deny with a reason. Why: there is no prompt-submit or subagent-start event; injected messages persist; a `PreToolUse` hook that prints nothing, exits non-zero or times out blocks the tool ([antigravity-hooks-2026-11.md](research/antigravity-hooks-2026-11.md)).
+- 2026-11-25 · (pm) The hook maps the per-prompt `## Now` to `PreInvocation` on the first call of a prompt only (`invocationNum === 0`), holds subagents on the `invoke_subagent` tool, and continues autopilot through `Stop` "continue". It prints an explicit allow on every pass, sets its own timeout and catches its errors into a deny with a reason. Why: there is no prompt-submit or subagent-start event; injected messages persist; a `PreToolUse` hook that prints `{}`, exits non-zero or times out blocks the tool, and one that prints nothing allows it, so a silent failure must never be possible ([antigravity-hooks-2026-11.md](research/antigravity-hooks-2026-11.md); corrected 2026-11-25 by the [spike](research/antigravity-spike-2026-11.md)).
 - 2026-11-25 · (pm) Tool names come from probes, not the web docs: `run_command` (`CommandLine`), `write_file` (`Path`, `Content`), `edit_file` (`Path`, `Target`, `Replacement`). The edit matcher is broad, and a test pins the names to the spike's fixtures. Why: the docs list stale names ([antigravity-hooks-2026-11.md](research/antigravity-hooks-2026-11.md)).
 - 2026-11-25 · (pm) Screenshots on Antigravity come only from the capture script; the host's browser tools aren't offered as a fallback. Why: `agy`'s browser needs a running Chrome with remote debugging and a person clicking Allow, so it can't run unattended ([antigravity-headless-2026-11.md](research/antigravity-headless-2026-11.md)).
 - 2026-11-25 · (pm) The home guard protects `~/.gemini/config/` (plugins, agents, MCP) and `~/.gemini/antigravity-cli/settings.json`, and leaves the rest of `~/.gemini/antigravity-cli/` writable. Why: every run writes there, and plugin installs and settings live in the protected parts ([antigravity-headless-2026-11.md](research/antigravity-headless-2026-11.md)).
@@ -36,6 +38,12 @@ Agents: wide — confirmed 2026-11-25 09:16
 - 2026-11-25 · (pm) The shared core's host-specific text (`NODE_TOO_OLD` naming Copilot) is made host-neutral in stage 2. Why: a third host would otherwise need a third string patch (survey).
 - 2026-11-25 · (pm) Per-role effort, a plugin-set status line, `CLAUDE.md` loaded at startup and the host's own browser are expected gaps, unless the spike proves otherwise. Why: agents take `model` as `inherit`, `flash` or `pro` only, with no effort; the status line is a user setting; `agy` reads `AGENTS.md` and `GEMINI.md`, not `CLAUDE.md` ([antigravity-plugins-2026-11.md](research/antigravity-plugins-2026-11.md), [antigravity-hooks-2026-11.md](research/antigravity-hooks-2026-11.md)).
 - 2026-11-25 · (pm) Risk: stage 1 handles a sign-in token and runs a live host (secrets, external services); stage 2 changes the gate's adapter and reads tool input (user input); stage 3 installs and runs live (external services). All three get the security pass.
+
+- 2026-11-25 · (unattended) Agents ran in the main tree, not worktrees, during the stage 1 spike: each wrote only its own evidence folder and fixture prefix and used its own throwaway home, and worktrees would have lacked the uncommitted probe kit. Why: disjoint outputs, no shared files edited.
+- 2026-11-25 · (unattended) Autopilot carry-on on Antigravity counts its own continues per prompt (or reads `executionNum`), since the host honours 10 `Stop` continues and `continuationActive` stays `false`. Why: the [spike](research/antigravity-spike-2026-11.md).
+- 2026-11-25 · (unattended) The open `CLAUDE.md` question is settled as its default: the Antigravity package's rules point the model at `CLAUDE.md`, as on Codex; JBIT doesn't write the project's `AGENTS.md`. Why: the spike shows `@CLAUDE.md` isn't inlined (only `@[label](CLAUDE.md)` is), and that works only from a project `AGENTS.md`, which is the user's file ([spike](research/antigravity-spike-2026-11.md)).
+- 2026-11-25 · (unattended) Live runs set `AGY_CLI_DISABLE_AUTO_UPDATE=1`, and the guard's protected paths stay as decided; the `~/.local/bin/.update_test<n>` write `agy` makes outside `HOME` on every start is accepted as the host's. Why: the spike saw it created and removed, the binary unchanged ([spike](research/antigravity-spike-2026-11.md)).
+- 2026-11-25 · Stage 1 closed: the spike's findings are in [antigravity-spike-2026-11.md](research/antigravity-spike-2026-11.md), evidence in [stage-1](evidence/stage-1/report.md).
 
 ## Open questions
 - Screenshot evidence, from the last plan's reviews, for the user:
@@ -54,7 +62,7 @@ Agents: wide — confirmed 2026-11-25 09:16
   - In a held stage, a shell write gets through on every host; the hold covers edit tools and Agent, not Bash ([report](plans/2026-11-20-copilot-codex-hosts/evidence/stage-6/report.md)).
   - A model can write "User approved stage <n>" into the plan's text; the hold doesn't read it ([review](plans/2026-11-20-copilot-codex-hosts/evidence/stage-7/review.md)).
   - `plugins/jbit/evals-ablation/` and the root `CLAUDE.md` are untracked; commit or drop.
-- On Antigravity, `jbit:charter` writes the project's locked decisions to `CLAUDE.md`, which `agy` doesn't load. Should the Antigravity package point the model at `CLAUDE.md` (as on Codex) or write `AGENTS.md`? Default: point at `CLAUDE.md`, as on Codex, unless the spike shows an `@` include works. For the user; it shapes stage 2.
+- Antigravity, from the spike: in `-p` auto mode the model ran `run_command` (`find`, `ls`, `ps`) without a prompt while the probe hook allowed it; whether the host's own permission check ran is unsettled. Stage 2's hook must not assume the host stops anything it allows.
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).

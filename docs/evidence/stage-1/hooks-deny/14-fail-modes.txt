@@ -1,0 +1,186 @@
+$ mkdir -p $SCRATCH/agy/deny-runs/fail-empty/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/fail-empty/ws/edit-me.txt
+$ # home-deny-fail has the scratch variant $SCRATCH/agy/probe-plugin-failvariant installed (see 13-fail-variant-setup.txt)
+$ printf '%s' empty > $SCRATCH/agy/home-deny-fail/FAIL_MODE
+$ printf '%s' 'log' > $SCRATCH/agy/home-deny-fail/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/fail-empty/ws && HOME=$SCRATCH/agy/home-deny-fail AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the write_file tool to create the file note.txt in the current directory with the content: hello. Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"init","conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/agy/deny-runs/fail-empty/ws","tools":["ask_custom_permission","ask_permission","ask_question","browser_click_element","browser_drag_pixel_to_pixel","browser_get_dom","browser_get_network_request","browser_input","browser_list_network_requests","browser_mouse_down","browser_mouse_up","browser_move_mouse","browser_press_key","browser_refresh_page","browser_resize_window","browser_scroll","browser_scroll_dom","browser_select_option","browser_subagent","call_mcp_tool","capture_browser_console_logs","capture_browser_screenshot","click_browser_pixel","command_status","define_subagent","delete_knowledge","execute_browser_javascript","find_by_name","finish","generate_image","grep_search","invoke_subagent","list_browser_pages","list_dir","list_permissions","list_plugin_accounts","list_resources","manage_inbox","manage_subagents","manage_task","multi_replace_file_content","notebook_edit","notebook_execution","open_browser_url","read_browser_page","read_resource","read_url_content","replace_file_content","run_command","run_workflow","schedule","search_marketplace","search_web","sed_file","send_command_input","send_message","view_file","wait","wait_5_seconds","write_to_file"],"permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":1,"state":"DONE","step_type":"agent_response","duration_seconds":2.561188565,"usage":"<removed>"}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":2,"state":"ACTIVE","step_type":"tool","tool_name":"write_file","tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-empty/ws/note.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":2,"state":"DONE","step_type":"tool","tool_name":"write_file","duration_seconds":0.108529698,"tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-empty/ws/note.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"DONE"}}
+{"event":"step_update","step_update":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","step_index":3,"state":"DONE","step_type":"agent_response","text_delta":"\n","duration_seconds":2.16117887,"usage":"<removed>"}}
+{"event":"result","result":{"conversation_id":"4a68cadb-5976-47f5-8926-6073035c1ea5","status":"SUCCESS","response":"DONE\n","duration_seconds":4.852657633,"num_turns":1,"usage":"<removed>"}}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/fail-empty/ws; cat edit-me.txt   # after the run
+total 8
+drwxr-xr-x 2 user user  80 Nov 25 09:34 .
+drwxr-xr-x 4 user user 160 Nov 25 09:34 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:34 edit-me.txt
+-rw-r--r-- 1 user user   5 Nov 25 09:34 note.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny-fail/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PostToolUse  {}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620881782-26605-SessionStart.json
+1795620881799-26615-PreInvocation.json
+1795620884383-26623-PreToolUse-fail-empty.json
+1795620884403-26631-PostToolUse.json
+1795620884422-26639-PostInvocation.json
+1795620884439-26647-PreInvocation.json
+1795620886628-26779-PostInvocation.json
+1795620886648-26787-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620884383-26623-PreToolUse-fail-empty.json  conv=4a68cadb-5976-47f5-8926-6073035c1ea5 stepIdx=2 name=write_file args={"Content": "hello", "Path": "$SCRATCH/agy/deny-runs/fail-empty/ws/note.txt"}
+
+============================================================
+$ mkdir -p $SCRATCH/agy/deny-runs/fail-empty-run/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/fail-empty-run/ws/edit-me.txt
+$ # home-deny-fail has the scratch variant $SCRATCH/agy/probe-plugin-failvariant installed (see 13-fail-variant-setup.txt)
+$ printf '%s' empty > $SCRATCH/agy/home-deny-fail/FAIL_MODE
+$ printf '%s' 'log' > $SCRATCH/agy/home-deny-fail/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/fail-empty-run/ws && HOME=$SCRATCH/agy/home-deny-fail AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the run_command tool to run exactly this shell command: echo hi > marker-run.txt . Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"init","conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/agy/deny-runs/fail-empty-run/ws","tools":["ask_custom_permission","ask_permission","ask_question","browser_click_element","browser_drag_pixel_to_pixel","browser_get_dom","browser_get_network_request","browser_input","browser_list_network_requests","browser_mouse_down","browser_mouse_up","browser_move_mouse","browser_press_key","browser_refresh_page","browser_resize_window","browser_scroll","browser_scroll_dom","browser_select_option","browser_subagent","call_mcp_tool","capture_browser_console_logs","capture_browser_screenshot","click_browser_pixel","command_status","define_subagent","delete_knowledge","execute_browser_javascript","find_by_name","finish","generate_image","grep_search","invoke_subagent","list_browser_pages","list_dir","list_permissions","list_plugin_accounts","list_resources","manage_inbox","manage_subagents","manage_task","multi_replace_file_content","notebook_edit","notebook_execution","open_browser_url","read_browser_page","read_resource","read_url_content","replace_file_content","run_command","run_workflow","schedule","search_marketplace","search_web","sed_file","send_command_input","send_message","view_file","wait","wait_5_seconds","write_to_file"],"permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":1,"state":"DONE","step_type":"agent_response","duration_seconds":2.74031781,"usage":"<removed>"}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":2,"state":"ACTIVE","step_type":"tool","tool_name":"run_command","tool_info":{"name":"run_command","parameters":{"CommandLine":"echo hi \u003e marker-run.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":2,"state":"DONE","step_type":"tool","tool_name":"run_command","duration_seconds":0.423793911,"tool_info":{"name":"run_command","parameters":{"CommandLine":"echo hi \u003e marker-run.txt"},"output":"Created At: 2026-11-25T09:35:11-06:00\nCompleted At: 2026-11-25T09:35:12-06:00\nCommand exited with code 0.\n\nNo output from the command."}}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"DONE"}}
+{"event":"step_update","step_update":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","step_index":3,"state":"DONE","step_type":"agent_response","text_delta":"\n","duration_seconds":2.42613376,"usage":"<removed>"}}
+{"event":"result","result":{"conversation_id":"1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f","status":"SUCCESS","response":"DONE\n","duration_seconds":5.640829883,"num_turns":1,"usage":"<removed>"}}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/fail-empty-run/ws; cat edit-me.txt   # after the run
+total 8
+drwxr-xr-x 2 user user  80 Nov 25 09:35 .
+drwxr-xr-x 4 user user 160 Nov 25 09:35 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:35 edit-me.txt
+-rw-rw-rw- 1 user user   3 Nov 25 09:35 marker-run.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny-fail/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PostToolUse  {}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620909066-27977-SessionStart.json
+1795620909085-27985-PreInvocation.json
+1795620911848-28060-PreToolUse-fail-empty.json
+1795620912214-28100-PostToolUse.json
+1795620912231-28108-PostInvocation.json
+1795620912248-28116-PreInvocation.json
+1795620914697-28143-PostInvocation.json
+1795620914718-28151-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620911848-28060-PreToolUse-fail-empty.json  conv=1d5e5f5c-3b5e-42c8-9806-99abbeb4db7f stepIdx=2 name=run_command args={"CommandLine": "echo hi > marker-run.txt", "WaitMsBeforeAsync": 5000, "toolSummary": "Write marker file"}
+
+============================================================
+$ mkdir -p $SCRATCH/agy/deny-runs/fail-emptyobj/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/fail-emptyobj/ws/edit-me.txt
+$ # home-deny-fail has the scratch variant $SCRATCH/agy/probe-plugin-failvariant installed (see 13-fail-variant-setup.txt)
+$ printf '%s' emptyobj > $SCRATCH/agy/home-deny-fail/FAIL_MODE
+$ printf '%s' 'log' > $SCRATCH/agy/home-deny-fail/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/fail-emptyobj/ws && HOME=$SCRATCH/agy/home-deny-fail AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the write_file tool to create the file note.txt in the current directory with the content: hello. Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"init","conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/agy/deny-runs/fail-emptyobj/ws","tools":["ask_custom_permission","ask_permission","ask_question","browser_click_element","browser_drag_pixel_to_pixel","browser_get_dom","browser_get_network_request","browser_input","browser_list_network_requests","browser_mouse_down","browser_mouse_up","browser_move_mouse","browser_press_key","browser_refresh_page","browser_resize_window","browser_scroll","browser_scroll_dom","browser_select_option","browser_subagent","call_mcp_tool","capture_browser_console_logs","capture_browser_screenshot","click_browser_pixel","command_status","define_subagent","delete_knowledge","execute_browser_javascript","find_by_name","finish","generate_image","grep_search","invoke_subagent","list_browser_pages","list_dir","list_permissions","list_plugin_accounts","list_resources","manage_inbox","manage_subagents","manage_task","multi_replace_file_content","notebook_edit","notebook_execution","open_browser_url","read_browser_page","read_resource","read_url_content","replace_file_content","run_command","run_workflow","schedule","search_marketplace","search_web","sed_file","send_command_input","send_message","view_file","wait","wait_5_seconds","write_to_file"],"permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":1,"state":"DONE","step_type":"agent_response","duration_seconds":2.618287633,"usage":"<removed>"}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":2,"state":"ACTIVE","step_type":"tool","tool_name":"write_file","tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-emptyobj/ws/note.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":2,"state":"ERROR","step_type":"tool","tool_name":"write_file","duration_seconds":0.061124395,"tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-emptyobj/ws/note.txt"},"error":{"type":"TOOL_ERROR","message":"tool call denied by pre-tool hook:"}}}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"Encounter"}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"ed error in tool execution: tool cal"}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"l denied by "}}
+{"event":"step_update","step_update":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","step_index":3,"state":"DONE","step_type":"agent_response","text_delta":"pre-tool hook:\n","duration_seconds":2.301556329,"usage":"<removed>"}}
+{"event":"result","result":{"conversation_id":"190a594e-ec33-4041-b05b-567ec30efea2","status":"SUCCESS","response":"Encountered error in tool execution: tool call denied by pre-tool hook:\n","duration_seconds":5.035246343,"num_turns":1,"usage":"<removed>"}}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/fail-emptyobj/ws; cat edit-me.txt   # after the run
+total 4
+drwxr-xr-x 2 user user  60 Nov 25 09:34 .
+drwxr-xr-x 4 user user 160 Nov 25 09:34 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:34 edit-me.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny-fail/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620888736-26876-SessionStart.json
+1795620888754-26884-PreInvocation.json
+1795620891395-26892-PreToolUse-fail-emptyobj.json
+1795620891414-26900-PostInvocation.json
+1795620891435-26908-PreInvocation.json
+1795620893757-27100-PostInvocation.json
+1795620893774-27116-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620891395-26892-PreToolUse-fail-emptyobj.json  conv=190a594e-ec33-4041-b05b-567ec30efea2 stepIdx=2 name=write_file args={"Content": "hello", "Path": "$SCRATCH/agy/deny-runs/fail-emptyobj/ws/note.txt"}
+
+============================================================
+$ mkdir -p $SCRATCH/agy/deny-runs/fail-exit1/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/fail-exit1/ws/edit-me.txt
+$ # home-deny-fail has the scratch variant $SCRATCH/agy/probe-plugin-failvariant installed (see 13-fail-variant-setup.txt)
+$ printf '%s' exit1 > $SCRATCH/agy/home-deny-fail/FAIL_MODE
+$ printf '%s' 'log' > $SCRATCH/agy/home-deny-fail/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/fail-exit1/ws && HOME=$SCRATCH/agy/home-deny-fail AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the write_file tool to create the file note.txt in the current directory with the content: hello. Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"init","conversation_id":"89b567ff-3351-4221-bada-25aedef64495","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/agy/deny-runs/fail-exit1/ws","tools":["ask_custom_permission","ask_permission","ask_question","browser_click_element","browser_drag_pixel_to_pixel","browser_get_dom","browser_get_network_request","browser_input","browser_list_network_requests","browser_mouse_down","browser_mouse_up","browser_move_mouse","browser_press_key","browser_refresh_page","browser_resize_window","browser_scroll","browser_scroll_dom","browser_select_option","browser_subagent","call_mcp_tool","capture_browser_console_logs","capture_browser_screenshot","click_browser_pixel","command_status","define_subagent","delete_knowledge","execute_browser_javascript","find_by_name","finish","generate_image","grep_search","invoke_subagent","list_browser_pages","list_dir","list_permissions","list_plugin_accounts","list_resources","manage_inbox","manage_subagents","manage_task","multi_replace_file_content","notebook_edit","notebook_execution","open_browser_url","read_browser_page","read_resource","read_url_content","replace_file_content","run_command","run_workflow","schedule","search_marketplace","search_web","sed_file","send_command_input","send_message","view_file","wait","wait_5_seconds","write_to_file"],"permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":1,"state":"DONE","step_type":"agent_response","duration_seconds":2.5542765149999997,"usage":"<removed>"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":2,"state":"ACTIVE","step_type":"tool","tool_name":"write_file","tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-exit1/ws/note.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":2,"state":"ERROR","step_type":"tool","tool_name":"write_file","duration_seconds":0.067124113,"tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/fail-exit1/ws/note.txt"},"error":{"type":"TOOL_ERROR","message":"JSON hook \"jsonhook__probe_PreToolUse_0_0\" failed: command failed: exit status 1, stderr: probe fail boom"}}}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"Encountered error in tool executi"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"on: JSON hoo"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"k \"jsonhook__probe_PreTo"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"olUse_"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"0_0\" failed: command fai"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"led: exit status 1, stde"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"rr: probe fail boom"}}
+{"event":"step_update","step_update":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","step_index":3,"state":"DONE","step_type":"agent_response","text_delta":"\n","duration_seconds":1.880391379,"usage":"<removed>"}}
+{"event":"result","result":{"conversation_id":"89b567ff-3351-4221-bada-25aedef64495","status":"SUCCESS","response":"Encountered error in tool execution: JSON hook \"jsonhook__probe_PreToolUse_0_0\" failed: command failed: exit status 1, stderr: probe fail boom\n","duration_seconds":4.545888616,"num_turns":1,"usage":"<removed>"}}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/fail-exit1/ws; cat edit-me.txt   # after the run
+total 4
+drwxr-xr-x 2 user user  60 Nov 25 09:34 .
+drwxr-xr-x 4 user user 160 Nov 25 09:35 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:34 edit-me.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny-fail/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620895778-27608-SessionStart.json
+1795620895796-27616-PreInvocation.json
+1795620898374-27674-PreToolUse-fail-exit1.json
+1795620898393-27682-PostInvocation.json
+1795620898413-27690-PreInvocation.json
+1795620900317-27711-PostInvocation.json
+1795620900339-27719-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620898374-27674-PreToolUse-fail-exit1.json  conv=89b567ff-3351-4221-bada-25aedef64495 stepIdx=2 name=write_file args={"Content": "hello", "Path": "$SCRATCH/agy/deny-runs/fail-exit1/ws/note.txt"}
+
+============================================================

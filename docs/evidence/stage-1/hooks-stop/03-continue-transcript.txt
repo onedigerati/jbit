@@ -1,0 +1,40 @@
+$ transcript.jsonl for the run (step, source, type, tool calls cut to 100, content cut to 160; tool output not recorded past that)
+{"step":0,"source":"USER_EXPLICIT","type":"USER_INPUT","tools":[],"content":"<USER_REQUEST>\nReply with exactly: PONG\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-11-25T09:33:30-06:00.\n</ADDITIONAL_METADATA>\n<USER"}
+{"step":1,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"PONG"}
+{"step":2,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":3,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":4,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":5,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":6,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":7,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":8,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":9,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["read_file {\"Path\":\"\\\"$SCRATCH/agy/home-ctx3/.gemini/config/plugins/probe-plugin/skills/probe/SKILL.md\\\"\"}"],"content":""}
+{"step":10,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:43-06:00\nCompleted At: 2026-11-25T09:33:43-06:00\nCreated At: 2026-11-25T09:33:43-06:00\nCompleted At: 2026-11-25T09:33:43-06:00\nShow"}
+{"step":11,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["run_command {\"CommandLine\":\"\\\"find $SCRATCH/agy/home-ctx3/.gemini/ -type f\\\"\",\"WaitMsBeforeAsync\":\"5000\",\"toolSu"],"content":""}
+{"step":12,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:46-06:00\nCompleted At: 2026-11-25T09:33:46-06:00\nCreated At: 2026-11-25T09:33:46-06:00\nCompleted At: 2026-11-25T09:33:46-06:00\nComm"}
+{"step":13,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":14,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["read_file {\"Path\":\"\\\"$SCRATCH/agy/home-ctx3/.gemini/config/plugins/probe-plugin/hooks.json\\\"\"}","read_file {\"Path\":\"\\\"$SCRATCH/agy/home-ctx3/.gemini/config/plugins/probe-plugin/hook.mjs\\\"\"}","read_file {\"Path\":\"\\\"$SCRATCH/agy/home-ctx3/.gemini/config/plugins/probe-plugin/plugin.json\\\"\"}"],"content":""}
+{"step":15,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:49-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nCreated At: 2026-11-25T09:33:49-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nShow"}
+{"step":16,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:50-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nCreated At: 2026-11-25T09:33:50-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nShow"}
+{"step":17,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:50-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nCreated At: 2026-11-25T09:33:50-06:00\nCompleted At: 2026-11-25T09:33:50-06:00\nShow"}
+{"step":18,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["run_command {\"CommandLine\":\"\\\"echo $HOME; ls -la $HOME; ls -la $SCRATCH/agy/home-ctx3\\\"\",\"WaitMsBeforeAsync\":\"50"],"content":""}
+{"step":19,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:53-06:00\nCompleted At: 2026-11-25T09:33:54-06:00\nCreated At: 2026-11-25T09:33:53-06:00\nCompleted At: 2026-11-25T09:33:54-06:00\nComm"}
+{"step":20,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["read_file {\"Path\":\"\\\"$SCRATCH/agy/home-ctx3/PROBE_MODE\\\"\"}"],"content":""}
+{"step":21,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:56-06:00\nCompleted At: 2026-11-25T09:33:56-06:00\nCreated At: 2026-11-25T09:33:56-06:00\nCompleted At: 2026-11-25T09:33:56-06:00\nShow"}
+{"step":22,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":23,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["run_command {\"CommandLine\":\"\\\"ps aux\\\"\",\"WaitMsBeforeAsync\":\"5000\",\"toolSummary\":\"\\\"Check running processes\\\"\"}"],"content":""}
+{"step":24,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:59-06:00\nCompleted At: 2026-11-25T09:33:59-06:00\nCreated At: 2026-11-25T09:33:59-06:00\nCompleted At: 2026-11-25T09:33:59-06:00\nComm"}
+{"step":25,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":26,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":27,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":28,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":29,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":30,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":31,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":32,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":33,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":34,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":35,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":36,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}
+{"step":37,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n"}
+{"step":38,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"CONTINUED-AGAIN"}

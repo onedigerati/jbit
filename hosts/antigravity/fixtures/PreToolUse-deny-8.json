@@ -1,0 +1,21 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/2f202d28-dd4f-4c35-85ac-b0691b4df042",
+  "conversationId": "2f202d28-dd4f-4c35-85ac-b0691b4df042",
+  "cwd": "$SCRATCH/agy/deny-runs/sub-deny/ws",
+  "hookEventName": "PreToolUse",
+  "lastUserInput": "",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 6,
+  "toolCall": {
+    "args": {
+      "Message": "Here are the exact results for each step:\n\n- Step 1 (run_command): Refused with error: \"Encountered error in tool execution: tool call denied by pre-tool hook: probe deny run_command\"\n- Step 2 (write_file): Refused with error: \"Encountered error in tool execution: tool call denied by pre-tool hook: probe deny write_file\"\n- Step 3 (edit_file): Refused with error: \"Encountered error in tool execution: tool call denied by pre-tool hook: probe deny edit_file\"",
+      "Recipient": "0de30a45-c8f4-4651-8c75-5d22506006d5"
+    },
+    "id": "call_13859777178399182396",
+    "name": "send_message"
+  },
+  "transcriptPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/2f202d28-dd4f-4c35-85ac-b0691b4df042/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/deny-runs/sub-deny/ws"
+  ]
+}

@@ -1,0 +1,20 @@
+$ printf 'continue\ndeny:run_command|write_file|edit_file|...(all write tools)\n' > <throwaway>/PROBE_MODE; cd <scratch>/w6; HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p 'Reply with just the word READY. Use no tools.' --model gemini-3.8-flash-low --output-format json
+# writes denied so the model can't rewrite the mode file (see check3-stop-tampered.txt)
+# expect: every Stop answered continue; host honours a fixed number then ends the run
+{"conversation_id":"85d7fca5-0030-4f22-89b4-d4872896e449","status":"SUCCESS","response":"READY\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\n","duration_seconds":25.862456327,"num_turns":1,"usage":{"input_tokens":32052,"output_tokens":51,"thinking_tokens":0,"cache_read_tokens":92502,"total_tokens":32103}}
+--- CONTINUED-AGAIN in response: 10
+--- event counts:
+{"SessionStart":1,"PreInvocation":11,"PostInvocation":11,"Stop":11}
+--- Stop stdin (executionNum, continuationActive, terminationReason) and response:
+0 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+1 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+2 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+3 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+4 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+5 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+6 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+7 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+8 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+9 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+10 false NO_TOOL_CALL {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+# 11 Stop events, all answered continue; 10 continues honoured, the 11th ignored: cap = 10

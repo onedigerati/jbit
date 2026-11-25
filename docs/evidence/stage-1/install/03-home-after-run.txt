@@ -1,0 +1,30 @@
+$ find $SCRATCH/home1 -mindepth 1 -maxdepth 3 -not -path '*/builtin/*' -printf '%P %m\n' | sort
+.gemini 700
+.gemini/antigravity-cli 700
+.gemini/antigravity-cli/antigravity-oauth-token 600
+.gemini/antigravity-cli/brain 755
+.gemini/antigravity-cli/builtin 755
+.gemini/antigravity-cli/cache 755
+.gemini/antigravity-cli/cli.log 777
+.gemini/antigravity-cli/conversation_summaries.db 644
+.gemini/antigravity-cli/conversations 755
+.gemini/antigravity-cli/crashes 755
+.gemini/antigravity-cli/implicit 755
+.gemini/antigravity-cli/installation_id 644
+.gemini/antigravity-cli/jetbox_summaries_proto.pb 600
+.gemini/antigravity-cli/jetski_state.pbtxt 600
+.gemini/antigravity-cli/last_check.timestamp 644
+.gemini/antigravity-cli/log 755
+.gemini/antigravity-cli/presence 755
+.gemini/antigravity-cli/updater 755
+.gemini/config 755
+.gemini/config/.migrated 644
+.gemini/config/config.json 600
+.gemini/config/mcp_config.json 644
+.gemini/config/projects 755
+[exit 0]
+
+$ find $SCRATCH/home1 -name antigravity-oauth-token -newer $SCRATCH/real-gemini-before.tsv | wc -l   # token rewritten by agy? (0 = no)
+1
+[exit 0]
+

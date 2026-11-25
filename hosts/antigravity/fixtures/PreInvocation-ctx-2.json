@@ -1,0 +1,14 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-ctx2/.gemini/antigravity-cli/brain/d1d1a5c7-7308-4976-ad8d-2ffb95d2bdfe",
+  "conversationId": "d1d1a5c7-7308-4976-ad8d-2ffb95d2bdfe",
+  "cwd": "$SCRATCH/agy/ws-ctx",
+  "hookEventName": "PreInvocation",
+  "initialNumSteps": 7,
+  "invocationNum": 2,
+  "lastUserInput": "First read a.txt with a tool call. Then, in a separate later tool call, read b.txt. Then answer: list the contents of both files, and list verbatim EVERY \"Probe context marker\" line you have seen anywhere in this conversation (system messages included), with its number. If none, say NONE.",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "$SCRATCH/agy/home-ctx2/.gemini/antigravity-cli/brain/d1d1a5c7-7308-4976-ad8d-2ffb95d2bdfe/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/ws-ctx"
+  ]
+}

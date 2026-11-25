@@ -1,0 +1,10 @@
+$ cd $SCRATCH/ws1 && (python3 busy-poll of new names in $HOME/.local/bin for 12 s) & HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks >/dev/null; stat -c '%y' $HOME/.local/bin $HOME/.local/bin/agy
+NEW .update_test2919579771
+2026-11-25 09:30:23.873570783 -0600 $HOME/.local/bin
+2026-11-25 09:07:16.285584800 -0600 $HOME/.local/bin/agy
+[exit 0]
+
+# Every agy start (even /hooks, even with AGY_CLI_DISABLE_AUTO_UPDATE=1) creates and removes a
+# write-test file next to its own binary ($HOME/.local/bin), whatever HOME is. The binary itself
+# (mtime 09:07, before the spike) was not changed. The real ~/.config/antigravity/credential-user-scope
+# (mtime 09:12, before the spike) was not touched; the throwaway home got no .config/ at all.

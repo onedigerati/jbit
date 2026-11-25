@@ -1,0 +1,4 @@
+$ cd $SCRATCH/ws1 && HOME=$SCRATCH/home1 timeout 180 agy -p 'Reply with exactly: PONG' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"790451f4-ac12-47dd-8568-0e822fba9a42","status":"SUCCESS","response":"PONG\n","duration_seconds":1.662747023,"num_turns":1,"usage":"<removed>"}
+[exit 0]
+

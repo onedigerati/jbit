@@ -1,0 +1,23 @@
+$ HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install <scratch>/varcheck
+  [ok]    varcheck
+          ✔ skills      : 1 installed (vars)
+          Installed to <scratch>/home-verify/.gemini/config/plugins/varcheck
+
+--- <scratch>/varcheck/skills/vars/SKILL.md:
+---
+name: vars
+description: Use when asked for the varcheck echo.
+---
+
+Do not run any tools. Reply with exactly these lines, copied character for character from this skill text:
+A=[${PLUGIN_ROOT}] B=[${CLAUDE_PLUGIN_ROOT}] C=[${CLAUDE_SKILL_DIR}] D=[$ARGUMENTS]
+
+$ HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p '/varcheck:vars hello' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"A=[${PLUGIN_"}}
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"ROOT}] B=[${CLAUDE_PLUGI"}}
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"N_ROOT}]"}}
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":" C=[${CLAUDE_SKILL_DIR}] D=[$ARGUMEN"}}
+{"event":"step_update","step_update":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","step_index":1,"state":"DONE","step_type":"agent_response","text_delta":"TS]\n","duration_seconds":2.072217131,"usage":{"input_tokens":11177,"output_tokens":36,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11213}}}
+{"event":"result","result":{"conversation_id":"d59d7493-07ca-4c5d-a7ec-494000c15060","status":"SUCCESS","response":"A=[${PLUGIN_ROOT}] B=[${CLAUDE_PLUGIN_ROOT}] C=[${CLAUDE_SKILL_DIR}] D=[$ARGUMENTS]\n","duration_seconds":2.124733231,"num_turns":1,"usage":{"input_tokens":11177,"output_tokens":36,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11213}}}
+exit=0

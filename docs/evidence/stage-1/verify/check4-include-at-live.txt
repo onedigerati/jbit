@@ -1,0 +1,15 @@
+$ cd <scratch>/inc/at && git init; AGENTS.md and CLAUDE.md below; HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p 'Do not run any tools. Quote verbatim, inside a fenced block, every line of project or workspace instructions (from AGENTS.md, GEMINI.md, CLAUDE.md or similar) present in your context, or write NO-RULES. Then on its own line write CODEWORD=<the project codeword if your context states one, else NONE>.' --model gemini-3.8-flash-low --output-format stream-json
+--- AGENTS.md
+# Project rules
+
+@CLAUDE.md
+--- CLAUDE.md
+# Claude rules
+
+The project codeword is HERON-MAPLE-58.
+--- run:
+{"event":"step_update","step_update":{"conversation_id":"b0fab0e4-472b-4cf9-bab4-d91431e8e940","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"b0fab0e4-472b-4cf9-bab4-d91431e8e940","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"```\n# Project rules\n\n@/t"}}
+{"event":"step_update","step_update":{"conversation_id":"b0fab0e4-472b-4cf9-bab4-d91431e8e940","step_index":1,"state":"DONE","step_type":"agent_response","text_delta":"mp/claude-1000/-<repo>/40f99a7b-544e-40d7-b530-df2c3a953e5a/scratchpad/agy/inc/at/CLAUDE.md\n```\nCODEWORD=NONE\n","duration_seconds":3.265874453,"usage":{"input_tokens":11380,"output_tokens":87,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11467}}}
+{"event":"result","result":{"conversation_id":"b0fab0e4-472b-4cf9-bab4-d91431e8e940","status":"SUCCESS","response":"```\n# Project rules\n\n@<scratch>/inc/at/CLAUDE.md\n```\nCODEWORD=NONE\n","duration_seconds":3.329968929,"num_turns":1,"usage":{"input_tokens":11380,"output_tokens":87,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11467}}}
+--- tool steps in run: 0

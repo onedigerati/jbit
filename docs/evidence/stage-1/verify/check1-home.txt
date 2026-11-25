@@ -1,0 +1,39 @@
+$ snapshot real ~/.gemini before/after (find -printf "%y %p %s %T@" + sha256 of every file; hashes kept in scratch only), then diff
+entries before: 424  after: 424  files hashed: 233
+--- diff of path/size/mtime listing:
+(no differences)
+--- diff of sha256 list:
+(no differences)
+--- ~/.local/bin/agy sha256 prefix unchanged: yes
+--- throwaway home after the run (paths only, relative):
+.
+./.gemini
+./.gemini/antigravity-cli
+./.gemini/antigravity-cli/antigravity-oauth-token
+./.gemini/antigravity-cli/brain
+./.gemini/antigravity-cli/builtin
+./.gemini/antigravity-cli/cache
+./.gemini/antigravity-cli/cli.log
+./.gemini/antigravity-cli/conversation_summaries.db
+./.gemini/antigravity-cli/conversations
+./.gemini/antigravity-cli/crashes
+./.gemini/antigravity-cli/implicit
+./.gemini/antigravity-cli/installation_id
+./.gemini/antigravity-cli/jetbox_summaries_proto.pb
+./.gemini/antigravity-cli/jetski_state.pbtxt
+./.gemini/antigravity-cli/last_check.timestamp
+./.gemini/antigravity-cli/log
+./.gemini/antigravity-cli/presence
+./.gemini/antigravity-cli/updater
+./.gemini/config
+./.gemini/config/.migrated
+./.gemini/config/config.json
+./.gemini/config/mcp_config.json
+./.gemini/config/projects
+
+--- agy run:
+$ HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p 'Reply with exactly: VERIFY-PING' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"64b40e40-85f9-441d-8baf-23c22b3fee01","status":"SUCCESS","response":"VERIFY-PING\n","duration_seconds":1.858855334,"num_turns":1,"usage":{"input_tokens":10817,"output_tokens":4,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":10821}}
+exit=0
+
+--- after ALL verifier runs (12 agy calls, incl. 2 plugin installs), real ~/.gemini vs the first snapshot: listing: same · hashes: same · agy binary: same

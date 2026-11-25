@@ -1,0 +1,22 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/b1521bd4-a3bc-49e3-9e64-7b2fd3eeb45f",
+  "conversationId": "b1521bd4-a3bc-49e3-9e64-7b2fd3eeb45f",
+  "cwd": "$SCRATCH/agy/deny-runs/base-run/ws",
+  "hookEventName": "PreToolUse",
+  "lastUserInput": "Use the run_command tool to run exactly this shell command: echo hi > marker-run.txt . Do not use any other tool. Then reply DONE.",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 2,
+  "toolCall": {
+    "args": {
+      "CommandLine": "echo hi > marker-run.txt",
+      "WaitMsBeforeAsync": 5000,
+      "toolSummary": "Create marker file"
+    },
+    "id": "call_8042456679620739839",
+    "name": "run_command"
+  },
+  "transcriptPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/b1521bd4-a3bc-49e3-9e64-7b2fd3eeb45f/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/deny-runs/base-run/ws"
+  ]
+}

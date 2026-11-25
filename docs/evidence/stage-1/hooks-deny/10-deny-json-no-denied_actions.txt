@@ -1,0 +1,33 @@
+$ mkdir -p $SCRATCH/agy/deny-runs/deny-run-json/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/deny-run-json/ws/edit-me.txt
+$ printf '%s' 'deny:run_command' > $SCRATCH/agy/home-deny/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/deny-run-json/ws && HOME=$SCRATCH/agy/home-deny AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the run_command tool to run exactly this shell command: echo hi > marker-run.txt . Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"a80c1cb0-7fe6-48c8-844a-b7ffe435ac9a","status":"SUCCESS","response":"Encountered error in tool execution: tool call denied by pre-tool hook: probe deny run_command\n","duration_seconds":4.626343946,"num_turns":1,"usage":"<removed>"}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/deny-run-json/ws; cat edit-me.txt   # after the run
+total 4
+drwxr-xr-x 2 user user  60 Nov 25 09:33 .
+drwxr-xr-x 4 user user 160 Nov 25 09:33 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:33 edit-me.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PreToolUse  {"decision": "deny", "reason": "probe deny run_command"}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620825534-24439-SessionStart.json
+1795620825555-24447-PreInvocation.json
+1795620827698-24533-PreToolUse.json
+1795620827719-24541-PostInvocation.json
+1795620827738-24549-PreInvocation.json
+1795620830149-24585-PostInvocation.json
+1795620830168-24593-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620827698-24533-PreToolUse.json  conv=a80c1cb0-7fe6-48c8-844a-b7ffe435ac9a stepIdx=2 name=run_command args={"CommandLine": "echo hi > marker-run.txt", "WaitMsBeforeAsync": 5000, "toolSummary": "Write marker file"}

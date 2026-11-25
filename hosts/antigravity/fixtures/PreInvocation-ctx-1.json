@@ -1,0 +1,14 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-ctx/.gemini/antigravity-cli/brain/5852dbcb-1d80-4b01-99fe-1770ce13e931",
+  "conversationId": "5852dbcb-1d80-4b01-99fe-1770ce13e931",
+  "cwd": "$SCRATCH/agy/ws-ctx",
+  "hookEventName": "PreInvocation",
+  "initialNumSteps": 9,
+  "invocationNum": 0,
+  "lastUserInput": "Second prompt: list verbatim EVERY \"Probe context marker\" line you have seen anywhere in this conversation so far, in order, with its number. No tool calls.",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "$SCRATCH/agy/home-ctx/.gemini/antigravity-cli/brain/5852dbcb-1d80-4b01-99fe-1770ce13e931/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/ws-ctx"
+  ]
+}

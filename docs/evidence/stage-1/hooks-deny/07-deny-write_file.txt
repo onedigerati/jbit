@@ -1,0 +1,42 @@
+$ mkdir -p $SCRATCH/agy/deny-runs/deny-write/ws && printf 'alpha beta gamma\n' > $SCRATCH/agy/deny-runs/deny-write/ws/edit-me.txt
+$ printf '%s' 'deny:write_file' > $SCRATCH/agy/home-deny/PROBE_MODE
+$ cd $SCRATCH/agy/deny-runs/deny-write/ws && HOME=$SCRATCH/agy/home-deny AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Use the write_file tool to create the file note.txt in the current directory with the content: hello. Do not use any other tool, and do not retry if it fails. Then reply DONE, or if the tool was refused, reply with the exact refusal message you received.' --model gemini-3.8-flash-low --output-format stream-json
+{"event":"init","conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/agy/deny-runs/deny-write/ws","tools":["ask_custom_permission","ask_permission","ask_question","browser_click_element","browser_drag_pixel_to_pixel","browser_get_dom","browser_get_network_request","browser_input","browser_list_network_requests","browser_mouse_down","browser_mouse_up","browser_move_mouse","browser_press_key","browser_refresh_page","browser_resize_window","browser_scroll","browser_scroll_dom","browser_select_option","browser_subagent","call_mcp_tool","capture_browser_console_logs","capture_browser_screenshot","click_browser_pixel","command_status","define_subagent","delete_knowledge","execute_browser_javascript","find_by_name","finish","generate_image","grep_search","invoke_subagent","list_browser_pages","list_dir","list_permissions","list_plugin_accounts","list_resources","manage_inbox","manage_subagents","manage_task","multi_replace_file_content","notebook_edit","notebook_execution","open_browser_url","read_browser_page","read_resource","read_url_content","replace_file_content","run_command","run_workflow","schedule","search_marketplace","search_web","sed_file","send_command_input","send_message","view_file","wait","wait_5_seconds","write_to_file"],"permission_mode":"request-review"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":1,"state":"DONE","step_type":"agent_response","duration_seconds":2.977143,"usage":"<removed>"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":2,"state":"ACTIVE","step_type":"tool","tool_name":"write_file","tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/deny-write/ws/note.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":2,"state":"ERROR","step_type":"tool","tool_name":"write_file","duration_seconds":0.056215001,"tool_info":{"name":"write_file","parameters":{"Path":"$SCRATCH/agy/deny-runs/deny-write/ws/note.txt"},"error":{"type":"TOOL_ERROR","message":"tool call denied by pre-tool hook: probe deny write_file"}}}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"Encounter"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"ed error in tool execution: tool cal"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":3,"state":"ACTIVE","step_type":"agent_response","text_delta":"l denied by pre-tool hook: probe den"}}
+{"event":"step_update","step_update":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","step_index":3,"state":"DONE","step_type":"agent_response","text_delta":"y write_file\n","duration_seconds":2.164542931,"usage":"<removed>"}}
+{"event":"result","result":{"conversation_id":"66de23ba-b566-4fd6-943f-720bc641de2f","status":"SUCCESS","response":"Encountered error in tool execution: tool call denied by pre-tool hook: probe deny write_file\n","duration_seconds":5.255214929,"num_turns":1,"usage":"<removed>"}}
+[exit 0]   (stderr: empty)
+
+$ ls -la $SCRATCH/agy/deny-runs/deny-write/ws; cat edit-me.txt   # after the run
+total 4
+drwxr-xr-x 2 user user  60 Nov 25 09:33 .
+drwxr-xr-x 4 user user 160 Nov 25 09:33 ..
+-rw-r--r-- 1 user user  17 Nov 25 09:33 edit-me.txt
+alpha beta gamma
+
+$ # hook log: event, response (from $SCRATCH/agy/home-deny/probe-log/events.jsonl, moved to the run dir after the run)
+SessionStart  {}
+PreInvocation  {}
+PreToolUse  {"decision": "deny", "reason": "probe deny write_file"}
+PostInvocation  {}
+PreInvocation  {}
+PostInvocation  {}
+Stop  {}
+$ ls probe-log
+1795620788573-22964-SessionStart.json
+1795620788593-22994-PreInvocation.json
+1795620791591-23078-PreToolUse.json
+1795620791610-23086-PostInvocation.json
+1795620791630-23094-PreInvocation.json
+1795620793816-23110-PostInvocation.json
+1795620793835-23118-Stop.json
+events.jsonl
+
+$ # PreToolUse stdin, per call: conversationId, stepIdx, toolCall.name, toolCall.args
+1795620791591-23078-PreToolUse.json  conv=66de23ba-b566-4fd6-943f-720bc641de2f stepIdx=2 name=write_file args={"Content": "hello", "Path": "$SCRATCH/agy/deny-runs/deny-write/ws/note.txt"}

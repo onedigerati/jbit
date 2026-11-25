@@ -1,0 +1,44 @@
+$ cut -c1-2000 $SCRATCH/home1/probe-log/events.jsonl
+{"t":"1795620507783-17977","event":"SessionStart","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620507805-17985","event":"PreInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620511178-17993","event":"PreToolUse","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{"decision":"allow"}}
+{"t":"1795620511198-18001","event":"PostToolUse","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620511220-18009","event":"PostInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620511239-18017","event":"PreInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620513276-18025","event":"PostInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620513297-18033","event":"Stop","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620515652-18067","event":"SessionStart","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620515670-18075","event":"PreInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620517991-18083","event":"PostInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620518013-18091","event":"Stop","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620537548-18260","event":"SessionStart","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620537569-18268","event":"PreInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620540010-18278","event":"PreToolUse","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{"decision":"allow"}}
+{"t":"1795620540036-18286","event":"PostToolUse","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620540056-18294","event":"PostInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620540077-18302","event":"PreInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620541962-18317","event":"PostInvocation","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+{"t":"1795620541981-18325","event":"Stop","cwd":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginRoot":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin","pluginData":"$SCRATCH/home1/.gemini/antigravity-cli/plugin_data/probe-plugin","response":{}}
+[exit 0]
+
+$ find $SCRATCH/home1 -mindepth 1 -maxdepth 4 -not -path '*/builtin/*' -not -path '*/brain/*' -type d -printf '%P\n' | sort
+.gemini
+.gemini/antigravity-cli
+.gemini/antigravity-cli/brain
+.gemini/antigravity-cli/builtin
+.gemini/antigravity-cli/cache
+.gemini/antigravity-cli/conversations
+.gemini/antigravity-cli/crashes
+.gemini/antigravity-cli/implicit
+.gemini/antigravity-cli/log
+.gemini/antigravity-cli/plugin_data
+.gemini/antigravity-cli/plugin_data/probe-plugin
+.gemini/antigravity-cli/presence
+.gemini/antigravity-cli/updater
+.gemini/config
+.gemini/config/plugins
+.gemini/config/plugins/probe-plugin
+.gemini/config/projects
+probe-log
+[exit 0]
+

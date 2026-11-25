@@ -1,0 +1,16 @@
+$ claude plugin test plugins/jbit
+(pass) the attended autopilot working rules carry the progress note and concern line [35.51ms]
+(pass) the user's "JBIT, just build it. Autopilot, lean." over a plan brings the run's rules beside the prompt, existing context kept [40.46ms]
+(pass) the user's "/jbit:autopilot outward" over a plan brings the run's rules beside the prompt, existing context kept [31.73ms]
+(pass) the user's "JBIT autopilot attended" over a plan brings the run's rules beside the prompt, existing context kept [54.08ms]
+(pass) an attended command over a risky stage keeps the held wording in the entry, with the progress note [37.83ms]
+(pass) a project hold word counts in the entry even before the plan has a Mode line [32.29ms]
+(pass) plain words, an approval, a question, a non-user origin or a command with no plan add no entry [56.96ms]
+(pass) the entry stays under the engine's 100,000-character cap with a long Now, the rules and the command kept [30.26ms]
+(pass) a failing decisions check drops only the decisions hint; an entry that cannot be attached leaves the prompt as typed, the level still set [42.53ms]
+(pass) a cut never splits a surrogate pair, at the Now or at the cap [42.49ms]
+(pass) a compaction keeps that the user's own autopilot command armed the run, and its level [44.57ms]
+
+ 584 pass
+ 0 fail
+Ran 584 tests across 1 file. [22.29s]

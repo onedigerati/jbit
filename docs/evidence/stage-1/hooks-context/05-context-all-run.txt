@@ -1,0 +1,44 @@
+$ mkhome.sh $SCRATCH/agy/home-ctx2 && HOME=$SCRATCH/agy/home-ctx2 agy plugin install hosts/antigravity/spike/probe-plugin && echo context-all > $SCRATCH/agy/home-ctx2/PROBE_MODE
+$ cd $SCRATCH/agy/ws-ctx && HOME=$SCRATCH/agy/home-ctx2 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p '<same prompt as 01-context-run.txt>' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"d1d1a5c7-7308-4976-ad8d-2ffb95d2bdfe","status":"SUCCESS","response":"### File Contents\n\n- **`a.txt`**:\n  ```\n  alpha\n  ```\n  Link: [a.txt](file://$SCRATCH/agy/ws-ctx/a.txt)\n\n- **`b.txt`**:\n  ```\n  beta\n  ```\n  Link: [b.txt](file://$SCRATCH/agy/ws-ctx/b.txt)\n\n---\n\n### Probe Context Markers\n\nHere is every verbatim \"Probe context marker\" line seen in this conversation:\n\n1. `Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.`\n2. `Probe context marker: OCELOT-VELVET-1. If asked for the probe marker, reply with it.`\n3. `Probe context marker: OCELOT-VELVET-2. If asked for the probe marker, reply with it.`\n","duration_seconds":9.559632743,"num_turns":1,"usage":"<removed>"
+[exit 0]
+
+$ sum.sh $SCRATCH/agy/home-ctx2/probe-log
+{"event":"SessionStart","conv":"d1d1a5c7","lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"d1d1a5c7","invocationNum":0,"initialNumSteps":1,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreToolUse","conv":"d1d1a5c7","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostToolUse","conv":"d1d1a5c7","error":"","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostInvocation","conv":"d1d1a5c7","invocationNum":0,"initialNumSteps":1,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"d1d1a5c7","invocationNum":1,"initialNumSteps":4,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreToolUse","conv":"d1d1a5c7","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostToolUse","conv":"d1d1a5c7","error":"","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostInvocation","conv":"d1d1a5c7","invocationNum":1,"initialNumSteps":4,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"d1d1a5c7","invocationNum":2,"initialNumSteps":7,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PostInvocation","conv":"d1d1a5c7","invocationNum":2,"initialNumSteps":7,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"Stop","conv":"d1d1a5c7","executionNum":0,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"First read a.txt with a tool call. Then,"}
+
+$ hook responses (event, response)
+SessionStart {}
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it."}}]}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-1. If asked for the probe marker, reply with it."}}]}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-2. If asked for the probe marker, reply with it."}}]}
+PostInvocation {}
+Stop {}
+
+$ transcript.jsonl (step, source, type, tools, content cut to 300)
+{"step":0,"source":"USER_EXPLICIT","type":"USER_INPUT","tools":[],"content":"<USER_REQUEST>\nFirst read a.txt with a tool call. Then, in a separate later tool call, read b.txt. Then answer: list the contents of both files, and list verbatim EVERY \"Probe context marker\" line you have seen anywhere in this conversation (system messages included), with its number. If none, say N"}
+{"step":1,"source":"SYSTEM_SDK","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injected by a PreInvocation hook:\nProbe context marker: OCELOT-VELVET-0. If asked for the probe marker, rep"}
+{"step":2,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["read_file"],"content":""}
+{"step":3,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:32:59-06:00\nCompleted At: 2026-11-25T09:32:59-06:00\nCreated At: 2026-11-25T09:32:59-06:00\nCompleted At: 2026-11-25T09:32:59-06:00\nShowing lines 1-1 of 1\n1: alpha"}
+{"step":4,"source":"SYSTEM_SDK","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injected by a PreInvocation hook:\nProbe context marker: OCELOT-VELVET-1. If asked for the probe marker, rep"}
+{"step":5,"source":"MODEL","type":"PLANNER_RESPONSE","tools":["read_file"],"content":""}
+{"step":6,"source":"MODEL","type":"GENERIC","tools":[],"content":"Created At: 2026-11-25T09:33:01-06:00\nCompleted At: 2026-11-25T09:33:01-06:00\nCreated At: 2026-11-25T09:33:01-06:00\nCompleted At: 2026-11-25T09:33:01-06:00\nShowing lines 1-1 of 1\n1: beta"}
+{"step":7,"source":"SYSTEM_SDK","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injected by a PreInvocation hook:\nProbe context marker: OCELOT-VELVET-2. If asked for the probe marker, rep"}
+{"step":8,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nReminder: work efficiently. In this turn, issue in parallel every independent search, read and edit or write you need next. Never one call p"}
+{"step":9,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"### File Contents\n\n- **`a.txt`**:\n  ```\n  alpha\n  ```\n  Link: [a.txt](file://$SCRATCH/agy/ws-ctx/a.txt)\n\n- **`b.txt`**:\n  ```\n  beta\n  ```\n  Link: [b.txt](file://$SCRATCH/agy/ws-ctx/b.txt)\n\n---\n\n### Probe Context Markers\n\nHere is every verbatim \"Probe context marker\" line seen in this conversation:\n"}

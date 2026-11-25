@@ -1,0 +1,10 @@
+$ cd $SCRATCH/agy/ws-inc/gemini && git init -q && for f in *.md; do echo "--- $f"; cat $f; done && HOME=$SCRATCH/agy/home-skills-inc AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 180 agy -p 'Do not run any tools. First, quote verbatim, inside a fenced block, every line of project or workspace instructions (rules from AGENTS.md, GEMINI.md, CLAUDE.md or similar) present in your context, or write NO-RULES if there are none. Then on the last line write CODEWORD=<the project codeword from those instructions, or NONE>.' --model gemini-3.8-flash-low --output-format json; grep -c tool_calls $SCRATCH/agy/home-skills-inc/.gemini/antigravity-cli/brain/dff78e0b-affb-4df8-9de0-eb0f2008a62d/.system_generated/logs/transcript_full.jsonl   # GEMINI.md alone: read
+--- GEMINI.md
+# Gemini rules
+
+The project codeword is BISON-QUARTZ-64.
+--- agy result
+{"conversation_id":"dff78e0b-affb-4df8-9de0-eb0f2008a62d","status":"SUCCESS","response":"```\n# Gemini rules\n\nThe project codeword is BISON-QUARTZ-64.\n```\nCODEWORD=BISON-QUARTZ-64\n","duration_seconds":2.069000965,"num_turns":1,"usage":"<removed>"
+[exit 0]
+--- tool calls in transcript_full.jsonl
+0

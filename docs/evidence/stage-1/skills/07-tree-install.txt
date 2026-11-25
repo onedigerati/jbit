@@ -1,0 +1,9 @@
+$ cd $SCRATCH/agy/ws-tree && HOME=$SCRATCH/agy/home-skills-tree AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy plugin install https://github.com/anthropics/claude-plugins-official/tree/main/plugins/example-plugin   # fresh home from mkhome.sh; upstream main was 6985b2d88dc08b4a0d202f5f0301f02e360b9cb1; agy cloned into /tmp/plugin-install-<n> and removed it afterwards (ls /tmp/plugin-install-* found nothing)
+Cloning plugin from https://github.com/anthropics/claude-plugins-official.git...
+  [ok]    example-plugin
+          ✔ skills      : 2 installed (example-command, example-skill)
+          ✔ commands    : 1 installed (converted to skills) (example-command)
+          ✔ mcpServers  : 1 installed (example-server)
+          Installed to $SCRATCH/agy/home-skills-tree/.gemini/config/plugins/example-plugin
+If the example-plugin MCP server needs you to sign in, open /plugin, expand example-plugin under Installed, and choose Sign in.
+[exit 0]

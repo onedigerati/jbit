@@ -1,0 +1,4 @@
+$ mkhome.sh $SCRATCH/agy/home-ctx3 && HOME=$SCRATCH/agy/home-ctx3 agy plugin install hosts/antigravity/spike/probe-plugin && echo continue > $SCRATCH/agy/home-ctx3/PROBE_MODE
+$ cd $SCRATCH/agy/ws-ctx && HOME=$SCRATCH/agy/home-ctx3 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 540 agy -p 'Reply with exactly: PONG' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"3c9f3f3b-2e0a-44dd-86bc-6fd87a4897dc","status":"SUCCESS","response":"PONG\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\nCONTINUED-AGAIN\n","duration_seconds":43.794438094,"num_turns":1,"usage":"<removed>"
+[exit 0]

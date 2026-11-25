@@ -1,0 +1,3 @@
+$ tmux new-session -d -s sbsl2 -x 160 -y 45 -c $SCRATCH/sb/ws2 "env HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy --model gemini-3.8-flash-low --sandbox"; sleep 10; <last capture>; /quit
+agent_state: idle sandbox: {"enabled": true} cycle_mode: auto
+# Same home without --sandbox (02): every call had "sandbox": {"enabled": false}, cycle_mode "auto".

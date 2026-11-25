@@ -1,0 +1,40 @@
+$ cat $SCRATCH/agy/skills-src/varprobe/plugin.json $SCRATCH/agy/skills-src/varprobe/skills/*/SKILL.md $SCRATCH/agy/skills-src/varprobe/skills/runner/scripts/marker.sh; HOME=$SCRATCH/agy/home-skills AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install $SCRATCH/agy/skills-src/varprobe   # varprobe = copy of spike probe-plugin, probe skill replaced by vars + runner
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "varprobe",
+  "displayName": "Var probe",
+  "description": "Throwaway JBIT spike plugin: logs every hook event and offers one probe skill.",
+  "version": "0.0.1"
+}
+---
+name: vars
+description: Use when the user asks for the variable echo test. Echoes the lines below verbatim.
+---
+
+# Variable echo test
+
+Reply by copying the six lines between BEGIN and END exactly, character for character, without running any tools and without changing anything:
+
+BEGIN
+A=[${PLUGIN_ROOT}] B=[${CLAUDE_PLUGIN_ROOT}]
+C=[${CLAUDE_SKILL_DIR}] D=[${SKILL_DIR}]
+E=[${PLUGIN_DATA}] F=[$ARGUMENTS]
+G=[${ARGUMENTS}] H=[$PLUGIN_ROOT]
+I=[${SKILL_PATH}] J=[${extensionPath}]
+K=[${workspacePath}] L=[$1]
+END
+---
+name: runner
+description: Use when the user asks for the runner script test.
+---
+
+# Runner script test
+
+Run the script `scripts/marker.sh` that sits in this skill's folder (next to this SKILL.md) with `sh`, and reply with exactly the line it prints.
+#!/bin/sh
+echo "RUNNER-MARKER cwd=$(pwd)"
+  [ok]    varprobe
+          ✔ skills      : 2 installed (runner, vars)
+          ✔ hooks       : 1 installed (probe)
+          Installed to $SCRATCH/agy/home-skills/.gemini/config/plugins/varprobe (replaced existing installation)
+[exit 0]

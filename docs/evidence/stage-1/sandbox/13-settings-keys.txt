@@ -1,0 +1,27 @@
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"enableTerminalSandbox": false}' 2>&1 | head -2   # no model turn; validates keys
+[exit 0]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"enableTerminalSandbox": "x"}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: invalid value for setting "enableTerminalSandbox": enableTerminalSandbox: invalid value "x"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"sandboxMode": false}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: unknown setting "sandboxMode"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"sandbox": false}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: unknown setting "sandbox"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"network": true}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: unknown setting "network"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"sandboxAllowNetwork": true}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: unknown setting "sandboxAllowNetwork"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"allowNetwork": true}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: unknown setting "allowNetwork"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"permissions": {"allow": ["command(curl)"]}}' 2>&1 | head -2   # no model turn; validates keys
+[exit 0]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"agentMode": "default"}' 2>&1 | head -2   # no model turn; validates keys
+Error: --settings: invalid value for setting "agentMode": agentMode: unrecognized value "default"
+[exit 1]
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks --settings '{"statusLine": true}' 2>&1 | head -2   # no model turn; validates keys
+[exit 0]

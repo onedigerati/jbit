@@ -1,0 +1,19 @@
+$ HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install $HOME/src/repos/jbit/hosts/antigravity/spike/probe-plugin; HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin list; find $SCRATCH/home1/.gemini/config/plugins -printf '%P\n' | sort
+  [ok]    probe-plugin
+          ✔ skills      : 1 installed (probe)
+          ✔ hooks       : 1 installed (probe)
+          Installed to $SCRATCH/home1/.gemini/config/plugins/probe-plugin
+Installed plugins:
+- probe-plugin (enabled, 0.0.1)
+    Source:     antigravity
+    Components: 1 skill, 1 hook
+
+probe-plugin
+probe-plugin/hook.mjs
+probe-plugin/hooks.json
+probe-plugin/plugin.json
+probe-plugin/skills
+probe-plugin/skills/probe
+probe-plugin/skills/probe/SKILL.md
+[exit 0]
+

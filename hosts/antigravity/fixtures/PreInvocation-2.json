@@ -1,0 +1,14 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/36ca76a7-057f-4ffe-9712-2c81dcef2243",
+  "conversationId": "36ca76a7-057f-4ffe-9712-2c81dcef2243",
+  "cwd": "$SCRATCH/ws1",
+  "hookEventName": "PreInvocation",
+  "initialNumSteps": 3,
+  "invocationNum": 1,
+  "lastUserInput": "/probe",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/36ca76a7-057f-4ffe-9712-2c81dcef2243/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/ws1"
+  ]
+}

@@ -1,0 +1,61 @@
+$ echo context > <throwaway>/PROBE_MODE; cd <scratch>/w3 (a.txt, b.txt); HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p 'First use list_dir ... view_file a.txt ... view_file b.txt ... list every probe context marker ...' --model gemini-3.8-flash-low --output-format stream-json
+# expect: 4 PreInvocation calls (invocationNum 0..3), injection only on 0, model reports only OCELOT-VELVET-0
+--- hook events.jsonl (event, response):
+SessionStart {}
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it."}}]}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PostInvocation {}
+Stop {}
+--- invocationNum per PreInvocation:
+"invocationNum":3
+"invocationNum":0
+"invocationNum":2
+"invocationNum":1
+--- OCELOT markers in model output:
+      2 OCELOT-VELVET-0
+--- stream-json:
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":1,"state":"DONE","step_type":"system_message","duration_seconds":0.0000157}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":2,"state":"DONE","step_type":"agent_response","duration_seconds":2.60461855,"usage":{"input_tokens":11081,"output_tokens":37,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11118}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":3,"state":"ACTIVE","step_type":"tool","tool_name":"run_command","tool_info":{"name":"run_command","parameters":{"CommandLine":"ls -la"}}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":3,"state":"DONE","step_type":"tool","tool_name":"run_command","duration_seconds":0.412681507,"tool_info":{"name":"run_command","parameters":{"CommandLine":"ls -la"},"output":"Created At: 2026-11-25T09:46:41-06:00\nCompleted At: 2026-11-25T09:46:41-06:00\nCommand exited with code 0.\n\nCommand output:\ntotal 8\r\ndrwxr-xr-x  2 <user> <user>   80 Nov 25 09:46 .\r\ndrwxr-xr-x 26 <user> <user> 1420 Nov 25 09:46 ..\r\n-rw-r--r--  1 <user> <user>    6 Nov 25 09:46 a.txt\r\n-rw-r--r--  1 <user> <user>    5 Nov 25 09:46 b.txt\r\n"}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":4,"state":"DONE","step_type":"agent_response","duration_seconds":7.46935438,"usage":{"input_tokens":2285,"output_tokens":85,"thinking_tokens":0,"cache_read_tokens":9037,"total_tokens":2370}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":5,"state":"ACTIVE","step_type":"tool","tool_name":"read_file","tool_info":{"name":"read_file","parameters":{"Path":"<scratch>/w3/a.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":5,"state":"DONE","step_type":"tool","tool_name":"read_file","duration_seconds":0.051190299,"tool_info":{"name":"read_file","parameters":{"Path":"<scratch>/w3/a.txt"},"output":"1 lines, 6 bytes"}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":6,"state":"DONE","step_type":"system_message","duration_seconds":0.0000164}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":7,"state":"DONE","step_type":"agent_response","duration_seconds":2.597601567,"usage":{"input_tokens":2335,"output_tokens":85,"thinking_tokens":0,"cache_read_tokens":9285,"total_tokens":2420}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":8,"state":"ACTIVE","step_type":"tool","tool_name":"read_file","tool_info":{"name":"read_file","parameters":{"Path":"<scratch>/w3/b.txt"}}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":8,"state":"DONE","step_type":"tool","tool_name":"read_file","duration_seconds":0.108526899,"tool_info":{"name":"read_file","parameters":{"Path":"<scratch>/w3/b.txt"},"output":"1 lines, 5 bytes"}}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"The contents"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":" of the files are:\n- [a."}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"txt](file:///tmp/"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"claude-1000/"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"-home-<user>-src-repos-jb"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"it/40f9"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"9a7b-544e-40"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"d7-b530-df2c3"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"a953e5a/scratchpad/agy/w"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"3/a.txt): `a"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"lpha`\n"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"- [b.txt](file:///tmp/cl"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"aude-1000/-h"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"ome-<user>-src"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"-repos-jbit/40f99a7b-544"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"e-40d7-b530"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"-df2c3a953e5a/scratchpad/agy/w3/b.tx"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"t"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":"): `beta`\n\nProbe context"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"ACTIVE","step_type":"agent_response","text_delta":" markers appearing in co"}}
+{"event":"step_update","step_update":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","step_index":9,"state":"DONE","step_type":"agent_response","text_delta":"ntext:\n- `OCELOT-VELVET-0`\n","duration_seconds":3.515810556,"usage":{"input_tokens":2208,"output_tokens":192,"thinking_tokens":0,"cache_read_tokens":9583,"total_tokens":2400}}}
+{"event":"result","result":{"conversation_id":"2e389fc1-bbb8-423e-963a-a4b398ce3871","status":"SUCCESS","response":"The contents of the files are:\n- [a.txt](file://<scratch>/w3/a.txt): `alpha`\n- [b.txt](file://<scratch>/w3/b.txt): `beta`\n\nProbe context markers appearing in context:\n- `OCELOT-VELVET-0`\n","duration_seconds":16.823630159,"num_turns":1,"usage":{"input_tokens":17909,"output_tokens":399,"thinking_tokens":0,"cache_read_tokens":27905,"total_tokens":18308}}}

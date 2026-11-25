@@ -1,0 +1,58 @@
+# mkhome.sh tests, 2026-11-25. Real HOME unless stated.
+$ mkhome.sh $HOME
+mkhome: refusing: $HOME is the real home
+exit=1
+
+$ mkhome.sh $HOME/.gemini
+mkhome: refusing: $HOME/.gemini is or is inside the real $HOME/.gemini
+exit=1
+
+$ mkhome.sh $HOME/.gemini/x
+mkhome: refusing: $HOME/.gemini/x is or is inside the real $HOME/.gemini
+exit=1
+
+$ ls -ld $HOME/.gemini/x   # must not exist
+ls: cannot access '$HOME/.gemini/x': No such file or directory
+
+$ mkhome.sh /
+mkhome: refusing: / holds $HOME
+exit=1
+
+$ mkhome.sh /home
+mkhome: refusing: /home holds $HOME
+exit=1
+
+$ mkhome.sh $SCRATCH/link
+mkhome: refusing: $SCRATCH/link is a symlink
+exit=1
+
+$ mkhome.sh $SCRATCH/link/sub
+mkhome: refusing: $SCRATCH/link is a symlink
+exit=1
+
+$ ls -A $SCRATCH/real   # nothing created through the link
+
+$ mkhome.sh $SCRATCH/full
+mkhome: refusing: $SCRATCH/full exists and is not empty
+exit=1
+
+# fake HOME whose .gemini is a symlink to $SCRATCH/realgem; target inside the real path
+$ HOME=$SCRATCH/fakehome mkhome.sh $SCRATCH/realgem/x
+mkhome: refusing: $SCRATCH/realgem/x is or is inside the real $SCRATCH/realgem
+exit=1
+ls: cannot access '$SCRATCH/realgem/x': No such file or directory
+
+$ mkhome.sh $SCRATCH/fresh
+$SCRATCH/fresh
+exit=0
+
+$ modes in the fresh home
+drwx------ $SCRATCH/fresh
+drwx------ $SCRATCH/fresh/.gemini
+drwx------ $SCRATCH/fresh/.gemini/antigravity-cli
+-rw------- $SCRATCH/fresh/.gemini/antigravity-cli/antigravity-oauth-token
+
+$ mkhome.sh $SCRATCH/empty
+$SCRATCH/empty
+exit=0
+

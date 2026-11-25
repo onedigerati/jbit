@@ -1,0 +1,27 @@
+$ sum.sh $SCRATCH/agy/home-ctx/probe-log   # one line per hook stdin file: event + key fields (lastUserInput cut to 40 chars)
+{"event":"SessionStart","conv":"5852dbcb","lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"5852dbcb","invocationNum":0,"initialNumSteps":1,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreToolUse","conv":"5852dbcb","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostToolUse","conv":"5852dbcb","error":"","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostInvocation","conv":"5852dbcb","invocationNum":0,"initialNumSteps":1,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"5852dbcb","invocationNum":1,"initialNumSteps":4,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreToolUse","conv":"5852dbcb","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostToolUse","conv":"5852dbcb","error":"","lastUserInput":"First read a.txt with a tool call. Then,","tool":"read_file"}
+{"event":"PostInvocation","conv":"5852dbcb","invocationNum":1,"initialNumSteps":4,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PreInvocation","conv":"5852dbcb","invocationNum":2,"initialNumSteps":6,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"PostInvocation","conv":"5852dbcb","invocationNum":2,"initialNumSteps":6,"lastUserInput":"First read a.txt with a tool call. Then,"}
+{"event":"Stop","conv":"5852dbcb","executionNum":0,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"First read a.txt with a tool call. Then,"}
+
+$ hook responses in order from $SCRATCH/agy/home-ctx/probe-log/events.jsonl (event, response)
+SessionStart {}
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it."}}]}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PostInvocation {}
+Stop {}

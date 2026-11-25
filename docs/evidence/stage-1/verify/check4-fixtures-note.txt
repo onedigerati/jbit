@@ -1,0 +1,19 @@
+$ ls hosts/antigravity/fixtures | per-event counts; JSON parse each; grep for emails, <home path>, <user name>, ya29., eyJ JWTs, Bearer, access_token/refresh_token/oauth; grep -F for the throwaway token copy's access/refresh token and account-email values (patterns kept in scratch, deleted after)
+SessionStart: SessionStart-1.json SessionStart-2.json SessionStart-3.json SessionStart-deny-1.json 
+PreInvocation: PreInvocation-1.json PreInvocation-2.json PreInvocation-3.json PreInvocation-4.json PreInvocation-5.json PreInvocation-ctx-1.json PreInvocation-ctx-2.json 
+PostInvocation: PostInvocation-1.json PostInvocation-2.json PostInvocation-3.json PostInvocation-4.json PostInvocation-5.json 
+PreToolUse: PreToolUse-1.json PreToolUse-2.json PreToolUse-deny-1.json PreToolUse-deny-2.json PreToolUse-deny-3.json PreToolUse-deny-4.json PreToolUse-deny-5.json PreToolUse-deny-6.json PreToolUse-deny-7.json PreToolUse-deny-8.json 
+PostToolUse: PostToolUse-1.json PostToolUse-2.json 
+Stop: Stop-1.json Stop-2.json Stop-3.json Stop-ctx-1.json Stop-ctx-2.json 
+statusline: statusline-1.json statusline-2.json statusline-3.json 
+--- all 36 fixtures parse as JSON: yes
+--- pattern grep over fixtures: no matches
+--- token/account-email value grep over hosts/antigravity, docs/evidence, docs/research: no matches
+--- statusline email field: "email":"<removed>",
+
+--- note docs/research/antigravity-spike-2026-11.md, question -> answer section -> spot-checked evidence:
+${...} in skills -> Answers 6 -> skills/02-run1.txt: response shows ${PLUGIN_ROOT} etc. literal. Live: check4-plugin-root-live.txt (literal, 0 tool steps)
+GitHub tree/ install -> Answers 7 -> skills/07-tree-install.txt: [ok] example-plugin, 2 skills installed from .../tree/main/plugins/example-plugin
+@path includes -> Answers 8 -> includes/01-at.txt (CODEWORD=NONE, path rewritten) and includes/03-atlink.txt (inlined). Live: check4-include-at-live.txt, check4-include-link-live.txt
+status line stdin -> Answers 9 -> statusline/03-fields.txt: key list incl. email, no cost key
+--add-dir / allow rule to local server -> Answers 10 -> sandbox/03-add-dir.txt (curl exit 7, separate netns) and sandbox/10-accept-edits-rules.txt (SERVER-MARKER-7731, server log GET 200)

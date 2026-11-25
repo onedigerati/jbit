@@ -1,0 +1,6 @@
+$ cd $SCRATCH/agy/ws-tree && HOME=$SCRATCH/agy/home-skills-tree AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy plugin install https://github.com/anthropics/claude-plugins-official/tree/6985b2d88dc08b4a0d202f5f0301f02e360b9cb1/plugins/example-plugin   # <ref> = the commit SHA of main: agy runs git clone --branch <ref>, so only branch (or tag) names work
+Cloning plugin from https://github.com/anthropics/claude-plugins-official.git...
+Error: failed to clone plugin: git clone failed: exit status 128, output: Cloning into '/tmp/plugin-install-1256520616'...
+fatal: Remote branch 6985b2d88dc08b4a0d202f5f0301f02e360b9cb1 not found in upstream origin
+
+[exit 1]

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "probe-plugin",
+  "displayName": "Probe plugin",
+  "description": "Throwaway JBIT spike plugin. Spike only — logs every prompt and file it sees; never install outside a throwaway home.",
+  "version": "0.0.1"
+}

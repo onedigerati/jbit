@@ -1,0 +1,18 @@
+$ HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install hosts/antigravity/spike/probe-plugin
+  [ok]    probe-plugin
+          ✔ skills      : 1 installed (probe)
+          ✔ hooks       : 1 installed (probe)
+          Installed to <scratch>/home-verify/.gemini/config/plugins/probe-plugin
+exit=0
+
+$ ls <throwaway>/.gemini/config/plugins
+probe-plugin
+
+$ HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p /hooks
+probe	enabled	SessionStart	-	command	node ./hook.mjs SessionStart
+probe	enabled	PreInvocation	-	command	node ./hook.mjs PreInvocation
+probe	enabled	PostInvocation	-	command	node ./hook.mjs PostInvocation
+probe	enabled	PreToolUse	*	command	node ./hook.mjs PreToolUse
+probe	enabled	PostToolUse	*	command	node ./hook.mjs PostToolUse
+probe	enabled	Stop	-	command	node ./hook.mjs Stop
+exit=0

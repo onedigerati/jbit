@@ -1,0 +1,19 @@
+$ cd $SCRATCH/agy/ws-ctx && HOME=$SCRATCH/agy/home-ctx AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 300 agy -p 'Second prompt: list verbatim EVERY "Probe context marker" line you have seen anywhere in this conversation so far, in order, with its number. No tool calls.' --conversation 5852dbcb-1d80-4b01-99fe-1770ce13e931 --model gemini-3.8-flash-low --output-format json   # PROBE_MODE still 'context'; probe-log moved aside first
+{"conversation_id":"5852dbcb-1d80-4b01-99fe-1770ce13e931","status":"SUCCESS","response":"1. `Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.`\n2. `Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.`\n","duration_seconds":57.17119431,"num_turns":2,"usage":"<removed>"
+[exit 0]
+
+$ sum.sh $SCRATCH/agy/home-ctx/probe-log   # hook stdin for the resumed prompt (no SessionStart fired)
+{"event":"PreInvocation","conv":"5852dbcb","invocationNum":0,"initialNumSteps":9,"lastUserInput":"Second prompt: list verbatim EVERY \"Prob"}
+{"event":"PostInvocation","conv":"5852dbcb","invocationNum":0,"initialNumSteps":9,"lastUserInput":"Second prompt: list verbatim EVERY \"Prob"}
+{"event":"Stop","conv":"5852dbcb","executionNum":0,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Second prompt: list verbatim EVERY \"Prob"}
+
+$ hook responses (event, response)
+PreInvocation {"injectSteps":[{"systemMessage":{"systemMessage":"Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it."}}]}
+PostInvocation {}
+Stop {}
+
+$ transcript.jsonl steps added by the resumed prompt (step, source, type, content cut to 400)
+{"step":8,"source":"USER_EXPLICIT","type":"USER_INPUT","tools":[],"content":"<USER_REQUEST>\nSecond prompt: list verbatim EVERY \"Probe context marker\" line you have seen anywhere in this conversation so far, in order, with its number. No tool calls.\n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nThe current local time is: 2026-11-25T09:32:32-06:00.\n</ADDITIONAL_METADATA>"}
+{"step":9,"source":"SYSTEM_SDK","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\nThe following system message was injected by a PreInvocation hook:\nProbe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.\n</SYSTEM_MESSAGE>"}
+{"step":10,"source":"SYSTEM","type":"SYSTEM_MESSAGE","tools":[],"content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user. It is provided by the system as important information to pay attention to.\n\n<SYSTEM_MESSAGE>\n[Message] timestamp=2026-11-25T15:32:32Z sender=system priority=MESSAGE_PRIORITY_LOW content=[Notice] All your subagents and background tasks have been stopped due to server restart. If you want a subagent to continue working, it needs to b"}
+{"step":11,"source":"MODEL","type":"PLANNER_RESPONSE","tools":[],"content":"1. `Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.`\n2. `Probe context marker: OCELOT-VELVET-0. If asked for the probe marker, reply with it.`"}

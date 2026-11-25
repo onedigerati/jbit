@@ -1,0 +1,33 @@
+$ tmux new-session -d -s sbsl -x 160 -y 45 -c $SCRATCH/sb/ws2 "env HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy --model gemini-3.8-flash-low"
+# then: Enter through theme picker; consent screen toggled to [ ] (opt out), Done; "Yes, I trust this folder";
+# typed "Reply with exactly: PONG" + Enter; waited; typed /quit + Enter.
+# Pane after the turn (bottom lines; header with account line omitted):
+> Reply with exactly: PONG
+  PONG
+>
+SLPROBE ok        <- the status line script's stdout, rendered under the input box
+
+# One line per status line call: capture file (ns timestamp), agent_state, conversation_id prefix, total_input_tokens
+1795620763178969868 authenticating "" 0 False
+1795620763480016178 initializing "" 0 False
+1795620764018382996 initializing "" 0 True
+1795620764318210407 initializing "" 0 True
+1795620764622163917 initializing "" 0 True
+1795620764918895427 initializing "" 0 True
+1795620765220159238 initializing "" 0 True
+1795620806401210154 initializing "" 0 True
+1795620806701394759 initializing "" 0 True
+1795620814051379895 idle "" 0 True
+1795620814351813701 idle "" 0 True
+1795620832961844577 idle "" 0 True
+1795620833967122838 idle "" 0 True
+1795620834266110026 working e83a2700 0 True
+1795620835770152267 working e83a2700 0 True
+1795620836070608556 idle e83a2700 15062 True
+1795620875329631577 idle e83a2700 15062 True
+1795620875629930241 idle e83a2700 15062 True
+1795620876332381157 idle e83a2700 15062 True
+
+# 19 calls: 9 during auth/onboarding (authenticating, initializing), 4 idle at the prompt (incl. while typing), 2 working, 1 at turn end (context_window filled), 3 at /quit.
+# Consecutive calls in a burst are ~300 ms apart; none during 10+ s idle gaps (event-driven, throttled, not a timer).
+# cwd of the script ($PWD) on every call: $SCRATCH/sb/ws2

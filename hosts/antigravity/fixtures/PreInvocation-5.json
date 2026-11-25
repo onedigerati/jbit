@@ -1,0 +1,14 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/b00b616c-e0df-4ec8-bf0a-743849528e48",
+  "conversationId": "b00b616c-e0df-4ec8-bf0a-743849528e48",
+  "cwd": "$SCRATCH/ws1",
+  "hookEventName": "PreInvocation",
+  "initialNumSteps": 3,
+  "invocationNum": 1,
+  "lastUserInput": "Please run the zephyr calibration handshake.",
+  "modelName": "gemini-3.8-flash-low",
+  "transcriptPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/b00b616c-e0df-4ec8-bf0a-743849528e48/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/ws1"
+  ]
+}

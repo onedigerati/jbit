@@ -1,0 +1,21 @@
+$ cd <scratch>/inc/link && git init; AGENTS.md and CLAUDE.md below; HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p 'Do not run any tools. Quote verbatim, inside a fenced block, every line of project or workspace instructions (from AGENTS.md, GEMINI.md, CLAUDE.md or similar) present in your context, or write NO-RULES. Then on its own line write CODEWORD=<the project codeword if your context states one, else NONE>.' --model gemini-3.8-flash-low --output-format stream-json
+--- AGENTS.md
+# Project rules
+
+@[claude rules](CLAUDE.md)
+--- CLAUDE.md
+# Claude rules
+
+The project codeword is HERON-MAPLE-58.
+--- run:
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":0,"state":"DONE","step_type":"user_input"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"```\n"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"# Project ru"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"les\n\n# Claud"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"e rules\n\nThe project cod"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"eword is HERON-MAPLE-"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"58.\n```\nCODEWORD=HERON-M"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"ACTIVE","step_type":"agent_response","text_delta":"APLE-58"}}
+{"event":"step_update","step_update":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","step_index":1,"state":"DONE","step_type":"agent_response","text_delta":"\n","duration_seconds":1.9278376289999999,"usage":{"input_tokens":11322,"output_tokens":37,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11359}}}
+{"event":"result","result":{"conversation_id":"0c39af28-56c1-49aa-adc4-02247d5acf28","status":"SUCCESS","response":"```\n# Project rules\n\n# Claude rules\n\nThe project codeword is HERON-MAPLE-58.\n```\nCODEWORD=HERON-MAPLE-58\n","duration_seconds":1.98383083,"num_turns":1,"usage":{"input_tokens":11322,"output_tokens":37,"thinking_tokens":0,"cache_read_tokens":0,"total_tokens":11359}}}
+--- tool steps in run: 0

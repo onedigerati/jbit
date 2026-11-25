@@ -1,0 +1,8 @@
+$ cd $SCRATCH/ws1 && HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 180 agy -p 'Please run the zephyr calibration handshake.' --model gemini-3.8-flash-low --output-format stream-json > $SCRATCH/desc.ndjson; grep -E '"event":"(init|result)"' $SCRATCH/desc.ndjson | sed -E 's/"tools":\[[^]]*\]/"tools":"<list>"/'; grep -o '"tool_info":{"name":"[a-z_]*"[^}]*}' $SCRATCH/desc.ndjson | sort -u; grep -c '"state":"ERROR"' $SCRATCH/desc.ndjson
+{"event":"init","conversation_id":"b00b616c-e0df-4ec8-bf0a-743849528e48","init":{"model":"gemini-3.8-flash-low","cwd":"$SCRATCH/ws1","tools":"<list>","permission_mode":"request-review"}}
+{"event":"result","result":{"conversation_id":"b00b616c-e0df-4ec8-bf0a-743849528e48","status":"SUCCESS","response":"QUOKKA-LANTERN-42\n","duration_seconds":4.429644745,"num_turns":1,"usage":"<removed>"}}
+"tool_info":{"name":"read_file","parameters":{"Path":"$SCRATCH/home1/.gemini/config/plugins/probe-plugin/skills/probe/SKILL.md"}
+0
+[exit 1]
+
+(exit 1 is grep -c finding 0 ERROR steps; the result has no denied_actions.)

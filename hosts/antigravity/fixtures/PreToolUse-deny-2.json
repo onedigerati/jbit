@@ -1,0 +1,21 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/aa908bcc-d7d9-41db-9285-448b4ddaf76c",
+  "conversationId": "aa908bcc-d7d9-41db-9285-448b4ddaf76c",
+  "cwd": "$SCRATCH/agy/deny-runs/base-write/ws",
+  "hookEventName": "PreToolUse",
+  "lastUserInput": "Use the write_file tool to create the file note.txt in the current directory with the content: hello. Do not use any other tool. Then reply DONE.",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 2,
+  "toolCall": {
+    "args": {
+      "Content": "hello",
+      "Path": "$SCRATCH/agy/deny-runs/base-write/ws/note.txt"
+    },
+    "id": "call_4932414295686623764",
+    "name": "write_file"
+  },
+  "transcriptPath": "$SCRATCH/agy/home-deny/.gemini/antigravity-cli/brain/aa908bcc-d7d9-41db-9285-448b4ddaf76c/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/agy/deny-runs/base-write/ws"
+  ]
+}

@@ -1,0 +1,9 @@
+$ $HOME/src/repos/jbit/hosts/antigravity/spike/mkhome.sh $SCRATCH/home0 && find $SCRATCH/home0 -printf '%P %m\n' && $HOME/src/repos/jbit/hosts/antigravity/spike/mkhome.sh $HOME
+$SCRATCH/home0
+ 755
+.gemini 700
+.gemini/antigravity-cli 700
+.gemini/antigravity-cli/antigravity-oauth-token 600
+mkhome: refusing: $HOME is, holds or is inside the real home's .gemini
+[exit 1]
+

@@ -1,0 +1,8 @@
+$ grep -h auto_updater $SCRATCH/home1/.gemini/antigravity-cli/log/*.log | cut -c1-200; stat -c '%y %n' $HOME/.local/bin $HOME/.local/bin/agy; cat $SCRATCH/home1/.gemini/antigravity-cli/updater/update_status.json; strings -n 8 $HOME/.local/bin/agy | grep -o 'AGY_CLI_DISABLE_AUTO_UPDATE' | sort -u
+I1125 09:27:20.404786       1 auto_updater.go:372] Spawned background update process with PID 17077
+I1125 09:27:33.912929       1 auto_updater.go:319] Last check was less than 15 minutes ago, skipping update (fast path)
+2026-11-25 09:27:33.909575408 -0600 $HOME/.local/bin
+2026-11-25 09:07:16.285584800 -0600 $HOME/.local/bin/agy
+{"success":true,"message":"Already on the latest version."}AGY_CLI_DISABLE_AUTO_UPDATE
+[exit 0]
+

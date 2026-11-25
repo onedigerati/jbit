@@ -1,0 +1,22 @@
+# probe hook check, 2026-11-25
+$ node --check hosts/antigravity/spike/probe-plugin/hook.mjs
+exit=0
+
+$ PROBE_LOG=$SCRATCH/hooklog PROBE_MODE=log node hosts/antigravity/spike/probe-plugin/hook.mjs PreToolUse < hosts/antigravity/fixtures/PreToolUse-deny-1.json
+{"decision":"allow"}
+exit=0
+
+$ PROBE_LOG=$SCRATCH/hooklog PROBE_MODE='deny:run_command|write_file' node hosts/antigravity/spike/probe-plugin/hook.mjs PreToolUse < hosts/antigravity/fixtures/PreToolUse-deny-1.json
+{"decision":"deny","reason":"probe deny run_command"}
+exit=0
+
+$ PROBE_LOG=$SCRATCH/hooklog PROBE_MODE=continue node hosts/antigravity/spike/probe-plugin/hook.mjs Stop < hosts/antigravity/fixtures/Stop-1.json
+{"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+exit=0
+
+$ stat -c '%A %n' on the log dir and files (umask 0022)
+drwx------ $SCRATCH/hooklog
+-rw------- $SCRATCH/hooklog/1795622007559-51927-PreToolUse.json
+-rw------- $SCRATCH/hooklog/1795622007575-51938-PreToolUse.json
+-rw------- $SCRATCH/hooklog/1795622007590-51949-Stop.json
+-rw------- $SCRATCH/hooklog/events.jsonl

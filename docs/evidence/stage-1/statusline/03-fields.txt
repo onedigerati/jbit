@@ -1,0 +1,10 @@
+$ python3 -I -c "print(sorted(keys))" <first and last capture>
+1795620763178969868 ['agent_state', 'context_window', 'conversation_id', 'cwd', 'exceeds_200k_tokens', 'model', 'product', 'sandbox', 'session_id', 'terminal_width', 'transcript_path', 'version', 'workspace']
+1795620836070608556 ['agent_state', 'context_window', 'conversation_id', 'cwd', 'cycle_mode', 'email', 'exceeds_200k_tokens', 'model', 'plan_tier', 'product', 'quota', 'sandbox', 'session_id', 'terminal_width', 'transcript_path', 'version', 'workspace']
+
+$ ls $H/.gemini/antigravity/brain/<conv>/.system_generated/logs/   # transcript_path as given on stdin
+ls: cannot access ...: No such file or directory
+$ ls $H/.gemini/antigravity-cli/brain/<conv>/.system_generated/logs/
+chunks
+transcript.jsonl
+transcript_full.jsonl

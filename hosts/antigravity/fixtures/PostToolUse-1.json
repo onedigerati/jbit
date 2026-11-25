@@ -1,0 +1,21 @@
+{
+  "artifactDirectoryPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/36ca76a7-057f-4ffe-9712-2c81dcef2243",
+  "conversationId": "36ca76a7-057f-4ffe-9712-2c81dcef2243",
+  "cwd": "$SCRATCH/ws1",
+  "error": "",
+  "hookEventName": "PostToolUse",
+  "lastUserInput": "/probe",
+  "modelName": "gemini-3.8-flash-low",
+  "stepIdx": 2,
+  "toolCall": {
+    "args": {
+      "Path": "$SCRATCH/home1/.gemini/config/plugins/probe-plugin/skills/probe/SKILL.md"
+    },
+    "id": "call_4810399607621011058",
+    "name": "read_file"
+  },
+  "transcriptPath": "$SCRATCH/home1/.gemini/antigravity-cli/brain/36ca76a7-057f-4ffe-9712-2c81dcef2243/.system_generated/logs/transcript_full.jsonl",
+  "workspacePaths": [
+    "$SCRATCH/ws1"
+  ]
+}

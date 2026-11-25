@@ -1,0 +1,46 @@
+$ cd $SCRATCH/agy/home-skills-tree/.gemini/config && find plugins -printf "%P %s\n" | sort && cat import_manifest.json plugins/example-plugin/plugin.json plugins/example-plugin/mcp_config.json && HOME=$SCRATCH/agy/home-skills-tree AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin list
+ 60
+example-plugin 160
+example-plugin/.claude-plugin 60
+example-plugin/.claude-plugin/plugin.json 270
+example-plugin/LICENSE 11358
+example-plugin/README.md 1881
+example-plugin/mcp_config.json 104
+example-plugin/plugin.json 214
+example-plugin/skills 100
+example-plugin/skills/example-command 60
+example-plugin/skills/example-command/SKILL.md 1226
+example-plugin/skills/example-plugin-cmd-example-command 60
+example-plugin/skills/example-plugin-cmd-example-command/SKILL.md 1203
+example-plugin/skills/example-skill 60
+example-plugin/skills/example-skill/SKILL.md 2725
+{
+  "imports": [
+    {
+      "name": "example-plugin",
+      "source": "claude-code",
+      "importedAt": "2026-11-25T15:33:57Z",
+      "components": [
+        "skills",
+        "mcpServers",
+        "commands"
+      ]
+    }
+  ]
+}{
+  "author": "Anthropic",
+  "description": "A comprehensive example plugin demonstrating all Claude Code extension options including commands, agents, skills, hooks, and MCP servers",
+  "name": "example-plugin"
+}
+{
+  "mcpServers": {
+    "example-server": {
+      "serverUrl": "https://mcp.example.com/api"
+    }
+  }
+}
+Installed plugins:
+- example-plugin (enabled)
+    Source:     claude-code
+    Components: 3 skills, 1 MCP server
+[exit 0]

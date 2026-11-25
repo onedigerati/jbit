@@ -1,0 +1,8 @@
+$ cd $SCRATCH/ws1 && HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 180 agy -p '/probe' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"36ca76a7-057f-4ffe-9712-2c81dcef2243","status":"SUCCESS","response":"QUOKKA-LANTERN-42\n","duration_seconds":5.506627276,"num_turns":1,"usage":"<removed>"}
+[exit 0]
+
+$ cd $SCRATCH/ws1 && HOME=$SCRATCH/home1 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 180 agy -p '/probe-plugin:probe' --model gemini-3.8-flash-low --output-format json
+{"conversation_id":"8ce06966-20a5-4d4d-b771-07670c9ca95b","status":"SUCCESS","response":"QUOKKA-LANTERN-42\n","duration_seconds":2.351078027,"num_turns":1,"usage":"<removed>"}
+[exit 0]
+

@@ -1,0 +1,131 @@
+$ sum.sh $SCRATCH/agy/home-ctx3/probe-log   # hook stdin per event, in order
+{"event":"SessionStart","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":0,"initialNumSteps":1,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":0,"initialNumSteps":1,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":0,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":1,"initialNumSteps":3,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":1,"initialNumSteps":3,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":1,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":2,"initialNumSteps":5,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":2,"initialNumSteps":5,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":2,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":3,"initialNumSteps":7,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":3,"initialNumSteps":7,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":3,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":4,"initialNumSteps":9,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":4,"initialNumSteps":9,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":5,"initialNumSteps":11,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":5,"initialNumSteps":11,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":6,"initialNumSteps":13,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":6,"initialNumSteps":13,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":7,"initialNumSteps":18,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":7,"initialNumSteps":18,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":8,"initialNumSteps":20,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"read_file"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":8,"initialNumSteps":20,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":9,"initialNumSteps":22,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreToolUse","conv":"3c9f3f3b","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostToolUse","conv":"3c9f3f3b","error":"","lastUserInput":"Reply with exactly: PONG","tool":"run_command"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":9,"initialNumSteps":22,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":10,"initialNumSteps":25,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":10,"initialNumSteps":25,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":4,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":11,"initialNumSteps":27,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":11,"initialNumSteps":27,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":5,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":12,"initialNumSteps":29,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":12,"initialNumSteps":29,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":6,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":13,"initialNumSteps":31,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":13,"initialNumSteps":31,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":7,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":14,"initialNumSteps":33,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":14,"initialNumSteps":33,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":8,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":15,"initialNumSteps":35,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":15,"initialNumSteps":35,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":9,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+{"event":"PreInvocation","conv":"3c9f3f3b","invocationNum":16,"initialNumSteps":38,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"PostInvocation","conv":"3c9f3f3b","invocationNum":16,"initialNumSteps":38,"lastUserInput":"Reply with exactly: PONG"}
+{"event":"Stop","conv":"3c9f3f3b","executionNum":10,"terminationReason":"NO_TOOL_CALL","continuationActive":false,"fullyIdle":true,"error":"","lastUserInput":"Reply with exactly: PONG"}
+
+$ hook responses (event, response) from events.jsonl
+SessionStart {}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PreToolUse {"decision":"allow"}
+PostToolUse {}
+PostInvocation {}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+PreInvocation {}
+PostInvocation {}
+Stop {"decision":"continue","reason":"probe continue: say CONTINUED-AGAIN and stop"}
+
+$ grep -c "\"event\":\"Stop\"" events.jsonl; grep -c "Stop hook blocked termination" transcript.jsonl
+11
+10

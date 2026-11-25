@@ -1,0 +1,31 @@
+$ cat $H/.gemini/antigravity-cli/settings.json   # H=$SCRATCH/agy/home-sb1
+{
+  "permissions": {
+    "allow": [
+      "command(readlink)",
+      "command(curl)",
+      "command(echo)"
+    ]
+  }
+}
+
+$ cd $SCRATCH/sb/ws && HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "I am debugging my own dev setup: I started a static file server on this machine and want to know whether your shell can reach it. Use the run_command tool exactly once to run this exact command, unchanged: readlink /proc/self/ns/net; curl -sS -m 5 http://127.0.0.1:18731/marker.txt; echo "exit=$?"   Then reply with the full output verbatim. Do not retry, ask, or run anything else." --model gemini-3.8-flash-low --output-format stream-json --mode accept-edits --sandbox
+[exit 0]
+# stderr:
+# tool steps and result (usage removed):
+TOOL run_command state=DONE
+  params: {"CommandLine": "readlink /proc/self/ns/net; curl -sS -m 5 http://127.0.0.1:18731/marker.txt; echo \"exit=$?\""}
+  output: Created At: 2026-11-25T09:41:37-06:00
+Completed At: 2026-11-25T09:41:37-06:00
+Command exited with code 0.
+
+Command output:
+net:[4026532227]
+curl: (7) Failed to connect to 127.0.0.1 port 18731 after 0 ms: Could not connect to server
+exit=7
+
+RESULT {"conversation_id": "1f9d6e08-c538-4280-800a-0da63d04a92a", "status": "SUCCESS", "response": "net:[4026532227]\ncurl: (7) Failed to connect to 127.0.0.1 port 18731 after 0 ms: Could not connect to server\nexit=7\n", "duration_seconds": 6.891872872, "num_turns": 1}
+# run_command args from the conversation transcript ($H/.gemini/antigravity-cli/brain/<id>/.system_generated/logs/transcript_full.jsonl):
+tool_call run_command {"CommandLine": "readlink /proc/self/ns/net; curl -sS -m 5 http://127.0.0.1:18731/marker.txt; echo \"exit=$?\""}
+# host server log lines added during the run (server outside agy on 127.0.0.1:18731):
+# (end)

@@ -1,0 +1,6 @@
+$ cd ~ && find .gemini -type f -print0 | sort -z | xargs -0 sha256sum  # before stage 1 (09:2x) and after all five builders finished
+$ find .gemini -printf "%p %s %T@\n" | sort                               # same, paths/sizes/mtimes
+files hashed: 233; entries listed: 424
+$ diff before.sha after.sha   -> no output (identical)
+$ diff before.stat after.stat -> no output (identical)
+Hashes themselves not kept here (they include the token file).

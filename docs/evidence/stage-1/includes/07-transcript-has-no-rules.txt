@@ -1,0 +1,3 @@
+$ grep -rla "MARMOT-TIDE" $SCRATCH/agy/home-skills-inc/.gemini; grep -rla "LYNX-COPPER\|MARMOT-TIDE" $SCRATCH/agy/home-skills-inc/.gemini --exclude-dir=brain   # rules are not in transcript*.jsonl (only USER_INPUT + model steps); MARMOT-TIDE (the @CLAUDE.md target) is nowhere in the home; the model answer is the only ground truth for rules
+$SCRATCH/agy/home-skills-inc/.gemini/antigravity-cli/conversations/57624022-aab7-4b7d-b34b-0b758d18cb53.db
+[exit 0]

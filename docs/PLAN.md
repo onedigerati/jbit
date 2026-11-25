@@ -1,21 +1,8 @@
 # JBIT plan
 
 ## Goal
-Bring JBIT to Google Antigravity CLI (`agy`), as close to Claude Code as the host allows, beside the Copilot and Codex packages. `plugins/jbit/` stays the source. `node hosts/build.mjs antigravity` generates `plugins/jbit-antigravity/`, a native Antigravity plugin (root `plugin.json`, root `hooks.json`, `rules/AGENTS.md`, skills with paths rewritten, the capture script). The hook is ported to a Node command script on the shared core: the plan's `## Now` in context, the commit gate with its evidence and image checks, the secret guard, holds on edits and subagents, autopilot carry-on, and a guard on `~/.gemini/config`. Done when a headless `agy -p` run from a by-path install closes a UI stage with before and after screenshots, the gate and guard refuse what they refuse on Claude Code, the parity scenarios pass against the Antigravity hook, and the README lists what Antigravity can't do. The suite, docs check, host tests, parity, drift checks and validate stay green throughout, and pushing waits for the user.
-
-## Baseline
-2026-11-25 · at `68b9afd`: tests: 584 pass, 0 fail (`claude plugin test plugins/jbit`) · docs checks: 58 pass (`node --test plugins/jbit/tests/docs.check.mjs`) · host tests: 127 pass (`node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs`) · parity: 18 pass (`node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs`) · validate: passes (`claude plugin validate .`)
-
-## Now
-Stage 3 of 3 · Antigravity end to end
-Risk: external services (live `agy` runs with a copied sign-in token in a throwaway home)
-Checks:
-- [x] In a throwaway home, `agy plugin install <clone>/plugins/jbit-antigravity` installs JBIT by path, and a headless `agy -p` run in a scratch web project closes a UI stage: the verify skill's capture script takes before and after screenshots of a local page, the evidence report links them, and the stage commit goes through the gate (proof: run the product)
-- [x] Live, the hook refuses what it refuses on Claude Code: a stage close without its evidence or with a missing linked image, a commit holding a secret, a write to `~/.gemini/config/`, and an edit or `invoke_subagent` in a held stage until the user's approval, `/jbit:approve` typed included (proof: run the product, judged by `ERROR` steps and the deny text)
-- [x] Live, autopilot carries a `-p` run on through `Stop` until its cap or the plan's end, and a new prompt resets the cap; `jbit:plan` reads its `continued.md` when it needs the second half; tools met live that the hook over-blocks are listed and allowed (proof: run the product)
-- [x] The README's "Antigravity CLI" section gives the install by path, the `/jbit:<skill>` form and what Antigravity can't do, and the suite, docs check, host tests, parity, drift checks and validate are green (proof: test)
-Open: none
-Mode: autopilot — unattended
+Bring JBIT to Google Antigravity CLI (`agy`), as close to Claude Code as the host allows, beside the Copilot and Codex packages. `plugins/jbit/` stays the source. `node hosts/build.mjs antigravity` generates `plugins/jbit-antigravity/`, a native Antigravity plugin (root `plugin.json`, root `hooks.json`, `rules/AGENTS.md`, skills with paths rewritten, the capture script). The hook is ported to a Node command script on the shared core: the plan's `## Now
+All stages done.
 Agents: wide — confirmed 2026-11-25 09:25
 
 ## Stages

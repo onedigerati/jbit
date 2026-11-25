@@ -1,0 +1,121 @@
+# Live: jbit:plan reads its continued.md for "Starting the next plan"; agy 1.5.17, gemini-3.8-flash-low, throwaway HOME (mkhome.sh), permissions never skipped; 2026-11-25T16:43:56Z
+$ HOME=<throwaway-home-2> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity   # diff -r installed vs package: IDENTICAL
+# test instrument: the installed hooks.json runs scripts/tap.mjs, which runs the real scripts/hook.mjs unchanged and logs stdin/stdout to <throwaway-home>/tap/events.jsonl
+# package skills/plan: SKILL.md 22722 bytes, continued.md 9840 bytes; continued.md opens with: ## Starting the next plan
+# scratch project <scratch>/ws-next (git, no remote), docs/PLAN.md: all stages [x], "## Now: All stages done; the goal is met."
+$ cd <scratch>/ws-next && HOME=<throwaway-home-2> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "JBIT plan: the goal is met, start the next plan: NOTES.md should also list the words three and four." --model gemini-3.8-flash-low --output-format stream-json
+exit=0; conversation c9a96c26-2e2a-4f05-b2ad-108560a0d3d5
+
+# brain/<id>/.system_generated/logs/transcript.jsonl, steps summarized (tool calls, errors, final text):
+step 0: USER_EXPLICIT USER_INPUT DONE
+step 1: SYSTEM_SDK SYSTEM_MESSAGE DONE
+step 2: MODEL PLANNER_RESPONSE DONE tools=[["read_file","\"<scratch>/home-carry2/.gemini/config/plugins/jbit/skills/plan/SKILL.md\""],["read_file","\"<scratch>/ws-next/CLAUDE.md\""],["read_file","\"<scratch>/ws-next/docs/PLAN.md\""]]
+step 3: MODEL GENERIC DONE content: "Created At: 2026-11-25T10:42:36-06:00\nCompleted At: 2026-11-25T10:42:37-06:00\nCreated At: 2026-11-25T10:42:36-06:00\nCompleted At: 2026-11-25T10:42:37-06:00\nShowing lines 1-124 of 124\n1: ---\n2: name: plan\n3: description: \"Create or update the project's single p"
+step 4: MODEL GENERIC DONE
+step 5: MODEL GENERIC DONE
+step 6: MODEL PLANNER_RESPONSE DONE tools=[["read_file","\"<scratch>/home-carry2/.gemini/config/plugins/jbit/skills/plan/continued.m"]]
+step 7: MODEL GENERIC DONE content: "Created At: 2026-11-25T10:42:40-06:00\nCompleted At: 2026-11-25T10:42:40-06:00\nCreated At: 2026-11-25T10:42:40-06:00\nCompleted At: 2026-11-25T10:42:40-06:00\nShowing lines 1-56 of 56\n1: ## Starting the next plan\n2: \n3: A plan covers one body of work with one Goa"
+step 8: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"git status\""]]
+step 9: MODEL GENERIC DONE
+step 10: SYSTEM SYSTEM_MESSAGE DONE
+step 11: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"ls -la && ls -la docs/\""]]
+step 12: MODEL GENERIC DONE
+step 13: MODEL PLANNER_RESPONSE DONE tools=[["read_file","\"<scratch>/ws-next/NOTES.md\""],["run_command","\"git log -n 5 --oneline\""]]
+step 14: MODEL GENERIC DONE
+step 15: MODEL GENERIC DONE
+step 16: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"git log --stat -n 2\""]]
+step 17: MODEL GENERIC DONE
+step 18: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"mkdir -p docs/plans && git mv docs/PLAN.md docs/plans/2026-11-25-notes-one-two.md\""]]
+step 19: MODEL GENERIC DONE
+step 20: SYSTEM SYSTEM_MESSAGE DONE
+step 21: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"mount | grep -i claude || df -T .\""]]
+step 22: MODEL GENERIC DONE
+step 23: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"git status\""]]
+step 24: MODEL GENERIC DONE
+step 25: SYSTEM SYSTEM_MESSAGE DONE
+step 26: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"mkdir -p docs/plans && git mv docs/PLAN.md docs/plans/2026-11-25-notes-one-two.md\""]]
+step 27: MODEL GENERIC DONE
+step 28: MODEL PLANNER_RESPONSE DONE tools=[["write_file","\"<scratch>/ws-next/docs/PLAN.md\""]]
+step 29: MODEL GENERIC DONE
+step 30: SYSTEM SYSTEM_MESSAGE DONE
+step 31: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"git add docs/PLAN.md docs/plans/2026-11-25-notes-one-two.md && git commit -m \\\"Switch to next plan: add three and four to NOTES.md\\\"\""]]
+step 32: MODEL GENERIC DONE
+step 33: MODEL PLANNER_RESPONSE DONE tools=[["run_command","\"git status\""]]
+step 34: MODEL GENERIC DONE
+step 35: SYSTEM SYSTEM_MESSAGE DONE
+step 36: MODEL PLANNER_RESPONSE DONE text="The previous plan has been archived to [2026-11-25-notes-one-two.md](file://<scratch>/ws-next/docs/plans/2026-11-25-notes-one-two.md), and the switch has been committed. The fresh plan is set up in [PLAN.md](file://<scratch>/ws-next/docs/PLAN.md).\n\n### Proposed Stages\n1. **Word three** — append `three` to `NOTES.md`\n2. **Word four** — append `four` to `NOTES.md`\n\n### Defaulted Decisions\n- 2026-11-25 · Docs-only stages.\n\n---\n"
+
+# ERROR steps in transcript: 0
+# hook events (tap):
+16:42:33 c9a9 SessionStart  {}
+16:42:33 c9a9 PreInvocation inv=0 input="JBIT plan: the goal is met, st" {"injectSteps":[{"systemMessage":{"systemMessage":"# JBIT\nThis project keeps its plan in `docs/PLAN
+16:42:37 c9a9 PreToolUse read_file {"decision":"allow"}
+16:42:37 c9a9 PreToolUse read_file {"decision":"allow"}
+16:42:37 c9a9 PreToolUse read_file {"decision":"allow"}
+16:42:37 c9a9 PreInvocation inv=1 input="JBIT plan: the goal is met, st" {}
+16:42:40 c9a9 PreToolUse read_file {"decision":"allow"}
+16:42:40 c9a9 PreInvocation inv=2 input="JBIT plan: the goal is met, st" {}
+16:42:43 c9a9 PreToolUse run_command {"decision":"allow"}
+16:42:43 c9a9 PreInvocation inv=3 input="JBIT plan: the goal is met, st" {}
+16:42:46 c9a9 PreToolUse run_command {"decision":"allow"}
+16:42:46 c9a9 PreInvocation inv=4 input="JBIT plan: the goal is met, st" {}
+16:42:49 c9a9 PreToolUse read_file {"decision":"allow"}
+16:42:50 c9a9 PreToolUse run_command {"decision":"allow"}
+16:42:50 c9a9 PreInvocation inv=5 input="JBIT plan: the goal is met, st" {}
+16:42:53 c9a9 PreToolUse run_command {"decision":"allow"}
+16:42:53 c9a9 PreInvocation inv=6 input="JBIT plan: the goal is met, st" {}
+16:42:56 c9a9 PreToolUse run_command {"decision":"allow"}
+16:42:57 c9a9 PreInvocation inv=7 input="JBIT plan: the goal is met, st" {}
+16:43:00 c9a9 PreToolUse run_command {"decision":"allow"}
+16:43:01 c9a9 PreInvocation inv=8 input="JBIT plan: the goal is met, st" {}
+16:43:03 c9a9 PreToolUse run_command {"decision":"allow"}
+16:43:03 c9a9 PreInvocation inv=9 input="JBIT plan: the goal is met, st" {}
+16:43:06 c9a9 PreToolUse run_command {"decision":"allow"}
+16:43:09 c9a9 PreInvocation inv=10 input="JBIT plan: the goal is met, st" {}
+16:43:14 c9a9 PreToolUse write_file {"decision":"allow"}
+16:43:14 c9a9 PreInvocation inv=11 input="JBIT plan: the goal is met, st" {}
+16:43:18 c9a9 PreToolUse run_command {"decision":"allow"}
+16:43:22 c9a9 PreInvocation inv=12 input="JBIT plan: the goal is met, st" {}
+16:43:24 c9a9 PreToolUse run_command {"decision":"allow"}
+16:43:25 c9a9 PreInvocation inv=13 input="JBIT plan: the goal is met, st" {}
+16:43:29 c9a9 Stop exec=0 idle=true {}
+
+# result in the scratch project:
+$ git log --oneline
+0ebc936 Switch to next plan: add three and four to NOTES.md
+edea760 Stage 2: word two
+$ git show --stat HEAD
+Switch to next plan: add three and four to NOTES.md
+
+ docs/PLAN.md                           | 20 ++++++++++++++------
+ docs/plans/2026-11-25-notes-one-two.md | 19 +++++++++++++++++++
+ 2 files changed, 33 insertions(+), 6 deletions(-)
+$ sed -n 1,25p docs/PLAN.md
+# Notes Plan
+
+## Goal
+NOTES.md lists the words one, two, three and four.
+
+## Now
+Stage 1 of 2 · Word three
+Risk: UI only
+Checks:
+- [ ] NOTES.md contains the line "three" (proof: run `grep -x "three" NOTES.md`, text file check)
+Open: none
+
+## Stages
+- [ ] 1. Word three — append `three` to NOTES.md
+- [ ] 2. Word four — append `four` to NOTES.md
+
+## Decisions
+- 2026-11-25 · Docs-only stages.
+
+## Open questions
+- none
+
+## Standing decisions
+- 2026-11-24 · Docs-only stages. — lightweight document updates (from [Plan](plans/2026-11-25-notes-one-two.md))
+
+$ grep -n Shipped -A3 docs/PLAN.md
+26:## Shipped
+27-- 2026-11-25 · Plan: NOTES.md lists the words one and two — [plan](plans/2026-11-25-notes-one-two.md)

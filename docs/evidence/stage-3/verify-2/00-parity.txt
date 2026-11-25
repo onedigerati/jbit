@@ -1,0 +1,222 @@
+$ node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs hosts/parity/antigravity.test.mjs
+TAP version 13
+# Subtest: antigravity parity: a commit closing a stage with an unticked check is denied
+ok 1 - antigravity parity: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 200.543699
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a stage close without an evidence report is denied
+ok 2 - antigravity parity: a stage close without an evidence report is denied
+  ---
+  duration_ms: 202.8012
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a stage close with its checks ticked and its report passes
+ok 3 - antigravity parity: a stage close with its checks ticked and its report passes
+  ---
+  duration_ms: 210.7216
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a stage close whose report links a missing screenshot is denied, naming the file
+ok 4 - antigravity parity: a stage close whose report links a missing screenshot is denied, naming the file
+  ---
+  duration_ms: 206.226999
+  type: 'test'
+  ...
+# Subtest: antigravity parity: the same stage close passes once the screenshot exists
+ok 5 - antigravity parity: the same stage close passes once the screenshot exists
+  ---
+  duration_ms: 208.1482
+  type: 'test'
+  ...
+# Subtest: antigravity parity: removing a screenshot and committing on the same line is denied before it runs
+ok 6 - antigravity parity: removing a screenshot and committing on the same line is denied before it runs
+  ---
+  duration_ms: 220.6507
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs
+ok 7 - antigravity parity: a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs
+  ---
+  duration_ms: 293.881199
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a secret in a staged commit is denied, named by kind and never by value
+ok 8 - antigravity parity: a secret in a staged commit is denied, named by kind and never by value
+  ---
+  duration_ms: 209.3326
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a clean commit passes
+ok 9 - antigravity parity: a clean commit passes
+  ---
+  duration_ms: 202.319699
+  type: 'test'
+  ...
+# Subtest: antigravity parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+ok 10 - antigravity parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+  ---
+  duration_ms: 287.3017
+  type: 'test'
+  ...
+# Subtest: antigravity parity: under attended autopilot, a builder agent in a held risky stage is denied
+ok 11 - antigravity parity: under attended autopilot, a builder agent in a held risky stage is denied
+  ---
+  duration_ms: 196.9937
+  type: 'test'
+  ...
+# Subtest: antigravity parity: the user's approval releases a held stage
+ok 12 - antigravity parity: the user's approval releases a held stage
+  ---
+  duration_ms: 325.095999
+  type: 'test'
+  ...
+# Subtest: antigravity parity: an outward command under autopilot is denied
+ok 13 - antigravity parity: an outward command under autopilot is denied
+  ---
+  duration_ms: 302.074255
+  type: 'test'
+  ...
+# Subtest: antigravity parity: turn end under armed autopilot with stages left keeps the run going
+ok 14 - antigravity parity: turn end under armed autopilot with stages left keeps the run going
+  ---
+  duration_ms: 201.523862
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held
+ok 15 - antigravity parity: a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held
+  ---
+  duration_ms: 364.059531
+  type: 'test'
+  ...
+# Subtest: antigravity parity: turn end without autopilot lets the turn end
+ok 16 - antigravity parity: turn end without autopilot lets the turn end
+  ---
+  duration_ms: 205.667661
+  type: 'test'
+  ...
+# Subtest: antigravity parity: a prompt carries the plan's \#\# Now into context
+ok 17 - antigravity parity: a prompt carries the plan's \#\# Now into context
+  ---
+  duration_ms: 117.745578
+  type: 'test'
+  ...
+# Subtest: codex parity: the shared scenarios through runScenarios
+ok 18 - codex parity: the shared scenarios through runScenarios
+  ---
+  duration_ms: 3824.785007
+  type: 'test'
+  ...
+# Subtest: copilot parity: a commit closing a stage with an unticked check is denied
+ok 19 - copilot parity: a commit closing a stage with an unticked check is denied
+  ---
+  duration_ms: 195.745499
+  type: 'test'
+  ...
+# Subtest: copilot parity: a stage close without an evidence report is denied
+ok 20 - copilot parity: a stage close without an evidence report is denied
+  ---
+  duration_ms: 200.765
+  type: 'test'
+  ...
+# Subtest: copilot parity: a stage close with its checks ticked and its report passes
+ok 21 - copilot parity: a stage close with its checks ticked and its report passes
+  ---
+  duration_ms: 284.2603
+  type: 'test'
+  ...
+# Subtest: copilot parity: a stage close whose report links a missing screenshot is denied, naming the file
+ok 22 - copilot parity: a stage close whose report links a missing screenshot is denied, naming the file
+  ---
+  duration_ms: 210.715999
+  type: 'test'
+  ...
+# Subtest: copilot parity: the same stage close passes once the screenshot exists
+ok 23 - copilot parity: the same stage close passes once the screenshot exists
+  ---
+  duration_ms: 274.3278
+  type: 'test'
+  ...
+# Subtest: copilot parity: removing a screenshot and committing on the same line is denied before it runs
+ok 24 - copilot parity: removing a screenshot and committing on the same line is denied before it runs
+  ---
+  duration_ms: 195.206399
+  type: 'test'
+  ...
+# Subtest: copilot parity: a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs
+ok 25 - copilot parity: a git clean or a glob that may reach the evidence, on the line that commits, is denied before it runs
+  ---
+  duration_ms: 283.6575
+  type: 'test'
+  ...
+# Subtest: copilot parity: a secret in a staged commit is denied, named by kind and never by value
+ok 26 - copilot parity: a secret in a staged commit is denied, named by kind and never by value
+  ---
+  duration_ms: 203.0476
+  type: 'test'
+  ...
+# Subtest: copilot parity: a clean commit passes
+ok 27 - copilot parity: a clean commit passes
+  ---
+  duration_ms: 277.732099
+  type: 'test'
+  ...
+# Subtest: copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+ok 28 - copilot parity: under attended autopilot, an edit in a held risky stage is denied, the plan itself is not
+  ---
+  duration_ms: 354.4948
+  type: 'test'
+  ...
+# Subtest: copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+ok 29 - copilot parity: under attended autopilot, a builder agent in a held risky stage is denied
+  ---
+  duration_ms: 191.253199
+  type: 'test'
+  ...
+# Subtest: copilot parity: the user's approval releases a held stage
+ok 30 - copilot parity: the user's approval releases a held stage
+  ---
+  duration_ms: 373.874258
+  type: 'test'
+  ...
+# Subtest: copilot parity: an outward command under autopilot is denied
+ok 31 - copilot parity: an outward command under autopilot is denied
+  ---
+  duration_ms: 375.147929
+  type: 'test'
+  ...
+# Subtest: copilot parity: turn end under armed autopilot with stages left keeps the run going
+ok 32 - copilot parity: turn end under armed autopilot with stages left keeps the run going
+  ---
+  duration_ms: 202.944762
+  type: 'test'
+  ...
+# Subtest: copilot parity: a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held
+ok 33 - copilot parity: a Mode line an earlier session left never drives a fresh session: the turn ends, a push isn't held
+  ---
+  duration_ms: 415.302022
+  type: 'test'
+  ...
+# Subtest: copilot parity: turn end without autopilot lets the turn end
+ok 34 - copilot parity: turn end without autopilot lets the turn end
+  ---
+  duration_ms: 166.116168
+  type: 'test'
+  ...
+# Subtest: copilot parity: a prompt carries the plan's \#\# Now into context
+ok 35 - copilot parity: a prompt carries the plan's \#\# Now into context
+  ---
+  duration_ms: 95.790482
+  type: 'test'
+  ...
+1..35
+# tests 35
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4342.930514
+[exit 0]

@@ -10,7 +10,7 @@ import { tmpdir, homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TOOLS, READ_ONLY, ALLOWED, mapTool, writesProtected, protectedPath, agyConfigCommand, runsOwnCapture } from './map.mjs'
-import { STOP_CAP, HOOK_TIMEOUT_SEC, HOOK_EVENTS, stopWith, parentFromTranscript } from './handler.mjs'
+import { STOP_CAP, HOOK_TIMEOUT_SEC, HOOK_EVENTS, stopWith, parentFromTranscript, lastPromptStep } from './handler.mjs'
 import { planOn2, reportWith, FAKE_KEYS } from '../parity/scenarios.mjs'
 import { NODE_TOO_OLD } from '../core/dispatch.mjs'
 
@@ -204,6 +204,15 @@ test('every tool in agy\'s live list is mapped, read-only or explicitly allowed;
   for (const t of ['ask_question', 'browser_scroll', 'wait', 'view_file', 'command_status']) assert.equal(mapTool(t, {}, root).kind, 'allow', t)
 })
 
+test('update_steps, met live and over-blocked in stage 2, is allowed with its live arguments (stage 3)', () => {
+  const root = temp()
+  assert.ok(ALLOWED.has('update_steps'))
+  // the live call's args (docs/evidence/stage-3/carry/03-over-blocks.txt)
+  const live = { steps: [{ status: 'in_progress', title: 'Read NOTES.md' }, { status: 'pending', title: 'Report line count' }] }
+  assert.equal(mapTool('update_steps', live, root).kind, 'allow')
+  assert.equal(mapTool('update_steps', { steps: [{ title: 'x', file: '/etc/passwd' }] }, root).kind, 'deny')
+})
+
 test('sed_file and notebook_edit are each an Edit of their target, so the path guards apply; an unreadable target is denied', () => {
   const root = temp()
   const g = { home: HOME, pluginData: join(HOME, '.gemini/antigravity-cli/plugin_data/jbit'), pluginRoot: PLUGIN_ROOT }
@@ -358,6 +367,107 @@ test('capture: the installed capture script runs from the plugin folder under ~/
   assert.ok(!runsOwnCapture(ok, { ...g, pluginRoot: undefined }, project))
 })
 
+test('capture in a compound command: allowed beside other commands; a real write into ~/.gemini/config in the same list stays denied (stage 3 e2e/03)', () => {
+  const project = repo(planOn2())
+  const g = { home: HOME, pluginData: dataFor(project), pluginRoot: PLUGIN_ROOT }
+  const quoted = `node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs"`
+  const nodeBin = join(HOME, '.nvm/versions/node/v22.23.5/bin/node')
+  const shot = (name, w) => `shot http://127.0.0.1:47411/ --name ${name} --width ${w} --out docs/evidence/stage-1/before/`
+  // the live run's two denied commands, and a ; list
+  const live = [
+    `${quoted} ${shot('home-390', 390)} && ${quoted} ${shot('home-1280', 1280)}`,
+    `mkdir -p docs/evidence/stage-1/before && ~/.nvm/versions/node/v22.23.5/bin/node $HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs ${shot('home-390', 390)} && ${nodeBin} ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs ${shot('home-1280', 1280)}`,
+    `mkdir -p docs/evidence/stage-1; ${quoted} ${shot('a', 390)} || echo failed`,
+  ]
+  for (const cmd of live) {
+    assert.ok(!writesProtected(cmd, g, { cwd: project }), cmd)
+    allowed(pre('run_command', { CommandLine: cmd }, { project }))
+  }
+  for (const bad of [
+    `${quoted} ${shot('a', 390)} && echo x > ~/.gemini/config/x`,
+    `${quoted} ${shot('a', 390)} && cp evil.json ~/.gemini/config/mcp_config.json`,
+    `${quoted} ${shot('a', 390)} && mv x ~/.gemini/config/plugins/jbit/hooks.json`,
+    `${quoted} ${shot('a', 390)} && rm -rf ~/.gemini/config/plugins/jbit`,
+    `${quoted} ${shot('a', 390)} && echo x | tee ~/.gemini/config/x`,
+    `${quoted} ${shot('a', 390)} && sed -i s/a/b/ ~/.gemini/config/plugins/jbit/hooks.json`,
+    `${quoted} ${shot('a', 390)}; ln -s ~/.gem""ini/config l && ${quoted} shot x --out l/`,
+    `cd ~/.gemini/config && ${quoted} ${shot('a', 390)}`,
+    `cd / && ${quoted} ${shot('a', 390)} && touch ~/.gemini/config/x`,
+    `${quoted} ${shot('a', 390)} && ${quoted} shot x --out ~/.gemini/config/`,
+    `${quoted} ${shot('a', 390)} && ${quoted} shot x --out ${g.pluginData}`,
+    `${quoted} ${shot('a', 390)} && node -e "require('fs').writeFileSync('x','')" ~/.gemini/config/x`,
+    `${join(HOME, '.gemini/config/node')} ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs ${shot('a', 390)}`,
+  ]) {
+    assert.ok(writesProtected(bad, g, { cwd: project }), bad)
+    denied(pre('run_command', { CommandLine: bad }, { project }), /Antigravity's own config/)
+  }
+})
+
+test('the guard reads a path in lexical normal form: `/./`, `//`, `..` and a trailing `/.` still name the config (stage 3 review, fix-now 1)', () => {
+  const project = repo(planOn2())
+  const g = { home: HOME, pluginData: dataFor(project), pluginRoot: PLUGIN_ROOT }
+  const quoted = `node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs"`
+  for (const bad of [
+    'echo x > ~/.gemini/./config/x',
+    'cp e.json ~/.gemini/./config/mcp_config.json',
+    'touch ~/.gemini/antigravity-cli/./settings.json',
+    'echo x > ~/.gemini//config/x',
+    'echo x > $HOME/.gemini/x/../config/mcp_config.json',
+    'rm -rf ~/.gemini/./config/.',
+    'mv ~/.gemini/antigravity-cli/x/../settings.json /tmp/s',
+    'mv ~/.gemini/x/.. /tmp/g',
+    `echo x > ~/.gemini/"."/config/x`,
+    `ln -s ~/.gemini/./config l && ${quoted} shot x --out l/`,
+    `ln -s ~/.gemini//config l && ${quoted} shot x --out l/`,
+    // a list that makes a link, or moves or copies, before the capture runs gets no exemption
+    `ln -s /tmp/anything l && ${quoted} shot x --out l/`,
+    `cp -r docs l && ${quoted} shot x --out l/`,
+    `${quoted} shot x --out ~/.gemini/./config/`,
+  ]) {
+    assert.ok(writesProtected(bad, g, { cwd: project, project }), bad)
+    denied(pre('run_command', { CommandLine: bad }, { project }), /Antigravity's own config/)
+  }
+  for (const ok of ['cat ~/.gemini/./config/mcp_config.json', 'echo x > ~/.gemini/antigravity-cli/./brain/notes.md', `mkdir -p docs/e && ${quoted} shot x --out docs/e/`])
+    allowed(pre('run_command', { CommandLine: ok }, { project }))
+})
+
+test('capture: only `node` or a Node where Node is installed runs it; a file named node in the project or elsewhere does not (stage 3 review, fix-now 2)', () => {
+  const project = repo(planOn2())
+  const g = { home: HOME, pluginData: dataFor(project), pluginRoot: PLUGIN_ROOT }
+  const capture = '~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47411/ --name a --width 390 --out docs/e/'
+  writeFileSync(join(project, 'node'), '#!/bin/sh\n')
+  const elsewhere = temp('jbit-agy-bin-')
+  writeFileSync(join(elsewhere, 'node'), '#!/bin/sh\n')
+  for (const bad of [
+    `cp /bin/sh node && ${project}/node ${capture}`,
+    `${project}/node ${capture}`,
+    `${elsewhere}/node ${capture}`,
+    `${HOME}/.nvm/versions/node/v24.1.0/bin/../../../../../.gemini/config/node ${capture}`,
+    `${HOME}/.nvm/versions/node/latest/bin/node ${capture}`,
+    `${HOME}/bin/node ${capture}`,
+  ]) {
+    assert.ok(writesProtected(bad, g, { cwd: project, project }), bad)
+    denied(pre('run_command', { CommandLine: bad }, { project }), /Antigravity's own config/)
+  }
+  // run from another folder, the project's node still isn't trusted
+  denied(pre('run_command', { CommandLine: `${project}/node ${capture}`, Cwd: elsewhere }, { project }), /Antigravity's own config/)
+  for (const ok of [
+    `${HOME}/.nvm/versions/node/v24.1.0/bin/node ${capture}`,
+    `~/.nvm/versions/node/v24.1.0/bin/node ${capture}`,
+    `/usr/bin/node ${capture}`,
+    `/usr/local/bin/node ${capture}`,
+    `/opt/homebrew/bin/node ${capture}`,
+    `${HOME}/.volta/bin/node ${capture}`,
+    `${HOME}/.local/share/fnm/node-versions/v24.1.0/installation/bin/node ${capture}`,
+    `${HOME}/.asdf/installs/nodejs/24.1.0/bin/node ${capture}`,
+    `${process.execPath} ${capture}`,
+    `node ${capture}`,
+  ]) {
+    assert.ok(!writesProtected(ok, g, { cwd: project, project }), ok)
+    allowed(pre('run_command', { CommandLine: ok }, { project }))
+  }
+})
+
 // ---- PreInvocation: the plan's ## Now on a prompt's first call only ----
 
 test('PreInvocation injects ## Now on invocationNum 0 only, in the shape agy reads', () => {
@@ -376,6 +486,21 @@ test('PreInvocation injects ## Now on invocationNum 0 only, in the shape agy rea
   assert.deepEqual(hook('PreInvocation', fromFixture('PreInvocation-1')).out, {})
   // a subagent's first call (no user input) gets the plan too
   assert.match(injected(hook('PreInvocation', { ...fromFixture('PreInvocation-1'), lastUserInput: '' }, { project, session: 'sub' }).out), /Stage 2 of 3/)
+})
+
+test('PreInvocation: the approving prompt\'s own injected rules no longer say held (`/jbit:approve`, `yes`; stage 3 refusals/11b)', () => {
+  for (const approval of ['/jbit:approve', 'yes']) {
+    const project = repo(RISKY)
+    const o = { project, session: `approve-${approval.length}` }
+    assert.match(injected(prompt('/jbit:autopilot attended', o)), /the current stage is held/, approval)
+    assert.match(injected(prompt('what is left?', o)), /the current stage is held/, approval)
+    const text = injected(prompt(approval, o))
+    assert.match(text, /Current position \(from the plan\):\nStage 2 of 3 · Share mode/, approval)
+    assert.doesNotMatch(text, /is held|stays blocked until the user approves/, approval)
+    // one section, not the stale one beside the fresh
+    assert.equal(text.split('# JBIT\n').length, 2, approval)
+    allowed(pre('edit_file', { Path: 'src/login.ts', Target: 'a', Replacement: 'b' }, o))
+  }
 })
 
 test('SessionStart, PostInvocation and PostToolUse answer {}', () => {
@@ -647,6 +772,87 @@ test(`Stop continues at most ${STOP_CAP} times per prompt (under agy's 10); a ne
   // the capped notice rides on the next model call
   assert.match(injected(prompt('keep going', o)), new RegExp(`after ${STOP_CAP} continuations`))
   assert.equal(stop(o).decision, 'continue')
+})
+
+/** A transcript as agy writes one (steps()): a line per step, `step_index` counting from 0. */
+function steps(list) {
+  const file = join(temp('jbit-agy-tr-'), 'transcript_full.jsonl')
+  const write = () => writeFileSync(file, list.map((s, i) => JSON.stringify({ step_index: i, status: 'DONE', created_at: 't', ...s })).join('\n') + '\n')
+  const user = text => ({ source: 'USER_EXPLICIT', type: 'USER_INPUT', content: `<USER_REQUEST>\n${text}\n</USER_REQUEST>` })
+  const system = { source: 'SYSTEM', type: 'SYSTEM_MESSAGE', content: 'The following is a <SYSTEM_MESSAGE> not actually sent by the user.' }
+  const model = { source: 'MODEL', type: 'PLANNER_RESPONSE', content: 'ok' }
+  return {
+    file,
+    add(...more) {
+      list.push(...more)
+      write()
+      return list.length
+    },
+    user,
+    system,
+    model,
+  }
+}
+
+test('Stop cap: a subagent waking the parent (invocationNum 0, same input, no new user step) does not reset the count; a new user step does, even with the same text (stage 3 verify/09)', () => {
+  const project = repo(DRIVING)
+  const o = { project, session: 'wake' }
+  const t = steps([])
+  const call = (text, n, invocationNum = 0) => hook('PreInvocation', { invocationNum, initialNumSteps: n, lastUserInput: text, transcriptPath: t.file }, o).out
+  let n = t.add(t.user('/jbit:autopilot unattended'))
+  call('/jbit:autopilot unattended', n)
+  for (let i = 0; i < STOP_CAP; i++) {
+    assert.equal(stop(o, i).decision, 'continue', `continue ${i + 1}`)
+    n = t.add(t.system, t.model)
+  }
+  assert.deepEqual(stop(o, STOP_CAP), {})
+  // the builder subagent finishes: agy wakes the parent with invocationNum 0 and the prompt's own input, no user step
+  n = t.add(t.model, t.system, t.system)
+  call('/jbit:autopilot unattended', n)
+  assert.deepEqual(stop(o), {}, 'a wake-up must not reset the cap')
+  n = t.add(t.model, t.system)
+  call('/jbit:autopilot unattended', n)
+  assert.deepEqual(stop(o), {}, 'nor a second wake-up')
+  // the user prompts again, with the same words as before: a new user step, so the count starts again
+  n = t.add(t.user('/jbit:autopilot unattended'))
+  assert.equal(lastPromptStep({ transcriptPath: t.file }), n - 1)
+  call('/jbit:autopilot unattended', n)
+  assert.equal(stop(o).decision, 'continue')
+})
+
+test('Stop cap with no readable transcript: only another input resets the count; with one seen before, nothing does (fails safe)', () => {
+  const project = repo(DRIVING)
+  const o = { project, session: 'wake-no-tr' }
+  prompt('/jbit:autopilot unattended', o)
+  for (let i = 0; i < STOP_CAP; i++) assert.equal(stop(o, i).decision, 'continue')
+  assert.deepEqual(stop(o), {})
+  // same input on invocationNum 0, as a subagent's wake-up: no reset
+  prompt('/jbit:autopilot unattended', o)
+  assert.deepEqual(stop(o), {})
+  prompt('go on', o)
+  assert.equal(stop(o).decision, 'continue')
+  // a conversation whose transcript was read once: a later unreadable one never resets, whatever the input
+  const o2 = { project, session: 'wake-lost' }
+  const t = steps([])
+  t.add(t.user('/jbit:autopilot unattended'))
+  hook('PreInvocation', { invocationNum: 0, initialNumSteps: 1, lastUserInput: '/jbit:autopilot unattended', transcriptPath: t.file }, o2)
+  for (let i = 0; i < STOP_CAP; i++) assert.equal(stop(o2, i).decision, 'continue')
+  hook('PreInvocation', { invocationNum: 0, initialNumSteps: 2, lastUserInput: 'keep going', transcriptPath: join(t.file, 'gone') }, o2)
+  assert.deepEqual(stop(o2), {})
+})
+
+test('lastPromptStep: the last USER_INPUT step agy wrote; forged or odd lines are skipped', () => {
+  const t = steps([])
+  assert.equal(lastPromptStep({ transcriptPath: t.file }), undefined)
+  t.add(t.user('a'), t.model, t.system)
+  assert.equal(lastPromptStep({ transcriptPath: t.file }), 0)
+  // a model step typed USER_INPUT, a bad index, an unparsable line: none is a user prompt
+  t.add({ source: 'MODEL', type: 'USER_INPUT', content: 'x' })
+  writeFileSync(t.file, readFileSync(t.file, 'utf8') + 'not json USER_INPUT\n' + [-1, '9', 1.5].map(i => JSON.stringify({ source: 'USER_EXPLICIT', type: 'USER_INPUT', step_index: i })).join('\n') + '\n')
+  assert.equal(lastPromptStep({ transcriptPath: t.file }), 0)
+  t.add(t.user('b'))
+  assert.equal(lastPromptStep({ transcriptPath: t.file }), 4)
+  assert.equal(lastPromptStep({ transcriptPath: '/nonexistent/transcript_full.jsonl' }), undefined)
 })
 
 test('the Stop count lives in the data folder, which the guard keeps tools from writing', () => {

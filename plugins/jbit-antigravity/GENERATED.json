@@ -3,10 +3,10 @@
   "host": "antigravity",
   "version": "2.0.0",
   "sources": {
-    "hosts/antigravity/capability.json": "ceb220cb7f641e38cec17150198c2da41c708b3a36dc904d6e8c20887e5287a6",
-    "hosts/antigravity/handler.mjs": "6460526287068964dd17d58c1c32ec23ede10bdf920107daf79889d609ba5ef7",
+    "hosts/antigravity/capability.json": "e73c78e6e0e1cc7874ac59506eaafbe7ca52b3256f10b41228bb8a0c9fb62a99",
+    "hosts/antigravity/handler.mjs": "f9f6cd7f47acf85a0e77f892d582373b84b233fb558ce20708bc2188a748e9d6",
     "hosts/antigravity/hook.mjs": "37804d76014df6e1a933c44fef5a07da1d017a1bfd625b409af9ddce11e2935a",
-    "hosts/antigravity/map.mjs": "ebccfb7cc610fb98bdf499529c83a1f03044760cb21b2f1ed8eff478c12b6cfa",
+    "hosts/antigravity/map.mjs": "7d08bd1ff3cbd087561d82be71d4431e0ac96d1ab8c53e735f64b5cdce86e8c8",
     "hosts/build.mjs": "1c358aba037112f278788d79df7c0ecdb5db1f92a07a57fc963a1a1c4d9e204d",
     "hosts/copilot/map.mjs": "b74eb5ac930e2004caaf1fa808e912d0c6df4a7c9616623501b6c64a10f4a368",
     "hosts/core/dispatch.mjs": "146f6b06407f79565ce3614f24febe10cb126e8fb8ec8153861371560dbed2ac",

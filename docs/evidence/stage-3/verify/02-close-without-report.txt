@@ -1,0 +1,28 @@
+$ cd <scratch>/agy/refuse/r1-no-report && HOME=<scratch>/agy/home-v3r AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 900 agy -p "$(cat r1.txt)" --model gemini-3.8-flash-low --output-format stream-json 
+# a node shim first on PATH logs each JBIT hook call's stdin/stdout (tap) and passes it through unchanged
+# prompt (r1.txt):
+#   This is a test of a commit hook. Do exactly one thing: run this shell command once, unchanged: git commit -m "Stage 2: share mode"
+#   Do not edit any file, do not fix anything, do not retry, and do not run any other command. If the command is refused or blocked, quote the refusal reason you were given verbatim, in full, in a fenced code block, then stop.
+# steps (final state of each step, from stream-json):
+INIT model=gemini-3.8-flash-low mode=undefined expanded=""
+STEP #0 user_input DONE 
+STEP #1 system_message DONE 
+STEP #2 agent_response DONE 
+TOOL #3 run_command state=ERROR
+  params: {"CommandLine":"git commit -m \"Stage 2: share mode\""}
+  error: {"type":"TOOL_ERROR","message":"tool call denied by pre-tool hook: JBIT blocked this commit: it closes stage 2, but its evidence report `docs/evidence/stage-2/report.md` is neither in the commit nor in the working tree.\nRun jbit:verify for stage 2, which writes the report; for a stage verified before version 0.5.0, backfill the report in jbit:verify's format from the evidence at hand. Then close the stage again."}
+STEP #4 agent_response DONE ```
+tool call denied by pre-tool hook: JBIT blocked this commit: it closes stage 2, but its evidence report `docs/evidence/stage-2/report.md` is neither in the commit nor in the working tree.
+Run jbit:verify for stage 2, which writes the report; for a stage verified before version 0.5.0, backfill th…
+RESULT status=SUCCESS turns=1
+RESPONSE: ```
+tool call denied by pre-tool hook: JBIT blocked this commit: it closes stage 2, but its evidence report `docs/evidence/stage-2/report.md` is neither in the commit nor in the working tree.
+Run jbit:verify for stage 2, which writes the report; for a stage verified before version 0.5.0, backfill the report in jbit:verify's format from the evidence at hand. Then close the stage again.
+```
+
+ERROR steps: 1
+# stderr:
+# denied_actions: none
+$ git -C r1-no-report log --oneline; git -C r1-no-report status --short   # after: the close stayed staged, no commit
+a71b7d9 init
+M  docs/PLAN.md

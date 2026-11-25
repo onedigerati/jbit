@@ -1,0 +1,44 @@
+# Review fix-now 3, live: with the README settings (verify-2/01), is `git push` or `node -e` pre-approved? Home <scratch>/agy/home-v4, --mode accept-edits --settings <scratch>/agy/v4/settings.json (the README block), gemini-3.8-flash-low, permissions never skipped.
+# Setup: a fresh copy of the pristine project (one commit on master) with a local bare repo as origin:
+$ git init --bare <scratch>/agy/v4/remote.git && git -C proj-push remote add origin <scratch>/agy/v4/remote.git
+[push exit 0]
+[nodee exit 0]
+
+## push
+$ cd <scratch>/agy/v4/proj-push && HOME=<scratch>/agy/home-v4 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 600 agy -p "$(cat prompt)" --model gemini-3.8-flash-low --output-format stream-json --mode accept-edits --settings <scratch>/agy/v4/settings.json
+# prompt: Push this branch to origin now: run `git push origin master` with run_command. Do nothing else.
+INIT model=gemini-3.8-flash-low mode=undefined expanded=""
+STEP #0 user_input DONE 
+STEP #1 system_message DONE 
+STEP #2 agent_response DONE 
+TOOL #3 run_command state=DONE
+  params: {"CommandLine":"git push origin master"}
+RESULT status=SUCCESS turns=1
+RESPONSE: 
+ERROR steps: 0
+# denied_actions: "denied_actions":[{"action":"command","display_name":"Bash"}]
+# JBIT hook denies (tap): 0
+# stderr:
+jetski: no output produced — a tool required the "command" permission that headless mode cannot prompt for, so it was auto-denied. Add an allow-rule under permissions.allow in settings.json (e.g. command(<target>)). Alternatively, re-run with --dangerously-skip-permissions to auto-approve all tools.
+
+## nodee
+$ cd <scratch>/agy/v4/proj-push && HOME=<scratch>/agy/home-v4 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 600 agy -p "$(cat prompt)" --model gemini-3.8-flash-low --output-format stream-json --mode accept-edits --settings <scratch>/agy/v4/settings.json
+# prompt: This is a permissions test. Do exactly one thing: use run_command to run exactly this command, unchanged: node -e "require('fs').writeFileSync('zzn.txt','x')"   Do not retry, do not run any other tool. If it is refused, quote the refusal verbatim in a fenced code block, then stop.
+INIT model=gemini-3.8-flash-low mode=undefined expanded=""
+STEP #0 user_input DONE 
+STEP #1 system_message DONE 
+STEP #2 agent_response DONE 
+TOOL #3 run_command state=DONE
+  params: {"CommandLine":"node -e \"require('fs').writeFileSync('zzn.txt','x')\""}
+RESULT status=SUCCESS turns=1
+RESPONSE: 
+ERROR steps: 0
+# denied_actions: "denied_actions":[{"action":"command","display_name":"Bash"}]
+# JBIT hook denies (tap): 0
+# stderr:
+jetski: no output produced — a tool required the "command" permission that headless mode cannot prompt for, so it was auto-denied. Add an allow-rule under permissions.allow in settings.json (e.g. command(<target>)). Alternatively, re-run with --dangerously-skip-permissions to auto-approve all tools.
+
+$ git --git-dir=<scratch>/agy/v4/remote.git log --oneline --all   # the remote after both runs
+[refs in remote: 0]
+$ ls zzn.txt   # the file node -e would have written
+ls: cannot access '<scratch>/agy/v4/proj-push/zzn.txt': No such file or directory

@@ -1,0 +1,174 @@
+# Check 1, attempt 4: README flags plus allow rules for ls, echo, cat, find, grep, mkdir, head, test (a diagnostic past the README's recipe). Same project, reset to 889aa2f.
+
+$ cd <scratch>/agy/proj-v3e2e && HOME=<scratch>/agy/home-v3 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 900 agy -p "$(cat p1.txt)" --model gemini-3.8-flash-low --output-format stream-json --mode accept-edits --settings '{"permissions":{"allow":["command(node)","command(git)","command(ls)","command(echo)","command(cat)","command(find)","command(grep)","command(mkdir)","command(head)","command(test)"]}}'
+# a node shim first on PATH logs each JBIT hook call's stdin/stdout (tap) and passes it through unchanged
+# prompt (p1.txt):
+#   /jbit:stage
+#   The site is served at http://127.0.0.1:47511/ by a static file server on this folder; it is already running. For screenshots, Playwright is already installed in the JBIT capture cache, and I say yes to using it for this project.
+# steps (final state of each step, from stream-json):
+INIT model=gemini-3.8-flash-low mode=undefined expanded=""
+STEP #0 user_input DONE 
+STEP #1 system_message DONE 
+STEP #2 agent_response DONE 
+TOOL #3 update_steps state=DONE
+  params: {"steps":[{"status":"in_progress","title":"Check plan and capture before screenshot"},{"status":"pending","title":"Build changes for Stage 1"},{"status":"pending","title":"Verify acceptance checks with Playwright"},{"status":"pending","title":"Update plan and commit"}]}
+TOOL #4 read_file state=ERROR
+  params: {"Path":"<scratch>/agy/proj-v3e2e/CLAUDE.md"}
+  error: {"type":"TOOL_ERROR","message":"file does not exist"}
+TOOL #5 read_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/PLAN.md"}
+STEP #6 agent_response DONE 
+TOOL #7 run_command state=DONE
+  params: {"CommandLine":"node \"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47511/ --name home-390 --out docs/evidence/stage-1/before/ --width 390 --height 844 && node \"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:475…
+STEP #8 agent_response DONE 
+TOOL #9 run_command state=DONE
+  params: {"CommandLine":"node \"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" --help"}
+STEP #10 system_message DONE 
+STEP #11 agent_response DONE 
+TOOL #12 run_command state=DONE
+  params: {"CommandLine":"node \"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47511/ --name home --out docs/evidence/stage-1/before/ --widths 390,1280 --themes light"}
+TOOL #13 read_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/index.html"}
+STEP #14 agent_response DONE 
+TOOL #15 update_steps state=DONE
+  params: {"steps":[{"status":"done","title":"Check plan and capture before screenshot"},{"status":"in_progress","title":"Build changes for Stage 1"},{"status":"pending","title":"Verify acceptance checks with Playwright"},{"status":"pending","title":"Update plan and commit"}]}
+TOOL #16 edit_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/index.html"}
+STEP #17 agent_response DONE 
+TOOL #18 update_steps state=DONE
+  params: {"steps":[{"status":"done","title":"Check plan and capture before screenshot"},{"status":"done","title":"Build changes for Stage 1"},{"status":"in_progress","title":"Verify acceptance checks with Playwright"},{"status":"pending","title":"Update plan and commit"}]}
+TOOL #19 run_command state=DONE
+  params: {"CommandLine":"node \"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47511/ --name home --out docs/evidence/stage-1/ --widths 390,1280 --themes light --compare docs/evidence/stage-1/before/"}
+STEP #20 agent_response DONE 
+TOOL #21 read_file state=DONE
+  params: {"EndLine":100,"Path":"<scratch>/agy/home-v3/.gemini/config/plugins/jbit/skills/verify/SKILL.md","StartLine":1}
+STEP #22 agent_response DONE 
+TOOL #23 run_command state=DONE
+  params: {"CommandLine":"git rev-parse --short HEAD"}
+TOOL #24 read_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/evidence/stage-1/home-390-light.png"}
+TOOL #25 read_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/evidence/stage-1/home-1280-light.png"}
+STEP #26 agent_response DONE 
+TOOL #27 run_command state=DONE
+  params: {"CommandLine":"ls -la"}
+STEP #28 system_message DONE 
+STEP #29 agent_response DONE 
+TOOL #30 run_command state=DONE
+  params: {"CommandLine":"ls -la docs/evidence"}
+STEP #31 agent_response DONE 
+TOOL #32 write_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/evidence/.gitignore"}
+TOOL #33 write_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/evidence/stage-1/report.md"}
+STEP #34 agent_response DONE 
+TOOL #35 update_steps state=DONE
+  params: {"steps":[{"status":"done","title":"Check plan and capture before screenshot"},{"status":"done","title":"Build changes for Stage 1"},{"status":"done","title":"Verify acceptance checks with Playwright"},{"status":"in_progress","title":"Update plan and commit"}]}
+TOOL #36 edit_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/PLAN.md"}
+STEP #37 agent_response DONE 
+TOOL #38 run_command state=DONE
+  params: {"CommandLine":"git status"}
+STEP #39 agent_response DONE 
+TOOL #40 run_command state=ERROR
+  params: {"CommandLine":"git add index.html docs/PLAN.md docs/evidence/.gitignore docs/evidence/stage-1/report.md docs/evidence/stage-1/home-console.txt docs/evidence/stage-1/before/home-console.txt && git commit -m \"Change home page heading to 'Fresh bread, baked daily'\""}
+  error: {"type":"TOOL_ERROR","message":"tool call denied by pre-tool hook: JBIT blocked this commit: it closes stage 1, but these checks were never seen ticked in `## Now`:\n  - The home page heading reads \"Fresh bread, baked daily\", at 390 and 1280 wide, light theme, nothing cut off (proof: screenshot)\nProve them (jbit:verify). If they pass, put stage 1's checks back in `## Now` ticked, then close the stage again. If a check no longer applies, say why in the plan's decisions and drop it from `## Now` first."}
+STEP #41 system_message DONE 
+STEP #42 agent_response DONE 
+TOOL #43 edit_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/PLAN.md"}
+STEP #44 agent_response DONE 
+TOOL #45 edit_file state=DONE
+  params: {"Path":"<scratch>/agy/proj-v3e2e/docs/PLAN.md"}
+STEP #46 system_message DONE 
+STEP #47 agent_response DONE 
+TOOL #48 run_command state=DONE
+  params: {"CommandLine":"git add index.html docs/PLAN.md docs/evidence/.gitignore docs/evidence/stage-1/report.md docs/evidence/stage-1/home-console.txt docs/evidence/stage-1/before/home-console.txt && git commit -m \"Change home page heading to 'Fresh bread, baked daily'\""}
+STEP #49 agent_response DONE 
+TOOL #50 update_steps state=DONE
+  params: {"steps":[{"status":"done","title":"Check plan and capture before screenshot"},{"status":"done","title":"Build changes for Stage 1"},{"status":"done","title":"Verify acceptance checks with Playwright"},{"status":"done","title":"Update plan and commit"}]}
+STEP #51 system_message DONE 
+STEP #52 agent_response DONE ### Stage 1: New heading — Complete
+
+- **What it delivers:** The `<h1>` heading in [index.html](file://<scratch>/agy/proj-v3e2e/index.html) was updated from "Welcome to Crumb" to "Fresh bread, baked daily".
+- **Verific…
+RESULT status=SUCCESS turns=1
+RESPONSE: ### Stage 1: New heading — Complete
+
+- **What it delivers:** The `<h1>` heading in [index.html](file://<scratch>/agy/proj-v3e2e/index.html) was updated from "Welcome to Crumb" to "Fresh bread, baked daily".
+- **Verification:** Verified at phone width (390px) and desktop width (1280px) in light theme against the running static server using Playwright via JBIT capture. Both screenshots confirmed the text matches and nothing is cut off. See [docs/evidence/stage-1/report.md](file://<scratch>/agy/proj-v3e2e/docs/evidence/stage-1/report.md).
+- **Review:** Risk was UI only with no user input, authentication, secrets, or dependencies touched; no review findings or deferred items.
+- **Commit:** Stage committed cleanly as `c2552a3`.
+
+Stage 1 was the final planned stage, so the plan's goal is met! You can run `/jbit:plan` if you'd like to plan what comes next.
+
+ERROR steps: 2
+# stderr:
+# denied_actions: none
+
+$ git log --stat
+commit c2552a3a352e7ec22ab874a00329c7af129138e9
+Author: JBIT test <test@example.invalid>
+Date:   Wed Nov 25 11:08:05 2026 -0600
+
+    Change home page heading to 'Fresh bread, baked daily'
+
+ docs/PLAN.md                                  | 10 +++-------
+ docs/evidence/.gitignore                      | 11 +++++++++++
+ docs/evidence/stage-1/before/home-console.txt |  2 ++
+ docs/evidence/stage-1/home-console.txt        |  2 ++
+ docs/evidence/stage-1/report.md               | 16 ++++++++++++++++
+ index.html                                    |  2 +-
+ 6 files changed, 35 insertions(+), 8 deletions(-)
+
+commit 889aa2f9b12cf87bcfb644d1a618ad8304c2486f
+Author: JBIT test <test@example.invalid>
+Date:   Wed Nov 25 11:01:04 2026 -0600
+
+    Plan: new heading
+
+ README.md    |  1 +
+ docs/PLAN.md | 23 +++++++++++++++++++++++
+ index.html   | 15 +++++++++++++++
+ style.css    |  5 +++++
+ 4 files changed, 44 insertions(+)
+$ git status --short   # (clean except gitignored PNGs)
+$ git check-ignore -v docs/evidence/stage-1/home-390-light.png
+docs/evidence/.gitignore:2:*.png	docs/evidence/stage-1/home-390-light.png
+$ ls -R docs/evidence
+docs/evidence:
+stage-1
+
+docs/evidence/stage-1:
+before
+home-1280-light.png
+home-390-light.png
+home-console.txt
+report.md
+
+docs/evidence/stage-1/before:
+home-1280-light.png
+home-390-light.png
+home-console.txt
+$ cat docs/evidence/stage-1/report.md
+# Stage 1 · New heading — evidence
+Verified 2026-11-25 on 889aa2f, plus uncommitted changes if any
+
+| Check | Result | Evidence |
+|---|---|---|
+| The home page heading reads "Fresh bread, baked daily", at 390 and 1280 wide, light theme, nothing cut off | pass | [home-390-light.png](home-390-light.png) (local), [home-1280-light.png](home-1280-light.png) (local), described below |
+
+Project checks: none (static site, no test suite or build step)
+Audit: none (no dependencies)
+
+Screenshots:
+- [home-390-light.png](home-390-light.png): the home page at phone width (390px), light theme; heading reads "Fresh bread, baked daily", paragraph reads "A small neighbourhood bakery, open from 7 am.", nothing cut off.
+- [home-1280-light.png](home-1280-light.png): the home page at desktop width (1280px), light theme; heading reads "Fresh bread, baked daily", paragraph below it, nothing cut off.
+
+## History
+- 2026-11-25 · Stage 1 verified cleanly on first run.
+$ cat docs/evidence/stage-1/home-console.txt docs/evidence/stage-1/before/home-console.txt
+== home 390px light — http://127.0.0.1:47511/
+== home 1280px light — http://127.0.0.1:47511/
+== home 390px light — http://127.0.0.1:47511/
+== home 1280px light — http://127.0.0.1:47511/

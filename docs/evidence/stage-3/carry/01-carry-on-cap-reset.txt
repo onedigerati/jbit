@@ -1,0 +1,134 @@
+# Live: autopilot carries a -p run on through Stop until its cap (8) or the plan's end; a new prompt resets the cap. agy 1.5.17, gemini-3.8-flash-low, throwaway HOME (mkhome.sh), permissions never skipped; 2026-11-25T16:52:26Z
+$ HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity   # diff -r installed vs package: IDENTICAL (package as of c313447, before this stage's update_steps change)
+# test instrument: the installed hooks.json runs scripts/tap.mjs, which runs the real scripts/hook.mjs unchanged and logs each event's stdin and stdout to <throwaway-home>/tap/events.jsonl
+# scratch project <scratch>/ws-carry (git, no remote): docs/PLAN.md with 12 docs-only stages ("Word one" … "Word twelve": append the word to NOTES.md, check `grep -x <word> NOTES.md`), Risk: none
+$ cd <scratch>/ws-carry && HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "JBIT autopilot" --model gemini-3.8-flash-low --output-format stream-json          # exit=0, 16:42:09-16:44:59Z
+$ cd <scratch>/ws-carry && HOME=<throwaway-home> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "keep going" --conversation f5d1ac18-d433-48da-95c9-fd384054cbc7 --model gemini-3.8-flash-low --output-format stream-json   # exit=0
+$ (same again, a third prompt)   # exit=0
+
+# Parent conversation f5d1ac18-d433-48da-95c9-fd384054cbc7: every hook event for it, Stop and the first model call of each prompt (from the tap log). Subagents' own Stops (other conversation ids) all answered {} and are left out.
+
+## prompt 1: lastUserInput="JBIT autopilot" (PreInvocation invocationNum 0 at 2026-11-25T16:42:11.791Z)
+  injected ## Now: yes
+  Stop executionNum=0 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 1. Word one.
+  Stop executionNum=1 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.
+  Stop executionNum=2 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.
+  Stop executionNum=3 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.
+  Stop executionNum=4 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.
+  Stop executionNum=5 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.
+  Stop executionNum=6 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 4. Word four.
+  Stop executionNum=7 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 4. Word four.
+  Stop executionNum=8 continuationActive=false -> {} (turn ends)
+
+## prompt 2: lastUserInput="keep going" (PreInvocation invocationNum 0 at 2026-11-25T16:45:19.265Z)
+  injected ## Now: yes; carries the capped notice: "JBIT autopilot stopped carrying on by itself after 8 continuations in one prompt; a new prompt resumes it."
+  Stop executionNum=0 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 5. Word five.
+  Stop executionNum=1 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 5. Word five.
+  Stop executionNum=2 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 6. Word six.
+  Stop executionNum=3 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 6. Word six.
+  Stop executionNum=4 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 7. Word seven.
+  Stop executionNum=5 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 7. Word seven.
+  Stop executionNum=6 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 8. Word eight.
+  Stop executionNum=7 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 8. Word eight.
+  Stop executionNum=8 continuationActive=false -> {} (turn ends)
+
+## prompt 3: lastUserInput="keep going" (PreInvocation invocationNum 0 at 2026-11-25T16:48:45.476Z)
+  injected ## Now: yes; carries the capped notice: "JBIT autopilot stopped carrying on by itself after 8 continuations in one prompt; a new prompt resumes it."
+  Stop executionNum=0 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.
+  Stop executionNum=1 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 10. Word ten.
+  Stop executionNum=2 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 10. Word ten.
+  Stop executionNum=3 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 11. Word eleven.
+  Stop executionNum=4 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 11. Word eleven.
+  Stop executionNum=5 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 12. Word twelve.
+  Stop executionNum=6 continuationActive=false -> continue: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 12. Word twelve.
+  Stop executionNum=7 continuationActive=false -> {} (turn ends)
+
+# invocationNum of every parent PreInvocation, in order (0 only at a new prompt, never after a Stop continue):
+0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33
+
+# host side, parent transcript.jsonl: 'Stop hook blocked termination: <JBIT reason>' steps per Next: target
+      1 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 1. Word one.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.
+      3 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 4. Word four.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 5. Word five.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 6. Word six.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 7. Word seven.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 8. Word eight.
+      1 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 10. Word ten.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 11. Word eleven.
+      2 Stop hook blocked termination: jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 12. Word twelve.
+# total: 23 (8 + 8 + 7 = 23 expected); ERROR steps in parent transcript: 0; PreToolUse denies across all three prompts (all conversations): 0
+
+# hook session state after prompt 1 (read before prompt 2): host:stopBlocks 8, host:notices ["JBIT autopilot stopped carrying on by itself after 8 continuations in one prompt; a new prompt resumes it."]
+# after prompt 3: {"stopBlocks":7,"notices":["All 12 stages done."],"armed":false}
+
+# scratch project after the three prompts:
+$ git log --oneline
+4f4c6d7 Word twelve (Stage 12)
+0b4644b Word eleven (Stage 11)
+70356ea Word ten (Stage 10)
+1f6eb31 Word nine (Stage 9)
+b515852 Word eight (Stage 8)
+47847f5 Word seven (Stage 7)
+f0e815e Word six (Stage 6)
+ee91609 Word five (Stage 5)
+2732529 Word four (Stage 4)
+5ae8286 Word three (Stage 3)
+00c546a Word two (Stage 2)
+1c4c9b0 Word one (Stage 1)
+49d1be2 init
+$ cat NOTES.md
+# Notes
+one
+two
+three
+four
+five
+six
+seven
+eight
+
+nine
+ten
+
+eleven
+
+twelve
+$ sed -n "/## Now/,/## Decisions/p" docs/PLAN.md
+## Now
+All stages done
+
+## Stages
+- [x] 1. Word one — append the line `one` to NOTES.md (check: `grep -x one NOTES.md`)
+- [x] 2. Word two — append the line `two` to NOTES.md (check: `grep -x two NOTES.md`)
+- [x] 3. Word three — append the line `three` to NOTES.md (check: `grep -x three NOTES.md`)
+- [x] 4. Word four — append the line `four` to NOTES.md (check: `grep -x four NOTES.md`)
+- [x] 5. Word five — append the line `five` to NOTES.md (check: `grep -x five NOTES.md`)
+- [x] 6. Word six — append the line `six` to NOTES.md (check: `grep -x six NOTES.md`)
+- [x] 7. Word seven — append the line `seven` to NOTES.md (check: `grep -x seven NOTES.md`)
+- [x] 8. Word eight — append the line `eight` to NOTES.md (check: `grep -x eight NOTES.md`)
+- [x] 9. Word nine — append the line `nine` to NOTES.md (check: `grep -x nine NOTES.md`)
+- [x] 10. Word ten — append the line `ten` to NOTES.md (check: `grep -x ten NOTES.md`)
+- [x] 11. Word eleven — append the line `eleven` to NOTES.md (check: `grep -x eleven NOTES.md`)
+- [x] 12. Word twelve — append the line `twelve` to NOTES.md (check: `grep -x twelve NOTES.md`)
+
+## Decisions
+$ ls docs/evidence
+stage-1 stage-10 stage-11 stage-12 stage-2 stage-3 stage-4 stage-5 stage-6 stage-7 stage-8 stage-9 
+
+# final response of prompt 1 (stream-json result event: state, last lines):
+event state: SUCCESS | exit 0
+**Proven by**: `grep -x four NOTES.md` ([report.md](file://<scratch>/ws-carry/docs/evidence/stage-4/report.md))
+**(unattended) decisions**: None.
+**What's left**: Stages 5 through 12.
+
+Proceeding to Stage 5 (Word five).
+# final response of prompt 3 (stream-json result event: state, last lines):
+event state: SUCCESS | exit 0
+### Pre-ship Check
+- Verified `NOTES.md` contains exact sequence `one` through `twelve`.
+- All evidence reports generated under `docs/evidence/stage-1/` through `docs/evidence/stage-12/`.
+
+If you have more work beyond this plan's goal, `/jbit:plan` can archive this plan and start a fresh one.

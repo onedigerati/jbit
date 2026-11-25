@@ -1,0 +1,52 @@
+# Check 1 setup: three throwaway homes made by hosts/antigravity/spike/mkhome.sh, JBIT installed into each by path from the working tree, and the README settings
+$ HOME=$SCRATCH/agy/home-v4 agy plugin install $REPO/plugins/jbit-antigravity
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to $SCRATCH/agy/home-v4/.gemini/config/plugins/jbit
+diff -r: identical
+$ HOME=$SCRATCH/agy/home-v4c agy plugin install $REPO/plugins/jbit-antigravity
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to $SCRATCH/agy/home-v4c/.gemini/config/plugins/jbit
+diff -r: identical
+$ HOME=$SCRATCH/agy/home-v4r agy plugin install $REPO/plugins/jbit-antigravity
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to $SCRATCH/agy/home-v4r/.gemini/config/plugins/jbit
+diff -r: identical
+Installed plugins:
+- jbit (enabled, 2.0.0)
+    Source:     antigravity
+    Components: 9 skills, 1 rule, 1 hook
+$ HOME=$SCRATCH/agy/home-v4 node $HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs install   # the verifier standing in for the user
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 1.9 MiB
+FFmpeg (playwright ffmpeg v1013) downloaded to $SCRATCH/agy/home-v4/.cache/jbit/capture/browsers/ffmpeg-1013
+Installed and launched: playwright-core@1.65.0, browsers in $SCRATCH/agy/home-v4/.cache/jbit/capture/browsers
+
+# The README "Antigravity CLI" settings block, copied with awk from README.md and /home/you replaced by the throwaway home:
+$ awk '/^```json/{f=1;next} f&&/^```/{exit} f' README.md | sed 's#/home/you#<scratch>/agy/home-v4#' > settings.json
+{"permissions":{"allow":[
+  "command(node <scratch>/agy/home-v4/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs)",
+  "command(git status)","command(git diff)","command(git log)","command(git show)","command(git add)",
+  "command(git commit)","command(git check-ignore)","command(git rev-parse)",
+  "command(ls)","command(cat)","command(head)","command(tail)","command(wc)","command(find)","command(grep)",
+  "command(mkdir)","command(test)","command(echo)","command(pwd)","command(date)"
+]}}
+
+# The README command: agy -p "/jbit:stage" --mode accept-edits --settings jbit-agy.json
+# Scratch project: the pristine copy from verify/05-06 (889aa2f "Plan: new heading": index.html, style.css, docs/PLAN.md with one UI stage, Mode: stage), no remote. Each run: a fresh copy and its own static server.
+$ cat e2e.sh
+#!/bin/bash
+# e2e.sh <name>: fresh copy of the pristine project, static server on 47711, agy headless with the README settings
+A=<scratch>/agy; V=$A/v4
+N=$1; P=$V/proj-$N
+rm -rf $P && cp -a $V/pristine $P
+ss -ltn | grep -q ':47711 ' && { echo "port busy" >&2; exit 1; }
+timeout 1000 python3 -m http.server 47711 --bind 127.0.0.1 --directory $P >/dev/null 2>&1 &
+sleep 1
+cd $P && JBIT_TAP=$V/log/$N-tap.jsonl PATH=$A/bin:$PATH HOME=$A/home-v4 AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 900 agy -p "$(cat $V/p1.txt)" --model gemini-3.8-flash-low --output-format stream-json --mode accept-edits --settings $V/settings.json > $V/log/$N.jsonl 2> $V/log/$N.err
+echo "[exit $?]" > $V/log/$N.exit
+pkill -f "http.server 47711 --bind 127.0.0.1 --directory $P"
+$ cat p1.txt
+/jbit:stage
+The site is served at http://127.0.0.1:47711/ by a static file server on this folder; it is already running. For screenshots, Playwright is already installed in the JBIT capture cache, and I say yes to using it for this project.

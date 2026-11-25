@@ -10,10 +10,10 @@ Bring JBIT to Google Antigravity CLI (`agy`), as close to Claude Code as the hos
 Stage 3 of 3 · Antigravity end to end
 Risk: external services (live `agy` runs with a copied sign-in token in a throwaway home)
 Checks:
-- [ ] In a throwaway home, `agy plugin install <clone>/plugins/jbit-antigravity` installs JBIT by path, and a headless `agy -p` run in a scratch web project closes a UI stage: the verify skill's capture script takes before and after screenshots of a local page, the evidence report links them, and the stage commit goes through the gate (proof: run the product)
-- [ ] Live, the hook refuses what it refuses on Claude Code: a stage close without its evidence or with a missing linked image, a commit holding a secret, a write to `~/.gemini/config/`, and an edit or `invoke_subagent` in a held stage until the user's approval, `/jbit:approve` typed included (proof: run the product, judged by `ERROR` steps and the deny text)
-- [ ] Live, autopilot carries a `-p` run on through `Stop` until its cap or the plan's end, and a new prompt resets the cap; `jbit:plan` reads its `continued.md` when it needs the second half; tools met live that the hook over-blocks are listed and allowed (proof: run the product)
-- [ ] The README's "Antigravity CLI" section gives the install by path, the `/jbit:<skill>` form and what Antigravity can't do, and the suite, docs check, host tests, parity, drift checks and validate are green (proof: test)
+- [x] In a throwaway home, `agy plugin install <clone>/plugins/jbit-antigravity` installs JBIT by path, and a headless `agy -p` run in a scratch web project closes a UI stage: the verify skill's capture script takes before and after screenshots of a local page, the evidence report links them, and the stage commit goes through the gate (proof: run the product)
+- [x] Live, the hook refuses what it refuses on Claude Code: a stage close without its evidence or with a missing linked image, a commit holding a secret, a write to `~/.gemini/config/`, and an edit or `invoke_subagent` in a held stage until the user's approval, `/jbit:approve` typed included (proof: run the product, judged by `ERROR` steps and the deny text)
+- [x] Live, autopilot carries a `-p` run on through `Stop` until its cap or the plan's end, and a new prompt resets the cap; `jbit:plan` reads its `continued.md` when it needs the second half; tools met live that the hook over-blocks are listed and allowed (proof: run the product)
+- [x] The README's "Antigravity CLI" section gives the install by path, the `/jbit:<skill>` form and what Antigravity can't do, and the suite, docs check, host tests, parity, drift checks and validate are green (proof: test)
 Open: none
 Mode: autopilot — unattended
 Agents: wide — confirmed 2026-11-25 09:25
@@ -21,7 +21,7 @@ Agents: wide — confirmed 2026-11-25 09:25
 ## Stages
 - [x] 1. Spike: Antigravity CLI — throwaway home, install by path, skill forms, prompt context, denies inside subagents, Stop carry-on, event fixtures
 - [x] 2. Antigravity adapter + package — `hosts/antigravity/` on the core, a native-plugin format in the build, generated `plugins/jbit-antigravity/`, home guard, parity scenarios
-- [ ] 3. Antigravity end to end — install by path; headless UI stage close with screenshots, refusals, carry-on; README "Antigravity CLI" with its gaps
+- [x] 3. Antigravity end to end — install by path; headless UI stage close with screenshots, refusals, carry-on; README "Antigravity CLI" with its gaps
 
 ## Decisions
 - 2026-11-25 · Antigravity CLI is added as a host, as close to Claude Code's capabilities as reasonably possible; Gemini CLI stays out. It replaces the 2026-11-20 standing decision dropping Google hosts, struck in [decisions.md](decisions.md). Why: the user's choice.
@@ -57,6 +57,12 @@ Agents: wide — confirmed 2026-11-25 09:25
 
 - 2026-11-25 · Stage 2 closed: evidence in [stage-2](evidence/stage-2/report.md), review in [review.md](evidence/stage-2/review.md) (4 fix-now fixed in two rounds, 6 deferred).
 
+- 2026-11-25 · (unattended) On Antigravity a UI stage's report links the after shots and keeps the before shots in `before/` with a compare, as the verify skill does on every host; `plugins/jbit/` isn't changed to link both. Why: the goal keeps `plugins/jbit/` the source, and the check's intent is parity with Claude Code.
+- 2026-11-25 · (unattended) The README's headless setting for `agy` is `--mode accept-edits` with a narrow per-run `--settings` allow list of plain first-word rules (the plugin's capture script, read-only and staging `git` subcommands, everyday read-only commands), not `command(git)`, `command(node)` or `regex:` rules. Why: `agy` auto-denies ordinary commands without rules, a broad rule lets `git push` and `node -e` run unprompted outside the sandbox, and `regex:` rules match the whole line, so a compound slips through ([probes](evidence/stage-3/fixes/03-readme-settings-01-rule-probes.txt)).
+- 2026-11-25 · (unattended) The hook's `Stop` count resets only when `agy`'s transcript shows a new `USER_INPUT` step, falling back to a changed prompt text, and never on `invocationNum` 0 alone. Why: a finished subagent wakes the parent with `invocationNum` 0, which reset the cap live (18 continues for one prompt).
+- 2026-11-25 · (unattended) The capture command is allowed in `&&`/`;` lists when every part naming a protected path is the plugin's own script, run by plain `node` or a `node` from a known install folder outside the project. Why: the verify skill chains `mkdir` and two captures; the review's `/./` and project-`node` bypasses are denied by tests.
+- 2026-11-25 · Stage 3 closed: evidence in [stage-3](evidence/stage-3/report.md), review in [review.md](evidence/stage-3/review.md) (3 fix-now fixed in round 2; live findings fixed in round 1).
+
 ## Open questions
 - Screenshot evidence, from the last plan's reviews, for the user:
   - A python heredoc that edits only `docs/PLAN.md`, on the same line as a commit, is now refused by the cautious evidence rule (it names `docs`); harmless, but one extra command ([stage 3 report](plans/2026-11-23-screenshot-evidence/evidence/stage-3/report.md)).
@@ -80,6 +86,14 @@ Agents: wide — confirmed 2026-11-25 09:25
   - `notebook_execution` stays denied (no command line to judge), and `call_mcp_tool`/browser JavaScript are allowed unless their arguments look like paths or commands.
   - Whether `invocationNum` 0 after a `Stop` continue resets the hook's cap of 8 is unproven live; concurrent hook calls can lose a state update; `/jbit:approve` typed by the user arrives wrapped in the skill body (fails closed). Stage 3 checks these live.
   - Unknown tools are denied by default, so a host tool seen live but not yet listed is over-blocked: `update_steps` was denied in a verifier's run ([live-held-subagent.txt](evidence/stage-2/verify-fixes2/live-held-subagent.txt)). Stage 3's end-to-end run adds any it meets.
+- Antigravity, from stage 3 ([report](evidence/stage-3/report.md), [review](evidence/stage-3/review.md)):
+  - A file planted under a trusted `node` folder (`~/.nvm/versions/node/<v>/bin/node`) runs as Node with the plugin's path; like any script that reaches `~/.gemini/config` without naming it, it is inside the home guard's best-effort gap. The gap text doesn't name globs either.
+  - The transcript folder (`~/.gemini/antigravity-cli/brain/`) isn't guarded, so a model that writes a fake `USER_INPUT` line could reset its own `Stop` count.
+  - A finished subagent's wake-up gives the parent model turns past the cap, so a run can finish more stages than 8 continues would; JBIT sends no continue past 8.
+  - The commit gate checks a report's form, not that the work was done: a model closed stages without making the change. True on every host.
+  - In default (auto) mode, one allowed commit didn't land (likely `agy`'s sandbox); the README's accept-edits setting avoided it.
+  - Copilot and Codex likely inject the same stale "held" text on an approving prompt, as Antigravity did before its fix; not changed, outside this plan.
+  - A builder once ran `agy --version` and `--help` under the real home; `~/.gemini` was unchanged ([verify-2/10](evidence/stage-3/verify-2/10-real-gemini-and-cleanup.txt)).
 
 ## Standing decisions
 - Standing decisions from earlier plans are in [decisions.md](decisions.md).

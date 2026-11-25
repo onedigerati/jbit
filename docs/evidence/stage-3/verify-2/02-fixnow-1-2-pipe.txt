@@ -1,0 +1,66 @@
+$ F=<fake> node pipe.mjs cases.tsv   # pipes each command as a run_command PreToolUse through plugins/jbit-antigravity/scripts/hook.mjs (the repo copy), HOME=<fake>/home with a cp -a of the package at <fake>/home/.gemini/config/plugins/jbit as PLUGIN_ROOT, PLUGIN_DATA under antigravity-cli/plugin_data/jbit, cwd/workspace <fake>/ws (git, docs/PLAN.md, a file <fake>/ws/node = /bin/sh); <fake>/elsewhere/node = /bin/sh; <H>/.nvm/versions/node/v99.0.0/bin/node = a planted sh script
+# node v22.23.5, 2026-11-25T17:38:15Z; /usr/bin/node exists: no
+# Review fix-now 1: dot segments, doubled slashes, .. (run_command, cwd = <WS>, HOME = <H>)
+$ echo x > ~/.gemini/./config/x
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ cp e.json ~/.gemini/./config/mcp_config.json
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ touch ~/.gemini/antigravity-cli/./settings.json
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ ln -s ~/.gemini/./config l && node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out l/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ echo x > ~/.gemini//config/x
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ echo x > ~/.gemini/antigravity-cli//settings.json
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ echo x > ~/.gemini/foo/../config/x
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ touch ~/.gemini/antigravity-cli/x/../settings.json
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ cp e.json "$HOME/.gemini/./config/mcp_config.json"
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ rm -rf ~/.gemini/.//./config/plugins/jbit
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ echo '{}' > ~/.gemini/antigravity-cli/./plugin_data/jbit/state.json
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out ~/.gemini/./config/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out=<H>/.gemini//config/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+# Review fix-now 2: a "node" that isn't Node
+$ cp /bin/sh node && <WS>/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ <WS>/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ ./node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ <fake>/elsewhere/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ <H>/.gemini/antigravity-cli/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+$ /usr/bin/../../<WS>/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | got {"decision":"deny","reason":"JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/config/` holds the pl…
+# Legitimate capture commands (as the model ran them live in verify/06 and fixes/03)
+$ node "<H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47711/ --name home --out docs/evidence/stage-1/before/ --widths 390,1280 --themes light
+  want allow | got {"decision":"allow"}
+$ node "<H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47711/ --name home --out docs/evidence/stage-1/ --widths 390,1280 --themes light --compare docs/evidence/stage-1/before/
+  want allow | got {"decision":"allow"}
+$ node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47711/ --name home-390 --width 390 --out docs/evidence/stage-1/before/ && node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47711/ --name home-1280 --width 1280 --out docs/evidence/stage-1/before/
+  want allow | got {"decision":"allow"}
+$ mkdir -p docs/evidence/stage-1/before && node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47711/ --name home --widths 390,1280 --themes light --out docs/evidence/stage-1/before/
+  want allow | got {"decision":"allow"}
+$ node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs --help
+  want allow | got {"decision":"allow"}
+$ $REALHOME/.nvm/versions/node/v22.23.5/bin/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47711/ --name home --width 390 --out docs/evidence/stage-1/
+  want allow | got {"decision":"allow"}
+$ /usr/bin/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47711/ --name home --width 390 --out docs/evidence/stage-1/
+  want allow | got {"decision":"allow"}
+$ cat ~/.gemini/./config/mcp_config.json
+  want allow | got {"decision":"allow"}
+$ ls ~/.gemini//config/plugins
+  want allow | got {"decision":"allow"}
+# Residual probe (not a review input): a file planted in a version manager's folder under HOME counts as Node
+$ <H>/.nvm/versions/node/v99.0.0/bin/node <H>/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want allow | got {"decision":"allow"}
+
+# 29 cases, 0 mismatches

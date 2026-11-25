@@ -1,0 +1,63 @@
+$ # Scratch project <scratchpad>/agy/proj-e2e: a git repo with no remote, one commit. Each run starts from a fresh copy of this commit.
+$ git log --stat; git remote -v
+commit 01c5ddede562b75c296c477caf74a05261dd7088
+Author: JBIT test <test@example.invalid>
+Date:   Wed Nov 25 10:42:16 2026 -0600
+
+    Plan: new heading
+
+ README.md    |  1 +
+ docs/PLAN.md | 23 +++++++++++++++++++++++
+ index.html   | 15 +++++++++++++++
+ style.css    |  5 +++++
+ 4 files changed, 44 insertions(+)
+(no remotes)
+$ cat index.html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crumb Bakery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1 class="hero">Welcome to Crumb</h1>
+  <p>A small neighbourhood bakery, open from 7 am.</p>
+</main>
+</body>
+</html>
+$ cat style.css
+:root { --bg: #fffaf2; --fg: #2b2118; --accent: #b4561f; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+main { padding: 48px 16px; max-width: 720px; margin: 0 auto; }
+.hero { color: var(--accent); font-size: 2.2rem; margin: 0 0 12px; }
+$ cat docs/PLAN.md
+# Crumb plan
+
+## Goal
+The home page's heading names what the bakery sells: it reads "Fresh bread, baked daily". Done when the heading shows the new text at phone and desktop widths.
+
+## Now
+Stage 1 of 1 · New heading
+Risk: UI only
+Checks:
+- [ ] The home page heading reads "Fresh bread, baked daily", at 390 and 1280 wide, light theme, nothing cut off (proof: screenshot)
+Open: none
+Mode: stage
+
+## Stages
+- [ ] 1. New heading — the `<h1>` on `index.html` reads "Fresh bread, baked daily" instead of "Welcome to Crumb"
+
+## Decisions
+- 2026-11-25 · Static site, no build step: `index.html` and `style.css`, served as files. Screenshots stay local (gitignored).
+
+## Open questions
+- none
+
+## Shipped
+$ cat <scratchpad>/agy/e2e-log/p1.txt   (the prompt of runs 1 and 2)
+/jbit:stage
+The site is served at http://127.0.0.1:47411/ by a static file server on this folder; it is already running. For screenshots, Playwright is already installed in the JBIT capture cache, and I say yes to using it for this project.

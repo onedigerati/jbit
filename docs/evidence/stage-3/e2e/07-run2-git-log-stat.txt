@@ -1,0 +1,45 @@
+$ cd <scratchpad>/agy/proj-e2e && git log --stat -1
+commit 5419a1e8fa9384f8517a31f1dfdfad072b5851ff
+Author: JBIT test <test@example.invalid>
+Date:   Wed Nov 25 10:47:30 2026 -0600
+
+    Update home page heading to 'Fresh bread, baked daily'
+
+ docs/PLAN.md                                  |  4 ++--
+ docs/evidence/.gitignore                      | 11 +++++++++++
+ docs/evidence/stage-1/before/home-console.txt |  2 ++
+ docs/evidence/stage-1/home-console.txt        |  2 ++
+ docs/evidence/stage-1/report.md               | 13 +++++++++++++
+ index.html                                    |  2 +-
+ 6 files changed, 31 insertions(+), 3 deletions(-)
+$ ls -l docs/evidence/stage-1/before docs/evidence/stage-1   (the PNGs the report links exist; gitignored, local)
+docs/evidence/stage-1:
+total 44
+drwxr-xr-x 2 [user] [user]   100 Nov 25 10:46 before
+-rw-r--r-- 1 [user] [user] 17969 Nov 25 10:46 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 16288 Nov 25 10:46 home-390-light.png
+-rw-r--r-- 1 [user] [user]    97 Nov 25 10:46 home-console.txt
+-rw-r--r-- 1 [user] [user]   921 Nov 25 10:47 report.md
+
+docs/evidence/stage-1/before:
+total 40
+-rw-r--r-- 1 [user] [user] 17268 Nov 25 10:46 home-1280-light.png
+-rw-r--r-- 1 [user] [user] 14679 Nov 25 10:46 home-390-light.png
+-rw-r--r-- 1 [user] [user]    97 Nov 25 10:46 home-console.txt
+$ cat docs/evidence/.gitignore
+# Screenshots, traces and videos stay local. Delete the image lines to commit screenshots.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.zip
+*.webm
+*.mp4
+*.trace
+*.har
+$ git status --short --ignored
+!! docs/evidence/stage-1/before/home-1280-light.png
+!! docs/evidence/stage-1/before/home-390-light.png
+!! docs/evidence/stage-1/home-1280-light.png
+!! docs/evidence/stage-1/home-390-light.png

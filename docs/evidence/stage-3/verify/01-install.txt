@@ -1,0 +1,31 @@
+$ git rev-parse --short HEAD; git status --short plugins/jbit-antigravity
+c313447
+ M plugins/jbit-antigravity/GENERATED.json
+ M plugins/jbit-antigravity/scripts/handler.mjs
+ M plugins/jbit-antigravity/scripts/map.mjs
+ M plugins/jbit-antigravity/skills/verify/SKILL.md
+$ HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ~/src/repos/jbit/plugins/jbit-antigravity
+  [ok]    jbit
+          ✔ skills      : 9 installed (approve, autopilot, charter, fix, plan, resume, review, stage, verify)
+          ✔ rules       : 1 installed (AGENTS)
+          ✔ hooks       : 1 installed (jbit)
+          Installed to <scratch>/agy/home-v3/.gemini/config/plugins/jbit
+[exit 0]
+$ agy plugin list
+Installed plugins:
+- jbit (enabled, 2.0.0)
+    Source:     antigravity
+    Components: 9 skills, 1 rule, 1 hook
+$ diff -r plugins/jbit-antigravity $H/.gemini/config/plugins/jbit && echo identical
+identical
+$ # Standing in for the user (local Playwright cache install), into the throwaway home cache:
+$ HOME=$H node plugins/jbit-antigravity/skills/verify/scripts/capture.mjs install
+Downloading Chrome Headless Shell 158.0.8127.18 (playwright chromium-headless-shell v1254)[2m from https://cdn.playwright.dev/builds/cft/158.0.8127.18/linux-arm64/chrome-headless-shell-linux-arm64.zip[22m
+Chrome Headless Shell 158.0.8127.18 (playwright chromium-headless-shell v1254) downloaded to <scratch>/agy/home-v3/.cache/jbit/capture/browsers/chromium_headless_shell-1254
+Downloading FFmpeg (playwright ffmpeg v1013)[2m from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-linux-arm64.zip[22m
+FFmpeg (playwright ffmpeg v1013) downloaded to <scratch>/agy/home-v3/.cache/jbit/capture/browsers/ffmpeg-1013
+Installed and launched: playwright-core@1.65.0, browsers in <scratch>/agy/home-v3/.cache/jbit/capture/browsers
+$ ... capture.mjs where
+playwright: cache — playwright-core@1.65.0
+  module:   <scratch>/agy/home-v3/.cache/jbit/capture/lib/node_modules/playwright-core/index.js
+  browsers: <scratch>/agy/home-v3/.cache/jbit/capture/browsers

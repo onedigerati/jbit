@@ -1,0 +1,25 @@
+$ cd $SCRATCH/agy/refuse/diag/proj && sed -n '/## Now/,/^$/p' docs/PLAN.md   # a copy of p6 after run 11 (Mode paused), fresh hook state
+## Now
+Stage 2 of 3 · Share mode
+Risk: auth, user input
+Mode: paused — Stage 2 involves auth; waiting for user approval
+Checks:
+- [ ] login works
+
+[exit 0]
+
+$ $SCRATCH/agy/refuse/diag.sh $SCRATCH/agy/refuse/diag/proj $SCRATCH/agy/refuse/diag/data $SCRATCH/agy/refuse/diag/home 'JBIT autopilot attended'   # prompt: JBIT autopilot attended
+commit per stage. Autopilot is on, and the current stage is held: its risk line names auth. Building it (file edits outside the plan and its `docs/research/` notes, build
+[exit 0]
+
+$ $SCRATCH/agy/refuse/diag.sh $SCRATCH/agy/refuse/diag/proj $SCRATCH/agy/refuse/diag/data $SCRATCH/agy/refuse/diag/home '/jbit:approve'   # prompt: /jbit:approve
+commit per stage. Autopilot is paused (Stage 2 involves auth; waiting for user approval), and the current stage is held: its risk line names auth. Building it (file edits
+[exit 0]
+
+$ $SCRATCH/agy/refuse/diag.sh $SCRATCH/agy/refuse/diag/proj $SCRATCH/agy/refuse/diag/data $SCRATCH/agy/refuse/diag/home 'hello'   # prompt: hello
+commit per stage. Autopilot is paused (Stage 2 involves auth; waiting for user approval): settle that with the user, then set the Mode line back to autopilot and carry on
+[exit 0]
+
+$ grep -o '"jbit:cleared":[^]]*]' $SCRATCH/agy/refuse/diag/data/sessions/*.json
+"jbit:cleared":["Stage 2 of 3 · Share mode"]
+[exit 0]

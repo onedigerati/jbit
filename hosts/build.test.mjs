@@ -863,7 +863,7 @@ test('a generated script with a #! line is written executable, kept so on rebuil
 
 function agSources() {
   const dir = temp('jbit-build-ag-src-')
-  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/core', 'hosts/antigravity', 'hosts/copilot/map.mjs']) {
+  for (const p of ['plugins/jbit/.claude-plugin/plugin.json', 'plugins/jbit/LICENSE', 'plugins/jbit/skills', 'plugins/jbit/hooks', 'hosts/core', 'hosts/antigravity', 'hosts/copilot/map.mjs', 'README.md']) {
     cpSync(join(ROOT, p), join(dir, p), { recursive: true, filter: s => !s.endsWith('.test.mjs') && !s.includes('/spike') && !s.includes('/fixtures') })
   }
   return dir
@@ -884,7 +884,7 @@ test('antigravity: root plugin.json named jbit at the source version, root hooks
   }
   // agy doesn't load these in a native plugin; a root AGENTS.md is ignored, a marketplace isn't used (install by path)
   for (const f of [...files.keys()]) {
-    assert.ok(f.startsWith(`${AG}/`), `${f} is written outside the package`)
+    assert.ok(f.startsWith(`${AG}/`) || f === 'README.md', `${f} is written outside the package and the README's gap list`)
     assert.doesNotMatch(f, new RegExp(`^${AG}/(hooks/hooks\\.json|AGENTS\\.md|GEMINI\\.md|\\.claude-plugin/|\\.antigravity-plugin/|commands/)`))
   }
   const rules = files.get(`${AG}/rules/AGENTS.md`)
@@ -935,6 +935,11 @@ test('antigravity: skills have no ${ left, invoke as /jbit:<name>, reach the cap
     assert.match(files.get(`${AG}/skills/${s}/SKILL.md`), /node "<verify skill folder>\/scripts\/capture\.mjs" shot .{0,120}the `scripts\/capture\.mjs` in the verify skill's folder/)
   }
   assert.doesNotMatch(files.get(`${AG}/skills/verify/SKILL.md`), /use the host's own browser tools/)
+  // screenshots come only from the capture script on Antigravity: the host's browser tools are named only as no fallback
+  for (const s of names) {
+    const text = files.get(`${AG}/skills/${s}/SKILL.md`).replace(/the host's browser tools aren't a fallback/g, '')
+    assert.doesNotMatch(text, /browser tools/, `skills/${s}/SKILL.md offers the host's browser tools as a source`)
+  }
   assert.equal(files.get(`${AG}/skills/verify/scripts/capture.mjs`), readFileSync(join(ROOT, 'plugins/jbit/skills/verify/scripts/capture.mjs'), 'utf8'))
 })
 
@@ -967,7 +972,7 @@ test('antigravity: building twice gives identical bytes, and the second run writ
   assert.equal(r.status, 0)
   assert.match(r.stdout, /wrote 0, removed 0/)
   assert.deepEqual(snapshot(out), first)
-  assert.deepEqual(readdirSync(out), ['plugins'])
+  assert.deepEqual(readdirSync(out), ['README.md', 'plugins'])
 })
 
 for (const [what, change] of [
@@ -989,7 +994,7 @@ for (const [what, change] of [
     change(src)
     const r = ag('--src', src, '--out', out, '--check')
     assert.equal(r.status, 1)
-    assert.match(r.stderr, /drift: plugins\/jbit-antigravity lags its sources; run node hosts\/build\.mjs antigravity/)
+    assert.match(r.stderr, /drift: plugins\/jbit-antigravity or the README\.md gap list lags its sources; run node hosts\/build\.mjs antigravity/)
     assert.equal(ag('--src', src, '--out', out).status, 0)
     const again = ag('--src', src, '--out', out, '--check')
     assert.equal(again.status, 0, again.stderr)

@@ -8,9 +8,10 @@
 //                   hook prints nothing
 // - Stop          → {"decision":"continue","reason"} while autopilot carries on; agy honours 10 per prompt and its
 //                   `continuationActive` never flips, so this hook counts its own (STOP_CAP), reset on a new prompt
+//                   only (newPrompt): a subagent's finish also wakes the parent with `invocationNum` 0
 // - SessionStart, PostInvocation, PostToolUse → {} (a subagent's SessionStart notes its parent: sessionFor)
 // A crash, no project or no data folder denies a PreToolUse; elsewhere it adds nothing.
-import { closeSync, openSync, readdirSync, readSync, realpathSync, statSync } from 'node:fs'
+import { closeSync, fstatSync, openSync, readdirSync, readSync, realpathSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join } from 'node:path'
 import { guardOf, mapTool } from './map.mjs'
@@ -62,6 +63,23 @@ function head(path, max = 1 << 20) {
     fd = openSync(path, 'r')
     const buf = Buffer.alloc(max)
     return buf.toString('utf8', 0, readSync(fd, buf, 0, max, 0))
+  } catch {
+    return undefined
+  } finally {
+    if (fd !== undefined) closeSync(fd)
+  }
+}
+
+/** The end of a file (up to `max` bytes), from a line's start, or undefined. */
+function tail(path, max = 4 << 20) {
+  let fd
+  try {
+    fd = openSync(path, 'r')
+    const size = fstatSync(fd).size
+    const from = Math.max(0, size - max)
+    const buf = Buffer.alloc(Math.min(size, max))
+    const text = buf.toString('utf8', 0, readSync(fd, buf, 0, buf.length, from))
+    return from > 0 ? text.slice(text.indexOf('\n') + 1) : text
   } catch {
     return undefined
   } finally {
@@ -158,6 +176,60 @@ export function parentFromTranscript(input, home = homedir()) {
   }
   return undefined
 }
+
+/** The transcript files a payload points to: its `transcriptPath`, the `transcript.jsonl` beside it, else the brain's. */
+function transcripts(input, home = homedir()) {
+  if (typeof input.transcriptPath === 'string' && isAbsolute(input.transcriptPath)) return [input.transcriptPath, join(dirname(input.transcriptPath), 'transcript.jsonl')]
+  const id = conversation(input)
+  return ID.test(id) ? ['transcript_full.jsonl', 'transcript.jsonl'].map(f => join(home, '.gemini/antigravity-cli/brain', id, '.system_generated/logs', f)) : []
+}
+
+/**
+ * The `step_index` of the last user prompt in the conversation's transcript: agy writes the prompt's step
+ * (`{"step_index":23,"source":"USER_EXPLICIT","type":"USER_INPUT",…}`) before it runs the PreInvocation hook, and a
+ * subagent that finishes wakes the parent with no new one (stage 3, fixes/02-guard-cap.txt). Undefined when no
+ * transcript is readable or its end holds no user prompt.
+ */
+export function lastPromptStep(input, home = homedir()) {
+  for (const p of transcripts(input, home)) {
+    const lines = tail(p)?.split('\n')
+    if (!lines) continue
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (!lines[i].includes('USER_INPUT')) continue
+      let step
+      try {
+        step = JSON.parse(lines[i])
+      } catch {
+        continue
+      }
+      if (step?.type === 'USER_INPUT' && /^USER/.test(String(step.source)) && Number.isSafeInteger(step.step_index) && step.step_index >= 0) return step.step_index
+    }
+  }
+  return undefined
+}
+
+/**
+ * A new prompt from the user, where the continuation count starts again: a user prompt step in the transcript later
+ * than the last one counted; with no readable step, a `lastUserInput` other than the last one. A subagent that
+ * finishes wakes the parent with `invocationNum` 0, the same input and no new step, and doesn't reset the count. When
+ * unsure it says no: the count then stays, and the cap ends autopilot's carrying on early rather than late.
+ */
+async function newPrompt(input, c) {
+  const step = lastPromptStep(input)
+  const text = typeof input.lastUserInput === 'string' ? input.lastUserInput : ''
+  const last = (await c.host.get('promptAt')) ?? {}
+  let fresh
+  if (step !== undefined) fresh = !Number.isSafeInteger(last.step) || step > last.step
+  else fresh = last.step === undefined && last.text !== text
+  if (fresh) await c.host.set('promptAt', { ...(step !== undefined ? { step } : {}), text })
+  return fresh
+}
+
+/** A `# JBIT` section of the plan, as the core marks one (dispatch.mjs: `# JBIT` and a line break). */
+const SECTION = '# JBIT\n'
+const isSection = t => typeof t === 'string' && t.startsWith(SECTION)
+/** A prompt's own entry that carries the section and so supersedes the composed one (the armed entry). */
+const supersedes = t => typeof t === 'string' && t.includes(SECTION) && !isSection(t)
 
 /**
  * The parent conversation whose session a subagent's calls are judged in: cached in the subagent's own state on first
@@ -260,8 +332,8 @@ async function PreInvocation(input, project) {
   const c = await core(input, project)
   const context = []
   if (input.invocationNum === 0) {
-    // a new prompt from the user: the continuation count starts again
-    await c.host.set('stopBlocks', undefined)
+    // a new prompt from the user: the continuation count starts again (not on a subagent's wake-up: newPrompt)
+    if (await newPrompt(input, c)) await c.host.set('stopBlocks', undefined)
     const text = typeof input.lastUserInput === 'string' ? input.lastUserInput : ''
     // the user prompted this conversation: its tool calls are judged in its own session (sessionFor)
     if (text) await c.host.set('prompted', true)
@@ -269,7 +341,17 @@ async function PreInvocation(input, project) {
     // a subagent's first call carries no user input: it gets the plan's section, as a session start would
     const res = await c.run(text ? { kind: 'prompt', text, origin: 'composer' } : { kind: 'compose' })
     if (res.decision === 'deny' && res.reason) context.push(res.reason)
-    context.push(...res.context, ...(await takeNotices(c)), ...res.notices)
+    let entries = res.context
+    const notices = [...res.notices]
+    // the core composes the plan's section before the prompt's handlers run (as Claude Code builds its request), but
+    // agy injects it in this same answer: composed again now, it reads the prompt's approval, arming or level, so an
+    // approved stage isn't still called held. An armed entry already superseded the stale section (the core's own tests)
+    if (text && res.decision !== 'deny' && entries.some(isSection) && !entries.some(supersedes)) {
+      const fresh = await c.run({ kind: 'compose' })
+      entries = [...fresh.context, ...entries.filter(t => !isSection(t))]
+      notices.push(...fresh.notices.filter(n => !notices.includes(n)))
+    }
+    context.push(...entries, ...(await takeNotices(c)), ...notices)
   } else context.push(...(await takeNotices(c)))
   const text = context.filter(t => typeof t === 'string' && t).join('\n\n')
   return text ? inject(text) : {}

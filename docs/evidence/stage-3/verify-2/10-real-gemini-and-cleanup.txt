@@ -1,0 +1,12 @@
+$ (cd ~ && find .gemini -type f -print0 | sort -z | xargs -0 sha256sum) > <scratch>/agy/v4/gemini-before.sha   # before any agy run
+$ (same) > <scratch>/agy/v4/gemini-after.sha   # after every run
+$ cmp gemini-before.sha gemini-after.sha && echo unchanged
+unchanged (239 files hashed)
+$ rm -rf <scratch>/agy/home-v4 <scratch>/agy/home-v4c <scratch>/agy/home-v4r; ls -d <scratch>/agy/home-v4*; find <scratch> -name antigravity-oauth-token | wc -l
+ls: cannot access '<scratch>/agy/home-v4*': No such file or directory
+0
+# no agy or static server left running:
+0
+# Every agy call had HOME=<throwaway> and AGY_CLI_DISABLE_AUTO_UPDATE=1, and every -p run --model gemini-3.8-flash-low; --dangerously-skip-permissions was never passed:
+$ grep -c dangerously <scratch>/agy/v4/*.sh
+0 in every script

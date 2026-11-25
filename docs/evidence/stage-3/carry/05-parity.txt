@@ -1,0 +1,7 @@
+$ node --test hosts/parity/codex.test.mjs hosts/parity/copilot.test.mjs hosts/parity/antigravity.test.mjs
+# tests 35
+# pass 35
+# fail 0
+$ node hosts/build.mjs antigravity --check
+antigravity: up to date (31 files)
+exit=0

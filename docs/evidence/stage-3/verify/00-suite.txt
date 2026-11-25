@@ -1,0 +1,27 @@
+$ claude plugin test plugins/jbit
+(pass) after "/jbit:autopilot attended", Claude asks before starting and "ok, just build it" leaves the run attended: the risky Edit is denied [53.48ms]
+(pass) after "JBIT autopilot attended", Claude asks before starting and "ok, just build it" leaves the run attended: the risky Edit is denied [40.51ms]
+(pass) "/jbit:autopilot attended" before its run starts can be raised by the typed or JBIT form, not by "just build it, autopilot lean" [40.48ms]
+(pass) after an attended command's run finishes (Mode line removed), a plain "just build it, autopilot lean" for the next run stays attended [39.23ms]
+(pass) "JBIT autopilot …" or "JBIT approve …" with a question mark anywhere is no command; the typed slash form with more after it runs attended [0.32ms]
+(pass) the user edits the Goal by hand, then types "JBIT autopilot outward": the command applies to that plan, outward [51.61ms]
+(pass) Claude writes a new plan in a turn that is aborted; the user reads it and types "JBIT autopilot": unattended [38.74ms]
+(pass) a first plan whose Goal reads like the old no-plan marker is still a new Goal: a level given before any plan ends [31.28ms]
+(pass) a JBIT message asking to plan anywhere in it is no autopilot command; "the plan" or "this plan" is the plan itself [0.25ms]
+(pass) the unattended autopilot working rules carry the progress note and concern line [37.47ms]
+(pass) the attended autopilot working rules carry the progress note and concern line [37.32ms]
+(pass) the user's "JBIT, just build it. Autopilot, lean." over a plan brings the run's rules beside the prompt, existing context kept [31.11ms]
+(pass) the user's "/jbit:autopilot outward" over a plan brings the run's rules beside the prompt, existing context kept [47.95ms]
+(pass) the user's "JBIT autopilot attended" over a plan brings the run's rules beside the prompt, existing context kept [35.64ms]
+(pass) an attended command over a risky stage keeps the held wording in the entry, with the progress note [48.03ms]
+(pass) a project hold word counts in the entry even before the plan has a Mode line [28.58ms]
+(pass) plain words, an approval, a question, a non-user origin or a command with no plan add no entry [38.44ms]
+(pass) the entry stays under the engine's 100,000-character cap with a long Now, the rules and the command kept [36.51ms]
+(pass) a failing decisions check drops only the decisions hint; an entry that cannot be attached leaves the prompt as typed, the level still set [52.14ms]
+(pass) a cut never splits a surrogate pair, at the Now or at the cap [34.66ms]
+(pass) a compaction keeps that the user's own autopilot command armed the run, and its level [34.38ms]
+
+ 584 pass
+ 0 fail
+Ran 584 tests across 1 file. [21.82s]
+exit=0

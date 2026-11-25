@@ -1,0 +1,50 @@
+# Stage 3 fix round: fixes 1 (approval before the injected rules) and 2 (capture in a compound command).
+# Each event JSON is piped by hand into hosts/antigravity/hook.mjs, as agy runs it, with a throwaway HOME, PLUGIN_ROOT under
+# $HOME/.gemini/config/plugins/jbit and a fresh PLUGIN_DATA; projects are scratch git repos whose docs/PLAN.md is planOn2(Risk: auth, Mode: autopilot).
+# Driver: node demo.mjs <root> (scratchpad). BEFORE = hosts/ and plugins/jbit/hooks/ at HEAD c313447 (git archive); AFTER = the working tree.
+
+======== BEFORE ========
+## 1. On a held stage (plan: Risk: auth, Mode: autopilot), the injected working rules on each prompt
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:autopilot attended","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:approve","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:autopilot attended","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+$ echo '{"invocationNum":0,"lastUserInput":"yes","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+
+## 2. run_command with the installed capture script in a compound command (cwd = project)
+$ PreToolUse run_command "mkdir -p docs/evidence/stage-1 && node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name home --out docs/evidence/stage-1/"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name b --out docs/evidence/stage-1/"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && cp x ~/.gemini/config/mcp_config.json"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && sed -i s/a/b/ ~/.gemini/config/plugins/jbit/hooks.json"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && echo x > ~/.gemini/config/x"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+
+======== AFTER ========
+## 1. On a held stage (plan: Risk: auth, Mode: autopilot), the injected working rules on each prompt
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:autopilot attended","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:approve","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on: you are the project manager under jbit:autopilot.
+$ echo '{"invocationNum":0,"lastUserInput":"/jbit:autopilot attended","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on, and the current stage is held: its risk line names auth.
+$ echo '{"invocationNum":0,"lastUserInput":"yes","cwd":"$W/proj",…}' | node hook.mjs PreInvocation
+  -> Autopilot is on: you are the project manager under jbit:autopilot.
+
+## 2. run_command with the installed capture script in a compound command (cwd = project)
+$ PreToolUse run_command "mkdir -p docs/evidence/stage-1 && node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name home --out docs/evidence/stage-1/"
+  -> {"decision":"allow"}
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name b --out docs/evidence/stage-1/"
+  -> {"decision":"allow"}
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && cp x ~/.gemini/config/mcp_config.json"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && sed -i s/a/b/ ~/.gemini/config/plugins/jbit/hooks.json"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…
+$ PreToolUse run_command "node \"$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs\" shot http://127.0.0.1:47411/ --name a --out docs/evidence/stage-1/ && echo x > ~/.gemini/config/x"
+  -> deny: JBIT blocked this call: it writes to Antigravity's own config (a shell write): `~/.gemini/…

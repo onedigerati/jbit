@@ -1,0 +1,19 @@
+# Check 3, over-blocks: every JBIT unknown-tool deny and every update_steps step across this verifier's 16 live agy runs (tap logs and stream-json)
+e2e: update_steps DONE=4 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+e2e2: update_steps DONE=3 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+e2e3: update_steps DONE=3 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+e2e4: update_steps DONE=5 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+r1: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+r3: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+r4: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+h1: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+h2: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+h3: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=2
+g1: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+g2: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=1
+g3: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=4
+g4: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+c1: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+c2: update_steps DONE=0 ERROR=0; unknown-tool denies=0; all JBIT denies=0
+# tools JBIT denied, by name, across all runs:
+{"run_command":9,"edit_file":2,"write_file":1}

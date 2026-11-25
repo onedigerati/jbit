@@ -1,0 +1,100 @@
+# Check 3, live: autopilot carry-on through Stop, the cap of 8, and the reset. Home <scratch>/agy/home-v3c (mkhome.sh, package installed by path, diff -r identical), agy 1.5.17, gemini-3.8-flash-low, permissions never skipped, default mode (no --mode, no --settings), as in the builders' carry/01.
+# Project <scratch>/agy/ws-carry-v3 (git, no remote): docs/PLAN.md with 12 docs-only stages 'Word one'..'Word twelve' (append the word to NOTES.md; check grep -x), Risk: none, Mode: stage.
+$ cd <scratch>/agy/ws-carry-v3 && HOME=<scratch>/agy/home-v3c AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 900 agy -p "JBIT autopilot" --model gemini-3.8-flash-low --output-format stream-json   # [c1 exit 0]
+$ (same) agy -p "keep going" --conversation 525398cc-76f4-4959-b0fe-257477f08595 ...   # [c2 exit 0]
+# A node shim first on PATH logged each JBIT hook call (stdin, stdout) and passed it through unchanged. Below: every PreInvocation with invocationNum 0 and every Stop for the parent conversation 525398cc-76f4-4959-b0fe-257477f08595.
+
+## agy -p run c1
+2026-11-25T17:07:24.078Z PreInvocation invocationNum=0 initialNumSteps=1 lastUserInput="JBIT autopilot" -> ## Now injected: true; capped notice: false
+2026-11-25T17:07:47.719Z Stop executionNum=0 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 1. Word one.\n\n# JBIT\n
+2026-11-25T17:08:35.137Z Stop executionNum=1 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.\n\n# JBIT\n
+2026-11-25T17:08:40.081Z Stop executionNum=2 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.\n\n# JBIT\n
+2026-11-25T17:08:43.800Z Stop executionNum=3 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 2. Word two.\n\n# JBIT\n
+2026-11-25T17:09:23.560Z Stop executionNum=4 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.\n\n# JBIT
+2026-11-25T17:09:28.085Z Stop executionNum=5 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.\n\n# JBIT
+2026-11-25T17:09:31.963Z Stop executionNum=6 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.\n\n# JBIT
+2026-11-25T17:09:35.902Z Stop executionNum=7 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 3. Word three.\n\n# JBIT
+2026-11-25T17:10:00.542Z Stop executionNum=8 continuationActive=false -> {}
+# user_input steps in this run's stream: 1
+# ERROR steps: 1 ; unknown-tool denies in the tap log: 0
+# denied_actions: none
+
+## agy -p run c2
+2026-11-25T17:10:02.559Z PreInvocation invocationNum=0 initialNumSteps=107 lastUserInput="keep going" -> ## Now injected: true; capped notice: true
+2026-11-25T17:10:20.024Z Stop executionNum=0 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 4. Word four.\n\n# JBIT\
+2026-11-25T17:10:47.156Z Stop executionNum=1 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 5. Word five.\n\n# JBIT\
+2026-11-25T17:10:52.574Z Stop executionNum=2 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 5. Word five.\n\n# JBIT\
+2026-11-25T17:11:23.883Z Stop executionNum=3 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 6. Word six.\n\n# JBIT\n
+2026-11-25T17:11:28.462Z Stop executionNum=4 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 6. Word six.\n\n# JBIT\n
+2026-11-25T17:11:56.381Z Stop executionNum=5 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 7. Word seven.\n\n# JBIT
+2026-11-25T17:12:01.402Z Stop executionNum=6 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 7. Word seven.\n\n# JBIT
+2026-11-25T17:12:35.148Z Stop executionNum=7 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 8. Word eight.\n\n# JBIT
+2026-11-25T17:12:40.212Z Stop executionNum=8 continuationActive=false -> {}
+2026-11-25T17:12:51.487Z PreInvocation invocationNum=0 initialNumSteps=195 lastUserInput="keep going" -> ## Now injected: true; capped notice: true
+2026-11-25T17:13:15.764Z Stop executionNum=0 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.\n\n# JBIT\
+2026-11-25T17:13:20.530Z Stop executionNum=1 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.\n\n# JBIT\
+2026-11-25T17:13:25.425Z Stop executionNum=2 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.\n\n# JBIT\
+2026-11-25T17:13:30.287Z Stop executionNum=3 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.\n\n# JBIT\
+2026-11-25T17:13:35.544Z Stop executionNum=4 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 9. Word nine.\n\n# JBIT\
+2026-11-25T17:14:07.745Z Stop executionNum=5 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 10. Word ten.\n\n# JBIT\
+2026-11-25T17:14:13.294Z Stop executionNum=6 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 10. Word ten.\n\n# JBIT\
+2026-11-25T17:14:47.636Z Stop executionNum=7 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 11. Word eleven.\n\n# JB
+2026-11-25T17:14:54.652Z Stop executionNum=8 continuationActive=false -> {}
+2026-11-25T17:14:58.636Z PreInvocation invocationNum=0 initialNumSteps=268 lastUserInput="keep going" -> ## Now injected: true; capped notice: true
+2026-11-25T17:15:24.540Z Stop executionNum=0 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 12. Word twelve.\n\n# JB
+2026-11-25T17:15:30.892Z Stop executionNum=1 continuationActive=false -> {"decision":"continue","reason":"jbit autopilot: carry on with `docs/PLAN.md` under jbit:autopilot. Next: 12. Word twelve.\n\n# JB
+2026-11-25T17:16:24.848Z Stop executionNum=2 continuationActive=false -> {}
+# user_input steps in this run's stream: 1
+# ERROR steps: 0 ; unknown-tool denies in the tap log: 0
+# denied_actions: none
+
+# Finding: in run c2 (one user prompt, 'keep going'), after the cap answered {} at executionNum 8, the parent was waiting on a builder subagent; the subagent's completion woke the parent (stream steps 193 subagent -> 195 system_message; and again 266 -> 268), agy began a new invocation with invocationNum 0 and the same lastUserInput, and the hook reset its count. One user prompt got 8 + 8 + 2 = 18 continues. Stream steps around the first wake-up:
+STEP #188 agent_response DONE 
+TOOL #189 run_command state=DONE
+STEP #190 agent_response DONE No concerns.
+STEP #191 system_message DONE 
+STEP #192 agent_response DONE 
+STEP #193 subagent DONE 
+STEP #194 agent_response DONE Waiting for builder subagent to complete Stage 8...
+STEP #195 system_message DONE 
+STEP #196 system_message DONE 
+STEP #197 agent_response DONE 
+TOOL #198 run_command state=DONE
+TOOL #199 write_file state=DONE
+
+$ git log --oneline; cat NOTES.md   # after both runs
+2bc0447 Stage 12: Word twelve
+2295050 Stage 11: Word eleven
+794491c Stage 10: Word ten
+33ca5ac Stage 9: Word nine
+287d31e Stage 8: Word eight
+0deffda Stage 7: Word seven
+f8ab59f Stage 6: Word six
+44bfe34 Stage 5: Word five
+1efcd61 Stage 4: Word four
+edb5d02 Stage 3: Word three
+9799749 Stage 2: Word two
+06ee76e Stage 1: Word one
+0c8c8b6 init
+# Notes
+one
+
+two
+
+three
+four
+five
+six
+seven
+
+eight
+
+nine
+ten
+eleven
+twelve
+$ grep -n "^## Now" -A3 docs/PLAN.md
+6:## Now
+7-All stages done
+8-
+9-## Stages

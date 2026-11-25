@@ -1,0 +1,74 @@
+# Stage 3 fix round 2: home guard (review fix-now 1, 2) and the Stop cap reset (verify/09), hand-piped. 2026-11-25T17:27:25Z, node v22.23.5
+# Script: a scratch pipe.mjs (not kept); fake HOME and projects in a temp dir, shown as <tmp>.
+
+# PreToolUse run_command, HOME=<tmp>/home (plugin at <tmp>/home/.gemini/config/plugins/jbit), cwd <tmp>/ws (git, docs/PLAN.md; a file <tmp>/ws/node exists)
+# before = plugins/jbit-antigravity/scripts/hook.mjs (built before fix round 2); after = hosts/antigravity/hook.mjs
+
+$ echo x > ~/.gemini/./config/x
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ cp e.json ~/.gemini/./config/mcp_config.json
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ touch ~/.gemini/antigravity-cli/./settings.json
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ echo x > ~/.gemini//config/x
+  want deny | before {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ ln -s ~/.gemini/./config l && node ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out l/
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ cp /bin/sh node && <tmp>/ws/node ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ <tmp>/ws/node ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://x/ --out docs/e/
+  want deny | before {"decision":"allow"}
+  ok   after  {"decision":"deny"} (JBIT blocked this call: it writes to Antigravity's own confi…)
+
+$ ~/.nvm/versions/node/v24.1.0/bin/node ~/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47411/ --name home --width 390 --out docs/e/
+  want allow | before {"decision":"allow"}
+  ok   after  {"decision":"allow"}
+
+$ node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47411/ --name home-390 --width 390 --out docs/evidence/stage-1/before/ && node "$HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs" shot http://127.0.0.1:47411/ --name home-1280 --width 1280 --out docs/evidence/stage-1/before/
+  want allow | before {"decision":"allow"}
+  ok   after  {"decision":"allow"}
+
+$ mkdir -p docs/evidence/stage-1/before && ~/.nvm/versions/node/v22.23.5/bin/node $HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47411/ --name home-390 --width 390 --out docs/evidence/stage-1/before/ && ~/.nvm/versions/node/v22.23.5/bin/node $HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47411/ --name home-1280 --width 1280 --out docs/evidence/stage-1/before/
+  want allow | before {"decision":"allow"}
+  ok   after  {"decision":"allow"}
+
+$ node $HOME/.gemini/config/plugins/jbit/skills/verify/scripts/capture.mjs shot http://127.0.0.1:47411/ --name home --widths 390,1280 --themes light --out docs/evidence/stage-1/before/
+  want allow | before {"decision":"allow"}
+  ok   after  {"decision":"allow"}
+
+$ cat ~/.gemini/./config/mcp_config.json
+  want allow | before {"decision":"allow"}
+  ok   after  {"decision":"allow"}
+
+# Stop cap: PreInvocation/Stop, plan with Mode: autopilot; the transcript at transcriptPath is written as agy writes it (step_index, USER_EXPLICIT/USER_INPUT; live shape from the probe below)
+before: stops 0-8 after the prompt: CCCCCCCC- | after a subagent's wake-up: {"decision":"continue",…} | after a new user step with the same words: {"decision":"continue",…}
+after: stops 0-8 after the prompt: CCCCCCCC- | after a subagent's wake-up: {} | after a new user step with the same words: {"decision":"continue",…}
+
+# all as wanted
+
+# Signal for the cap reset, probed live (agy 1.5.17, gemini-3.8-flash-low, throwaway HOME from spike/mkhome.sh, token copy removed after;
+# a copy of spike/probe-plugin that, at each PreInvocation, snapshots the transcript files the payload names). Two prompts, the same words,
+# in one conversation: agy -p 'keep going' ...; agy -p 'keep going' --conversation c7d549d1-... (write tools denied by PROBE_MODE).
+# prompt 1, PreInvocation: invocationNum=0 initialNumSteps=1  lastUserInput="keep going"; transcript.jsonl and transcript_full.jsonl at that moment: 1 line
+#   {"keys":["step_index","source","type","status","created_at","content"],"source":"USER_EXPLICIT","type":"USER_INPUT"}
+# prompt 2, PreInvocation: invocationNum=0 initialNumSteps=24 lastUserInput="keep going"; transcript at that moment: 24 lines, the last one
+#   USER_EXPLICIT USER_INPUT '<USER_REQUEST> keep going </USER_REQUEST>' (step_index 23)
+# USER_INPUT steps in the conversation's transcript.jsonl after both prompts:
+#   0 USER_EXPLICIT USER_INPUT 2026-11-25T17:20:37Z
+#   23 USER_EXPLICIT USER_INPUT 2026-11-25T17:21:18Z
+# So agy writes the prompt's USER_INPUT step before the PreInvocation hook runs, and a repeat of the same words gets a new step_index.
+# A subagent's wake-up adds no USER_INPUT step: verify/09 run c2 had two wake-ups and 'user_input steps in this run's stream: 1'.
+# The hook now resets its Stop count on invocationNum 0 only when the transcript's last USER_INPUT step_index is above the one it last counted;
+# with no readable transcript, only when lastUserInput differs from the last one (and never once a step was seen). Not proven live with a subagent wake.

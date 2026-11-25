@@ -1,0 +1,38 @@
+# Over-blocks: every PreToolUse deny across this builder's live runs, and the unknown-tool default; agy 1.5.17, gemini-3.8-flash-low, throwaway HOMEs; 2026-11-25T16:53:20Z
+# runs: 01 (three autopilot prompts, home 1), 02 (jbit:plan next plan, home 2), and two update_steps probes below (home 2). Hook events logged by the tap instrument (see 01).
+
+# every PreToolUse call by tool name, all tapped runs (count, tool, decision):
+   26 edit_file allow
+   12 invoke_subagent allow
+   20 manage_subagents allow
+   23 read_file allow
+   49 run_command allow
+   14 schedule allow
+   12 send_message allow
+    1 update_steps deny
+   23 write_file allow
+
+# every deny, with its reason:
+2026-11-25T16:48:54.932Z update_steps {"steps":[{"status":"in_progress","title":"Read NOTES.md"},{"status":"pending","title":"Report line count"}]} -> JBIT blocked `update_steps`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or starts an agent, and a call it can't check doesn't run. Use run_command, write_file, edit_file or invoke_subagent instead, or ask the user.
+
+# update_steps: the model's own step list. Not in agy's init.tools (60 tools, same list as stage 1), but offered live; denied in stage 2 (../../stage-2/verify-fixes2/live-held-subagent.txt) and here.
+$ cd <scratch>/ws-next && HOME=<throwaway-home-2> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy -p "Call your update_steps tool once to track two steps for this task: (1) read NOTES.md, (2) report its line count. Then do the steps (do not edit any file) and stop." --model gemini-3.8-flash-low --output-format stream-json
+## before (package as of c313447): exit=0, conversation a05ed190-9de5-4dc3-80f4-ac47e444d6f9, transcript.jsonl:
+step 2: MODEL PLANNER_RESPONSE DONE tools=[["update_steps",""],["read_file","\"<scratch>/ws-next/NOTES.md\""]]
+step 3: MODEL GENERIC ERROR error="tool call denied by pre-tool hook: JBIT blocked `update_steps`: it isn't a tool JBIT knows, so it can't tell whether the call writes files, runs commands or starts an agent, and a call it can't check doesn't run. Use run_command, write_file, edit_file or invoke_subagent instead, or ask the user."
+step 5: MODEL PLANNER_RESPONSE DONE text="The call to `update_steps` was blocked by the JBIT pre-tool hook because it only allows recognized tools (`run_command`, `write_file`, `edit_file`, `invoke_subagent`).\n\nHere are the results of the requested steps:\n1. **Read [NOTES.md](file://<scratch>/ws-next/NOTES.md)**: Read successfully.\n2. **Line count**: [NOTES.md](file://<scratch>/ws-next/NOTES.md) contains **3 lines**."
+
+## fix: hosts/antigravity/map.mjs adds update_steps to ALLOWED (allowed unless an argument key carries a path or command; its live keys are steps/title/status); hosts/antigravity/hook.test.mjs pins the name with the live args
+$ node hosts/build.mjs antigravity
+antigravity: wrote 2, removed 0, unchanged 29 (plugins/jbit-antigravity, README.md)
+$ HOME=<throwaway-home-2> AGY_CLI_DISABLE_AUTO_UPDATE=1 agy plugin install ./plugins/jbit-antigravity   # replaced existing installation; diff -r installed vs package: IDENTICAL; no tap instrument
+## after: same prompt, exit=0, conversation e243ac68-8394-4c70-82b2-d0d7f7fe9e21, transcript.jsonl:
+step 2: MODEL PLANNER_RESPONSE DONE tools=[["update_steps",""],["read_file","\"<scratch>/ws-next/NOTES.md\""]]
+step 5: MODEL PLANNER_RESPONSE DONE tools=[["update_steps",""]]
+step 7: MODEL PLANNER_RESPONSE DONE text="[NOTES.md](file://<scratch>/ws-next/NOTES.md) contains **3** lines."
+# ERROR steps: 0
+
+# agy init.tools (from 01 prompt 1 stream-json) against the hook's lists:
+init.tools: 60 | mapped to Claude calls: 13 | read-only: 8 | allowed list: 38
+left denied (unknown-tool default): ["notebook_execution"]
+# notebook_execution stays denied: it runs a notebook's cells in a kernel (arbitrary code) with no command line for the guards to judge (stage-2 review, deferred).

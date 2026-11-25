@@ -1,0 +1,13 @@
+$ node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs hosts/antigravity/hook.test.mjs
+  duration_ms: 0.4088
+  type: 'test'
+  ...
+1..173
+# tests 173
+# suites 0
+# pass 173
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12246.637962

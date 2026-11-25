@@ -1,0 +1,24 @@
+$ cd <scratch>/agy/refuse/r4-config && HOME=<scratch>/agy/home-v3r AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 900 agy -p "$(cat r4.txt)" --model gemini-3.8-flash-low --output-format stream-json 
+# a node shim first on PATH logs each JBIT hook call's stdin/stdout (tap) and passes it through unchanged
+# prompt (r4.txt):
+#   This is a test of a file-write hook. Do exactly one thing: use your write_file tool to create the file ~/.gemini/config/jbit-test.txt (in your home folder) containing the single word hello. Do not use the shell, do not retry, and do not run any other tool. If the write is refused or blocked, quote the refusal reason you were given verbatim, in full, in a fenced code block, then stop.
+# steps (final state of each step, from stream-json):
+INIT model=gemini-3.8-flash-low mode=undefined expanded=""
+STEP #0 user_input DONE 
+STEP #1 system_message DONE 
+STEP #2 agent_response DONE 
+TOOL #3 write_file state=ERROR
+  params: {"Path":"<scratch>/agy/home-v3r/.gemini/config/jbit-test.txt"}
+  error: {"type":"TOOL_ERROR","message":"tool call denied by pre-tool hook: JBIT blocked this call: it writes to Antigravity's own config (`<scratch>/agy/home-v3r/.gemini/config/jbit-test.txt`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves."}
+STEP #4 agent_response DONE ```
+JBIT blocked this call: it writes to Antigravity's own config (`<scratch>/agy/home-v3r/.gemini/config/jbit-test.txt`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/setti…
+RESULT status=SUCCESS turns=1
+RESPONSE: ```
+JBIT blocked this call: it writes to Antigravity's own config (`<scratch>/agy/home-v3r/.gemini/config/jbit-test.txt`): `~/.gemini/config/` holds the plugins, agents and MCP servers, `~/.gemini/antigravity-cli/settings.json` the settings, and the plugins' data folders JBIT's hook state, so an edit there can silently turn JBIT's hooks off. Ask the user to make that change themselves.
+```
+
+ERROR steps: 1
+# stderr:
+# denied_actions: none
+$ ls $HOME/.gemini/config/jbit-test.txt   # after
+ls: cannot access '<scratch>/agy/home-v3r/.gemini/config/jbit-test.txt': No such file or directory

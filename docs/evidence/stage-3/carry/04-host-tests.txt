@@ -1,0 +1,4 @@
+$ node --test hosts/build.test.mjs hosts/copilot/hook.test.mjs hosts/codex/hook.test.mjs hosts/antigravity/hook.test.mjs
+# tests 171
+# pass 171
+# fail 0

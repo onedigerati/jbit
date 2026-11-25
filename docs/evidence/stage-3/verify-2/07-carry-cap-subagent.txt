@@ -1,0 +1,206 @@
+# Check 3, live: the Stop cap per user prompt when subagents wake the parent. Home <scratch>/agy/home-v4c (mkhome.sh, package installed by path, diff -r identical), agy 1.5.17, gemini-3.8-flash-low, default mode (no --mode, no --settings, as verify/09), permissions never skipped.
+# Project <scratch>/agy/v4/ws-carry: verify/09's 12 docs-only stages (append a word to NOTES.md), Mode: stage, plus 'Agents: wide' and a decision that every stage's build goes to a builder subagent (invoke_subagent), one per stage.
+$ cat carry.sh
+#!/bin/bash
+A=<scratch>/agy; V=$A/v4; H=$A/home-v4c; P=$V/ws-carry
+r(){ N=$1; PR=$2; shift 2; cd $P && JBIT_TAP=$V/log/$N-tap.jsonl PATH=$A/bin:$PATH HOME=$H AGY_CLI_DISABLE_AUTO_UPDATE=1 timeout 1500 agy -p "$PR" --model gemini-3.8-flash-low --output-format stream-json "$@" > $V/log/$N.jsonl 2> $V/log/$N.err; echo "[$N exit $?]" >> $V/log/carry.exit; }
+r c1 "JBIT autopilot"
+C=$(head -c 400 $V/log/c1.jsonl | grep -o '"conversation_id":"[^"]*"' | cut -d'"' -f4); echo "conv=$C" >> $V/log/carry.exit
+r c2 "keep going" --conversation $C
+[c1 exit 0]
+conv=34dacf7b-f2c8-41fe-805b-dd9db3e7eaf7
+[c2 exit 0]
+[c3 exit 0]
+# A node shim first on PATH logged each JBIT hook call (stdin, stdout) and passed it through unchanged. Parent conversation: 34dacf7b-f2c8-41fe-805b-dd9db3e7eaf7
+
+## agy -p run c1 (one user prompt)
+2026-11-25T17:38:57.720Z PreInvocation invocationNum=0 initialNumSteps=1 lastUserInput="JBIT autopilot"
+2026-11-25T17:39:26.527Z Stop executionNum=0 -> continue #1
+2026-11-25T17:39:30.947Z Stop executionNum=1 -> continue #2
+2026-11-25T17:40:18.108Z Stop executionNum=2 -> continue #3
+2026-11-25T17:40:22.279Z Stop executionNum=3 -> continue #4
+2026-11-25T17:40:56.089Z Stop executionNum=4 -> continue #5
+2026-11-25T17:41:00.511Z Stop executionNum=5 -> continue #6
+2026-11-25T17:41:06.061Z Stop executionNum=6 -> continue #7
+2026-11-25T17:41:34.752Z Stop executionNum=7 -> continue #8
+2026-11-25T17:41:40.846Z Stop executionNum=8 -> {}
+2026-11-25T17:41:43.094Z PreInvocation invocationNum=0 initialNumSteps=108 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:42:13.981Z Stop executionNum=0 -> {}
+2026-11-25T17:42:19.740Z PreInvocation invocationNum=0 initialNumSteps=125 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:42:47.861Z Stop executionNum=0 -> {}
+2026-11-25T17:42:58.094Z PreInvocation invocationNum=0 initialNumSteps=141 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:43:36.646Z Stop executionNum=0 -> {}
+2026-11-25T17:43:47.029Z PreInvocation invocationNum=0 initialNumSteps=157 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:44:20.838Z Stop executionNum=0 -> {}
+2026-11-25T17:44:31.241Z PreInvocation invocationNum=0 initialNumSteps=173 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:45:01.450Z Stop executionNum=0 -> {}
+2026-11-25T17:45:10.777Z PreInvocation invocationNum=0 initialNumSteps=189 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:45:43.263Z Stop executionNum=0 -> {}
+2026-11-25T17:45:56.949Z PreInvocation invocationNum=0 initialNumSteps=205 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:46:27.291Z Stop executionNum=0 -> {}
+2026-11-25T17:46:42.974Z PreInvocation invocationNum=0 initialNumSteps=221 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:47:13.464Z Stop executionNum=0 -> {}
+2026-11-25T17:47:23.917Z PreInvocation invocationNum=0 initialNumSteps=237 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:48:40.436Z Stop executionNum=0 -> {}
+# continues for the parent in this user prompt: 8; parent PreInvocation invocationNum=0 calls: 10 (9 wake-ups after the first); other conversations (subagents) seen by the hook: 12
+# user_input steps in this run's parent stream: 1
+# subagent tool calls in the parent stream: 20
+# ERROR steps: 2 ; unknown-tool denies in the tap: 0; all JBIT denies: 1
+# denied_actions: none
+
+## agy -p run c2 (one user prompt)
+2026-11-25T17:48:42.651Z PreInvocation invocationNum=0 initialNumSteps=267 lastUserInput="keep going"
+2026-11-25T17:48:47.064Z Stop executionNum=0 -> {}
+# continues for the parent in this user prompt: 0; parent PreInvocation invocationNum=0 calls: 1 (0 wake-ups after the first); other conversations (subagents) seen by the hook: 0
+# user_input steps in this run's parent stream: 1
+# subagent tool calls in the parent stream: 0
+# ERROR steps: 0 ; unknown-tool denies in the tap: 0; all JBIT denies: 0
+# denied_actions: none
+
+# Between c2 and c3, standing in for the user: the plan's 12 stages were all done in c1, so c2 had nothing to carry on. Stages 13-24 (same pattern) were added, ## Now set to Stage 13, Mode: stage, committed (2055ddb 'Plan: stages 13-24'). Then, in the same conversation, the user's command again with the same words as the first prompt:
+$ agy -p "JBIT autopilot" --conversation 34dacf7b-f2c8-41fe-805b-dd9db3e7eaf7 (same flags)
+
+## agy -p run c3 (one user prompt)
+2026-11-25T17:49:19.963Z PreInvocation invocationNum=0 initialNumSteps=271 lastUserInput="JBIT autopilot"
+2026-11-25T17:49:31.385Z Stop executionNum=0 -> continue #1
+2026-11-25T17:49:38.019Z Stop executionNum=1 -> continue #2
+2026-11-25T17:50:14.416Z Stop executionNum=2 -> continue #3
+2026-11-25T17:50:19.559Z Stop executionNum=3 -> continue #4
+2026-11-25T17:50:56.574Z Stop executionNum=4 -> continue #5
+2026-11-25T17:51:04.212Z Stop executionNum=5 -> continue #6
+2026-11-25T17:51:39.869Z Stop executionNum=6 -> continue #7
+2026-11-25T17:52:20.279Z Stop executionNum=7 -> continue #8
+2026-11-25T17:52:26.697Z Stop executionNum=8 -> {}
+2026-11-25T17:52:31.773Z PreInvocation invocationNum=0 initialNumSteps=375 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:53:08.873Z Stop executionNum=0 -> {}
+2026-11-25T17:53:20.373Z PreInvocation invocationNum=0 initialNumSteps=392 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:53:53.746Z Stop executionNum=0 -> {}
+2026-11-25T17:53:58.683Z PreInvocation invocationNum=0 initialNumSteps=408 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:54:39.580Z Stop executionNum=0 -> {}
+2026-11-25T17:54:40.070Z PreInvocation invocationNum=0 initialNumSteps=424 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:55:20.954Z Stop executionNum=0 -> {}
+2026-11-25T17:55:23.777Z PreInvocation invocationNum=0 initialNumSteps=440 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:56:04.729Z Stop executionNum=0 -> {}
+2026-11-25T17:56:41.920Z PreInvocation invocationNum=0 initialNumSteps=456 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:57:21.621Z Stop executionNum=0 -> {}
+2026-11-25T17:57:24.296Z PreInvocation invocationNum=0 initialNumSteps=472 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:58:09.756Z Stop executionNum=0 -> {}
+2026-11-25T17:58:20.964Z PreInvocation invocationNum=0 initialNumSteps=488 lastUserInput="JBIT autopilot"   <- a wake-up in the same user prompt
+2026-11-25T17:59:33.002Z Stop executionNum=0 -> {}
+# continues for the parent in this user prompt: 8; parent PreInvocation invocationNum=0 calls: 9 (8 wake-ups after the first); other conversations (subagents) seen by the hook: 12
+# user_input steps in this run's parent stream: 1
+# subagent tool calls in the parent stream: 20
+# ERROR steps: 0 ; unknown-tool denies in the tap: 0; all JBIT denies: 0
+# denied_actions: none
+
+# subagent steps in the parent streams (name, state):
+## c1
+TOOL #25 manage_subagents state=DONE
+TOOL #29 manage_subagents state=DONE
+TOOL #32 manage_subagents state=DONE
+TOOL #55 manage_subagents state=DONE
+TOOL #59 manage_subagents state=DONE
+TOOL #64 manage_subagents state=DONE
+TOOL #79 manage_subagents state=DONE
+TOOL #83 manage_subagents state=DONE
+TOOL #88 manage_subagents state=DONE
+TOOL #91 manage_subagents state=DONE
+TOOL #106 manage_subagents state=DONE
+TOOL #111 manage_subagents state=DONE
+TOOL #128 manage_subagents state=DONE
+TOOL #144 manage_subagents state=DONE
+TOOL #160 manage_subagents state=DONE
+TOOL #176 manage_subagents state=DONE
+TOOL #192 manage_subagents state=DONE
+TOOL #208 manage_subagents state=DONE
+TOOL #224 manage_subagents state=DONE
+TOOL #240 manage_subagents state=DONE
+## c2
+## c3
+TOOL #284 manage_subagents state=DONE
+TOOL #288 manage_subagents state=DONE
+TOOL #291 manage_subagents state=DONE
+TOOL #307 manage_subagents state=DONE
+TOOL #311 manage_subagents state=DONE
+TOOL #314 manage_subagents state=DONE
+TOOL #330 manage_subagents state=DONE
+TOOL #334 manage_subagents state=DONE
+TOOL #337 manage_subagents state=DONE
+TOOL #353 manage_subagents state=DONE
+TOOL #357 manage_subagents state=DONE
+TOOL #373 manage_subagents state=DONE
+TOOL #378 manage_subagents state=DONE
+TOOL #395 manage_subagents state=DONE
+TOOL #411 manage_subagents state=DONE
+TOOL #427 manage_subagents state=DONE
+TOOL #443 manage_subagents state=DONE
+TOOL #459 manage_subagents state=DONE
+TOOL #475 manage_subagents state=DONE
+TOOL #491 manage_subagents state=DONE
+
+$ git log --oneline; cat NOTES.md   # after both runs
+4989639 Word twentyfour
+f9855c3 Word twentythree
+3495418 Word twentytwo
+885327a Word twentyone
+4180d16 Word twenty
+ee093ec Word nineteen
+3ea80b0 Word eighteen
+9e0d848 Word seventeen
+fc055b0 Word sixteen
+9a61106 Word fifteen
+781fde1 Word fourteen
+985da59 Word thirteen
+2055ddb Plan: stages 13-24
+6de50ff Word twelve
+cf1166a Word eleven
+716371e Word ten
+194b819 Word nine
+39b6824 Word eight
+b78b28f Word seven
+8b9c12d Word six
+fc57c60 Word five
+5a86a71 Word four
+71505d8 Word three
+2cf5471 Word two
+836b394 Word one
+ae3d8cd Plan: builders are subagents
+0c8c8b6 init
+# Notes
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+
+ten
+eleven
+
+twelve
+
+thirteen
+fourteen
+fifteen
+sixteen
+seventeen
+eighteen
+nineteen
+twenty
+
+twentyone
+twentytwo
+twentythree
+twentyfour
+$ sed -n "/## Now/,/## Stages/p" docs/PLAN.md
+## Now
+All stages done
+Agents: wide — confirmed 2026-11-25
+
+## Stages
+
+# every JBIT deny in the three runs (tap):
+2026-11-25T17:47:47.001Z run_command git add NOTES.md docs/PLAN.md docs/evidence/stage-12 && git commit -m "Word twelve" -> {"decision":"deny","reason":"JBIT blocked this commit: it closes stage 12, but these checks were never seen ticked in `## Now`:   - `grep -x twelve NOTES.md` prints twelve (proof:

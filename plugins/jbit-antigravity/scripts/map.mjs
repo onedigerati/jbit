@@ -5,7 +5,7 @@
 // (plugins, agents, MCP), `~/.gemini/antigravity-cli/settings.json`, and the plugins' data folders, where the hook keeps
 // its own state (its Stop count); the rest of `~/.gemini/antigravity-cli/` stays writable, since every run writes there.
 import { homedir } from 'node:os'
-import { isAbsolute, join } from 'node:path'
+import { isAbsolute, join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveInProject } from './copilot/map.mjs'
 
@@ -32,6 +32,7 @@ export const READ_ONLY = new Set(['read_file', 'send_message', 'view_file', 'lis
  * The rest of agy's live tool list (stage-1 `init.tools`) that writes no file and runs no command: browser driving, asking
  * the user, MCP calls (the Claude hook doesn't judge MCP either), the agent's own task and knowledge lists. Allowed
  * unless an argument carries a path or a command. Any tool on neither list is denied: a new tool is unknown, not safe.
+ * `update_steps` (the agent's step list, `{steps:[{title,status}]}`) isn't in `init.tools` but is offered live (stage 3).
  */
 export const ALLOWED = new Set([
   'ask_custom_permission', 'ask_permission', 'ask_question', 'call_mcp_tool', 'delete_knowledge', 'finish', 'generate_image',
@@ -41,6 +42,7 @@ export const ALLOWED = new Set([
   'browser_click_element', 'browser_drag_pixel_to_pixel', 'browser_get_dom', 'browser_get_network_request', 'browser_input',
   'browser_list_network_requests', 'browser_mouse_down', 'browser_mouse_up', 'browser_move_mouse', 'browser_press_key',
   'browser_refresh_page', 'browser_resize_window', 'browser_scroll', 'browser_scroll_dom', 'browser_select_option',
+  'update_steps',
 ])
 
 /** An input key that carries a path or a command, at any depth. */
@@ -101,6 +103,15 @@ function shellNames(guard) {
     ].join('|'),
   )
 }
+
+/**
+ * The text with each word that holds a `/` put in lexical normal form: `/./` and repeated `/` collapsed, `..` resolved
+ * against the words before it, a trailing `/.` dropped. `~/.gemini/./config` and `~/.gemini//config` name the config too.
+ */
+const lexical = text => text.replace(/[^\s'"`;&|<>(){}]+/g, w => (w.includes('/') ? posix.normalize(w) : w))
+
+/** Whether `text` names a protected path: as written, in lexical normal form, and with its quotes taken out. */
+const namesIn = (names, text) => names.test(text) || names.test(lexical(text)) || names.test(lexical(text.replace(/['"]/g, '')))
 
 /** Commands that write, delete, fetch into or extract into a path they name, or run code that could: best-effort. */
 const WRITES = new RegExp(
@@ -181,20 +192,20 @@ function captureCacheDir(env = process.env, platform = process.platform) {
  * plain words only, no symlink inside the plugin on the way to the script, run from a folder outside the protected
  * ones, and no argument or capture cache that names or lands in one.
  */
-export function runsOwnCapture(command, guard, cwd) {
+export function runsOwnCapture(command, guard, cwd, project) {
   if (!str(command) || !str(guard?.pluginRoot) || !isAbsolute(guard.pluginRoot) || !str(cwd)) return false
+  const realCwd = resolved(cwd, '/')
+  if (!realCwd || protectedPath(realCwd, guard)) return false
   const words = plainWords(command, trim(guard.home))
-  if (!words || words.length < 2 || words[0] !== 'node') return false
+  if (!words || words.length < 2 || !isNode(words[0], guard, [realCwd, str(project) ? resolved(project, '/') : undefined])) return false
   const root = trim(guard.pluginRoot)
   const realRoot = resolved(root, '/')
   const script = words[1]
   if (!realRoot || script.includes('..') || (script !== root + CAPTURE && script !== realRoot + CAPTURE)) return false
   if (resolved(script, '/') !== realRoot + CAPTURE) return false
-  const realCwd = resolved(cwd, '/')
-  if (!realCwd || protectedPath(realCwd, guard)) return false
   const names = shellNames(guard)
   for (const arg of words.slice(2)) {
-    if (names.test(arg)) return false
+    if (namesIn(names, arg)) return false
     for (const p of [arg, arg.slice(arg.indexOf('=') + 1)]) {
       if (!p) continue
       const at = resolved(p, realCwd)
@@ -205,18 +216,92 @@ export function runsOwnCapture(command, guard, cwd) {
   return !!cache && !protectedPath(cache, guard)
 }
 
+/** Where Node is installed: the system's folders, and the version managers' under the home (`<home>` stands for it). */
+const NODE_BINS = [
+  /^\/(?:usr\/(?:local\/)?)?bin\/node$/,
+  /^\/opt\/(?:homebrew|local)\/bin\/node$/,
+  /^<home>\/\.nvm\/versions\/node\/v\d+(?:\.\d+)*\/bin\/node$/,
+  /^<home>\/\.volta\/(?:bin|tools\/image\/node\/\d+(?:\.\d+)*\/bin)\/node$/,
+  /^<home>\/\.local\/share\/(?:fnm\/node-versions\/v\d+(?:\.\d+)*\/installation|mise\/installs\/node\/\d+(?:\.\d+)*)\/bin\/node$/,
+  /^<home>\/\.asdf\/(?:shims|installs\/nodejs\/\d+(?:\.\d+)*\/bin)\/node$/,
+]
+
+/**
+ * `node`, or an absolute path to a Node binary where Node is installed (NODE_BINS, or the Node running this hook), whose
+ * real path lies outside the project, the folder the command runs in, any `.gemini` folder and the protected paths. A
+ * file named `node` anywhere else is any program the model wrote, so it gets no exemption.
+ */
+function isNode(word, guard, inside = []) {
+  if (word === 'node') return true
+  if (!isAbsolute(word) || word.includes('..') || shellNames(guard).test(word) || shellNames(guard).test(lexical(word))) return false
+  const at = resolved(word, '/')
+  if (!at || protectedPath(at, guard) || /\/\.gemini(?:\/|$)/.test(at)) return false
+  if (inside.filter(str).some(d => at === d || at.startsWith(`${trim(d)}/`))) return false
+  const home = trim(guard.home)
+  const known = p => NODE_BINS.some(re => re.test(p.startsWith(`${home}/`) ? `<home>${p.slice(home.length)}` : p))
+  return known(posix.normalize(word)) || at === resolved(process.execPath, '/')
+}
+
+/** Words that change the folder or the environment the next command of a list runs in. */
+const SETS_UP = new Set(['cd', 'pushd', 'popd', 'export', 'unset', 'set', 'source', '.', 'eval', 'exec', 'alias', 'env', 'builtin', 'command'])
+/** Commands that make a link or move or copy a path, which a later part of the list could then reach through. */
+const LINKS = new Set(['ln', 'link', 'mv', 'cp', 'install', 'rsync'])
+
+/**
+ * A list of commands joined by `&&`, `||`, `;` or line breaks, split outside quotes, when each one is plain words
+ * (plainWords) and none changes the folder or environment of the ones after it (`cd`, `export`, `A=b`, …); else null.
+ */
+function plainList(command, home) {
+  const parts = []
+  let start = 0
+  let quote
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i]
+    if (quote) {
+      if (c === quote) quote = undefined
+    } else if (c === "'" || c === '"') quote = c
+    else if (c === ';' || c === '\n') {
+      parts.push(command.slice(start, i))
+      start = i + 1
+    } else if ((c === '&' || c === '|') && command[i + 1] === c) {
+      parts.push(command.slice(start, i))
+      start = i + 2
+      i++
+    }
+  }
+  if (quote) return null
+  parts.push(command.slice(start))
+  const list = parts.map(p => p.trim())
+  if (list.some(p => !p)) return null
+  for (const p of list) {
+    const words = plainWords(p, home)
+    if (!words || !words.length || SETS_UP.has(words[0]) || /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[0])) return null
+  }
+  return list
+}
+
 /**
  * A command that names a protected path (or a folder above one) and writes something: conservative on purpose. `cwd`
  * is the folder the command runs in, when known; only then can the installed capture script run (runsOwnCapture).
  */
-export function writesProtected(command, guard = guardOf(), { cwd } = {}) {
+export function writesProtected(command, guard = guardOf(), { cwd, project } = {}) {
   if (typeof command !== 'string') return false
   const names = shellNames(guard)
-  if (!names.test(command)) return false
-  if (runsOwnCapture(command, guard, cwd)) return false
+  if (!namesIn(names, command)) return false
+  if (runsOwnCapture(command, guard, cwd, project)) return false
+  // a list of plain commands (`mkdir -p docs/evidence/stage-1 && node <capture> shot …`): only the parts that name a
+  // protected path (by its text or its words, so quotes splitting a name don't hide one) need be the capture script;
+  // any other part that names one leaves the whole command to the checks below, and so does a part that makes a link
+  // or moves or copies something (`ln -s <x> l && node <capture> … --out l/`: the capture's `--out` is checked before
+  // the link exists)
+  const home = trim(guard.home)
+  const list = plainList(command, home)
+  const namesOne = p => namesIn(names, p) || plainWords(p, home).some(w => namesIn(names, w))
+  const linking = p => LINKS.has(plainWords(p, home)[0].split('/').pop())
+  if (list && list.length > 1 && !list.some(linking) && list.every(p => !namesOne(p) || runsOwnCapture(p, guard, cwd, project))) return false
   // a cd into the folder followed by any command runs that command there
   for (const m of command.matchAll(/(?:^|[;\n|&('"])\s*(?:cd|pushd)\s+([^\s;&|)]+)([\s\S]*)/g)) {
-    if (names.test(m[1]) && /[;\n|&]\s*[^\s;&|)]/.test(m[2])) return true
+    if (namesIn(names, m[1]) && /[;\n|&]\s*[^\s;&|)]/.test(m[2])) return true
   }
   // fd duplications (`2>&1`, `>&-`) and redirects to /dev/null write nothing; `>&file` does
   const plain = command.replace(/\d*>&(?=[\d-])\d*-?/g, ' ').replace(/(?:\d|&)?>>?&?\s*\/dev\/null\b/g, ' ')
@@ -262,7 +347,7 @@ function pathyKey(value, depth = 0) {
 const WINDOWS = /\\|^[A-Za-z]:/
 
 function shell(tool, command, root, guard, cwd) {
-  if (writesProtected(command, guard, { cwd })) return deny(HOME_REASON('a shell write'))
+  if (writesProtected(command, guard, { cwd, project: root })) return deny(HOME_REASON('a shell write'))
   const sub = agyConfigCommand(command)
   if (sub) return deny(`JBIT blocked this call: \`agy ${sub}\` rewrites Antigravity's own config, plugins or sign-in under \`~/.gemini/\`, and a change there can silently turn JBIT's hooks off. Ask the user to run it themselves.`)
   return calls({ tool: 'Bash', command })

@@ -1,0 +1,7 @@
+$ (cd ~ && find .gemini -type f -print0 | sort -z | xargs -0 sha256sum) > <scratch>/agy/gemini-before.sha   # before any agy run
+$ (same) > <scratch>/agy/gemini-after.sha   # after every run
+$ cmp gemini-before.sha gemini-after.sha && echo unchanged
+unchanged (239 files hashed)
+$ rm -rf <scratch>/agy/home-v3 <scratch>/agy/home-v3r <scratch>/agy/home-v3c; find <scratch> -name antigravity-oauth-token | wc -l
+0
+# the static server on 127.0.0.1:47511 was stopped. --dangerously-skip-permissions was never passed; every agy call had HOME=<throwaway> AGY_CLI_DISABLE_AUTO_UPDATE=1 and --model gemini-3.8-flash-low.
